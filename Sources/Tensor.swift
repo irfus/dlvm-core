@@ -9,45 +9,85 @@
 import CCuDNN
 import CUDARuntime
 
-public struct Shape {
+public struct Shape : ExpressibleByArrayLiteral {
 
-    internal private(set) var components: ContiguousArray<Int>
+    public var dimensions: [Int]
+    public var strides: [Int]
 
-    public init(dimensions: Int) {
-        components = ContiguousArray(repeating: 1, count: dimensions)
+    public init(rank: Int) {
+        dimensions = Array(repeating: 1, count: rank)
+        strides = dimensions
     }
 
-    public init(_ sizes: Int...) {
-        components = ContiguousArray(sizes)
+    public init(_ dimensions: Int...) {
+        self.dimensions = dimensions
+        strides = Array(repeating: 1, count: dimensions.count)
+    }
+
+    public init(arrayLiteral elements: Int...) {
+        self.dimensions = elements
+        strides = Array(repeating: 1, count: elements.count)
+    }
+
+    public init(dimensions: [Int], strides: [Int]) {
+        self.dimensions = dimensions
+        self.strides = strides
     }
 
     public subscript(i: Int) -> Int {
-        return components[i]
+        return dimensions[i]
     }
 
     public var rank: Int {
-        return components.count
+        return dimensions.count
     }
 
-    public var size: Int {
-        return components.reduce(1, *)
-    }
-    
 }
 
-public class TensorBuffer<Element> {
+public class TensorDescriptor<Element : TensorDataProtocol> {
 
-    let descriptor: cudnnTensorDescriptor_t
+    let handle: cudnnTensorDescriptor_t
 
-    init(shape: Shape) {
+    var rankRequested: Int
+
+    public init(shape: Shape) {
         var desc: cudnnTensorDescriptor_t?
-        cudnnCreateTensorDescriptor(&desc)
-        self.descriptor = desc!
-
-        var array: DeviceArray<Float>(capacity: 10)
-        array.withUnsafeMutableDevicePointer { ptr in
-            ptr.deviceAddress
+        !!cudnnCreateTensorDescriptor(&desc)
+        handle = desc!
+        rankRequested = shape.rank
+        let shapeComponents = shape.dimensions.map{Int32($0)}
+        let strides: [Int32] = Array(repeating: 1, count: shape.rank)
+        shapeComponents.withUnsafeBufferPointer { componentsBuf in
+            strides.withUnsafeBufferPointer { stridesBuf in
+                !!cudnnSetTensorNdDescriptor(
+                    handle,
+                    Element.tensorDataType.cType,
+                    Int32(shape.rank),
+                    componentsBuf.baseAddress,
+                    stridesBuf.baseAddress
+                )
+            }
         }
+    }
+
+    deinit {
+        !!cudnnDestroyTensorDescriptor(handle)
+    }
+
+    public var shape: Shape {
+        var rank: Int32 = 0
+        var dataType = cudnnDataType_t(0)
+        var dimensions = Array<Int32>(repeating: 1, count: rankRequested)
+        var strides = dimensions
+        cudnnGetTensorNdDescriptor(
+            handle,
+            Int32(rankRequested),
+            &dataType,
+            &rank,
+            &dimensions,
+            &strides
+        )
+        return Shape(dimensions: dimensions.map{Int($0)}, strides: strides.map{Int($0)})
     }
 
 }
