@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "746CD8F02E017AC54ECE31291BF68E726495756F",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "746CD8F02E017AC54ECE31291BF68E726495756F" : 9223372036854775807,
+    "8EF71C248FF934350A320AB1A35FB55A9A451DBF" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "A5B8E828-78E7-4F34-8CA5-38C4A9041440",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "746CD8F02E017AC54ECE31291BF68E726495756F" : "CuDNN\/",
+    "8EF71C248FF934350A320AB1A35FB55A9A451DBF" : "CuDNN\/Packages\/CUDA-0.0.1\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "CuDNN",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "CuDNN.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:rxwei\/cudnn-swift.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "746CD8F02E017AC54ECE31291BF68E726495756F"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "\/Users\/rxwei\/Development\/ML\/CUDA",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "8EF71C248FF934350A320AB1A35FB55A9A451DBF"
+    }
+  ]
+}

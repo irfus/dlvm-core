@@ -1,0 +1,1005 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		29F5F5E51DC5DD8B003B5C8B /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5F5E41DC5DD8B003B5C8B /* Error.swift */; };
+		29F5F5E71DC5E05A003B5C8B /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5F5E61DC5E05A003B5C8B /* Types.swift */; };
+		OBJ_105 /* Compiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_36 /* Compiler.swift */; };
+		OBJ_106 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_37 /* Error.swift */; };
+		OBJ_107 /* Option.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_38 /* Option.swift */; };
+		OBJ_109 /* CUDADriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* CUDADriver.framework */; };
+		OBJ_116 /* Tensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_40 /* Tensor.swift */; };
+		OBJ_118 /* CUDADriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* CUDADriver.framework */; };
+		OBJ_119 /* CUDARuntime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* CUDARuntime.framework */; };
+		OBJ_120 /* CuBLAS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* CuBLAS.framework */; };
+		OBJ_121 /* NVRTC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* NVRTC.framework */; };
+		OBJ_131 /* CuDNNTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* CuDNNTests.swift */; };
+		OBJ_133 /* CUDADriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* CUDADriver.framework */; };
+		OBJ_134 /* CUDARuntime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* CUDARuntime.framework */; };
+		OBJ_135 /* CuBLAS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* CuBLAS.framework */; };
+		OBJ_136 /* NVRTC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* NVRTC.framework */; };
+		OBJ_137 /* CuDNN.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* CuDNN.framework */; };
+		OBJ_57 /* BLAS.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* BLAS.swift */; };
+		OBJ_58 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* Error.swift */; };
+		OBJ_59 /* Level1.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* Level1.swift */; };
+		OBJ_60 /* Level2.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* Level2.swift */; };
+		OBJ_61 /* MatrixType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* MatrixType.swift */; };
+		OBJ_63 /* CUDADriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* CUDADriver.framework */; };
+		OBJ_64 /* CUDARuntime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* CUDARuntime.framework */; };
+		OBJ_73 /* CHandleCarrier.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CHandleCarrier.swift */; };
+		OBJ_74 /* Context.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* Context.swift */; };
+		OBJ_75 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* Device.swift */; };
+		OBJ_76 /* Driver.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* Driver.swift */; };
+		OBJ_77 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* Error.swift */; };
+		OBJ_78 /* Function.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* Function.swift */; };
+		OBJ_79 /* Memory.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* Memory.swift */; };
+		OBJ_80 /* Module.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* Module.swift */; };
+		OBJ_81 /* PTX.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* PTX.swift */; };
+		OBJ_82 /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* Stream.swift */; };
+		OBJ_88 /* Array.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* Array.swift */; };
+		OBJ_89 /* Buffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* Buffer.swift */; };
+		OBJ_90 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* Device.swift */; };
+		OBJ_91 /* DeviceAddressible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* DeviceAddressible.swift */; };
+		OBJ_92 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_30 /* Error.swift */; };
+		OBJ_93 /* Memory.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_31 /* Memory.swift */; };
+		OBJ_94 /* Module.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_32 /* Module.swift */; };
+		OBJ_95 /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_33 /* Stream.swift */; };
+		OBJ_96 /* Value.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_34 /* Value.swift */; };
+		OBJ_98 /* CUDADriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* CUDADriver.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		29F5F5D71DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_66;
+			remoteInfo = CUDADriver;
+		};
+		29F5F5D81DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_68;
+			remoteInfo = CUDARuntime;
+		};
+		29F5F5D91DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_66;
+			remoteInfo = CUDADriver;
+		};
+		29F5F5DA1DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_66;
+			remoteInfo = CUDADriver;
+		};
+		29F5F5DB1DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_66;
+			remoteInfo = CUDADriver;
+		};
+		29F5F5DC1DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_68;
+			remoteInfo = CUDARuntime;
+		};
+		29F5F5DD1DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_52;
+			remoteInfo = CuBLAS;
+		};
+		29F5F5DE1DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_100;
+			remoteInfo = NVRTC;
+		};
+		29F5F5DF1DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_66;
+			remoteInfo = CUDADriver;
+		};
+		29F5F5E01DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_68;
+			remoteInfo = CUDARuntime;
+		};
+		29F5F5E11DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_52;
+			remoteInfo = CuBLAS;
+		};
+		29F5F5E21DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_100;
+			remoteInfo = NVRTC;
+		};
+		29F5F5E31DC5DCBE003B5C8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_111;
+			remoteInfo = CuDNN;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		29F5F5E41DC5DD8B003B5C8B /* Error.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
+		29F5F5E61DC5E05A003B5C8B /* Types.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
+		OBJ_10 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
+		OBJ_11 /* Level1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level1.swift; sourceTree = "<group>"; };
+		OBJ_12 /* Level2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2.swift; sourceTree = "<group>"; };
+		OBJ_13 /* MatrixType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixType.swift; sourceTree = "<group>"; };
+		OBJ_15 /* CHandleCarrier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CHandleCarrier.swift; sourceTree = "<group>"; };
+		OBJ_16 /* Context.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Context.swift; sourceTree = "<group>"; };
+		OBJ_17 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
+		OBJ_18 /* Driver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Driver.swift; sourceTree = "<group>"; };
+		OBJ_19 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
+		OBJ_20 /* Function.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Function.swift; sourceTree = "<group>"; };
+		OBJ_21 /* Memory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Memory.swift; sourceTree = "<group>"; };
+		OBJ_22 /* Module.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Module.swift; sourceTree = "<group>"; };
+		OBJ_23 /* PTX.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTX.swift; sourceTree = "<group>"; };
+		OBJ_24 /* Stream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stream.swift; sourceTree = "<group>"; };
+		OBJ_26 /* Array.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
+		OBJ_27 /* Buffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Buffer.swift; sourceTree = "<group>"; };
+		OBJ_28 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
+		OBJ_29 /* DeviceAddressible.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAddressible.swift; sourceTree = "<group>"; };
+		OBJ_30 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
+		OBJ_31 /* Memory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Memory.swift; sourceTree = "<group>"; };
+		OBJ_32 /* Module.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Module.swift; sourceTree = "<group>"; };
+		OBJ_33 /* Stream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stream.swift; sourceTree = "<group>"; };
+		OBJ_34 /* Value.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Value.swift; sourceTree = "<group>"; };
+		OBJ_36 /* Compiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compiler.swift; sourceTree = "<group>"; };
+		OBJ_37 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
+		OBJ_38 /* Option.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Option.swift; sourceTree = "<group>"; };
+		OBJ_40 /* Tensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tensor.swift; sourceTree = "<group>"; };
+		OBJ_43 /* CuDNNTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuDNNTests.swift; sourceTree = "<group>"; };
+		OBJ_44 /* Build */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Build; sourceTree = SOURCE_ROOT; };
+		OBJ_46 /* CuBLAS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CuBLAS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_47 /* CUDADriver.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CUDADriver.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_48 /* CUDARuntime.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CUDARuntime.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_49 /* NVRTC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NVRTC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_50 /* CuDNN.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CuDNN.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_51 /* CuDNNTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = CuDNNTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_6 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		OBJ_9 /* BLAS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLAS.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		OBJ_108 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_109 /* CUDADriver.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_117 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_118 /* CUDADriver.framework in Frameworks */,
+				OBJ_119 /* CUDARuntime.framework in Frameworks */,
+				OBJ_120 /* CuBLAS.framework in Frameworks */,
+				OBJ_121 /* NVRTC.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_132 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_133 /* CUDADriver.framework in Frameworks */,
+				OBJ_134 /* CUDARuntime.framework in Frameworks */,
+				OBJ_135 /* CuBLAS.framework in Frameworks */,
+				OBJ_136 /* NVRTC.framework in Frameworks */,
+				OBJ_137 /* CuDNN.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_62 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_63 /* CUDADriver.framework in Frameworks */,
+				OBJ_64 /* CUDARuntime.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_83 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_97 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_98 /* CUDADriver.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		OBJ_14 /* CUDADriver */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_15 /* CHandleCarrier.swift */,
+				OBJ_16 /* Context.swift */,
+				OBJ_17 /* Device.swift */,
+				OBJ_18 /* Driver.swift */,
+				OBJ_19 /* Error.swift */,
+				OBJ_20 /* Function.swift */,
+				OBJ_21 /* Memory.swift */,
+				OBJ_22 /* Module.swift */,
+				OBJ_23 /* PTX.swift */,
+				OBJ_24 /* Stream.swift */,
+			);
+			name = CUDADriver;
+			path = "Packages/CUDA-1.0.0/Sources/CUDADriver";
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_25 /* CUDARuntime */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_26 /* Array.swift */,
+				OBJ_27 /* Buffer.swift */,
+				OBJ_28 /* Device.swift */,
+				OBJ_29 /* DeviceAddressible.swift */,
+				OBJ_30 /* Error.swift */,
+				OBJ_31 /* Memory.swift */,
+				OBJ_32 /* Module.swift */,
+				OBJ_33 /* Stream.swift */,
+				OBJ_34 /* Value.swift */,
+			);
+			name = CUDARuntime;
+			path = "Packages/CUDA-1.0.0/Sources/CUDARuntime";
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_35 /* NVRTC */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_36 /* Compiler.swift */,
+				OBJ_37 /* Error.swift */,
+				OBJ_38 /* Option.swift */,
+			);
+			name = NVRTC;
+			path = "Packages/CUDA-1.0.0/Sources/NVRTC";
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_39 /* CuDNN */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_40 /* Tensor.swift */,
+				29F5F5E61DC5E05A003B5C8B /* Types.swift */,
+				29F5F5E41DC5DD8B003B5C8B /* Error.swift */,
+			);
+			name = CuDNN;
+			path = Sources;
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_41 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_42 /* CuDNNTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		OBJ_42 /* CuDNNTests */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_43 /* CuDNNTests.swift */,
+			);
+			name = CuDNNTests;
+			path = Tests/CuDNNTests;
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_45 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_46 /* CuBLAS.framework */,
+				OBJ_47 /* CUDADriver.framework */,
+				OBJ_48 /* CUDARuntime.framework */,
+				OBJ_49 /* NVRTC.framework */,
+				OBJ_50 /* CuDNN.framework */,
+				OBJ_51 /* CuDNNTests.xctest */,
+			);
+			name = Products;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		OBJ_5 /*  */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_6 /* Package.swift */,
+				OBJ_7 /* Sources */,
+				OBJ_41 /* Tests */,
+				OBJ_44 /* Build */,
+				OBJ_45 /* Products */,
+			);
+			name = "";
+			sourceTree = "<group>";
+		};
+		OBJ_7 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_8 /* CuBLAS */,
+				OBJ_14 /* CUDADriver */,
+				OBJ_25 /* CUDARuntime */,
+				OBJ_35 /* NVRTC */,
+				OBJ_39 /* CuDNN */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		OBJ_8 /* CuBLAS */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_9 /* BLAS.swift */,
+				OBJ_10 /* Error.swift */,
+				OBJ_11 /* Level1.swift */,
+				OBJ_12 /* Level2.swift */,
+				OBJ_13 /* MatrixType.swift */,
+			);
+			name = CuBLAS;
+			path = "Packages/CUDA-1.0.0/Sources/CuBLAS";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		OBJ_100 /* NVRTC */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_101 /* Build configuration list for PBXNativeTarget "NVRTC" */;
+			buildPhases = (
+				OBJ_104 /* Sources */,
+				OBJ_108 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_110 /* PBXTargetDependency */,
+			);
+			name = NVRTC;
+			productName = NVRTC;
+			productReference = OBJ_49 /* NVRTC.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		OBJ_111 /* CuDNN */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_112 /* Build configuration list for PBXNativeTarget "CuDNN" */;
+			buildPhases = (
+				OBJ_115 /* Sources */,
+				OBJ_117 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_122 /* PBXTargetDependency */,
+				OBJ_123 /* PBXTargetDependency */,
+				OBJ_124 /* PBXTargetDependency */,
+				OBJ_125 /* PBXTargetDependency */,
+			);
+			name = CuDNN;
+			productName = CuDNN;
+			productReference = OBJ_50 /* CuDNN.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		OBJ_126 /* CuDNNTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_127 /* Build configuration list for PBXNativeTarget "CuDNNTests" */;
+			buildPhases = (
+				OBJ_130 /* Sources */,
+				OBJ_132 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_138 /* PBXTargetDependency */,
+				OBJ_139 /* PBXTargetDependency */,
+				OBJ_140 /* PBXTargetDependency */,
+				OBJ_141 /* PBXTargetDependency */,
+				OBJ_142 /* PBXTargetDependency */,
+			);
+			name = CuDNNTests;
+			productName = CuDNNTests;
+			productReference = OBJ_51 /* CuDNNTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		OBJ_52 /* CuBLAS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_53 /* Build configuration list for PBXNativeTarget "CuBLAS" */;
+			buildPhases = (
+				OBJ_56 /* Sources */,
+				OBJ_62 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_65 /* PBXTargetDependency */,
+				OBJ_67 /* PBXTargetDependency */,
+			);
+			name = CuBLAS;
+			productName = CuBLAS;
+			productReference = OBJ_46 /* CuBLAS.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		OBJ_66 /* CUDADriver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_69 /* Build configuration list for PBXNativeTarget "CUDADriver" */;
+			buildPhases = (
+				OBJ_72 /* Sources */,
+				OBJ_83 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CUDADriver;
+			productName = CUDADriver;
+			productReference = OBJ_47 /* CUDADriver.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		OBJ_68 /* CUDARuntime */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_84 /* Build configuration list for PBXNativeTarget "CUDARuntime" */;
+			buildPhases = (
+				OBJ_87 /* Sources */,
+				OBJ_97 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_99 /* PBXTargetDependency */,
+			);
+			name = CUDARuntime;
+			productName = CUDARuntime;
+			productReference = OBJ_48 /* CUDARuntime.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		OBJ_1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 9999;
+			};
+			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "CuDNN" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = OBJ_5 /*  */;
+			productRefGroup = OBJ_45 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				OBJ_52 /* CuBLAS */,
+				OBJ_66 /* CUDADriver */,
+				OBJ_68 /* CUDARuntime */,
+				OBJ_100 /* NVRTC */,
+				OBJ_111 /* CuDNN */,
+				OBJ_126 /* CuDNNTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		OBJ_104 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_105 /* Compiler.swift in Sources */,
+				OBJ_106 /* Error.swift in Sources */,
+				OBJ_107 /* Option.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_115 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				29F5F5E71DC5E05A003B5C8B /* Types.swift in Sources */,
+				29F5F5E51DC5DD8B003B5C8B /* Error.swift in Sources */,
+				OBJ_116 /* Tensor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_130 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_131 /* CuDNNTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_56 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_57 /* BLAS.swift in Sources */,
+				OBJ_58 /* Error.swift in Sources */,
+				OBJ_59 /* Level1.swift in Sources */,
+				OBJ_60 /* Level2.swift in Sources */,
+				OBJ_61 /* MatrixType.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_72 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_73 /* CHandleCarrier.swift in Sources */,
+				OBJ_74 /* Context.swift in Sources */,
+				OBJ_75 /* Device.swift in Sources */,
+				OBJ_76 /* Driver.swift in Sources */,
+				OBJ_77 /* Error.swift in Sources */,
+				OBJ_78 /* Function.swift in Sources */,
+				OBJ_79 /* Memory.swift in Sources */,
+				OBJ_80 /* Module.swift in Sources */,
+				OBJ_81 /* PTX.swift in Sources */,
+				OBJ_82 /* Stream.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_88 /* Array.swift in Sources */,
+				OBJ_89 /* Buffer.swift in Sources */,
+				OBJ_90 /* Device.swift in Sources */,
+				OBJ_91 /* DeviceAddressible.swift in Sources */,
+				OBJ_92 /* Error.swift in Sources */,
+				OBJ_93 /* Memory.swift in Sources */,
+				OBJ_94 /* Module.swift in Sources */,
+				OBJ_95 /* Stream.swift in Sources */,
+				OBJ_96 /* Value.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		OBJ_110 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_66 /* CUDADriver */;
+			targetProxy = 29F5F5DA1DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_122 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_66 /* CUDADriver */;
+			targetProxy = 29F5F5DB1DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_123 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_68 /* CUDARuntime */;
+			targetProxy = 29F5F5DC1DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_124 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_52 /* CuBLAS */;
+			targetProxy = 29F5F5DD1DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_125 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_100 /* NVRTC */;
+			targetProxy = 29F5F5DE1DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_138 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_66 /* CUDADriver */;
+			targetProxy = 29F5F5DF1DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_139 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_68 /* CUDARuntime */;
+			targetProxy = 29F5F5E01DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_140 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_52 /* CuBLAS */;
+			targetProxy = 29F5F5E11DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_141 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_100 /* NVRTC */;
+			targetProxy = 29F5F5E21DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_142 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_111 /* CuDNN */;
+			targetProxy = 29F5F5E31DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_65 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_66 /* CUDADriver */;
+			targetProxy = 29F5F5D71DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_67 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_68 /* CUDARuntime */;
+			targetProxy = 29F5F5D81DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+		OBJ_99 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_66 /* CUDADriver */;
+			targetProxy = 29F5F5D91DC5DCBE003B5C8B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		OBJ_102 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/NVRTC_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = NVRTC;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = NVRTC;
+			};
+			name = Debug;
+		};
+		OBJ_103 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/NVRTC_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = NVRTC;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = NVRTC;
+			};
+			name = Release;
+		};
+		OBJ_113 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CuDNN_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CuDNN;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CuDNN;
+			};
+			name = Debug;
+		};
+		OBJ_114 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CuDNN_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CuDNN;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CuDNN;
+			};
+			name = Release;
+		};
+		OBJ_128 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CuDNNTests_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
+				LIBRARY_SEARCH_PATHS = /usr/local/cuda/lib;
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CuDNNTests;
+			};
+			name = Debug;
+		};
+		OBJ_129 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CuDNNTests_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
+				LIBRARY_SEARCH_PATHS = /usr/local/cuda/lib;
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CuDNNTests;
+			};
+			name = Release;
+		};
+		OBJ_3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_NS_ASSERTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LIBRARY_SEARCH_PATHS = /usr/local/cuda/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_SWIFT_FLAGS = "-DXcode";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				USE_HEADERMAP = NO;
+			};
+			name = Debug;
+		};
+		OBJ_4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GCC_OPTIMIZATION_LEVEL = s;
+				LIBRARY_SEARCH_PATHS = /usr/local/cuda/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_SWIFT_FLAGS = "-DXcode";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				USE_HEADERMAP = NO;
+			};
+			name = Release;
+		};
+		OBJ_54 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CuBLAS_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CuBLAS;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CuBLAS;
+			};
+			name = Debug;
+		};
+		OBJ_55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CuBLAS_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CuBLAS;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CuBLAS;
+			};
+			name = Release;
+		};
+		OBJ_70 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CUDADriver_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CUDADriver;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CUDADriver;
+			};
+			name = Debug;
+		};
+		OBJ_71 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CUDADriver_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CUDADriver;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CUDADriver;
+			};
+			name = Release;
+		};
+		OBJ_85 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CUDARuntime_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CUDARuntime;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CUDARuntime;
+			};
+			name = Debug;
+		};
+		OBJ_86 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				INFOPLIST_FILE = CuDNN.xcodeproj/CUDARuntime_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = CUDARuntime;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
+				SWIFT_VERSION = 3.0;
+				TARGET_NAME = CUDARuntime;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		OBJ_101 /* Build configuration list for PBXNativeTarget "NVRTC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_102 /* Debug */,
+				OBJ_103 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_112 /* Build configuration list for PBXNativeTarget "CuDNN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_113 /* Debug */,
+				OBJ_114 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_127 /* Build configuration list for PBXNativeTarget "CuDNNTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_128 /* Debug */,
+				OBJ_129 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_2 /* Build configuration list for PBXProject "CuDNN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_3 /* Debug */,
+				OBJ_4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_53 /* Build configuration list for PBXNativeTarget "CuBLAS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_54 /* Debug */,
+				OBJ_55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_69 /* Build configuration list for PBXNativeTarget "CUDADriver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_70 /* Debug */,
+				OBJ_71 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_84 /* Build configuration list for PBXNativeTarget "CUDARuntime" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_85 /* Debug */,
+				OBJ_86 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = OBJ_1 /* Project object */;
+}
