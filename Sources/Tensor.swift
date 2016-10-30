@@ -9,7 +9,7 @@
 import CCuDNN
 import CUDARuntime
 
-public struct Shape : ExpressibleByArrayLiteral {
+public struct TensorShape : ExpressibleByArrayLiteral {
 
     public var dimensions: [Int]
     public var strides: [Int]
@@ -42,15 +42,19 @@ public struct Shape : ExpressibleByArrayLiteral {
         return dimensions.count
     }
 
+    public var contiguousSize: Int {
+        return dimensions.reduce(1, *)
+    }
+
 }
 
-public class TensorDescriptor<Element : TensorDataProtocol> {
+final class TensorDescriptor<Element : TensorDataProtocol> {
 
     let handle: cudnnTensorDescriptor_t
 
     var rankRequested: Int
 
-    public init(shape: Shape) {
+    init(shape: TensorShape) {
         var desc: cudnnTensorDescriptor_t?
         !!cudnnCreateTensorDescriptor(&desc)
         handle = desc!
@@ -74,12 +78,12 @@ public class TensorDescriptor<Element : TensorDataProtocol> {
         !!cudnnDestroyTensorDescriptor(handle)
     }
 
-    public var shape: Shape {
+    var shape: TensorShape {
         var rank: Int32 = 0
         var dataType = cudnnDataType_t(0)
         var dimensions = Array<Int32>(repeating: 1, count: rankRequested)
         var strides = dimensions
-        cudnnGetTensorNdDescriptor(
+        !!cudnnGetTensorNdDescriptor(
             handle,
             Int32(rankRequested),
             &dataType,
@@ -87,7 +91,45 @@ public class TensorDescriptor<Element : TensorDataProtocol> {
             &dimensions,
             &strides
         )
-        return Shape(dimensions: dimensions.map{Int($0)}, strides: strides.map{Int($0)})
+        return TensorShape(dimensions: dimensions.map{Int($0)}, strides: strides.map{Int($0)})
     }
 
 }
+
+public struct Tensor<Element : TensorDataProtocol> {
+
+    let descriptor: TensorDescriptor<Element>
+
+    public let shape: TensorShape
+    
+    private var storage: DeviceArray<Element>
+
+
+    public init(shape: TensorShape, storage: DeviceArray<Element>) {
+        self.descriptor = TensorDescriptor(shape: shape)
+        self.storage = storage
+        self.shape = shape
+    }
+
+    public init(shape: TensorShape, repeating repeatedValue: Element) {
+        descriptor = TensorDescriptor(shape: shape)
+        storage = DeviceArray(repeating: repeatedValue, count: shape.contiguousSize)
+        self.shape = shape
+    }
+
+    public init(shape: TensorShape) {
+        descriptor = TensorDescriptor(shape: shape)
+        storage = DeviceArray(capacity: shape.contiguousSize)
+        self.shape = shape
+    }
+
+    public subscript(indices: Int...) -> DeviceValue<Element> {
+        /// Row-major order addressing
+        let index = indices.enumerated().reduce(0, { acc, next in
+            next.element * (next.offset..<shape.rank).reduce(0, { $0 + shape[$1] })
+        })
+        return storage[index]
+    }
+
+}
+
