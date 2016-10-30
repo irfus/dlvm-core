@@ -20,6 +20,8 @@ class CuDNNTests: XCTestCase {
 
     static var allTests : [(String, (CuDNNTests) -> () throws -> Void)] {
         return [
+            ("testTensorDescriptor", testTensorDescriptor),
+            ("testTensor", testTensor)
         ]
     }
 }
