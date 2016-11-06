@@ -7,12 +7,13 @@
 //
 
 import CCuDNN
-import CUDARuntime
+import Warp
 
 public struct TensorShape : ExpressibleByArrayLiteral {
 
     public var dimensions: [Int]
-    public var strides: [Int]
+
+    var strides: [Int]
 
     public init(rank: Int) {
         dimensions = Array(repeating: 1, count: rank)
@@ -104,7 +105,6 @@ public struct Tensor<Element : TensorDataProtocol> {
     
     private var storage: DeviceArray<Element>
 
-
     public init(shape: TensorShape, storage: DeviceArray<Element>) {
         self.descriptor = TensorDescriptor(shape: shape)
         self.storage = storage
@@ -124,6 +124,9 @@ public struct Tensor<Element : TensorDataProtocol> {
     }
 
     public subscript(indices: Int...) -> DeviceValue<Element> {
+        guard indices.count < shape.rank else {
+            fatalError("Indices out of tensor dimensions")
+        }
         /// Row-major order addressing
         let index = indices.enumerated().reduce(0, { acc, next in
             next.element * (next.offset..<shape.rank).reduce(0, { $0 + shape[$1] })
