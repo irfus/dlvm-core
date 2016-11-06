@@ -124,7 +124,7 @@ public struct Tensor<Element : TensorDataProtocol> {
     }
 
     public subscript(indices: Int...) -> DeviceValue<Element> {
-        guard indices.count < shape.rank else {
+        guard indices.count <= shape.rank else {
             fatalError("Indices out of tensor dimensions")
         }
         /// Row-major order addressing
