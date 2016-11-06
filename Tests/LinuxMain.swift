@@ -1,6 +1,6 @@
 import XCTest
-@testable import CuDNNTests
+@testable import LLNMTests
 
 XCTMain([
-     testCase(CuDNNTests.allTests),
+     testCase(LLNMTests.allTests),
 ])
