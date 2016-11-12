@@ -7,6 +7,8 @@
 //
 
 import CCuDNN
+import CuBLAS
+import Warp
 
 public enum TensorDataType : UInt32 {
     case float  = 0
@@ -22,18 +24,25 @@ public enum TensorDataType : UInt32 {
     }
 }
 
-public protocol TensorDataProtocol {
+public protocol TensorDataProtocol : KernelDataProtocol, BLASDataProtocol {
     static var tensorDataType: TensorDataType { get }
+    static var zero: Self { get }
 }
 
 extension Double : TensorDataProtocol {
     public static var tensorDataType: TensorDataType {
         return .double
     }
+    public static var zero: Double {
+        return 0.0
+    }
 }
 
 extension Float : TensorDataProtocol {
     public static var tensorDataType: TensorDataType {
         return .float
+    }
+    public static var zero: Float {
+        return 0.0
     }
 }
