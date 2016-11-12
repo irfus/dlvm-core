@@ -12,7 +12,7 @@ import protocol CUDADriver.CHandleCarrier
 
 final class DNN : CHandleCarrier {
 
-    private static var instances: [Int : DNN] = [:]
+    private static var instances: [DNN?] = []
 
     class func global(on device: Device) -> DNN {
         if let dnn = instances[device.index] {
