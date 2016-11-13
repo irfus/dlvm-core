@@ -18,10 +18,22 @@ class LLNMTests: XCTestCase {
         XCTAssertEqual(tensor[0, 1, 2, 3, 4, 5, 6, 7].value, 0)
     }
 
+    func testBuildTape() {
+        let x = Expression<Float>.tensor(shape: [1, 2], name: "x")
+        let W1 = Expression<Float>.tensor(shape: [1, 2], name: "W1")
+        let b = Expression<Float>.tensor(shape: [1, 2], name: "b1")
+        let l1 = tanh(W1 • x + b)
+        let graph = ExpressionGraph(expression: l1)
+        for assn in graph.tape {
+            print(assn)
+        }
+    }
+
     static var allTests : [(String, (LLNMTests) -> () throws -> Void)] {
         return [
             ("testTensorDescriptor", testTensorDescriptor),
-            ("testTensor", testTensor)
+            ("testTensor", testTensor),
+            ("testBuildTape", testBuildTape)
         ]
     }
 }
