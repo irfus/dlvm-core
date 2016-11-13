@@ -14,13 +14,10 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 
     public var dimensions: [Int]
 
-    var strides: [Int]
-
     /// Initialize with rank, and set the size of each dimension to 1.
     /// - parameter rank: rank of the tensor
     public init(rank: Int) {
         dimensions = Array(repeating: 1, count: rank)
-        strides = dimensions
     }
 
     /// Initialize with sizes of dimensions. The rank of the tensor
@@ -28,15 +25,13 @@ public struct TensorShape : ExpressibleByArrayLiteral {
     /// - parameter dimensions: sizes of dimensions
     public init(dimensions: [Int]) {
         self.dimensions = dimensions
-        strides = Array(repeating: 1, count: dimensions.count)
     }
 
     /// Initialize with sizes of dimensions. The rank of the tensor
     /// is the length of the parameter list.
     /// - parameter dimensions: sizes of dimensions
     public init(_ dimensions: Int...) {
-        self.dimensions = dimensions
-        strides = Array(repeating: 1, count: dimensions.count)
+        self.init(dimensions: dimensions)
     }
 
     /// Initialize with an array literal, representing the sizes of
@@ -44,8 +39,7 @@ public struct TensorShape : ExpressibleByArrayLiteral {
     /// list.
     /// - parameter dimensions: sizes of dimensions
     public init(arrayLiteral elements: Int...) {
-        self.dimensions = elements
-        strides = Array(repeating: 1, count: elements.count)
+        self.init(dimensions: elements)
     }
 
     /// Get the size of i-th dimension.
@@ -66,21 +60,30 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 
 }
 
+extension TensorShape : Equatable {
+    public static func ==(lhs: TensorShape, rhs: TensorShape) -> Bool {
+        return lhs.dimensions == rhs.dimensions
+    }
+}
+
 /// cuDNN tensor descriptor
 /// - parameter Element: type of elements of the tensor (Float, Double, ...)
 final class TensorDescriptor<Element : TensorDataProtocol> {
 
     let handle: cudnnTensorDescriptor_t
 
-    var rankRequested: Int
+    /// For now, we assume that strides are always 1.
+    let strides: [Int32]
+
+    let rankRequested: Int
 
     init(shape: TensorShape) {
+        strides = Array(repeating: 1, count: shape.rank)
         var desc: cudnnTensorDescriptor_t?
         !!cudnnCreateTensorDescriptor(&desc)
         handle = desc!
         rankRequested = shape.rank
         let shapeComponents = shape.dimensions.map{Int32($0)}
-        let strides: [Int32] = Array(repeating: 1, count: shape.rank)
         shapeComponents.withUnsafeBufferPointer { componentsBuf in
             strides.withUnsafeBufferPointer { stridesBuf in
                 !!cudnnSetTensorNdDescriptor(
