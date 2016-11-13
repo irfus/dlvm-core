@@ -8,8 +8,10 @@
 
 import CCuDNN
 
+/// Symbolic expression of neural network
+/// - parameter DataType: type of elements of the tensor (Float, Double, ...)
 public indirect enum Expression<DataType : TensorDataProtocol> {
-    case tensor(shape: TensorShape, name: String?)
+    case variable(shape: TensorShape, name: String?)
     case log(Expression)
     case sin(Expression)
     case cos(Expression)
@@ -23,7 +25,7 @@ public indirect enum Expression<DataType : TensorDataProtocol> {
     case sub(Expression, Expression)
     case mul(Expression, Expression)
     case div(Expression, Expression)
-    case matMul(Expression, Expression)
+    case dot(Expression, Expression)
 }
 
 infix operator • : MultiplicationPrecedence
@@ -47,7 +49,7 @@ public extension Expression {
     }
 
     public static func •(lhs: Expression<DataType>, rhs: Expression<DataType>) -> Expression {
-        return .matMul(lhs, rhs)
+        return .dot(lhs, rhs)
     }
 
     public static prefix func -(rhs: Expression<DataType>) -> Expression {
@@ -56,7 +58,7 @@ public extension Expression {
 
 }
 
-/// Free functions that assist expression building in a mathematical sense
+/// Free functions that assist expression building in mathematical sense
 
 @inline(__always)
 public func log<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {

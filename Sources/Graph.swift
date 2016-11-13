@@ -6,12 +6,30 @@
 //
 //
 
+/// This file contains LLNM Intermediate Representation (computation graph).
+
+/// Computation graph of the neural network
+/// - parameter DataType: type of elements of the tensor (Float, Double, ...)
+public class Graph<DataType : TensorDataProtocol> {
+    /// Computation tape (SSA form)
+    var tape: [Assignment] = []
+    /// Tensor shapes for variables in the computation tape
+    var shapes: [TensorShape] = []
+    /// Root of the computation graph
+    let root: Expression<DataType>
+
+    /// Initialize from an expression
+    /// - parameter expression: Neural network expression
+    public init(expression: Expression<DataType>) {
+        root = expression
+        buildAssignmentForm(from: expression)
+    }
+}
+
 /// Assignment in SSA form
 struct Assignment {
     typealias Variable = String
-    
     enum Value {
-        case variable(Variable)
         case log(Variable)
         case sin(Variable)
         case cos(Variable)
@@ -25,7 +43,7 @@ struct Assignment {
         case sub(Variable, Variable)
         case mul(Variable, Variable)
         case div(Variable, Variable)
-        case matMul(Variable, Variable)
+        case dot(Variable, Variable)
     }
     let variable: Variable
     let value: Value
@@ -34,8 +52,7 @@ struct Assignment {
 extension Assignment.Value : Equatable {
     static func ==(lhs: Assignment.Value, rhs: Assignment.Value) -> Bool {
         switch (lhs, rhs) {
-        case let (.variable(l), .variable(r)),
-             let (.log(l), .log(r)),
+        case let (.log(l), .log(r)),
              let (.sin(l), .sin(r)),
              let (.cos(l), .cos(r)),
              let (.tan(l), .tan(r)),
@@ -49,7 +66,7 @@ extension Assignment.Value : Equatable {
              let (sub(ll, lr), sub(rl, rr)),
              let (mul(ll, lr), mul(rl, rr)),
              let (div(ll, lr), div(rl, rr)),
-             let (matMul(ll, lr), matMul(rl, rr)):
+             let (dot(ll, lr), dot(rl, rr)):
             return ll == rl && lr == rr
         default: return false
         }
@@ -62,26 +79,17 @@ extension Assignment : Equatable {
     }
 }
 
-public class ExpressionGraph<DataType : TensorDataProtocol> {
-
-    var tape: [Assignment] = []
-    var shapes: [TensorShape] = []
-    let root: Expression<DataType>
-
-    public init(expression: Expression<DataType>) {
-        self.root = expression
-        buildAssignmentForm(from: expression)
-    }
-
-}
-
 infix operator <-
 fileprivate func <-(lhs: Assignment.Variable, rhs: Assignment.Value) -> Assignment {
     return Assignment(variable: lhs, value: rhs)
 }
 
-extension ExpressionGraph {
+/// Assignment form builder
+fileprivate extension Graph {
 
+    /// Build assignment form a neural network expression.
+    /// - note: To be called by the initializer.
+    /// - parameter expression: neural network expression
     func buildAssignmentForm(from expression: Expression<DataType>) {
         var index: Int = 0
 
@@ -94,7 +102,7 @@ extension ExpressionGraph {
         func build(_ expression: Expression<DataType>) -> Assignment.Variable {
             let retVar: Assignment.Variable
             switch expression {
-            case let .tensor(shape, name: name):
+            case let .variable(shape, name: name):
                 return name ?? newVar()
 
             case let .log(expr):
@@ -125,12 +133,12 @@ extension ExpressionGraph {
             case let .sigmoid(expr):
                 let op = build(expr)
                 retVar = newVar()
-                tape.append(retVar <- .exp(op))
+                tape.append(retVar <- .sigmoid(op))
 
             case let .relu(expr):
                 let op = build(expr)
                 retVar = newVar()
-                tape.append(retVar <- .exp(op))
+                tape.append(retVar <- .relu(op))
 
             case let .tanh(expr):
                 let op = build(expr)
@@ -162,10 +170,10 @@ extension ExpressionGraph {
                 retVar = newVar()
                 tape.append(retVar <- .div(lop, rop))
 
-            case let .matMul(lhs, rhs):
+            case let .dot(lhs, rhs):
                 let lop = build(lhs), rop = build(rhs)
                 retVar = newVar()
-                tape.append(retVar <- .matMul(lop, rop))
+                tape.append(retVar <- .dot(lop, rop))
             }
             return retVar
         }

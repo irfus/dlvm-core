@@ -10,6 +10,7 @@ import CCuDNN
 import CuBLAS
 import Warp
 
+/// Tensor data type
 public enum TensorDataType : UInt32 {
     case float  = 0
     case double = 1
@@ -24,6 +25,7 @@ public enum TensorDataType : UInt32 {
     }
 }
 
+/// Protocol that specifies requirements for the type of elements of the tensor
 public protocol TensorDataProtocol : KernelDataProtocol, BLASDataProtocol {
     static var tensorDataType: TensorDataType { get }
     static var zero: Self { get }
