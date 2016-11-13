@@ -28,7 +28,7 @@ final class DNN : CHandleCarrier {
 
     private init() {
         var handle: Handle?
-        cudnnCreate(&handle)
+        !!cudnnCreate(&handle)
         self.handle = handle!
         self.device = Device.current
     }
