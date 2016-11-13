@@ -10,6 +10,7 @@ import CCuDNN
 import CUDARuntime
 import protocol CUDADriver.CHandleCarrier
 
+/// cuDNN Wrapper
 final class DNN : CHandleCarrier {
 
     private static var instances: [DNN?] = []

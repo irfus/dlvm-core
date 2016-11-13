@@ -8,7 +8,7 @@
 
 import CCuDNN
 
-public enum DNNError : UInt32, Error {
+enum DNNError : UInt32, Error {
     case notInitialized   = 1
     case allocationFailed = 2
     case badParameter     = 3
