@@ -22,7 +22,12 @@ class LLNMTests: XCTestCase {
         let b1 = Expression.variable(shape: [2, 1], name: "b1")
         let W2 = Expression.variable(shape: [2, 4], name: "W2")
         let b2 = Expression.variable(shape: [4, 1], name: "b2")
-        let graph = Graph<Float>(expression: softmax(W2 • tanh(W1 • x + b1) + b2))
+
+        let l1 = tanh(W1 • x + b1) <- "l1"
+        let l2 = softmax(W2 • l1 + b2) <- "output"
+
+        let graph = Graph<Float>(expression: l2)
+
         XCTAssertEqual(graph.tape, [
             Assignment(variable: "%v1", value: .dot("W1", "x")),
             Assignment(variable: "%v2", value: .add("%v1", "b1")),

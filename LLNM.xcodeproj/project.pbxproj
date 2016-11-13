@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		29B589781DD5C45A0069D423 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29B589771DD5C45A0069D423 /* Graph.swift */; };
+		29E6565B1DD8559400FDA383 /* AD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E6565A1DD8559400FDA383 /* AD.swift */; };
+		29E6565D1DD8572700FDA383 /* Shape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E6565C1DD8572700FDA383 /* Shape.swift */; };
 		29F25BDC1DD8507C0065D194 /* PrettyPrint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F25BDB1DD8507C0065D194 /* PrettyPrint.swift */; };
 		OBJ_100 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* Device.swift */; };
 		OBJ_101 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* Error.swift */; };
@@ -199,6 +201,8 @@
 
 /* Begin PBXFileReference section */
 		29B589771DD5C45A0069D423 /* Graph.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
+		29E6565A1DD8559400FDA383 /* AD.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AD.swift; sourceTree = "<group>"; };
+		29E6565C1DD8572700FDA383 /* Shape.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Shape.swift; sourceTree = "<group>"; };
 		29F25BDB1DD8507C0065D194 /* PrettyPrint.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrettyPrint.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Level1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level1.swift; sourceTree = "<group>"; };
@@ -388,8 +392,10 @@
 				OBJ_48 /* Error.swift */,
 				OBJ_49 /* Expression.swift */,
 				29B589771DD5C45A0069D423 /* Graph.swift */,
+				29E6565A1DD8559400FDA383 /* AD.swift */,
 				29F25BDB1DD8507C0065D194 /* PrettyPrint.swift */,
 				OBJ_50 /* Tensor.swift */,
+				29E6565C1DD8572700FDA383 /* Shape.swift */,
 				OBJ_51 /* Types.swift */,
 			);
 			name = LLNM;
@@ -661,8 +667,10 @@
 			files = (
 				OBJ_145 /* Algorithm.swift in Sources */,
 				29F25BDC1DD8507C0065D194 /* PrettyPrint.swift in Sources */,
+				29E6565B1DD8559400FDA383 /* AD.swift in Sources */,
 				OBJ_146 /* DNN.swift in Sources */,
 				OBJ_147 /* Error.swift in Sources */,
+				29E6565D1DD8572700FDA383 /* Shape.swift in Sources */,
 				29B589781DD5C45A0069D423 /* Graph.swift in Sources */,
 				OBJ_148 /* Expression.swift in Sources */,
 				OBJ_149 /* Tensor.swift in Sources */,

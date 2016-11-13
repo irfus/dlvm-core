@@ -17,7 +17,9 @@ public class Graph<DataType : TensorDataProtocol> {
     /// Tensor shapes for variables in the computation tape
     var shapes: [TensorShape] = []
     /// Tensors
-    var tensor: [Tensor<DataType>] = []
+    lazy var tensors: [Tensor<DataType>] = {
+        self.shapes.map { Tensor(shape: $0) }
+    }()
     /// Root of the computation graph
     let root: Expression
 
@@ -175,25 +177,25 @@ fileprivate extension Graph {
                 assignment = newVariable <- .negative(op)
 
             case let .add(lhs, rhs):
-                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                let (lop, lshape) = build(lhs), (rop, _) = build(rhs)
                 newVariable = newVar()
                 newShape = lshape
                 assignment = newVariable <- .add(lop, rop)
 
             case let .sub(lhs, rhs):
-                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                let (lop, lshape) = build(lhs), (rop, _) = build(rhs)
                 newVariable = newVar()
                 newShape = lshape
                 assignment = newVariable <- .sub(lop, rop)
 
             case let .mul(lhs, rhs):
-                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                let (lop, lshape) = build(lhs), (rop, _) = build(rhs)
                 newVariable = newVar()
                 newShape = lshape
                 assignment = newVariable <- .mul(lop, rop)
 
             case let .div(lhs, rhs):
-                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                let (lop, lshape) = build(lhs), (rop, _) = build(rhs)
                 newVariable = newVar()
                 newShape = lshape
                 assignment = newVariable <- .div(lop, rop)
@@ -201,8 +203,13 @@ fileprivate extension Graph {
             case let .dot(lhs, rhs):
                 let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
                 newVariable = newVar()
+                // TODO: Shape calculation
                 newShape = lshape
                 assignment = newVariable <- .dot(lop, rop)
+                
+            case let .layer(expr, name: name):
+                return build(expr)
+
             }
             tape.append(assignment)
             shapes.append(newShape)
