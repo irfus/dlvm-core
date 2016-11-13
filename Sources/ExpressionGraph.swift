@@ -29,10 +29,36 @@ struct Assignment {
     }
     let variable: Variable
     let value: Value
+}
 
-    init(_ id: Variable, _ rValue: Value) {
-        self.variable = id
-        self.value = rValue
+extension Assignment.Value : Equatable {
+    static func ==(lhs: Assignment.Value, rhs: Assignment.Value) -> Bool {
+        switch (lhs, rhs) {
+        case let (.variable(l), .variable(r)),
+             let (.log(l), .log(r)),
+             let (.sin(l), .sin(r)),
+             let (.cos(l), .cos(r)),
+             let (.tan(l), .tan(r)),
+             let (.exp(l), .exp(r)),
+             let (.sigmoid(l), .sigmoid(r)),
+             let (.relu(l), .relu(r)),
+             let (.tanh(l), .tanh(r)),
+             let (.negative(l), .negative(r)):
+            return l == r
+        case let (add(ll, lr), add(rl, rr)),
+             let (sub(ll, lr), sub(rl, rr)),
+             let (mul(ll, lr), mul(rl, rr)),
+             let (div(ll, lr), div(rl, rr)),
+             let (matMul(ll, lr), matMul(rl, rr)):
+            return ll == rl && lr == rr
+        default: return false
+        }
+    }
+}
+
+extension Assignment : Equatable {
+    static func ==(lhs: Assignment, rhs: Assignment) -> Bool {
+        return lhs.value == rhs.value && lhs.variable == rhs.variable
     }
 }
 
@@ -51,7 +77,7 @@ public class ExpressionGraph<DataType : TensorDataProtocol> {
 
 infix operator <-
 fileprivate func <-(lhs: Assignment.Variable, rhs: Assignment.Value) -> Assignment {
-    return Assignment(lhs, rhs)
+    return Assignment(variable: lhs, value: rhs)
 }
 
 extension ExpressionGraph {
