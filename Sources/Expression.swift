@@ -6,8 +6,6 @@
 //
 //
 
-import CCuDNN
-
 /// Symbolic expression of neural network
 /// - parameter DataType: type of elements of the tensor (Float, Double, ...)
 public indirect enum Expression {
@@ -27,9 +25,11 @@ public indirect enum Expression {
     case mul(Expression, Expression)
     case div(Expression, Expression)
     case dot(Expression, Expression)
+    case layer(Expression, name: String)
 }
 
 infix operator • : MultiplicationPrecedence
+infix operator <-
 
 public extension Expression {
 
@@ -109,4 +109,9 @@ public func tanh(_ expression: Expression) -> Expression {
 @inline(__always)
 public func softmax(_ expression: Expression) -> Expression {
     return .softmax(expression)
+}
+
+@inline(__always)
+public func <-(lhs: Expression, rhs: String) -> Expression {
+    return .layer(lhs, name: rhs)
 }

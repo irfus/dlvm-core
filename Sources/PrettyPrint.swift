@@ -63,12 +63,13 @@ extension Expression : CustomStringConvertible {
         case let .mul(lexpr, rexpr): return "\(lexpr) * \(rexpr)"
         case let .div(lexpr, rexpr): return "\(lexpr) / \(rexpr)"
         case let .dot(lexpr, rexpr): return "\(lexpr) • \(rexpr)"
+        case let .layer(expr, name: name): return "\(name)=(\(expr))"
         }
     }
 }
 
 extension TensorShape : CustomStringConvertible {
     public var description: String {
-        return dimensions.lazy.map{$0.description}.joined(separator: "x")
+        return dimensions.lazy.map{$0.description}.joined(separator: "×")
     }
 }
