@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		29B589781DD5C45A0069D423 /* ExpressionGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29B589771DD5C45A0069D423 /* ExpressionGraph.swift */; };
 		OBJ_100 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* Device.swift */; };
 		OBJ_101 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* Error.swift */; };
 		OBJ_102 /* Function.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* Function.swift */; };
@@ -196,6 +197,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		29B589771DD5C45A0069D423 /* ExpressionGraph.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExpressionGraph.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Level1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level1.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Level2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2.swift; sourceTree = "<group>"; };
@@ -242,7 +244,7 @@
 		OBJ_60 /* NVRTC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NVRTC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_61 /* Warp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Warp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_62 /* LLNM.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LLNM.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_63 /* LLNMTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = LLNMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_63 /* LLNMTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = LLNMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_9 /* BLAS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLAS.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -383,6 +385,7 @@
 				OBJ_47 /* DNN.swift */,
 				OBJ_48 /* Error.swift */,
 				OBJ_49 /* Expression.swift */,
+				29B589771DD5C45A0069D423 /* ExpressionGraph.swift */,
 				OBJ_50 /* Tensor.swift */,
 				OBJ_51 /* Types.swift */,
 			);
@@ -390,7 +393,7 @@
 			path = Sources;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -399,7 +402,6 @@
 				OBJ_55 /* Build */,
 				OBJ_56 /* Products */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_52 /* Tests */ = {
@@ -607,7 +609,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_56 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -657,6 +659,7 @@
 				OBJ_145 /* Algorithm.swift in Sources */,
 				OBJ_146 /* DNN.swift in Sources */,
 				OBJ_147 /* Error.swift in Sources */,
+				29B589781DD5C45A0069D423 /* ExpressionGraph.swift in Sources */,
 				OBJ_148 /* Expression.swift in Sources */,
 				OBJ_149 /* Tensor.swift in Sources */,
 				OBJ_150 /* Types.swift in Sources */,
@@ -935,7 +938,7 @@
 				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
 				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
 				INFOPLIST_FILE = LLNM.xcodeproj/LLNMTests_Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				SUPPORTED_PLATFORMS = macosx;
@@ -952,7 +955,7 @@
 				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
 				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
 				INFOPLIST_FILE = LLNM.xcodeproj/LLNMTests_Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				SUPPORTED_PLATFORMS = macosx;
