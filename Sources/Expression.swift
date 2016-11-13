@@ -10,7 +10,7 @@ import CCuDNN
 
 /// Symbolic expression of neural network
 /// - parameter DataType: type of elements of the tensor (Float, Double, ...)
-public indirect enum Expression<DataType : TensorDataProtocol> {
+public indirect enum Expression {
     case variable(shape: TensorShape, name: String?)
     case log(Expression)
     case sin(Expression)
@@ -33,27 +33,33 @@ infix operator • : MultiplicationPrecedence
 
 public extension Expression {
 
-    public static func +(lhs: Expression<DataType>, rhs: Expression<DataType>) -> Expression {
+    @inline(__always)
+    public static func +(lhs: Expression, rhs: Expression) -> Expression {
         return .add(lhs, rhs)
     }
 
-    public static func -(lhs: Expression<DataType>, rhs: Expression<DataType>) -> Expression {
+    @inline(__always)
+    public static func -(lhs: Expression, rhs: Expression) -> Expression {
         return .sub(lhs, rhs)
     }
 
-    public static func *(lhs: Expression<DataType>, rhs: Expression<DataType>) -> Expression {
+    @inline(__always)
+    public static func *(lhs: Expression, rhs: Expression) -> Expression {
         return .mul(lhs, rhs)
     }
 
-    public static func /(lhs: Expression<DataType>, rhs: Expression<DataType>) -> Expression {
+    @inline(__always)
+    public static func /(lhs: Expression, rhs: Expression) -> Expression {
         return .div(lhs, rhs)
     }
 
-    public static func •(lhs: Expression<DataType>, rhs: Expression<DataType>) -> Expression {
+    @inline(__always)
+    public static func •(lhs: Expression, rhs: Expression) -> Expression {
         return .dot(lhs, rhs)
     }
 
-    public static prefix func -(rhs: Expression<DataType>) -> Expression {
+    @inline(__always)
+    public static prefix func -(rhs: Expression) -> Expression {
         return .negative(rhs)
     }
 
@@ -62,45 +68,45 @@ public extension Expression {
 /// Free functions that assist expression building in mathematical sense
 
 @inline(__always)
-public func log<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func log(_ expression: Expression) -> Expression {
     return .log(expression)
 }
 
 @inline(__always)
-public func sin<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func sin(_ expression: Expression) -> Expression {
     return .sin(expression)
 }
 
 @inline(__always)
-public func cos<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func cos(_ expression: Expression) -> Expression {
     return .cos(expression)
 }
 
 @inline(__always)
-public func tan<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func tan(_ expression: Expression) -> Expression {
     return .tan(expression)
 }
 
 @inline(__always)
-public func exp<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func exp(_ expression: Expression) -> Expression {
     return .exp(expression)
 }
 @inline(__always)
-public func sigmoid<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func sigmoid(_ expression: Expression) -> Expression {
     return .sigmoid(expression)
 }
 
 @inline(__always)
-public func relu<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func relu(_ expression: Expression) -> Expression {
     return .relu(expression)
 }
 
 @inline(__always)
-public func tanh<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func tanh(_ expression: Expression) -> Expression {
     return .tanh(expression)
 }
 
 @inline(__always)
-public func softmax<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+public func softmax(_ expression: Expression) -> Expression {
     return .softmax(expression)
 }

@@ -1,5 +1,5 @@
 //
-//  ExpressionGraph.swift
+//  Graph.swift
 //  LLNM
 //
 //  Created by Richard Wei on 11/11/16.
@@ -7,6 +7,7 @@
 //
 
 /// This file contains LLNM Intermediate Representation (computation graph).
+/// We will use the acronym **LLNM IR**.
 
 /// Computation graph of the neural network
 /// - parameter DataType: type of elements of the tensor (Float, Double, ...)
@@ -15,14 +16,16 @@ public class Graph<DataType : TensorDataProtocol> {
     var tape: [Assignment] = []
     /// Tensor shapes for variables in the computation tape
     var shapes: [TensorShape] = []
+    /// Tensors
+    var tensor: [Tensor<DataType>] = []
     /// Root of the computation graph
-    let root: Expression<DataType>
+    let root: Expression
 
     /// Initialize from an expression
     /// - parameter expression: Neural network expression
-    public init(expression: Expression<DataType>) {
+    public init(expression: Expression) {
         root = expression
-        buildAssignmentForm(from: expression)
+        buildIR(from: expression)
     }
 }
 
@@ -82,6 +85,8 @@ extension Assignment : Equatable {
 }
 
 infix operator <-
+/// Shortcut constructor for Assignment
+@inline(__always)
 fileprivate func <-(lhs: Assignment.Variable, rhs: Assignment.Value) -> Assignment {
     return Assignment(variable: lhs, value: rhs)
 }
@@ -92,115 +97,119 @@ fileprivate extension Graph {
     /// Build assignment form a neural network expression.
     /// - note: To be called by the initializer.
     /// - parameter expression: neural network expression
-    func buildAssignmentForm(from expression: Expression<DataType>) {
+    func buildIR(from expression: Expression) {
         var index: Int = 0
 
         func newVar() -> Assignment.Variable {
             index += 1
-            return "v\(index)"
+            return "%v\(index)"
         }
 
         @discardableResult
-        func build(_ expression: Expression<DataType>) -> Assignment.Variable {
-            let retVar: Assignment.Variable
+        func build(_ expression: Expression) -> (Assignment.Variable, TensorShape) {
+            let newVariable: Assignment.Variable
+            let newShape: TensorShape
+            let assignment: Assignment
             switch expression {
             case let .variable(shape, name: name):
-                return name ?? newVar()
+                return (name ?? newVar(), shape)
 
             case let .log(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .log(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .log(op)
 
             case let .sin(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .sin(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .sin(op)
 
             case let .cos(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .cos(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .cos(op)
 
             case let .tan(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .tan(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .tan(op)
 
             case let .exp(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .exp(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .exp(op)
 
             case let .sigmoid(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .sigmoid(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .sigmoid(op)
 
             case let .relu(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .relu(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .relu(op)
 
             case let .tanh(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .tanh(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .tanh(op)
 
             case let .softmax(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .softmax(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .softmax(op)
 
             case let .negative(expr):
-                let op = build(expr)
-                retVar = newVar()
-                tape.append(retVar <- .negative(op))
+                let (op, shape) = build(expr)
+                newVariable = newVar()
+                newShape = shape
+                assignment = newVariable <- .negative(op)
 
             case let .add(lhs, rhs):
-                let lop = build(lhs), rop = build(rhs)
-                retVar = newVar()
-                tape.append(retVar <- .add(lop, rop))
+                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                newVariable = newVar()
+                newShape = lshape
+                assignment = newVariable <- .add(lop, rop)
 
             case let .sub(lhs, rhs):
-                let lop = build(lhs), rop = build(rhs)
-                retVar = newVar()
-                tape.append(retVar <- .sub(lop, rop))
+                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                newVariable = newVar()
+                newShape = lshape
+                assignment = newVariable <- .sub(lop, rop)
 
             case let .mul(lhs, rhs):
-                let lop = build(lhs), rop = build(rhs)
-                retVar = newVar()
-                tape.append(retVar <- .mul(lop, rop))
+                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                newVariable = newVar()
+                newShape = lshape
+                assignment = newVariable <- .mul(lop, rop)
 
             case let .div(lhs, rhs):
-                let lop = build(lhs), rop = build(rhs)
-                retVar = newVar()
-                tape.append(retVar <- .div(lop, rop))
+                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                newVariable = newVar()
+                newShape = lshape
+                assignment = newVariable <- .div(lop, rop)
 
             case let .dot(lhs, rhs):
-                let lop = build(lhs), rop = build(rhs)
-                retVar = newVar()
-                tape.append(retVar <- .dot(lop, rop))
+                let (lop, lshape) = build(lhs), (rop, rshape) = build(rhs)
+                newVariable = newVar()
+                newShape = lshape
+                assignment = newVariable <- .dot(lop, rop)
             }
-            return retVar
+            tape.append(assignment)
+            shapes.append(newShape)
+            return (newVariable, newShape)
         }
 
         build(expression)
-    }
-
-}
-
-extension Assignment : CustomStringConvertible {
-    var description: String {
-        return variable + " <- " + String(describing: value)
-    }
-}
-
-extension Graph : CustomStringConvertible {
-
-    public var description: String {
-        let tapeDesc = tape.lazy.map{$0.description}.joined(separator: "\n\t")
-        return "Expression:\t\(root)\nComputation Tape:\n\t\(tapeDesc)"
     }
 
 }
