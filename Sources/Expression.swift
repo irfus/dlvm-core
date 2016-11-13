@@ -8,13 +8,6 @@
 
 import CCuDNN
 
-public protocol Chainable {
-    associatedtype DataType
-    mutating func forward()
-    mutating func backward()
-    func evaluated() -> DataType
-}
-
 public indirect enum Expression<DataType : TensorDataProtocol> {
     case tensor(shape: TensorShape, name: String?)
     case log(Expression)
@@ -31,23 +24,6 @@ public indirect enum Expression<DataType : TensorDataProtocol> {
     case mul(Expression, Expression)
     case div(Expression, Expression)
     case matMul(Expression, Expression)
-}
-
-extension Expression : Chainable {
-
-    public mutating func forward() {
-        
-    }
-
-    public mutating func backward() {
-        
-    }
-
-    public func evaluated() -> DataType {
-        let ret: DataType! = nil
-        return ret
-    }
-
 }
 
 infix operator • : MultiplicationPrecedence

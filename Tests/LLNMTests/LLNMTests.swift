@@ -24,9 +24,11 @@ class LLNMTests: XCTestCase {
         let b = Expression<Float>.tensor(shape: [1, 2], name: "b1")
         let l1 = tanh(W1 • x + b)
         let graph = ExpressionGraph(expression: l1)
-        for assn in graph.tape {
-            print(assn)
-        }
+        XCTAssertEqual(graph.tape, [
+            Assignment(variable: "v1", value: .matMul("W1", "x")),
+            Assignment(variable: "v2", value: .add("v1", "b1")),
+            Assignment(variable: "v3", value: .tanh("v2"))
+        ])
     }
 
     static var allTests : [(String, (LLNMTests) -> () throws -> Void)] {
