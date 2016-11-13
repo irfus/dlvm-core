@@ -20,6 +20,7 @@ public indirect enum Expression<DataType : TensorDataProtocol> {
     case sigmoid(Expression)
     case relu(Expression)
     case tanh(Expression)
+    case softmax(Expression)
     case negative(Expression)
     case add(Expression, Expression)
     case sub(Expression, Expression)
@@ -97,4 +98,9 @@ public func relu<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expressi
 @inline(__always)
 public func tanh<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
     return .tanh(expression)
+}
+
+@inline(__always)
+public func softmax<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
+    return .softmax(expression)
 }

@@ -19,16 +19,22 @@ class LLNMTests: XCTestCase {
     }
 
     func testBuildTape() {
-        let x = Expression<Float>.variable(shape: [1, 2], name: "x")
-        let W1 = Expression<Float>.variable(shape: [2, 2], name: "W1")
-        let b = Expression<Float>.variable(shape: [1, 2], name: "b1")
-        let l1 = tanh(W1 • x + b)
-        let graph = Graph(expression: l1)
+        typealias Expr = Expression<Float>
+        let x = Expr.variable(shape: [2, 1], name: "x")
+        let W1 = Expr.variable(shape: [2, 2], name: "W1")
+        let b1 = Expr.variable(shape: [2, 1], name: "b1")
+        let W2 = Expr.variable(shape: [2, 4], name: "W2")
+        let b2 = Expr.variable(shape: [4, 1], name: "b2")
+        let graph = Graph(expression: softmax(W2 • tanh(W1 • x + b1) + b2))
         XCTAssertEqual(graph.tape, [
             Assignment(variable: "v1", value: .dot("W1", "x")),
             Assignment(variable: "v2", value: .add("v1", "b1")),
-            Assignment(variable: "v3", value: .tanh("v2"))
+            Assignment(variable: "v3", value: .tanh("v2")),
+            Assignment(variable: "v4", value: .dot("W2", "v3")),
+            Assignment(variable: "v5", value: .add("v4", "b2")),
+            Assignment(variable: "v6", value: .softmax("v5"))
         ])
+        print(graph)
     }
 
     static var allTests : [(String, (LLNMTests) -> () throws -> Void)] {

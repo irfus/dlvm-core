@@ -38,6 +38,7 @@ struct Assignment {
         case sigmoid(Variable)
         case relu(Variable)
         case tanh(Variable)
+        case softmax(Variable)
         case negative(Variable)
         case add(Variable, Variable)
         case sub(Variable, Variable)
@@ -60,6 +61,7 @@ extension Assignment.Value : Equatable {
              let (.sigmoid(l), .sigmoid(r)),
              let (.relu(l), .relu(r)),
              let (.tanh(l), .tanh(r)),
+             let (.softmax(l), .softmax(r)),
              let (.negative(l), .negative(r)):
             return l == r
         case let (add(ll, lr), add(rl, rr)),
@@ -145,6 +147,11 @@ fileprivate extension Graph {
                 retVar = newVar()
                 tape.append(retVar <- .tanh(op))
 
+            case let .softmax(expr):
+                let op = build(expr)
+                retVar = newVar()
+                tape.append(retVar <- .softmax(op))
+
             case let .negative(expr):
                 let op = build(expr)
                 retVar = newVar()
@@ -179,6 +186,21 @@ fileprivate extension Graph {
         }
 
         build(expression)
+    }
+
+}
+
+extension Assignment : CustomStringConvertible {
+    var description: String {
+        return variable + " <- " + String(describing: value)
+    }
+}
+
+extension Graph : CustomStringConvertible {
+
+    public var description: String {
+        let tapeDesc = tape.lazy.map{$0.description}.joined(separator: "\n\t")
+        return "Expression:\t\(root)\nComputation Tape:\n\t\(tapeDesc)"
     }
 
 }
