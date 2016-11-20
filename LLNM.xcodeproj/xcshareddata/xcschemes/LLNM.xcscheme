@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_64"
+               BlueprintIdentifier = "OBJ_69"
                BuildableName = "CuBLAS.framework"
                BlueprintName = "CuBLAS"
                ReferencedContainer = "container:LLNM.xcodeproj">
@@ -28,7 +28,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_78"
+               BlueprintIdentifier = "OBJ_84"
                BuildableName = "CUDADriver.framework"
                BlueprintName = "CUDADriver"
                ReferencedContainer = "container:LLNM.xcodeproj">
@@ -42,7 +42,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_80"
+               BlueprintIdentifier = "OBJ_86"
                BuildableName = "CUDARuntime.framework"
                BlueprintName = "CUDARuntime"
                ReferencedContainer = "container:LLNM.xcodeproj">
@@ -56,7 +56,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_108"
+               BlueprintIdentifier = "OBJ_114"
                BuildableName = "NVRTC.framework"
                BlueprintName = "NVRTC"
                ReferencedContainer = "container:LLNM.xcodeproj">
@@ -70,7 +70,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_119"
+               BlueprintIdentifier = "OBJ_125"
                BuildableName = "Warp.framework"
                BlueprintName = "Warp"
                ReferencedContainer = "container:LLNM.xcodeproj">
@@ -84,7 +84,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_140"
+               BlueprintIdentifier = "OBJ_148"
                BuildableName = "LLNM.framework"
                BlueprintName = "LLNM"
                ReferencedContainer = "container:LLNM.xcodeproj">
@@ -102,7 +102,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_162"
+               BlueprintIdentifier = "OBJ_174"
                BuildableName = "LLNMTests.xctest"
                BlueprintName = "LLNMTests"
                ReferencedContainer = "container:LLNM.xcodeproj">
@@ -125,7 +125,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "OBJ_64"
+            BlueprintIdentifier = "OBJ_69"
             BuildableName = "CuBLAS.framework"
             BlueprintName = "CuBLAS"
             ReferencedContainer = "container:LLNM.xcodeproj">

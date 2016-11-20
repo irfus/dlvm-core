@@ -20,15 +20,16 @@ public struct TensorShape : ExpressibleByArrayLiteral {
     /// Initialize with sizes of dimensions. The rank of the tensor
     /// is the length of the parameter list.
     /// - parameter dimensions: sizes of dimensions
-    public init(dimensions: [Int]) {
-        self.dimensions = dimensions
+    public init<C: Collection>(_ dimensions: C)
+        where C.Iterator.Element == Int {
+        self.dimensions = Array(dimensions)
     }
 
     /// Initialize with sizes of dimensions. The rank of the tensor
     /// is the length of the parameter list.
     /// - parameter dimensions: sizes of dimensions
     public init(_ dimensions: Int...) {
-        self.init(dimensions: dimensions)
+        self.init(dimensions)
     }
 
     /// Initialize with an array literal, representing the sizes of
@@ -36,7 +37,7 @@ public struct TensorShape : ExpressibleByArrayLiteral {
     /// list.
     /// - parameter dimensions: sizes of dimensions
     public init(arrayLiteral elements: Int...) {
-        self.init(dimensions: elements)
+        self.init(elements)
     }
 
     /// Get the size of i-th dimension.
