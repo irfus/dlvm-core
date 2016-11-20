@@ -57,9 +57,14 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
             &dimensions,
             &strides
         )
-        return TensorShape(dimensions: dimensions.map{Int($0)})
+        return TensorShape(dimensions.map{Int($0)})
     }
 
+}
+
+public enum TensorInitializer<DataType : TensorDataProtocol> {
+    case randomUniform(from: DataType, to: DataType)
+    case zeros
 }
 
 /// Tensor
@@ -87,6 +92,17 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     public init(shape: TensorShape, repeating repeatedValue: Element) {
         descriptor = TensorDescriptor(shape: shape)
         storage = DeviceArray(repeating: repeatedValue, count: shape.contiguousSize)
+        self.shape = shape
+    }
+
+    /// Allocate and initialize a tensor using the factory function
+    /// - parameter shape: tensor shape
+    /// - parameter repeating: repeated value
+    public init(shape: TensorShape, factory supplier: () -> Element) {
+        descriptor = TensorDescriptor(shape: shape)
+        let contiguousSize = shape.contiguousSize
+        let hostData = (0..<contiguousSize).map { _ in supplier() }
+        storage = DeviceArray(hostData)
         self.shape = shape
     }
 

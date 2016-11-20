@@ -7,24 +7,34 @@
 //
 
 /// Symbolic expression of neural network
-/// - parameter DataType: type of elements of the tensor (Float, Double, ...)
-public indirect enum Expression {
-    case variable(shape: TensorShape, name: String?)
+public indirect enum Expression<DataType: TensorDataProtocol> {
+    /// Input tensor placeholder
+    case input(shape: TensorShape, name: String?)
+    /// Parameter of the network
+    case parameter(shape: TensorShape, initial: TensorInitializer<DataType>, name: String?)
+    /// Logarithm
     case log(Expression)
-    case sin(Expression)
-    case cos(Expression)
-    case tan(Expression)
-    case exp(Expression)
+    /// Sigmoid
     case sigmoid(Expression)
+    /// ReLU
     case relu(Expression)
+    /// Tanh
     case tanh(Expression)
+    /// Softmax
     case softmax(Expression)
+    /// Negation
     case negative(Expression)
+    /// Element-wise addition
     case add(Expression, Expression)
+    /// Element-wise subtraction
     case sub(Expression, Expression)
+    /// Element-wise product
     case mul(Expression, Expression)
+    /// Element-wise quotient
     case div(Expression, Expression)
-    case dot(Expression, Expression)
+    /// Tensor product
+    case product(Expression, Expression)
+    /// Named layer
     case layer(Expression, name: String)
 }
 
@@ -55,7 +65,7 @@ public extension Expression {
 
     @inline(__always)
     public static func •(lhs: Expression, rhs: Expression) -> Expression {
-        return .dot(lhs, rhs)
+        return .product(lhs, rhs)
     }
 
     @inline(__always)
@@ -66,52 +76,27 @@ public extension Expression {
 }
 
 /// Free functions that assist expression building in mathematical sense
-
 @inline(__always)
-public func log(_ expression: Expression) -> Expression {
-    return .log(expression)
-}
-
-@inline(__always)
-public func sin(_ expression: Expression) -> Expression {
-    return .sin(expression)
-}
-
-@inline(__always)
-public func cos(_ expression: Expression) -> Expression {
-    return .cos(expression)
-}
-
-@inline(__always)
-public func tan(_ expression: Expression) -> Expression {
-    return .tan(expression)
-}
-
-@inline(__always)
-public func exp(_ expression: Expression) -> Expression {
-    return .exp(expression)
-}
-@inline(__always)
-public func sigmoid(_ expression: Expression) -> Expression {
+public func sigmoid<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
     return .sigmoid(expression)
 }
 
 @inline(__always)
-public func relu(_ expression: Expression) -> Expression {
+public func relu<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
     return .relu(expression)
 }
 
 @inline(__always)
-public func tanh(_ expression: Expression) -> Expression {
+public func tanh<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
     return .tanh(expression)
 }
 
 @inline(__always)
-public func softmax(_ expression: Expression) -> Expression {
+public func softmax<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
     return .softmax(expression)
 }
 
 @inline(__always)
-public func <-(lhs: Expression, rhs: String) -> Expression {
+public func <-<T: TensorDataProtocol>(lhs: Expression<T>, rhs: String) -> Expression<T> {
     return .layer(lhs, name: rhs)
 }

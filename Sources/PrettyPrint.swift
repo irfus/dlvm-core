@@ -6,53 +6,51 @@
 //
 //
 
-extension Assignment.Value : CustomStringConvertible {
+extension RValue : CustomStringConvertible {
     var description: String {
         switch self {
-        case let .log(v): return "log(\(v))"
-        case let .sin(v): return "sin(\(v))"
-        case let .cos(v): return "cos(\(v))"
-        case let .tan(v): return "tan(\(v))"
-        case let .exp(v): return "e^\(v)"
-        case let .sigmoid(v): return "σ(\(v))"
-        case let .relu(v): return "ReLU(\(v))"
-        case let .tanh(v): return "tanh(\(v))"
-        case let .softmax(v): return "softmax(\(v))"
-        case let .negative(v): return "-\(v)"
-        case let .add(v1, v2): return "\(v1) + \(v2)"
-        case let .sub(v1, v2): return "\(v1) - \(v2)"
-        case let .mul(v1, v2): return "\(v1) * \(v2)"
-        case let .div(v1, v2): return "\(v1) / \(v2)"
-        case let .dot(v1, v2): return "\(v1) • \(v2)"
+        case let .input(shape: shape): return "input:[\(shape)]"
+        case let .parameter(shape: shape, initial: _): return "param:[\(shape)]"
+        case let .log(v): return "log(\(v.name))"
+        case let .sigmoid(v): return "σ(\(v.name))"
+        case let .relu(v): return "ReLU(\(v.name))"
+        case let .tanh(v): return "tanh(\(v.name))"
+        case let .softmax(v): return "softmax(\(v.name))"
+        case let .negative(v): return "-\(v.name)"
+        case let .add(v1, v2): return "\(v1.name) + \(v2.name)"
+        case let .sub(v1, v2): return "\(v1.name) - \(v2.name)"
+        case let .mul(v1, v2): return "\(v1.name) * \(v2.name)"
+        case let .div(v1, v2): return "\(v1.name) / \(v2.name)"
+        case let .product(v1, v2): return "\(v1.name) • \(v2.name)"
         }
     }
 }
 
 extension Assignment : CustomStringConvertible {
     var description: String {
-        return variable + " = " + String(describing: value)
+        return name + " = " + rValue.description
     }
 }
 
 extension Graph : CustomStringConvertible {
-
     public var description: String {
         let tapeDesc = tape.lazy.map{$0.description}.joined(separator: "\n\t")
         return "Expression:\n\t\(root)\nLLNM IR:\n\t\(tapeDesc)"
     }
-
 }
 
 extension Expression : CustomStringConvertible {
     public var description: String {
         switch self {
-        case .variable(shape: let shape, name: nil): return "[\(shape)]"
-        case let .variable(shape: shape, name: .some(name)): return name + ":[\(shape)]"
+        case let .input(shape: shape, name: nil):
+            return "[\(shape)]"
+        case let .input(shape: shape, name: name?):
+            return name + ":[\(shape)]"
+        case let .parameter(shape: shape, initial: _, name: nil):
+            return "[\(shape)]"
+        case let .parameter(shape: shape, initial: _, name: name?):
+            return name + ":[\(shape)]"
         case let .log(expr): return "log(\(expr))"
-        case let .sin(expr): return "sin(\(expr))"
-        case let .cos(expr): return "cos(\(expr))"
-        case let .tan(expr): return "tan(\(expr))"
-        case let .exp(expr): return "e^(\(expr))"
         case let .sigmoid(expr): return "σ(\(expr))"
         case let .relu(expr): return "ReLU(\(expr))"
         case let .tanh(expr): return "tanh(\(expr))"
@@ -62,7 +60,7 @@ extension Expression : CustomStringConvertible {
         case let .sub(lexpr, rexpr): return "\(lexpr) - \(rexpr)"
         case let .mul(lexpr, rexpr): return "\(lexpr) * \(rexpr)"
         case let .div(lexpr, rexpr): return "\(lexpr) / \(rexpr)"
-        case let .dot(lexpr, rexpr): return "\(lexpr) • \(rexpr)"
+        case let .product(lexpr, rexpr): return "\(lexpr) • \(rexpr)"
         case let .layer(expr, name: name): return "\(name)=(\(expr))"
         }
     }
@@ -71,5 +69,14 @@ extension Expression : CustomStringConvertible {
 extension TensorShape : CustomStringConvertible {
     public var description: String {
         return dimensions.lazy.map{$0.description}.joined(separator: "×")
+    }
+}
+
+extension GraphError : CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case let .productDimensionMismatch(lShape, rShape):
+            return "Dimension mismatch: \(lShape) cannot form a product with \(rShape)"
+        }
     }
 }
