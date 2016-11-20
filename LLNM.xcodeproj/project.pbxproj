@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		294123961DE1A358003FE864 /* TensorOperators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294123951DE1A358003FE864 /* TensorOperators.swift */; };
 		OBJ_100 /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_25 /* Stream.swift */; };
 		OBJ_106 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* Device.swift */; };
 		OBJ_107 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* Error.swift */; };
@@ -208,6 +209,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		294123951DE1A358003FE864 /* TensorOperators.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TensorOperators.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Level1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level1.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Level2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2.swift; sourceTree = "<group>"; };
@@ -404,6 +406,7 @@
 				OBJ_53 /* PrettyPrint.swift */,
 				OBJ_54 /* Shape.swift */,
 				OBJ_55 /* Tensor.swift */,
+				294123951DE1A358003FE864 /* TensorOperators.swift */,
 				OBJ_56 /* Types.swift */,
 			);
 			name = LLNM;
@@ -689,6 +692,7 @@
 			buildActionMask = 0;
 			files = (
 				OBJ_153 /* AD.swift in Sources */,
+				294123961DE1A358003FE864 /* TensorOperators.swift in Sources */,
 				OBJ_155 /* DNN.swift in Sources */,
 				OBJ_156 /* Error.swift in Sources */,
 				OBJ_157 /* Expression.swift in Sources */,

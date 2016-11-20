@@ -15,7 +15,7 @@ final class DNN : CHandleCarrier {
 
     private static var instances: [DNN?] = []
 
-    class func global(on device: Device) -> DNN {
+    class func shared(on device: Device) -> DNN {
         if let dnn = instances[device.index] {
             return dnn
         }
@@ -24,7 +24,7 @@ final class DNN : CHandleCarrier {
         return dnn
     }
 
-    private let handle: cudnnHandle_t
+    let handle: cudnnHandle_t
     let device: Device
 
     private init() {
