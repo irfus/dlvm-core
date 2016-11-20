@@ -39,7 +39,7 @@ public indirect enum Expression<DataType: TensorDataProtocol> {
 }
 
 infix operator • : MultiplicationPrecedence
-infix operator <-
+infix operator ~
 
 public extension Expression {
 
@@ -97,6 +97,6 @@ public func softmax<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expre
 }
 
 @inline(__always)
-public func <-<T: TensorDataProtocol>(lhs: Expression<T>, rhs: String) -> Expression<T> {
+public func ~<T: TensorDataProtocol>(lhs: Expression<T>, rhs: String) -> Expression<T> {
     return .layer(lhs, name: rhs)
 }

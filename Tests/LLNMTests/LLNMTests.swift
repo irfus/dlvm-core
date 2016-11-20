@@ -23,8 +23,8 @@ class LLNMTests: XCTestCase {
         let W2 = Expression<Float>.parameter(shape: [4, 2], initial: .zeros, name: "W2")
         let b2 = Expression<Float>.parameter(shape: [4, 1], initial: .zeros, name: "b2")
 
-        let l1 = tanh(W1 • x + b1) <- "l1"
-        let l2 = softmax(W2 • l1 + b2) <- "output"
+        let l1 = tanh(W1 • x + b1) ~ "l1"
+        let l2 = softmax(W2 • l1 + b2) ~ "output"
 
         let graph = try Graph<Float>(expression: l2)
 
