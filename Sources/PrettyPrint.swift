@@ -18,10 +18,11 @@ extension RValue : CustomStringConvertible {
         case let .softmax(v): return "softmax(\(v.name))"
         case let .negative(v): return "-\(v.name)"
         case let .add(v1, v2): return "\(v1.name) + \(v2.name)"
-        case let .sub(v1, v2): return "\(v1.name) - \(v2.name)"
         case let .mul(v1, v2): return "\(v1.name) * \(v2.name)"
-        case let .div(v1, v2): return "\(v1.name) / \(v2.name)"
+        case let .min(v1, v2): return "\(v1.name) - \(v2.name)"
+        case let .max(v1, v2): return "\(v1.name) / \(v2.name)"
         case let .product(v1, v2): return "\(v1.name) • \(v2.name)"
+        case let .scalarComplement(v1, v2): return "\(v1) - \(v2.name)"
         }
     }
 }
@@ -57,11 +58,12 @@ extension Expression : CustomStringConvertible {
         case let .softmax(expr): return "softmax(\(expr))"
         case let .negative(expr): return "-\(expr)"
         case let .add(lexpr, rexpr): return "\(lexpr) + \(rexpr)"
-        case let .sub(lexpr, rexpr): return "\(lexpr) - \(rexpr)"
         case let .mul(lexpr, rexpr): return "\(lexpr) * \(rexpr)"
-        case let .div(lexpr, rexpr): return "\(lexpr) / \(rexpr)"
+        case let .min(lexpr, rexpr): return "\(lexpr) - \(rexpr)"
+        case let .max(lexpr, rexpr): return "\(lexpr) / \(rexpr)"
         case let .product(lexpr, rexpr): return "\(lexpr) • \(rexpr)"
         case let .layer(expr, name: name): return "\(name)=(\(expr))"
+        case let .scalarComplement(scalar, expr): return "\(scalar) - \(expr)"
         }
     }
 }

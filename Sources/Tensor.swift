@@ -6,6 +6,7 @@
 //
 //
 
+import CUDARuntime
 import CCuDNN
 import Warp
 
@@ -71,11 +72,23 @@ public enum TensorInitializer<DataType : TensorDataProtocol> {
 /// - parameter Element: type of elements of the tensor (Float, Double, ...)
 public struct DeviceTensor<Element : TensorDataProtocol> {
 
+    /// cuDNN descriptor
     let descriptor: TensorDescriptor<Element>
 
+    /// Tensor shape
     public let shape: TensorShape
     
-    private var storage: DeviceArray<Element>
+    /// Contiguous storage (an array) on device
+    var storage: DeviceArray<Element>
+
+    /// The GPU device that owns this tensor
+    public var device: Device {
+        return storage.device
+    }
+
+    var dnn: DNN {
+        return DNN.shared(on: device)
+    }
 
     /// Initialize from an array on GPU device.
     /// - parameter shape: shape of the tensor
@@ -89,28 +102,34 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     /// Allocate and initialize a tensor to a repeated value.
     /// - parameter shape: tensor shape
     /// - parameter repeating: repeated value
-    public init(shape: TensorShape, repeating repeatedValue: Element) {
+    public init(shape: TensorShape,
+                repeating repeatedValue: Element,
+                device: Device = Device.current) {
         descriptor = TensorDescriptor(shape: shape)
-        storage = DeviceArray(repeating: repeatedValue, count: shape.contiguousSize)
+        storage = DeviceArray(repeating: repeatedValue,
+                              count: shape.contiguousSize,
+                              device: device)
         self.shape = shape
     }
 
     /// Allocate and initialize a tensor using the factory function
     /// - parameter shape: tensor shape
     /// - parameter repeating: repeated value
-    public init(shape: TensorShape, factory supplier: () -> Element) {
+    public init(shape: TensorShape,
+                device: Device = Device.current,
+                factory supplier: () -> Element) {
         descriptor = TensorDescriptor(shape: shape)
         let contiguousSize = shape.contiguousSize
         let hostData = (0..<contiguousSize).map { _ in supplier() }
-        storage = DeviceArray(hostData)
+        storage = DeviceArray(hostData, device: device)
         self.shape = shape
     }
 
     /// Allocate and initialize a tensor.
     /// - parameter shape: tensor shape
-    public init(shape: TensorShape) {
+    public init(shape: TensorShape, device: Device = Device.current) {
         descriptor = TensorDescriptor(shape: shape)
-        storage = DeviceArray(capacity: shape.contiguousSize)
+        storage = DeviceArray(device: device, capacity: shape.contiguousSize)
         self.shape = shape
     }
 
@@ -144,6 +163,24 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
         }
     }
 
+}
+
+extension DeviceTensor {
+    
+    mutating func withUnsafeMutableDeviceAddress<Result>
+        (_ body: (UnsafeMutablePointer<Element>) throws -> Result) rethrows -> Result {
+        return try storage.withUnsafeMutableDevicePointer { ptr in
+            try body(ptr.deviceAddress)
+        }
+    }
+    
+    func withUnsafeDeviceAddress<Result>
+        (_ body: (UnsafePointer<Element>) throws -> Result) rethrows -> Result {
+        return try storage.withUnsafeDevicePointer { ptr in
+            try body(ptr.deviceAddress)
+        }
+    }
+    
 }
 
 public typealias Tensor<Element : TensorDataProtocol> = DeviceTensor<Element>

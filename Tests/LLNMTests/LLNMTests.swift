@@ -24,7 +24,7 @@ class LLNMTests: XCTestCase {
         let b2 = Expression<Float>.parameter(shape: [4, 1], initial: .zeros, name: "b2")
 
         let l1 = tanh(W1 • x + b1) ~ "l1"
-        let l2 = softmax(W2 • l1 + b2) ~ "output"
+        let l2 = softmax(W2 • (1 - l1) + b2) ~ "l2"
 
         let graph = try Graph<Float>(expression: l2)
 

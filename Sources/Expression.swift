@@ -26,16 +26,18 @@ public indirect enum Expression<DataType: TensorDataProtocol> {
     case negative(Expression)
     /// Element-wise addition
     case add(Expression, Expression)
-    /// Element-wise subtraction
-    case sub(Expression, Expression)
     /// Element-wise product
     case mul(Expression, Expression)
+    /// Element-wise subtraction
+    case min(Expression, Expression)
     /// Element-wise quotient
-    case div(Expression, Expression)
+    case max(Expression, Expression)
     /// Tensor product
     case product(Expression, Expression)
     /// Named layer
     case layer(Expression, name: String)
+    /// Scalar complement (x - V) 
+    case scalarComplement(DataType, Expression)
 }
 
 infix operator • : MultiplicationPrecedence
@@ -49,18 +51,8 @@ public extension Expression {
     }
 
     @inline(__always)
-    public static func -(lhs: Expression, rhs: Expression) -> Expression {
-        return .sub(lhs, rhs)
-    }
-
-    @inline(__always)
     public static func *(lhs: Expression, rhs: Expression) -> Expression {
         return .mul(lhs, rhs)
-    }
-
-    @inline(__always)
-    public static func /(lhs: Expression, rhs: Expression) -> Expression {
-        return .div(lhs, rhs)
     }
 
     @inline(__always)
@@ -71,6 +63,11 @@ public extension Expression {
     @inline(__always)
     public static prefix func -(rhs: Expression) -> Expression {
         return .negative(rhs)
+    }
+
+    @inline(__always)
+    public static func -(lhs: DataType, rhs: Expression) -> Expression {
+        return .scalarComplement(lhs, rhs)
     }
 
 }
@@ -94,6 +91,16 @@ public func tanh<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expressi
 @inline(__always)
 public func softmax<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
     return .softmax(expression)
+}
+
+@inline(__always)
+public func min<T: TensorDataProtocol>(_ lhs: Expression<T>, _ rhs: Expression<T>) -> Expression<T> {
+    return .min(lhs, rhs)
+}
+
+@inline(__always)
+public func max<T: TensorDataProtocol>(_ lhs: Expression<T>, _ rhs: Expression<T>) -> Expression<T> {
+    return .max(lhs, rhs)
 }
 
 @inline(__always)
