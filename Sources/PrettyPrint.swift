@@ -28,7 +28,7 @@ extension RValue : CustomStringConvertible {
 
 extension Assignment : CustomStringConvertible {
     var description: String {
-        return name + " = " + rValue.description
+        return "[\(shape)] \(name) = \(rValue)"
     }
 }
 
