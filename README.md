@@ -1,29 +1,37 @@
 *IN PROGRESS*
 
+This is under **very active** development. Components are **not** ready to use. 
+
+# The DLVM Infrastructure for Neural Networks
+
+- [ ] TEL - The Tensor Expression Language
+    - [ ] Parse
+    - [ ] Sema
+    - [x] DLVM IR CodeGen
+- [x] DLVM IR - The Intermediate Representation for Computation
+    - [x] Assignment form
+    - [ ] Φ function
+    - [ ] Loops
+    - [ ] Optimization passes
+- [x] Automatic Differentiation
+    - [x] GPU Interpreter
+    - [ ] GPU (PTX) CodeGen
+    - [ ] CPU CodeGen
+
 ## Build
 
 You can use `make`, which invokes one of the following commands depending on the
 platform.
 
-#### macOS
+### macOS
 ```
 swift build -Xcc -I/usr/local/cuda/include -Xlinker -L/usr/local/cuda/lib
 ```
 
-#### Linux
+### Linux
 ```
 swift build -Xcc -I/usr/local/cuda/include -Xlinker -L/usr/local/cuda/lib64
 ```
-
-## Components
-
-### Core
-
-### Next steps
-
-- [ ] [CuDNN](https://github.com/rxwei/cudnn-swift)
-
-You may use the Makefile in this project.
 
 ## Dependencies
 
