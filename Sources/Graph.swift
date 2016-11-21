@@ -12,6 +12,7 @@
 import CUDARuntime
 
 /// Computation graph of the neural network
+/// - note: Create a generic graph without CPU/GPU dependencies
 /// - parameter DataType: type of elements of the tensor (Float, Double, ...)
 public class Graph<DataType : TensorDataProtocol> {
     /// Computation tape (SSA form)
@@ -23,6 +24,9 @@ public class Graph<DataType : TensorDataProtocol> {
     /// cuDNN instance
     let dnn: DNN
 
+    /// Device on which the graph is executed
+    let device: Device
+
     /// op tensor
     lazy var tensorOperators: TensorOperators<DataType> = { TensorOperators() }()
 
@@ -31,6 +35,7 @@ public class Graph<DataType : TensorDataProtocol> {
     public init(expression: Expression<DataType>, device: Device = Device.current) throws {
         root = expression
         self.dnn = DNN.shared(on: device)
+        self.device = device
         try buildIR(from: expression)
     }
 
@@ -66,6 +71,7 @@ class Assignment<DataType: TensorDataProtocol> {
     unowned let graph: Graph<DataType>
 
     lazy var data: Tensor<DataType> = {
+        Device.current = self.graph.device
         switch self.rValue {
         case let .input(shape: shape):
             return Tensor(shape: shape, repeating: .zero)
