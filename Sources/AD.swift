@@ -31,8 +31,9 @@ extension Assignment {
                 }
             }
         case let .mul(lhs, rhs):
-            // TODO 
-            break
+            self.data.elements.assignElementwiseResult(of: .multiplication,
+                                                       x: lhs.data.elements,
+                                                       y: rhs.data.elements)
 
         case let .min(lhs, rhs):
             var one: DataType = 1
@@ -125,17 +126,7 @@ extension Assignment {
             }
 
         case let .negative(x):
-            var one: DataType = -1
-            var zero = DataType.zero
-            self.data.withUnsafeMutableDeviceAddress { dest -> () in
-                x.data.withUnsafeDeviceAddress { src in
-                    !!cudnnAddTensor(
-                        graph.dnn.handle,
-                        &one, x.data.descriptor.handle, src,
-                        &zero, data.descriptor.handle, dest
-                    )
-                }
-            }
+            self.data.elements.assign(x.data.elements, multipliedBy: -1)
 
         case let .scalarComplement(lhs, rhs):
             var minusOne: DataType = -1
@@ -171,12 +162,12 @@ extension Assignment {
             }
 
         case let .log(x):
+            self.data.elements.assign(x.data.elements, transformedBy: .log)
+
+        case .input:
             break
 
-        case let .input(shape: shape):
-            break
-
-        case let .parameter(shape: shape, initial: initializer):
+        case .parameter:
             break
         }
 
