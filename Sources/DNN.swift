@@ -13,7 +13,7 @@ import protocol CUDADriver.CHandleCarrier
 /// cuDNN Wrapper
 final class DNN : CHandleCarrier {
 
-    private static var instances: [DNN?] = []
+    private static var instances: [DNN?] = Array(repeating: nil, count: Device.count)
 
     class func shared(on device: Device) -> DNN {
         if let dnn = instances[device.index] {
