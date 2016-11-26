@@ -16,7 +16,7 @@ import CUDARuntime
 /// - parameter DataType: type of elements of the tensor (Float, Double, ...)
 public class Graph<DataType : TensorDataProtocol> {
     /// Computation tape (SSA form)
-    var tape: [Assignment<DataType>] = []
+    var tape: [Variable<DataType>] = []
 
     /// Root of the computation graph
     let root: Expression<DataType>
@@ -49,22 +49,22 @@ public class Graph<DataType : TensorDataProtocol> {
 indirect enum RValue<DataType: TensorDataProtocol> {
     case input(shape: TensorShape)
     case parameter(shape: TensorShape, initial: TensorInitializer<DataType>)
-    case log(Assignment<DataType>)
-    case sigmoid(Assignment<DataType>)
-    case relu(Assignment<DataType>)
-    case tanh(Assignment<DataType>)
-    case softmax(Assignment<DataType>)
-    case negative(Assignment<DataType>)
-    case add(Assignment<DataType>, Assignment<DataType>)
-    case mul(Assignment<DataType>, Assignment<DataType>)
-    case min(Assignment<DataType>, Assignment<DataType>)
-    case max(Assignment<DataType>, Assignment<DataType>)
-    case product(Assignment<DataType>, Assignment<DataType>)
-    case scalarComplement(DataType, Assignment<DataType>)
+    case log(Variable<DataType>)
+    case sigmoid(Variable<DataType>)
+    case relu(Variable<DataType>)
+    case tanh(Variable<DataType>)
+    case softmax(Variable<DataType>)
+    case negative(Variable<DataType>)
+    case add(Variable<DataType>, Variable<DataType>)
+    case mul(Variable<DataType>, Variable<DataType>)
+    case min(Variable<DataType>, Variable<DataType>)
+    case max(Variable<DataType>, Variable<DataType>)
+    case product(Variable<DataType>, Variable<DataType>)
+    case scalarComplement(DataType, Variable<DataType>)
 }
 
 /// Assignment in SSA form (phi-function is not currently implemented)
-class Assignment<DataType: TensorDataProtocol> {
+class Variable<DataType: TensorDataProtocol> {
     var name: String
     let shape: TensorShape
     let rValue: RValue<DataType>
@@ -120,8 +120,8 @@ extension RValue : Equatable {
     }
 }
 
-extension Assignment : Equatable {
-    static func ==(lhs: Assignment<DataType>, rhs: Assignment<DataType>) -> Bool {
+extension Variable : Equatable {
+    static func ==(lhs: Variable<DataType>, rhs: Variable<DataType>) -> Bool {
         return lhs === rhs
     }
 }
@@ -129,8 +129,6 @@ extension Assignment : Equatable {
 public enum GraphError : Error {
     case productDimensionMismatch(TensorShape, TensorShape)
 }
-
-import Foundation
 
 /// Assignment form builder
 fileprivate extension Graph {
@@ -152,66 +150,66 @@ fileprivate extension Graph {
         /// - Returns: top node assignment
         /// - Throws: GraphError: dimension mismatch
         @discardableResult
-        func build(_ node: Expression<DataType>) throws -> Assignment<DataType> {
-            let assn: Assignment<DataType>
+        func build(_ node: Expression<DataType>) throws -> Variable<DataType> {
+            let assn: Variable<DataType>
             switch node {
             case let .input(shape: shape, name: name):
-                assn = Assignment<DataType>(name: name ?? newName(),
-                                            shape: shape,
-                                            rValue: .input(shape: shape),
-                                            graph: self)
-
+                assn = Variable(name: name ?? newName(),
+                                  shape: shape,
+                                  rValue: .input(shape: shape),
+                                  graph: self)
+                
             case let .parameter(shape: shape, initial: initializer, name: name):
-                assn = Assignment<DataType>(name: name ?? newName(),
-                                            shape: shape,
-                                            rValue: .parameter(shape: shape, initial: initializer),
-                                            graph: self)
-
+                assn = Variable(name: name ?? newName(),
+                                  shape: shape,
+                                  rValue: .parameter(shape: shape, initial: initializer),
+                                  graph: self)
+                
             case let .log(x):
                 let op = try build(x)
-                assn = Assignment<DataType>(name: newName(),
-                                            shape: op.shape,
-                                            rValue: .log(op),
-                                            graph: self)
-
+                assn = Variable(name: newName(),
+                                  shape: op.shape,
+                                  rValue: .log(op),
+                                  graph: self)
+                
             case let .tanh(x):
                 let op = try build(x)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: op.shape,
                                   rValue: .tanh(op),
                                   graph: self)
 
             case let .relu(x):
                 let op = try build(x)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: op.shape,
                                   rValue: .relu(op),
                                   graph: self)
 
             case let .softmax(x):
                 let op = try build(x)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: op.shape,
                                   rValue: .softmax(op),
                                   graph: self)
 
             case let .sigmoid(x):
                 let op = try build(x)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: op.shape,
                                   rValue: .sigmoid(op),
                                   graph: self)
 
             case let .negative(x):
                 let op = try build(x)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: op.shape,
                                   rValue: .sigmoid(op),
                                   graph: self)
 
             case let .add(lhs, rhs):
                 let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: leftOp.shape,
                                   rValue: .add(leftOp, rightOp),
                                   graph: self)
@@ -219,21 +217,21 @@ fileprivate extension Graph {
 
             case let .mul(lhs, rhs):
                 let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: leftOp.shape,
                                   rValue: .mul(leftOp, rightOp),
                                   graph: self)
 
             case let .min(lhs, rhs):
                 let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: leftOp.shape,
                                   rValue: .min(leftOp, rightOp),
                                   graph: self)
 
             case let .max(lhs, rhs):
                 let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: leftOp.shape,
                                   rValue: .max(leftOp, rightOp),
                                   graph: self)
@@ -247,7 +245,7 @@ fileprivate extension Graph {
                 }
                 let newDim = leftDim.dropLast() + rightDim.dropFirst()
                 let newShape = TensorShape(newDim)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: newShape,
                                   rValue: .product(leftOp, rightOp),
                                   graph: self)
@@ -259,19 +257,16 @@ fileprivate extension Graph {
 
             case let .scalarComplement(lhs, rhs):
                 let op = try build(rhs)
-                assn = Assignment(name: newName(),
+                assn = Variable(name: newName(),
                                   shape: op.shape,
                                   rValue: .scalarComplement(lhs, op),
                                   graph: self)
             }
-                
-
             /// Add assignment to the tape
             tape.append(assn)
             return assn
         }
-        
         try build(expression)
     }
-    
+
 }

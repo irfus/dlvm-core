@@ -10,7 +10,7 @@ import CUDARuntime
 import CCuDNN
 import CuBLAS
 
-extension Assignment {
+extension Variable {
 
     func propogateForward() {
         switch rValue {
@@ -121,7 +121,8 @@ extension Assignment {
                         CUDNN_SOFTMAX_LOG,
                         CUDNN_SOFTMAX_MODE_CHANNEL,
                         &one, x.data.descriptor.handle, src,
-                        &zero, data.descriptor.handle, dest)
+                        &zero, data.descriptor.handle, dest
+                    )
                 }
             }
 
@@ -140,7 +141,8 @@ extension Assignment {
                     !!cudnnTransformTensor(
                         graph.dnn.handle,
                         &minusOne, rhs.data.descriptor.handle, src,
-                        &one, data.descriptor.handle, dest)
+                        &one, data.descriptor.handle, dest
+                    )
                 }
             }
 
