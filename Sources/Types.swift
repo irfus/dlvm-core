@@ -30,12 +30,14 @@ public protocol Randomizable {
 }
 
 /// Protocol that specifies requirements for the type of elements of the tensor
-public protocol TensorDataProtocol : KernelDataProtocol, BLASDataProtocol, Randomizable, Comparable, Equatable {
+public protocol TensorDataProtocol : KernelDataProtocol, BLASDataProtocol, FloatingPoint, Randomizable, Comparable, Equatable {
     static var tensorDataType: TensorDataType { get }
     static var zero: Self { get }
 }
 
-import Foundation
+import func Foundation.drand48
+import func Foundation.srand48
+import func Foundation.time
 
 private let seed: Void = srand48(time(nil))
 

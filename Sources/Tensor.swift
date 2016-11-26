@@ -79,11 +79,11 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     public let shape: TensorShape
     
     /// Contiguous storage (an array) on device
-    var storage: DeviceArray<Element>
+    var elements: DeviceArray<Element>
 
     /// The GPU device that owns this tensor
     public var device: Device {
-        return storage.device
+        return elements.device
     }
 
     var dnn: DNN {
@@ -95,7 +95,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     /// - parameter storage: array on device
     public init(shape: TensorShape, storage: DeviceArray<Element>) {
         self.descriptor = TensorDescriptor(shape: shape)
-        self.storage = storage
+        self.elements = storage
         self.shape = shape
     }
 
@@ -106,7 +106,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
                 repeating repeatedValue: Element,
                 device: Device = Device.current) {
         descriptor = TensorDescriptor(shape: shape)
-        storage = DeviceArray(repeating: repeatedValue,
+        elements = DeviceArray(repeating: repeatedValue,
                               count: shape.contiguousSize,
                               device: device)
         self.shape = shape
@@ -121,7 +121,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
         descriptor = TensorDescriptor(shape: shape)
         let contiguousSize = shape.contiguousSize
         let hostData = (0..<contiguousSize).map { _ in supplier() }
-        storage = DeviceArray(hostData, device: device)
+        elements = DeviceArray(hostData, device: device)
         self.shape = shape
     }
 
@@ -129,7 +129,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     /// - parameter shape: tensor shape
     public init(shape: TensorShape, device: Device = Device.current) {
         descriptor = TensorDescriptor(shape: shape)
-        storage = DeviceArray(device: device, capacity: shape.contiguousSize)
+        elements = DeviceArray(device: device, capacity: shape.contiguousSize)
         self.shape = shape
     }
 
@@ -153,13 +153,13 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
             guard indices.count == shape.rank else {
                 fatalError("Incorrect index dimension")
             }
-            return storage[storageIndex(from: indices)]
+            return elements[storageIndex(from: indices)]
         }
         set {
             guard indices.count == shape.rank else {
                 fatalError("Incorrect index dimension")
             }
-            storage[storageIndex(from: indices)] = newValue
+            elements[storageIndex(from: indices)] = newValue
         }
     }
 
@@ -169,14 +169,14 @@ extension DeviceTensor {
     
     mutating func withUnsafeMutableDeviceAddress<Result>
         (_ body: (UnsafeMutablePointer<Element>) throws -> Result) rethrows -> Result {
-        return try storage.withUnsafeMutableDevicePointer { ptr in
+        return try elements.withUnsafeMutableDevicePointer { ptr in
             try body(ptr.deviceAddress)
         }
     }
     
     func withUnsafeDeviceAddress<Result>
         (_ body: (UnsafePointer<Element>) throws -> Result) rethrows -> Result {
-        return try storage.withUnsafeDevicePointer { ptr in
+        return try elements.withUnsafeDevicePointer { ptr in
             try body(ptr.deviceAddress)
         }
     }
