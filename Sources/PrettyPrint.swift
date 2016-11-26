@@ -27,7 +27,7 @@ extension RValue : CustomStringConvertible {
     }
 }
 
-extension Assignment : CustomStringConvertible {
+extension Variable : CustomStringConvertible {
     var description: String {
         return "[\(shape)] \(name) = \(rValue)"
     }
@@ -36,7 +36,7 @@ extension Assignment : CustomStringConvertible {
 extension Graph : CustomStringConvertible {
     public var description: String {
         let tapeDesc = tape.lazy.map{$0.description}.joined(separator: "\n\t")
-        return "Expression:\n\t\(root)\nLLNM IR:\n\t\(tapeDesc)"
+        return "Expression:\n\t\(root)\nIR:\n\t\(tapeDesc)"
     }
 }
 
@@ -70,7 +70,7 @@ extension Expression : CustomStringConvertible {
 
 extension TensorShape : CustomStringConvertible {
     public var description: String {
-        return dimensions.lazy.map{$0.description}.joined(separator: "×")
+        return dimensions.lazy.map{$0.description}.joined(separator: "x")
     }
 }
 
