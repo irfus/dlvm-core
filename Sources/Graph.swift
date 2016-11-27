@@ -10,6 +10,7 @@
 /// We will use the acronym **LLNM IR**.
 
 import CUDARuntime
+import CuBLAS
 
 /// Computation graph of the neural network
 /// - note: Create a generic graph without CPU/GPU dependencies
@@ -24,6 +25,9 @@ public class Graph<DataType : TensorDataProtocol> {
     /// cuDNN instance
     let dnn: DNN
 
+    /// cuBLAS instance
+    let blas: BLAS
+
     /// Device on which the graph is executed
     let device: Device
 
@@ -35,6 +39,7 @@ public class Graph<DataType : TensorDataProtocol> {
     public init(expression: Expression<DataType>, device: Device = Device.current) throws {
         root = expression
         self.dnn = DNN.shared(on: device)
+        self.blas = BLAS.global(on: device)
         self.device = device
         try buildIR(from: expression)
     }

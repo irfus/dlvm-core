@@ -56,6 +56,10 @@ public struct TensorShape : ExpressibleByArrayLiteral {
         return dimensions.reduce(1, *)
     }
 
+    public var leadingDimension: Int {
+        return dimensions.dropFirst().reduce(1, *)
+    }
+
 }
 
 extension TensorShape : Equatable {
