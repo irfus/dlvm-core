@@ -74,7 +74,7 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
 }
 
 public enum TensorInitializer<DataType : TensorDataProtocol> {
-    case randomUniform(from: DataType, to: DataType)
+    case random(from: DataType, to: DataType)
     case zeros
 }
 

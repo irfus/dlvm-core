@@ -47,12 +47,23 @@ class LLNMTests: XCTestCase {
         print(graph)
     }
 
-    func testForward() {
-        graph1.preallocateData()
+    func testTensorOp() throws {
+        let x = Expression<Float>.parameter(shape: [2, 1],
+                                            initial: .random(from: 0.0, to: 1.0),
+                                            name: "x")
+        let y = Expression<Float>.parameter(shape: [2, 2],
+                                            initial: .random(from: 0.0, to: 1.0),
+                                            name: "y")
+        let o = Expression.product(y, x)
+        let graph = try Graph<Float>(expression: o)
+        let assignment = graph.tape.last!
+        assignment.propagateForward()
+
+        /// Whole graph
         for variable in graph1.tape {
             print(variable)
-            print(variable.data.descriptor.shape)
             variable.propagateForward()
+            print(variable.data.elements.hostArray)
         }
     }
 
@@ -61,7 +72,7 @@ class LLNMTests: XCTestCase {
             ("testTensorDescriptor", testTensorDescriptor),
             ("testTensor", testTensor),
             ("testBuildTape", testBuildTape),
-            ("testForward", testForward)
+            ("testTensorOp", testTensorOp)
         ]
     }
 }
