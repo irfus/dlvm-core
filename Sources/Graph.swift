@@ -31,22 +31,23 @@ public class Graph<DataType : TensorDataProtocol> {
     /// Device on which the graph is executed
     let device: Device
 
-    /// op tensor
-    lazy var tensorOperators: TensorOperators<DataType> = { TensorOperators() }()
+    /// Op tensor
+    let tensorOperators: TensorOperators<DataType>
 
     /// Initialize from an expression
     /// - parameter expression: neural network expression
     public init(expression: Expression<DataType>, device: Device = Device.current) throws {
         root = expression
-        self.dnn = DNN.shared(on: device)
-        self.blas = BLAS.global(on: device)
+        dnn = DNN.shared(on: device)
+        blas = BLAS.global(on: device)
+        tensorOperators = TensorOperators()
         self.device = device
         try buildIR(from: expression)
     }
 
     /// Preallocate data for the assignment form
     func preallocateData() {
-        tape.forEach { _ = $0.data }
+        tape.forEach { _ = $0.data; _ = $0.gradient }
     }
 }
 
@@ -83,9 +84,9 @@ class Variable<DataType: TensorDataProtocol> {
         case let .parameter(shape: shape, initial: initial):
             switch initial {
             case .zeros:
-                return Tensor(shape: self.shape, repeating: .zero, device: self.graph.device)
+                return Tensor(shape: shape, repeating: .zero, device: self.graph.device)
             case let .random(from: lowerBound, to: upperBound):
-                return Tensor(shape: self.shape, device: self.graph.device, factory: {
+                return Tensor(shape: shape, device: self.graph.device, factory: {
                     DataType.random(from: lowerBound, to: upperBound)
                 })
             }
@@ -94,12 +95,169 @@ class Variable<DataType: TensorDataProtocol> {
         }
     }()
 
+    lazy var gradient: Tensor<DataType> = {
+        return Tensor(shape: self.shape, repeating: .zero, device: self.graph.device)
+    }()
+
+    /// Initialize a variable
+    ///
+    /// - Parameters:
+    ///   - name: name of the variable
+    ///   - shape: shape of the tensor representing nodes
+    ///   - rValue: source of assignment
+    ///   - graph: unowned reference to the graph
     init(name: String, shape: TensorShape, rValue: RValue<DataType>, graph: Graph<DataType>) {
         self.name = name
         self.shape = shape
         self.rValue = rValue
         self.graph = graph
     }
+}
+
+/// Graph creation error
+public enum GraphError : Error {
+    case productDimensionMismatch(TensorShape, TensorShape)
+}
+
+/// Assignment form builder
+fileprivate extension Graph {
+    
+    /// Build assignment form a neural network expression.
+    /// - note: To be called by the initializer.
+    /// - parameter expression: neural network expression
+    func buildIR(from expression: Expression<DataType>) throws {
+        var index: Int = 0
+        
+        func newName() -> String {
+            index += 1
+            return "v\(index)"
+        }
+        
+        /// Recursively build intermediate representation and store it to the tape
+        ///
+        /// - Parameter node: top node of the expression
+        /// - Returns: top node assignment
+        /// - Throws: GraphError: dimension mismatch
+        @discardableResult
+        func build(_ node: Expression<DataType>) throws -> Variable<DataType> {
+            let assn: Variable<DataType>
+            switch node {
+            case let .input(shape: shape, name: name):
+                assn = Variable(name: name ?? newName(),
+                                shape: shape,
+                                rValue: .input(shape: shape),
+                                graph: self)
+                
+            case let .parameter(shape: shape, initial: initializer, name: name):
+                assn = Variable(name: name ?? newName(),
+                                shape: shape,
+                                rValue: .parameter(shape: shape, initial: initializer),
+                                graph: self)
+                
+            case let .log(x):
+                let op = try build(x)
+                assn = Variable(name: newName(),
+                                shape: op.shape,
+                                rValue: .log(op),
+                                graph: self)
+                
+            case let .tanh(x):
+                let op = try build(x)
+                assn = Variable(name: newName(),
+                                shape: op.shape,
+                                rValue: .tanh(op),
+                                graph: self)
+                
+            case let .relu(x):
+                let op = try build(x)
+                assn = Variable(name: newName(),
+                                shape: op.shape,
+                                rValue: .relu(op),
+                                graph: self)
+                
+            case let .softmax(x):
+                let op = try build(x)
+                assn = Variable(name: newName(),
+                                shape: op.shape,
+                                rValue: .softmax(op),
+                                graph: self)
+                
+            case let .sigmoid(x):
+                let op = try build(x)
+                assn = Variable(name: newName(),
+                                shape: op.shape,
+                                rValue: .sigmoid(op),
+                                graph: self)
+                
+            case let .negative(x):
+                let op = try build(x)
+                assn = Variable(name: newName(),
+                                shape: op.shape,
+                                rValue: .sigmoid(op),
+                                graph: self)
+                
+            case let .add(lhs, rhs):
+                let leftOp = try build(lhs), rightOp = try build(rhs)
+                assn = Variable(name: newName(),
+                                shape: leftOp.shape,
+                                rValue: .add(leftOp, rightOp),
+                                graph: self)
+                
+                
+            case let .mul(lhs, rhs):
+                let leftOp = try build(lhs), rightOp = try build(rhs)
+                assn = Variable(name: newName(),
+                                shape: leftOp.shape,
+                                rValue: .mul(leftOp, rightOp),
+                                graph: self)
+                
+            case let .min(lhs, rhs):
+                let leftOp = try build(lhs), rightOp = try build(rhs)
+                assn = Variable(name: newName(),
+                                shape: leftOp.shape,
+                                rValue: .min(leftOp, rightOp),
+                                graph: self)
+                
+            case let .max(lhs, rhs):
+                let leftOp = try build(lhs), rightOp = try build(rhs)
+                assn = Variable(name: newName(),
+                                shape: leftOp.shape,
+                                rValue: .max(leftOp, rightOp),
+                                graph: self)
+                
+            case let .product(lhs, rhs):
+                let leftOp = try build(lhs), rightOp = try build(rhs)
+                let leftDim = leftOp.shape.dimensions
+                let rightDim = rightOp.shape.dimensions
+                guard leftDim.last == rightDim.first else {
+                    throw GraphError.productDimensionMismatch(leftOp.shape, rightOp.shape)
+                }
+                let newDim = leftDim.dropLast() + rightDim.dropFirst()
+                let newShape = TensorShape(newDim)
+                assn = Variable(name: newName(),
+                                shape: newShape,
+                                rValue: .product(leftOp, rightOp),
+                                graph: self)
+                
+            case let .layer(subExpr, name: name):
+                let op = try build(subExpr)
+                op.name = name
+                return op
+                
+            case let .scalarComplement(lhs, rhs):
+                let op = try build(rhs)
+                assn = Variable(name: newName(),
+                                shape: op.shape,
+                                rValue: .scalarComplement(lhs, op),
+                                graph: self)
+            }
+            /// Add assignment to the tape
+            tape.append(assn)
+            return assn
+        }
+        try build(expression)
+    }
+    
 }
 
 extension RValue : Equatable {
@@ -129,149 +287,4 @@ extension Variable : Equatable {
     static func ==(lhs: Variable<DataType>, rhs: Variable<DataType>) -> Bool {
         return lhs === rhs
     }
-}
-
-public enum GraphError : Error {
-    case productDimensionMismatch(TensorShape, TensorShape)
-}
-
-/// Assignment form builder
-fileprivate extension Graph {
-
-    /// Build assignment form a neural network expression.
-    /// - note: To be called by the initializer.
-    /// - parameter expression: neural network expression
-    func buildIR(from expression: Expression<DataType>) throws {
-        var index: Int = 0
-
-        func newName() -> String {
-            index += 1
-            return "v\(index)"
-        }
-
-        /// Recursively build intermediate representation and store it to the tape
-        ///
-        /// - Parameter node: top node of the expression
-        /// - Returns: top node assignment
-        /// - Throws: GraphError: dimension mismatch
-        @discardableResult
-        func build(_ node: Expression<DataType>) throws -> Variable<DataType> {
-            let assn: Variable<DataType>
-            switch node {
-            case let .input(shape: shape, name: name):
-                assn = Variable(name: name ?? newName(),
-                                  shape: shape,
-                                  rValue: .input(shape: shape),
-                                  graph: self)
-                
-            case let .parameter(shape: shape, initial: initializer, name: name):
-                assn = Variable(name: name ?? newName(),
-                                  shape: shape,
-                                  rValue: .parameter(shape: shape, initial: initializer),
-                                  graph: self)
-                
-            case let .log(x):
-                let op = try build(x)
-                assn = Variable(name: newName(),
-                                  shape: op.shape,
-                                  rValue: .log(op),
-                                  graph: self)
-                
-            case let .tanh(x):
-                let op = try build(x)
-                assn = Variable(name: newName(),
-                                  shape: op.shape,
-                                  rValue: .tanh(op),
-                                  graph: self)
-
-            case let .relu(x):
-                let op = try build(x)
-                assn = Variable(name: newName(),
-                                  shape: op.shape,
-                                  rValue: .relu(op),
-                                  graph: self)
-
-            case let .softmax(x):
-                let op = try build(x)
-                assn = Variable(name: newName(),
-                                  shape: op.shape,
-                                  rValue: .softmax(op),
-                                  graph: self)
-
-            case let .sigmoid(x):
-                let op = try build(x)
-                assn = Variable(name: newName(),
-                                  shape: op.shape,
-                                  rValue: .sigmoid(op),
-                                  graph: self)
-
-            case let .negative(x):
-                let op = try build(x)
-                assn = Variable(name: newName(),
-                                  shape: op.shape,
-                                  rValue: .sigmoid(op),
-                                  graph: self)
-
-            case let .add(lhs, rhs):
-                let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Variable(name: newName(),
-                                  shape: leftOp.shape,
-                                  rValue: .add(leftOp, rightOp),
-                                  graph: self)
-
-
-            case let .mul(lhs, rhs):
-                let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Variable(name: newName(),
-                                  shape: leftOp.shape,
-                                  rValue: .mul(leftOp, rightOp),
-                                  graph: self)
-
-            case let .min(lhs, rhs):
-                let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Variable(name: newName(),
-                                  shape: leftOp.shape,
-                                  rValue: .min(leftOp, rightOp),
-                                  graph: self)
-
-            case let .max(lhs, rhs):
-                let leftOp = try build(lhs), rightOp = try build(rhs)
-                assn = Variable(name: newName(),
-                                  shape: leftOp.shape,
-                                  rValue: .max(leftOp, rightOp),
-                                  graph: self)
-                
-            case let .product(lhs, rhs):
-                let leftOp = try build(lhs), rightOp = try build(rhs)
-                let leftDim = leftOp.shape.dimensions
-                let rightDim = rightOp.shape.dimensions
-                guard leftDim.last == rightDim.first else {
-                    throw GraphError.productDimensionMismatch(leftOp.shape, rightOp.shape)
-                }
-                let newDim = leftDim.dropLast() + rightDim.dropFirst()
-                let newShape = TensorShape(newDim)
-                assn = Variable(name: newName(),
-                                shape: newShape,
-                                rValue: .product(leftOp, rightOp),
-                                graph: self)
-
-            case let .layer(subExpr, name: name):
-                let op = try build(subExpr)
-                op.name = name
-                return op
-
-            case let .scalarComplement(lhs, rhs):
-                let op = try build(rhs)
-                assn = Variable(name: newName(),
-                                  shape: op.shape,
-                                  rValue: .scalarComplement(lhs, op),
-                                  graph: self)
-            }
-            /// Add assignment to the tape
-            tape.append(assn)
-            return assn
-        }
-        try build(expression)
-    }
-
 }
