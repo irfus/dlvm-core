@@ -79,18 +79,18 @@ class Variable<DataType: TensorDataProtocol> {
         Device.current = self.graph.device
         switch self.rValue {
         case let .input(shape: shape):
-            return Tensor(shape: shape, repeating: .zero)
+            return Tensor(shape: shape, repeating: .zero, device: self.graph.device)
         case let .parameter(shape: shape, initial: initial):
             switch initial {
             case .zeros:
-                return Tensor(shape: self.shape, repeating: .zero)
-            case let .randomUniform(from: lowerBound, to: upperBound):
-                return Tensor(shape: self.shape, factory: {
+                return Tensor(shape: self.shape, repeating: .zero, device: self.graph.device)
+            case let .random(from: lowerBound, to: upperBound):
+                return Tensor(shape: self.shape, device: self.graph.device, factory: {
                     DataType.random(from: lowerBound, to: upperBound)
                 })
             }
         default:
-            return Tensor(shape: self.shape, repeating: .zero)
+            return Tensor(shape: self.shape, repeating: .zero, device: self.graph.device)
         }
     }()
 
@@ -240,7 +240,7 @@ fileprivate extension Graph {
                                   shape: leftOp.shape,
                                   rValue: .max(leftOp, rightOp),
                                   graph: self)
-
+                
             case let .product(lhs, rhs):
                 let leftOp = try build(lhs), rightOp = try build(rhs)
                 let leftDim = leftOp.shape.dimensions
@@ -251,9 +251,9 @@ fileprivate extension Graph {
                 let newDim = leftDim.dropLast() + rightDim.dropFirst()
                 let newShape = TensorShape(newDim)
                 assn = Variable(name: newName(),
-                                  shape: newShape,
-                                  rValue: .product(leftOp, rightOp),
-                                  graph: self)
+                                shape: newShape,
+                                rValue: .product(leftOp, rightOp),
+                                graph: self)
 
             case let .layer(subExpr, name: name):
                 let op = try build(subExpr)
