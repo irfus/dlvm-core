@@ -16,24 +16,34 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
 
     let handle: cudnnTensorDescriptor_t
 
-    /// For now, we assume that strides are always 1.
+    /// For now, we assume that strides are always 1s.
     let strides: [Int32]
 
-    let rankRequested: Int
+    private let originalRank: Int
+    private let rankRequested: Int32
 
     init(shape: TensorShape) {
-        strides = Array(repeating: 1, count: shape.rank)
+        originalRank = shape.rank
+        rankRequested = Int32(Swift.max(shape.rank, 4))
+        /// Strides array should have at least 4 elements
+        strides = Array(repeating: 1, count: Int(rankRequested))
         var desc: cudnnTensorDescriptor_t?
         !!cudnnCreateTensorDescriptor(&desc)
         handle = desc!
-        rankRequested = shape.rank
-        let shapeComponents = shape.dimensions.map{Int32($0)}
+        /// Components array should have at least 4 elements
+        var shapeComponents: [Int32] = shape.dimensions.map{Int32($0)}
+        if shapeComponents.count < 4 {
+            shapeComponents.insert(
+                contentsOf: Array(repeating: 1, count: 4 - shapeComponents.count),
+                at: 0
+            )
+        }
         shapeComponents.withUnsafeBufferPointer { componentsBuf in
             strides.withUnsafeBufferPointer { stridesBuf in
                 !!cudnnSetTensorNdDescriptor(
                     handle,
                     Element.tensorDataType.cType,
-                    Int32(shape.rank),
+                    rankRequested,
                     componentsBuf.baseAddress,
                     stridesBuf.baseAddress
                 )
@@ -48,7 +58,7 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
     var shape: TensorShape {
         var rank: Int32 = 0
         var dataType = cudnnDataType_t(0)
-        var dimensions = Array<Int32>(repeating: 1, count: rankRequested)
+        var dimensions = Array<Int32>(repeating: 1, count: Int(rankRequested))
         var strides = dimensions
         !!cudnnGetTensorNdDescriptor(
             handle,
@@ -58,7 +68,7 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
             &dimensions,
             &strides
         )
-        return TensorShape(dimensions.map{Int($0)})
+        return TensorShape(dimensions.map{Int($0)}.suffix(originalRank))
     }
 
 }
@@ -137,11 +147,11 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     /// - parameter indices: tensor indices
     /// - returns: index in contiguous storage
     /// - note: the count of indices must equal the rank of the tensor
-    private func storageIndex(from indices: [Int]) -> Int {
+    private func contiguousIndex(from indices: [Int]) -> Int {
         /// Row-major order addressing
-        return indices.enumerated().reduce(0, { acc, next in
+        return Int(indices.enumerated().reduce(0, { acc, next in
             next.element * (next.offset..<shape.rank).reduce(0, { $0 + shape[$1] })
-        })
+        }))
     }
 
     /// Access an element of the tensor.
@@ -153,13 +163,13 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
             guard indices.count == shape.rank else {
                 fatalError("Incorrect index dimension")
             }
-            return elements[storageIndex(from: indices)]
+            return elements[contiguousIndex(from: indices)]
         }
         set {
             guard indices.count == shape.rank else {
                 fatalError("Incorrect index dimension")
             }
-            elements[storageIndex(from: indices)] = newValue
+            elements[contiguousIndex(from: indices)] = newValue
         }
     }
 
@@ -178,6 +188,20 @@ extension DeviceTensor {
         (_ body: (UnsafePointer<Element>) throws -> Result) rethrows -> Result {
         return try elements.withUnsafeDevicePointer { ptr in
             try body(ptr.deviceAddress)
+        }
+    }
+    
+    public mutating func withUnsafeMutableDevicePointer<Result>
+        (_ body: (UnsafeMutableDevicePointer<Element>) throws -> Result) rethrows -> Result {
+        return try elements.withUnsafeMutableDevicePointer { ptr in
+            try body(ptr)
+        }
+    }
+    
+    public func withUnsafeDevicePointer<Result>
+        (_ body: (UnsafeDevicePointer<Element>) throws -> Result) rethrows -> Result {
+        return try elements.withUnsafeDevicePointer { ptr in
+            try body(ptr)
         }
     }
     

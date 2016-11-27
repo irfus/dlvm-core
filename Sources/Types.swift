@@ -30,7 +30,9 @@ public protocol Randomizable {
 }
 
 /// Protocol that specifies requirements for the type of elements of the tensor
-public protocol TensorDataProtocol : KernelDataProtocol, BLASDataProtocol, FloatingPoint, Randomizable, Comparable, Equatable {
+public protocol TensorDataProtocol
+    : KernelDataProtocol, BLASDataProtocol, FloatingPoint,
+      Randomizable, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, Comparable, Equatable {
     static var tensorDataType: TensorDataType { get }
     static var zero: Self { get }
 }

@@ -12,7 +12,7 @@ import CuBLAS
 
 extension Variable {
 
-    func propogateForward() {
+    func propagateForward() {
         switch rValue {
         case let .add(lhs, rhs):
             var one: DataType = 1
@@ -147,17 +147,18 @@ extension Variable {
             }
 
         case let .product(lhs, rhs):
-            var one: DataType = 1
-            var zero = DataType.zero
-            self.data.withUnsafeMutableDeviceAddress { ptrC -> () in
-                lhs.data.withUnsafeDeviceAddress { ptrA in
-                    rhs.data.withUnsafeDeviceAddress { ptrB in
-                        !!cudnnOpTensor(
-                            graph.dnn.handle,
-                            graph.tensorOperators.mulOp,
-                            &one, lhs.data.descriptor.handle, ptrA,
-                            &one, rhs.data.descriptor.handle, ptrB,
-                            &zero, self.data.descriptor.handle, ptrC
+            let blas = graph.blas
+            self.data.elements.withUnsafeMutableDevicePointer { ptrC in
+                lhs.data.elements.withUnsafeDevicePointer { ptrA in
+                    rhs.data.elements.withUnsafeDevicePointer { ptrB in
+                        blas.gemm(
+                            alpha: 1.0,
+                            A: ptrA, rowCount: Int32(lhs.shape.dimensions.first!),
+                            transpose: .none, leadingDimension: Int32(lhs.shape.leadingDimension),
+                            B: ptrB, columnCount: Int32(rhs.shape.leadingDimension),
+                            transpose: .none, leadingDimension: Int32(rhs.shape.leadingDimension),
+                            commonDimension: Int32(lhs.shape.dimensions.last!),
+                            beta: 0.0, C: ptrC, leadingDimension: Int32(self.shape.leadingDimension)
                         )
                     }
                 }
