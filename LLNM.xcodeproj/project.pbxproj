@@ -210,6 +210,7 @@
 
 /* Begin PBXFileReference section */
 		294123951DE1A358003FE864 /* TensorOperators.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TensorOperators.swift; sourceTree = "<group>"; };
+		29E3D4F71DEAC340000F06AF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		OBJ_10 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Level1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level1.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Level2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2.swift; sourceTree = "<group>"; };
@@ -413,16 +414,16 @@
 			path = Sources;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
+				29E3D4F71DEAC340000F06AF /* README.md */,
 				OBJ_6 /* Package.swift */,
 				OBJ_7 /* Sources */,
 				OBJ_57 /* Tests */,
 				OBJ_60 /* Build */,
 				OBJ_61 /* Products */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_57 /* Tests */ = {
@@ -632,7 +633,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_61 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
