@@ -89,15 +89,11 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     public let shape: TensorShape
     
     /// Contiguous storage (an array) on device
-    var elements: DeviceArray<Element>
+    public internal(set) var elements: DeviceArray<Element>
 
     /// The GPU device that owns this tensor
     public var device: Device {
         return elements.device
-    }
-
-    var dnn: DNN {
-        return DNN.shared(on: device)
     }
 
     /// Initialize from an array on GPU device.
@@ -160,15 +156,11 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
     /// - note: the count of indices must equal the rank of the tensor
     public subscript(indices: Int...) -> DeviceValue<Element> {
         get {
-            guard indices.count == shape.rank else {
-                fatalError("Incorrect index dimension")
-            }
+            precondition(indices.count == shape.rank, "Incorrect index dimension")
             return elements[contiguousIndex(from: indices)]
         }
         set {
-            guard indices.count == shape.rank else {
-                fatalError("Incorrect index dimension")
-            }
+            precondition(indices.count == shape.rank, "Incorrect index dimension")
             elements[contiguousIndex(from: indices)] = newValue
         }
     }
