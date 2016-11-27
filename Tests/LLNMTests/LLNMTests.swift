@@ -10,10 +10,10 @@ class LLNMTests: XCTestCase {
         let W2 = Expression<Float>.parameter(shape: [4, 2], initial: .zeros, name: "W2")
         let b2 = Expression<Float>.parameter(shape: [4, 1], initial: .zeros, name: "b2")
 
-        let l1 = tanh(W1 • x + b1) ~ "l1"
-        let l2 = softmax(W2 • (1 - l1) + b2) ~ "l2"
+        let h1 = tanh(W1 • x + b1) ~ "l1"
+        let o = softmax(W2 • (1 - h1) + b2) ~ "l2"
 
-        return try! Graph<Float>(expression: l2)
+        return try! Graph<Float>(expression: o)
     }()
     
     func testTensorDescriptor() {
