@@ -4,14 +4,14 @@ import XCTest
 class DLVMTests: XCTestCase {
 
     lazy var graph1: Graph<Float> = {
-        let x = Expression<Float>.input(shape: [2, 1], name: "x")
-        let W1 = Expression<Float>.parameter(shape: [2, 2], initial: .zeros, name: "W1")
-        let b1 = Expression<Float>.parameter(shape: [2, 1], initial: .zeros, name: "b1")
-        let W2 = Expression<Float>.parameter(shape: [4, 2], initial: .zeros, name: "W2")
-        let b2 = Expression<Float>.parameter(shape: [4, 1], initial: .zeros, name: "b2")
-
-        let h1 = tanh(W1 • x + b1) ~ "l1"
-        let o = softmax(W2 • (1 - h1) + b2) ~ "l2"
+        let x = Expression<Float>.input(shape: [2, 1]) ~ "x"
+        let W1 = Expression<Float>.parameter(shape: [2, 2], initial: .zeros) ~ "W1"
+        let b1 = Expression<Float>.parameter(shape: [2, 1], initial: .zeros) ~ "b1"
+        let W2 = Expression<Float>.parameter(shape: [4, 2], initial: .zeros) ~ "W2"
+        let b2 = Expression<Float>.parameter(shape: [4, 1], initial: .zeros) ~ "b2"
+                                                                            
+        let h1 = tanh(W1 • x + b1) ~ "h1"
+        let o = softmax(W2 • (1 - h1) + b2) ~ "o"
 
         return try! Graph<Float>(expression: o)
     }()
@@ -33,27 +33,25 @@ class DLVMTests: XCTestCase {
     }
 
     func testBuildTape() throws {
-        let x = Expression<Float>.input(shape: [2, 1], name: "x")
-        let W1 = Expression<Float>.parameter(shape: [2, 2], initial: .zeros, name: "W1")
-        let b1 = Expression<Float>.parameter(shape: [2, 1], initial: .zeros, name: "b1")
-        let W2 = Expression<Float>.parameter(shape: [4, 2], initial: .zeros, name: "W2")
-        let b2 = Expression<Float>.parameter(shape: [4, 1], initial: .zeros, name: "b2")
+        let x: Expression<Float> = .input(shape: [2, 1]) ~ "x"
+        let W1: Expression<Float> = .parameter(shape: [2, 2], initial: .zeros) ~ "W1"
+        let b1: Expression<Float> = .parameter(shape: [2, 1], initial: .zeros) ~ "b1"
+        let W2: Expression<Float> = .parameter(shape: [4, 2], initial: .zeros) ~ "W2"
+        let b2: Expression<Float> = .parameter(shape: [4, 1], initial: .zeros) ~ "b2"
 
-        let l1 = tanh(W1 • x + b1) ~ "l1"
-        let l2 = softmax(W2 • (1 - l1) + b2) ~ "l2"
+        let l1 = tanh(W1 • x + b1) ~ "h1"
+        let l2 = softmax(W2 • (1 - l1) + b2) ~ "h2"
 
         let graph = try Graph<Float>(expression: l2)
 
-        print(graph)
+        debugPrint(graph)
     }
 
     func testTensorOp() throws {
         let x = Expression<Float>.parameter(shape: [2, 1],
-                                            initial: .random(from: 0.0, to: 1.0),
-                                            name: "x")
+                                            initial: .random(from: 0.0, to: 1.0))
         let y = Expression<Float>.parameter(shape: [2, 2],
-                                            initial: .random(from: 0.0, to: 1.0),
-                                            name: "y")
+                                            initial: .random(from: 0.0, to: 1.0))
         let o = Expression.product(y, x)
         let graph = try Graph<Float>(expression: o)
         let assignment = graph.tape.last!
@@ -61,9 +59,9 @@ class DLVMTests: XCTestCase {
 
         /// Whole graph
         for variable in graph1.tape {
-            print(variable)
+            debugPrint(variable)
             variable.propagateForward()
-            print(variable.data.elements.hostArray)
+            debugPrint(variable.data.elements.hostArray)
         }
     }
 

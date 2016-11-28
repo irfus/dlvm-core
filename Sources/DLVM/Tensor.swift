@@ -1,6 +1,6 @@
 //
 //  Tensor.swift
-//  Tensor
+//  DLVM
 //
 //  Created by Richard Wei on 9/28/16.
 //
