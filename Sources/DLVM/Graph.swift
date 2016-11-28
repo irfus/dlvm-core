@@ -240,6 +240,7 @@ fileprivate extension Graph {
                 
             case let .layer(subExpr, name: name):
                 let op = try build(subExpr)
+                index -= 1
                 op.name = name
                 return op
                 
