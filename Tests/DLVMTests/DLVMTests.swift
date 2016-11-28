@@ -1,7 +1,7 @@
 import XCTest
-@testable import LLNM
+@testable import DLVM
 
-class LLNMTests: XCTestCase {
+class DLVMTests: XCTestCase {
 
     lazy var graph1: Graph<Float> = {
         let x = Expression<Float>.input(shape: [2, 1], name: "x")
@@ -67,7 +67,7 @@ class LLNMTests: XCTestCase {
         }
     }
 
-    static var allTests : [(String, (LLNMTests) -> () throws -> Void)] {
+    static var allTests : [(String, (DLVMTests) -> () throws -> Void)] {
         return [
             ("testTensorDescriptor", testTensorDescriptor),
             ("testTensor", testTensor),
