@@ -22,6 +22,9 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
     private let originalRank: Int
     private let rankRequested: Int32
 
+    /// Initialize a cuDNN tensor descriptor
+    ///
+    /// - Parameter shape: tensor shape
     init(shape: TensorShape) {
         originalRank = shape.rank
         rankRequested = Int32(Swift.max(shape.rank, 4))
@@ -34,7 +37,7 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
         var shapeComponents: [Int32] = shape.dimensions.map{Int32($0)}
         if shapeComponents.count < 4 {
             shapeComponents.insert(
-                contentsOf: Array(repeating: 1, count: 4 - shapeComponents.count),
+                contentsOf: repeatElement(1, count: 4 - shapeComponents.count),
                 at: 0
             )
         }
@@ -75,6 +78,7 @@ final class TensorDescriptor<Element : TensorDataProtocol> {
 
 public enum TensorInitializer<DataType : TensorDataProtocol> {
     case random(from: DataType, to: DataType)
+    case value(DataType)
     case zeros
 }
 
@@ -113,11 +117,11 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
                 device: Device = Device.current) {
         descriptor = TensorDescriptor(shape: shape)
         elements = DeviceArray(repeating: repeatedValue,
-                              count: shape.contiguousSize,
-                              device: device)
+                               count: shape.contiguousSize,
+                               device: device)
         self.shape = shape
     }
-
+    
     /// Allocate and initialize a tensor using the factory function
     /// - parameter shape: tensor shape
     /// - parameter repeating: repeated value
@@ -130,7 +134,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
         elements = DeviceArray(hostData, device: device)
         self.shape = shape
     }
-
+    
     /// Allocate and initialize a tensor.
     /// - parameter shape: tensor shape
     public init(shape: TensorShape, device: Device = Device.current) {
@@ -138,7 +142,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
         elements = DeviceArray(device: device, capacity: shape.contiguousSize)
         self.shape = shape
     }
-
+    
     /// Compute the contiguous storage index from high-dimensional tensor indices.
     /// - parameter indices: tensor indices
     /// - returns: index in contiguous storage
@@ -149,7 +153,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
             next.element * (next.offset..<shape.rank).reduce(0, { $0 + shape[$1] })
         }))
     }
-
+    
     /// Access an element of the tensor.
     /// - parameter indices: tensor indices
     /// - returns: reference to the value on GPU device
@@ -164,7 +168,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
             elements[contiguousIndex(from: indices)] = newValue
         }
     }
-
+    
 }
 
 extension DeviceTensor {

@@ -18,7 +18,7 @@ extension Variable {
         switch rValue {
         case let .add(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -35,7 +35,7 @@ extension Variable {
 
         case let .mul(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -52,7 +52,7 @@ extension Variable {
 
         case let .min(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -69,7 +69,7 @@ extension Variable {
 
         case let .max(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -86,7 +86,7 @@ extension Variable {
             
         case let .tanh(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     !!cudnnActivationForward(
@@ -100,7 +100,7 @@ extension Variable {
 
         case let .relu(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     !!cudnnActivationForward(
@@ -114,7 +114,7 @@ extension Variable {
 
         case let .sigmoid(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     !!cudnnActivationForward(
@@ -128,7 +128,7 @@ extension Variable {
             
         case let .softmax(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     !!cudnnSoftmaxForward(
@@ -221,7 +221,7 @@ extension Variable {
         switch rValue {
         case let .add(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -232,7 +232,7 @@ extension Variable {
 
         case let .mul(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -243,7 +243,7 @@ extension Variable {
 
         case let .min(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -254,7 +254,7 @@ extension Variable {
 
         case let .max(lhs, rhs):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { ptrC in
                 lhs.data.withUnsafeDeviceAddress { ptrA in
                     rhs.data.withUnsafeDeviceAddress { ptrB in
@@ -265,7 +265,7 @@ extension Variable {
             
         case let .tanh(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     /// TODO: derivative
@@ -274,7 +274,7 @@ extension Variable {
 
         case let .relu(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     /// TODO: derivative
@@ -283,7 +283,7 @@ extension Variable {
 
         case let .sigmoid(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     /// TODO: derivative
@@ -292,7 +292,7 @@ extension Variable {
             
         case let .softmax(x):
             var one: DataType = 1
-            var zero = DataType.zero
+            var zero = 0
             self.data.withUnsafeMutableDeviceAddress { dest in
                 x.data.withUnsafeDeviceAddress { src in
                     /// TODO: derivative
