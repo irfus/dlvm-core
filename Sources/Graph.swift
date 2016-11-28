@@ -45,8 +45,8 @@ public class Graph<DataType : TensorDataProtocol> {
         try buildIR(from: expression)
     }
 
-    /// Preallocate data for the assignment form
-    func preallocateData() {
+    /// Preinitialize data for the assignment form
+    func preinitializeData() {
         tape.forEach { _ = $0.data; _ = $0.gradient }
     }
 }
@@ -80,23 +80,25 @@ class Variable<DataType: TensorDataProtocol> {
         Device.current = self.graph.device
         switch self.rValue {
         case let .input(shape: shape):
-            return Tensor(shape: shape, repeating: .zero, device: self.graph.device)
+            return Tensor(shape: shape, repeating: 0, device: self.graph.device)
         case let .parameter(shape: shape, initial: initial):
             switch initial {
             case .zeros:
-                return Tensor(shape: shape, repeating: .zero, device: self.graph.device)
+                return Tensor(shape: shape, repeating: 0, device: self.graph.device)
+            case let .value(initialValue):
+                return Tensor(shape: shape, repeating: initialValue, device: self.graph.device)
             case let .random(from: lowerBound, to: upperBound):
                 return Tensor(shape: shape, device: self.graph.device, factory: {
                     DataType.random(from: lowerBound, to: upperBound)
                 })
             }
         default:
-            return Tensor(shape: self.shape, repeating: .zero, device: self.graph.device)
+            return Tensor(shape: self.shape, repeating: 0, device: self.graph.device)
         }
     }()
 
     lazy var gradient: Tensor<DataType> = {
-        return Tensor(shape: self.shape, repeating: .zero, device: self.graph.device)
+        return Tensor(shape: self.shape, repeating: 0, device: self.graph.device)
     }()
 
     /// Initialize a variable

@@ -10,18 +10,27 @@ import CCuDNN
 
 class TensorOperators<DataType: TensorDataProtocol> {
 
-    private var opDescriptor: cudnnOpTensorDescriptor_t = {
+    fileprivate let opDescriptor: cudnnOpTensorDescriptor_t = {
         var opDescriptor: cudnnOpTensorDescriptor_t?
         !!cudnnCreateOpTensorDescriptor(&opDescriptor)
         return opDescriptor!
     }()
 
-    private var activationDescriptor: cudnnActivationDescriptor_t = {
+    fileprivate let activationDescriptor: cudnnActivationDescriptor_t = {
         var activationDescriptor: cudnnActivationDescriptor_t?
         !!cudnnCreateActivationDescriptor(&activationDescriptor)
         return activationDescriptor!
     }()
 
+    deinit {
+        cudnnDestroyOpTensorDescriptor(opDescriptor)
+        cudnnDestroyActivationDescriptor(activationDescriptor)
+    }
+
+}
+
+extension TensorOperators {
+    
     var addOp: cudnnOpTensorDescriptor_t {
         !!cudnnSetOpTensorDescriptor(
             opDescriptor,
@@ -31,7 +40,7 @@ class TensorOperators<DataType: TensorDataProtocol> {
         )
         return opDescriptor
     }
-
+    
     var mulOp: cudnnOpTensorDescriptor_t {
         !!cudnnSetOpTensorDescriptor(
             opDescriptor,
@@ -41,7 +50,7 @@ class TensorOperators<DataType: TensorDataProtocol> {
         )
         return opDescriptor
     }
-
+    
     var minOp: cudnnOpTensorDescriptor_t {
         !!cudnnSetOpTensorDescriptor(
             opDescriptor,
@@ -51,7 +60,7 @@ class TensorOperators<DataType: TensorDataProtocol> {
         )
         return opDescriptor
     }
-
+    
     var maxOp: cudnnOpTensorDescriptor_t {
         !!cudnnSetOpTensorDescriptor(
             opDescriptor,
@@ -61,7 +70,7 @@ class TensorOperators<DataType: TensorDataProtocol> {
         )
         return opDescriptor
     }
-
+    
     var sigmoidActivation: cudnnActivationDescriptor_t {
         !!cudnnSetActivationDescriptor(
             activationDescriptor,
@@ -71,7 +80,7 @@ class TensorOperators<DataType: TensorDataProtocol> {
         )
         return activationDescriptor
     }
-
+    
     var tanhActivation: cudnnActivationDescriptor_t {
         !!cudnnSetActivationDescriptor(
             activationDescriptor,
@@ -81,7 +90,7 @@ class TensorOperators<DataType: TensorDataProtocol> {
         )
         return activationDescriptor
     }
-
+    
     var reluActivation: cudnnActivationDescriptor_t {
         !!cudnnSetActivationDescriptor(
             activationDescriptor,
@@ -90,11 +99,6 @@ class TensorOperators<DataType: TensorDataProtocol> {
             1.0
         )
         return activationDescriptor
-    }
-
-    deinit {
-        cudnnDestroyOpTensorDescriptor(opDescriptor)
-        cudnnDestroyActivationDescriptor(activationDescriptor)
     }
     
 }

@@ -14,7 +14,7 @@ import Warp
 public enum TensorDataType : UInt32 {
     case float  = 0
     case double = 1
-    case half   = 2
+    case half   = 2 /// Unimplemented
 
     init(_ dataType: cudnnDataType_t) {
         self.init(rawValue: dataType.rawValue)!
@@ -31,44 +31,60 @@ public protocol Randomizable {
 
 /// Protocol that specifies requirements for the type of elements of the tensor
 public protocol TensorDataProtocol
-    : KernelDataProtocol, BLASDataProtocol, FloatingPoint,
-      Randomizable, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, Comparable, Equatable {
+    : KernelDataProtocol, BLASDataProtocol, FloatingPoint, Randomizable,
+      ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral {
     static var tensorDataType: TensorDataType { get }
-    static var zero: Self { get }
 }
 
 import func Foundation.drand48
 import func Foundation.srand48
 import func Foundation.time
 
-private let seed: Void = srand48(time(nil))
+/// Lazy random seed
+fileprivate let seed: Void = srand48(time(nil))
 
-extension Double : TensorDataProtocol {
-    public static var tensorDataType: TensorDataType {
-        return .double
-    }
+extension Float : Randomizable {
 
-    public static var zero: Double {
-        return 0.0
-    }
-
-    public static func random(from lowerBound: Double, to upperBound: Double) -> Double {
-        _ = seed
-        return drand48().truncatingRemainder(dividingBy: upperBound) + lowerBound
-    }
-}
-
-extension Float : TensorDataProtocol {
-    public static var tensorDataType: TensorDataType {
-        return .float
-    }
-
-    public static var zero: Float {
-        return 0.0
-    }
-    
+    /// Generate random value
+    ///
+    /// - Parameters:
+    ///   - lowerBound: lower bound of the random number
+    ///   - upperBound: upper bound (non-inclusive) of the random number
+    /// - Returns: random value
     public static func random(from lowerBound: Float, to upperBound: Float) -> Float {
         _ = seed
         return Float(drand48()).truncatingRemainder(dividingBy: upperBound) + lowerBound
     }
+
+}
+
+extension Double : Randomizable {
+    
+    /// Generate random value
+    ///
+    /// - Parameters:
+    ///   - lowerBound: lower bound of the random number
+    ///   - upperBound: upper bound (non-inclusive) of the random number
+    /// - Returns: random value
+    public static func random(from lowerBound: Double, to upperBound: Double) -> Double {
+        _ = seed
+        return drand48().truncatingRemainder(dividingBy: upperBound) + lowerBound
+    }
+    
+}
+
+extension Float : TensorDataProtocol {
+    
+    public static var tensorDataType: TensorDataType {
+        return .float
+    }
+    
+}
+
+extension Double : TensorDataProtocol {
+
+    public static var tensorDataType: TensorDataType {
+        return .double
+    }
+    
 }

@@ -6,6 +6,8 @@
 //
 //
 
+// This file contains string conversion methods for pretty printing
+
 extension RValue : CustomStringConvertible {
     var description: String {
         switch self {
