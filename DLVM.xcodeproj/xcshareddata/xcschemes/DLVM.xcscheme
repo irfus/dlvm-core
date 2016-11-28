@@ -17,7 +17,7 @@
                BlueprintIdentifier = "OBJ_69"
                BuildableName = "CuBLAS.framework"
                BlueprintName = "CuBLAS"
-               ReferencedContainer = "container:LLNM.xcodeproj">
+               ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -31,7 +31,7 @@
                BlueprintIdentifier = "OBJ_84"
                BuildableName = "CUDADriver.framework"
                BlueprintName = "CUDADriver"
-               ReferencedContainer = "container:LLNM.xcodeproj">
+               ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -45,7 +45,7 @@
                BlueprintIdentifier = "OBJ_86"
                BuildableName = "CUDARuntime.framework"
                BlueprintName = "CUDARuntime"
-               ReferencedContainer = "container:LLNM.xcodeproj">
+               ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -59,7 +59,7 @@
                BlueprintIdentifier = "OBJ_114"
                BuildableName = "NVRTC.framework"
                BlueprintName = "NVRTC"
-               ReferencedContainer = "container:LLNM.xcodeproj">
+               ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -73,7 +73,7 @@
                BlueprintIdentifier = "OBJ_125"
                BuildableName = "Warp.framework"
                BlueprintName = "Warp"
-               ReferencedContainer = "container:LLNM.xcodeproj">
+               ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -85,9 +85,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "OBJ_148"
-               BuildableName = "LLNM.framework"
-               BlueprintName = "LLNM"
-               ReferencedContainer = "container:LLNM.xcodeproj">
+               BuildableName = "DLVM.framework"
+               BlueprintName = "DLVM"
+               ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -96,26 +96,20 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES"
-      enableAddressSanitizer = "YES">
+      shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
          <TestableReference
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "OBJ_174"
-               BuildableName = "LLNMTests.xctest"
-               BlueprintName = "LLNMTests"
-               ReferencedContainer = "container:LLNM.xcodeproj">
+               BuildableName = "DLVMTests.xctest"
+               BlueprintName = "DLVMTests"
+               ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
       <AdditionalOptions>
-         <AdditionalOption
-            key = "NSZombieEnabled"
-            value = "YES"
-            isEnabled = "YES">
-         </AdditionalOption>
       </AdditionalOptions>
    </TestAction>
    <LaunchAction
@@ -134,7 +128,7 @@
             BlueprintIdentifier = "OBJ_69"
             BuildableName = "CuBLAS.framework"
             BlueprintName = "CuBLAS"
-            ReferencedContainer = "container:LLNM.xcodeproj">
+            ReferencedContainer = "container:DLVM.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
