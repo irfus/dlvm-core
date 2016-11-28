@@ -1,6 +1,6 @@
 //
 //  Types.swift
-//  CuDNN
+//  DLVM
 //
 //  Created by Richard Wei on 10/30/16.
 //

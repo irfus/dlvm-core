@@ -1,6 +1,6 @@
 //
 //  Expression.swift
-//  LLNM
+//  DLVM
 //
 //  Created by Richard Wei on 11/6/16.
 //
@@ -9,9 +9,9 @@
 /// Symbolic expression of neural network
 public indirect enum Expression<DataType: TensorDataProtocol> {
     /// Input tensor placeholder
-    case input(shape: TensorShape, name: String?)
+    case input(shape: TensorShape)
     /// Parameter of the network
-    case parameter(shape: TensorShape, initial: TensorInitializer<DataType>, name: String?)
+    case parameter(shape: TensorShape, initial: TensorInitializer<DataType>)
     /// Logarithm
     case log(Expression)
     /// Sigmoid
@@ -69,10 +69,14 @@ public extension Expression {
     public static func -(lhs: DataType, rhs: Expression) -> Expression {
         return .scalarComplement(lhs, rhs)
     }
-
+    
+    @inline(__always)
+    public static func ~(lhs: Expression, rhs: String) -> Expression {
+        return .layer(lhs, name: rhs)
+    }
+    
 }
 
-/// Free functions that assist expression building in mathematical sense
 @inline(__always)
 public func sigmoid<T: TensorDataProtocol>(_ expression: Expression<T>) -> Expression<T> {
     return .sigmoid(expression)
@@ -101,9 +105,4 @@ public func min<T: TensorDataProtocol>(_ lhs: Expression<T>, _ rhs: Expression<T
 @inline(__always)
 public func max<T: TensorDataProtocol>(_ lhs: Expression<T>, _ rhs: Expression<T>) -> Expression<T> {
     return .max(lhs, rhs)
-}
-
-@inline(__always)
-public func ~<T: TensorDataProtocol>(lhs: Expression<T>, rhs: String) -> Expression<T> {
-    return .layer(lhs, name: rhs)
 }

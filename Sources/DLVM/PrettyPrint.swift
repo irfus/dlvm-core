@@ -1,6 +1,6 @@
 //
 //  PrettyPrint.swift
-//  LLNM
+//  DLVM
 //
 //  Created by Richard Wei on 11/13/16.
 //
@@ -31,7 +31,7 @@ extension RValue : CustomStringConvertible {
 
 extension Variable : CustomStringConvertible {
     var description: String {
-        return "[\(shape)] \(name) = \(rValue)"
+        return "\(DataType.tensorDataType) [\(shape)] \(name) = \(rValue)"
     }
 }
 
@@ -45,14 +45,10 @@ extension Graph : CustomStringConvertible {
 extension Expression : CustomStringConvertible {
     public var description: String {
         switch self {
-        case let .input(shape: shape, name: nil):
+        case let .input(shape: shape):
             return "[\(shape)]"
-        case let .input(shape: shape, name: name?):
-            return name + ":[\(shape)]"
-        case let .parameter(shape: shape, initial: _, name: nil):
+        case let .parameter(shape: shape, initial: _):
             return "[\(shape)]"
-        case let .parameter(shape: shape, initial: _, name: name?):
-            return name + ":[\(shape)]"
         case let .log(expr): return "log(\(expr))"
         case let .sigmoid(expr): return "σ(\(expr))"
         case let .relu(expr): return "ReLU(\(expr))"

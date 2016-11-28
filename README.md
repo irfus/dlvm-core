@@ -84,7 +84,7 @@ label:
     float [2x1] x = input:[2x1]
     float [2x1] v1 = W1 • x
     float [2x1] b1 = param:[2x1]
-    float [2x1] v2 = v1 + b21
+    float [2x1] v2 = v1 + b1
     float [2x1] h1 = tanh(v)
     float [2x1] v4 = 1.0 - h1
     float [4x1] v5 = W2 • v4

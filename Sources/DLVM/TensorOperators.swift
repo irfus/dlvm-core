@@ -1,6 +1,6 @@
 //
 //  TensorOperators.swift
-//  LLNM
+//  DLVM
 //
 //  Created by Richard Wei on 11/20/16.
 //

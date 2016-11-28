@@ -1,13 +1,10 @@
 //
 //  Graph.swift
-//  LLNM
+//  DLVM
 //
 //  Created by Richard Wei on 11/11/16.
 //
 //
-
-/// This file contains LLNM Intermediate Representation (computation graph).
-/// We will use the acronym **LLNM IR**.
 
 import CUDARuntime
 import CuBLAS
@@ -144,14 +141,14 @@ fileprivate extension Graph {
         func build(_ node: Expression<DataType>) throws -> Variable<DataType> {
             let assn: Variable<DataType>
             switch node {
-            case let .input(shape: shape, name: name):
-                assn = Variable(name: name ?? newName(),
+            case let .input(shape: shape):
+                assn = Variable(name: newName(),
                                 shape: shape,
                                 rValue: .input(shape: shape),
                                 graph: self)
                 
-            case let .parameter(shape: shape, initial: initializer, name: name):
-                assn = Variable(name: name ?? newName(),
+            case let .parameter(shape: shape, initial: initializer):
+                assn = Variable(name: newName(),
                                 shape: shape,
                                 rValue: .parameter(shape: shape, initial: initializer),
                                 graph: self)
