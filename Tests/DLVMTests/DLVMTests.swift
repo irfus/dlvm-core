@@ -52,7 +52,7 @@ class DLVMTests: XCTestCase {
                                             initial: .random(from: 0.0, to: 1.0))
         let y = Expression<Float>.parameter(shape: [2, 2],
                                             initial: .random(from: 0.0, to: 1.0))
-        let o = Expression.product(y, x)
+        let o = y • x
         let graph = try Graph<Float>(expression: o)
         let assignment = graph.tape.last!
         assignment.propagateForward()

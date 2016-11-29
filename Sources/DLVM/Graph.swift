@@ -120,18 +120,18 @@ public enum GraphError : Error {
 
 /// Assignment form builder
 fileprivate extension Graph {
-    
+
     /// Build assignment form a neural network expression.
     /// - note: To be called by the initializer.
     /// - parameter expression: neural network expression
     func buildIR(from expression: Expression<DataType>) throws {
         var index: Int = 0
-        
+
         func newName() -> String {
             index += 1
             return "v\(index)"
         }
-        
+
         /// Recursively build intermediate representation and store it to the tape
         ///
         /// - Parameter node: top node of the expression
@@ -257,7 +257,7 @@ fileprivate extension Graph {
         }
         try build(expression)
     }
-    
+
 }
 
 extension RValue : Equatable {

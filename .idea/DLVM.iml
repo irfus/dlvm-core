@@ -4,9 +4,9 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Function.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Device.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Memory.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Stream.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Error.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Memory.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/Array.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/ArrayBuffer.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/DeviceTypes.swift" isTestSource="false" />
@@ -19,11 +19,11 @@
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Function.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Memory.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Error.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/PTX.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Device.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/CHandleCarrier.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Driver.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Stream.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/PTX.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Context.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Module.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Level2.swift" isTestSource="false" />
