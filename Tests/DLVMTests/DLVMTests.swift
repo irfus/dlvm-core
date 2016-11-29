@@ -21,8 +21,8 @@ class DLVMTests: XCTestCase {
         XCTAssertEqual(tensor1.shape.rank, 2)
         XCTAssertEqual(tensor1.shape.dimensions, [1, 2])
         let tensor2 = TensorDescriptor<Float>(shape: [1, 2, 3, 4, 5, 6, 7, 8])
-        XCTAssertEqual(tensor2.shape.rank, 8)
         XCTAssertEqual(tensor2.shape.dimensions, [1, 2, 3, 4, 5, 6, 7, 8])
+        XCTAssertEqual(tensor2.shape.rank, 8)
     }
     
     func testTensor() {
