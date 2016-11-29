@@ -172,7 +172,7 @@ public struct DeviceTensor<Element : TensorDataProtocol> {
 }
 
 extension DeviceTensor {
-    
+
     mutating func withUnsafeMutableDeviceAddress<Result>
         (_ body: (UnsafeMutablePointer<Element>) throws -> Result) rethrows -> Result {
         return try elements.withUnsafeMutableDevicePointer { ptr in
