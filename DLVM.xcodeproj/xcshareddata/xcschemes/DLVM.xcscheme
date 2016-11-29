@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_69"
-               BuildableName = "CuBLAS.framework"
-               BlueprintName = "CuBLAS"
+               BlueprintIdentifier = "OBJ_148"
+               BuildableName = "DLVM.framework"
+               BlueprintName = "DLVM"
                ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
