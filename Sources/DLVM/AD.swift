@@ -263,39 +263,85 @@ extension Variable {
                 }
             }
             
-        case let .tanh(x):
+        case let .tanh(arg):
             var one: DataType = 1
             var zero = 0
-            self.data.withUnsafeMutableDeviceAddress { dest in
-                x.data.withUnsafeDeviceAddress { src in
-                    /// TODO: derivative
+            self.data.withUnsafeDeviceAddress { y in
+                self.gradient.withUnsafeDeviceAddress { dy in
+                    arg.data.withUnsafeDeviceAddress { x in
+                        arg.gradient.withUnsafeMutableDeviceAddress { dx in
+                            !!cudnnActivationBackward(
+                                graph.dnn.handle,
+                                graph.tensorOperators.tanhActivation,
+                                &one,
+                                self.data.descriptor.handle, y,
+                                self.gradient.descriptor.handle, dy,
+                                arg.data.descriptor.handle, x, &zero,
+                                arg.gradient.descriptor.handle, dx
+                            )
+                        }
+                    }
                 }
             }
 
-        case let .relu(x):
+        case let .relu(arg):
             var one: DataType = 1
             var zero = 0
-            self.data.withUnsafeMutableDeviceAddress { dest in
-                x.data.withUnsafeDeviceAddress { src in
-                    /// TODO: derivative
+            self.data.withUnsafeDeviceAddress { y in
+                self.gradient.withUnsafeDeviceAddress { dy in
+                    arg.data.withUnsafeDeviceAddress { x in
+                        arg.gradient.withUnsafeMutableDeviceAddress { dx in
+                            !!cudnnActivationBackward(
+                                graph.dnn.handle,
+                                graph.tensorOperators.reluActivation,
+                                &one,
+                                self.data.descriptor.handle, y,
+                                self.gradient.descriptor.handle, dy,
+                                arg.data.descriptor.handle, x, &zero,
+                                arg.gradient.descriptor.handle, dx
+                            )
+                        }
+                    }
                 }
             }
 
-        case let .sigmoid(x):
+        case let .sigmoid(arg):
             var one: DataType = 1
             var zero = 0
-            self.data.withUnsafeMutableDeviceAddress { dest in
-                x.data.withUnsafeDeviceAddress { src in
-                    /// TODO: derivative
+            self.data.withUnsafeDeviceAddress { y in
+                self.gradient.withUnsafeDeviceAddress { dy in
+                    arg.data.withUnsafeDeviceAddress { x in
+                        arg.gradient.withUnsafeMutableDeviceAddress { dx in
+                            !!cudnnActivationBackward(
+                                graph.dnn.handle,
+                                graph.tensorOperators.sigmoidActivation,
+                                &one,
+                                self.data.descriptor.handle, y,
+                                self.gradient.descriptor.handle, dy,
+                                arg.data.descriptor.handle, x, &zero,
+                                arg.gradient.descriptor.handle, dx
+                            )
+                        }
+                    }
                 }
             }
-            
-        case let .softmax(x):
+
+        case let .softmax(arg):
             var one: DataType = 1
             var zero = 0
-            self.data.withUnsafeMutableDeviceAddress { dest in
-                x.data.withUnsafeDeviceAddress { src in
-                    /// TODO: derivative
+            self.data.withUnsafeDeviceAddress { y in
+                self.gradient.withUnsafeDeviceAddress { dy in
+                    arg.gradient.withUnsafeMutableDeviceAddress { dx in
+                        !!cudnnSoftmaxBackward(
+                            graph.dnn.handle,
+                            CUDNN_SOFTMAX_LOG,
+                            CUDNN_SOFTMAX_MODE_CHANNEL,
+                            &one,
+                            self.data.descriptor.handle, y,
+                            self.gradient.descriptor.handle, dy,
+                            &zero, arg.gradient.descriptor.handle, dx
+                        )
+                    }
                 }
             }
 
