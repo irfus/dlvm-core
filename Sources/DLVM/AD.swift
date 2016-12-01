@@ -142,7 +142,7 @@ extension Variable {
             }
 
         case let .negative(x):
-            self.data.elements.assign(x.data.elements, multipliedBy: -1)
+            self.data.elements.assign(from: x.data.elements, multipliedBy: -1)
 
         case let .scalarComplement(lhs, rhs):
             var minusOne: DataType = -1
@@ -206,7 +206,7 @@ extension Variable {
             }
 
         case let .log(x):
-            self.data.elements.assign(x.data.elements, transformedBy: .log)
+            self.data.elements.assign(from: x.data.elements, transformedBy: .log)
 
         case .input:
             break
@@ -346,7 +346,7 @@ extension Variable {
             }
 
         case let .negative(x):
-            self.data.elements.assign(x.data.elements, multipliedBy: -1)
+            self.data.elements.assign(from: x.data.elements, multipliedBy: -1)
 
         case let .scalarComplement(lhs, rhs):
             var minusOne: DataType = -1
