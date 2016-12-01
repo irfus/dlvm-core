@@ -2,42 +2,39 @@
 <module type="CIDR_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Function.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Memory.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Device.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Stream.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Function.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Error.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDARuntime/Memory.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/Array.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/ArrayBuffer.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/DeviceTypes.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/ValueBuffer.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/KernelSources.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/KernelManager.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/KernelDataTypes.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/DeviceOperations.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/DeviceTypes.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/Warp/Value.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Function.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Memory.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Error.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/PTX.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Device.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/CHandleCarrier.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Driver.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Stream.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/PTX.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Context.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CUDADriver/Module.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Level2.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Level3.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Error.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Level1.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Types.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Error.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Level3.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/Level1.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/CuBLAS/BLAS.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/NVRTC/Compiler.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/NVRTC/Error.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/NVRTC/Option.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/README.md" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Tests/DLVMTests/DLVMTests.swift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Package.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Packages/CUDA-1.2.1/Sources/NVRTC/Error.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Sources/DLVM/Types.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Sources/DLVM/Error.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Sources/DLVM/Tensor.swift" isTestSource="false" />
@@ -48,6 +45,9 @@
       <sourceFolder url="file://$MODULE_DIR$/Sources/DLVM/TensorOperators.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Sources/DLVM/Expression.swift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Sources/DLVM/PrettyPrint.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tests/DLVMTests/DLVMTests.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Package.swift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/README.md" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

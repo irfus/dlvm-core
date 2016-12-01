@@ -73,133 +73,133 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		2981AB2A1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF091DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2981AB2B1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF0A1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2981AB2C1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF0B1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2981AB2D1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF0C1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2981AB2E1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF0D1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2981AB2F1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF0E1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2981AB301DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF0F1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_69;
 			remoteInfo = CuBLAS;
 		};
-		2981AB311DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF101DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_114;
 			remoteInfo = NVRTC;
 		};
-		2981AB321DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF111DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2981AB331DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF121DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2981AB341DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF131DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_69;
 			remoteInfo = CuBLAS;
 		};
-		2981AB351DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF141DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_114;
 			remoteInfo = NVRTC;
 		};
-		2981AB361DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF151DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_125;
 			remoteInfo = Warp;
 		};
-		2981AB371DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF161DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2981AB381DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF171DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2981AB391DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF181DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_69;
 			remoteInfo = CuBLAS;
 		};
-		2981AB3A1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF191DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_114;
 			remoteInfo = NVRTC;
 		};
-		2981AB3B1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF1A1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_125;
 			remoteInfo = Warp;
 		};
-		2981AB3C1DEBB3C600AB3A87 /* PBXContainerItemProxy */ = {
+		2973AF1B1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
@@ -209,7 +209,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2981AB3D1DEBBB7000AB3A87 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		OBJ_10 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Level1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level1.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Level2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2.swift; sourceTree = "<group>"; };
@@ -261,7 +260,7 @@
 		OBJ_65 /* NVRTC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NVRTC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_66 /* Warp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Warp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_67 /* DLVM.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = DLVM.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_68 /* DLVMTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = DLVMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_68 /* DLVMTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = DLVMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_9 /* BLAS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLAS.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -352,7 +351,7 @@
 				OBJ_25 /* Stream.swift */,
 			);
 			name = CUDADriver;
-			path = "Packages/CUDA-1.2.1/Sources/CUDADriver";
+			path = "Packages/CUDA-1.3.0/Sources/CUDADriver";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_26 /* CUDARuntime */ = {
@@ -365,7 +364,7 @@
 				OBJ_31 /* Stream.swift */,
 			);
 			name = CUDARuntime;
-			path = "Packages/CUDA-1.2.1/Sources/CUDARuntime";
+			path = "Packages/CUDA-1.3.0/Sources/CUDARuntime";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_32 /* NVRTC */ = {
@@ -376,7 +375,7 @@
 				OBJ_35 /* Option.swift */,
 			);
 			name = NVRTC;
-			path = "Packages/CUDA-1.2.1/Sources/NVRTC";
+			path = "Packages/CUDA-1.3.0/Sources/NVRTC";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_36 /* Warp */ = {
@@ -393,7 +392,7 @@
 				OBJ_45 /* ValueBuffer.swift */,
 			);
 			name = Warp;
-			path = "Packages/CUDA-1.2.1/Sources/Warp";
+			path = "Packages/CUDA-1.3.0/Sources/Warp";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_46 /* DLVM */ = {
@@ -414,16 +413,16 @@
 			path = Sources/DLVM;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_5 = {
+		OBJ_5 /*  */ = {
 			isa = PBXGroup;
 			children = (
-				2981AB3D1DEBBB7000AB3A87 /* README.md */,
 				OBJ_6 /* Package.swift */,
 				OBJ_7 /* Sources */,
 				OBJ_57 /* Tests */,
 				OBJ_60 /* Build */,
 				OBJ_61 /* Products */,
 			);
+			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_57 /* Tests */ = {
@@ -481,7 +480,7 @@
 				OBJ_14 /* Types.swift */,
 			);
 			name = CuBLAS;
-			path = "Packages/CUDA-1.2.1/Sources/CuBLAS";
+			path = "Packages/CUDA-1.3.0/Sources/CuBLAS";
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
@@ -633,7 +632,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5;
+			mainGroup = OBJ_5 /*  */;
 			productRefGroup = OBJ_61 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -749,97 +748,97 @@
 		OBJ_113 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2981AB2C1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF0B1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_124 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2981AB2D1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF0C1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_144 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2981AB2E1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF0D1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_145 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2981AB2F1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF0E1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_146 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_69 /* CuBLAS */;
-			targetProxy = 2981AB301DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF0F1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_147 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_114 /* NVRTC */;
-			targetProxy = 2981AB311DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF101DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_169 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2981AB321DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF111DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_170 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2981AB331DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF121DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_171 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_69 /* CuBLAS */;
-			targetProxy = 2981AB341DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF131DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_172 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_114 /* NVRTC */;
-			targetProxy = 2981AB351DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF141DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_173 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_125 /* Warp */;
-			targetProxy = 2981AB361DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF151DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_187 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2981AB371DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF161DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_188 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2981AB381DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF171DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_189 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_69 /* CuBLAS */;
-			targetProxy = 2981AB391DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF181DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_190 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_114 /* NVRTC */;
-			targetProxy = 2981AB3A1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF191DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_191 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_125 /* Warp */;
-			targetProxy = 2981AB3B1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF1A1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_192 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_148 /* DLVM */;
-			targetProxy = 2981AB3C1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF1B1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_83 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2981AB2A1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF091DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_85 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2981AB2B1DEBB3C600AB3A87 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF0A1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -848,8 +847,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/CUDARuntime_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -857,9 +862,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = CUDARuntime;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = CUDARuntime;
 			};
 			name = Debug;
@@ -868,8 +870,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/CUDARuntime_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -877,9 +885,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = CUDARuntime;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = CUDARuntime;
 			};
 			name = Release;
@@ -888,8 +893,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/NVRTC_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -897,9 +908,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = NVRTC;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = NVRTC;
 			};
 			name = Debug;
@@ -908,8 +916,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/NVRTC_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -917,9 +931,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = NVRTC;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = NVRTC;
 			};
 			name = Release;
@@ -928,8 +939,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/Warp_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -937,9 +954,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = Warp;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = Warp;
 			};
 			name = Debug;
@@ -948,8 +962,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/Warp_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -957,9 +977,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = Warp;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = Warp;
 			};
 			name = Release;
@@ -968,10 +985,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
 				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
 					"Packages/CCUDA-1.4.0",
-					/usr/local/cuda/include,
 				);
 				INFOPLIST_FILE = DLVM.xcodeproj/DLVM_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
@@ -980,9 +1000,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = DLVM;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = DLVM;
 			};
 			name = Debug;
@@ -991,10 +1008,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
 				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
 					"Packages/CCUDA-1.4.0",
-					/usr/local/cuda/include,
 				);
 				INFOPLIST_FILE = DLVM.xcodeproj/DLVM_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
@@ -1003,9 +1023,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = DLVM;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = DLVM;
 			};
 			name = Release;
@@ -1014,15 +1031,18 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/DLVMTests_Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = DLVMTests;
 			};
 			name = Debug;
@@ -1031,15 +1051,18 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/DLVMTests_Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = DLVMTests;
 			};
 			name = Release;
@@ -1053,15 +1076,16 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_NS_ASSERTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				HEADER_SEARCH_PATHS = /usr/local/cuda/include;
-				LD_RUNPATH_SEARCH_PATHS = /usr/local/cuda/lib;
 				LIBRARY_SEARCH_PATHS = /usr/local/cuda/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "-DXcode";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 3.0;
 				USE_HEADERMAP = NO;
 			};
 			name = Debug;
@@ -1074,14 +1098,15 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GCC_OPTIMIZATION_LEVEL = s;
-				HEADER_SEARCH_PATHS = /usr/local/cuda/include;
-				LD_RUNPATH_SEARCH_PATHS = /usr/local/cuda/lib;
 				LIBRARY_SEARCH_PATHS = /usr/local/cuda/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_SWIFT_FLAGS = "-DXcode";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 3.0;
 				USE_HEADERMAP = NO;
 			};
 			name = Release;
@@ -1090,8 +1115,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/CuBLAS_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -1099,9 +1130,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = CuBLAS;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = CuBLAS;
 			};
 			name = Debug;
@@ -1110,8 +1138,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/CuBLAS_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -1119,9 +1153,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = CuBLAS;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = CuBLAS;
 			};
 			name = Release;
@@ -1130,8 +1161,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/CUDADriver_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -1139,9 +1176,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = CUDADriver;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = CUDADriver;
 			};
 			name = Debug;
@@ -1150,8 +1184,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(PLATFORM_DIR)/Developer/Library/Frameworks";
-				HEADER_SEARCH_PATHS = "Packages/CCUDA-1.4.0";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"Packages/CCUDA-1.4.0",
+				);
 				INFOPLIST_FILE = DLVM.xcodeproj/CUDADriver_Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -1159,9 +1199,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = CUDADriver;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SWIFT_PACKAGE;
-				SWIFT_VERSION = 3.0;
 				TARGET_NAME = CUDADriver;
 			};
 			name = Release;
