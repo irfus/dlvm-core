@@ -5,28 +5,38 @@ This is under **very active** development. Components are **not** ready to use.
 # The DLVM Infrastructure for Neural Networks
 
 - [x] Embedded DSL in Swift
-- [ ] TEL - The Tensor Expression Language
-    - [ ] Parser
-    - [ ] Tensor type checker
-    - [x] IR generator
 - [ ] DLVM IR - Intermediate Representation
     - [x] Assignment form
     - [ ] Loops
     - [ ] Optimization passes
-- [ ] Automatic Differentiation
-    - [ ] GPU Interpreter
-        - [x] Forward propagation
+- [ ] Execution Engine
+    - [ ] CPU
+        - [ ] Forward propagation
         - [ ] Backward propagation
-    - [ ] GPU (PTX) CodeGen
-    - [ ] CPU CodeGen
+    - [ ] CUDA GPU
+        - [x] Forward propagation
+        - [x] Backward propagation
+    - [ ] Metal GPU
+        - [ ] Forward propagation
+        - [ ] Backward propagation
+    - [ ] Batch management
+- [ ] Code Generator
+    - [ ] HPVM
+- [ ] Special Networks
+    - [ ] RNN
+    - [ ] CNN
+    - [ ] GRU
+    - [ ] LSTM
+- [ ] TEL - The Tensor Expression Language
+    - [ ] Parser
+    - [ ] Tensor type checker
+    - [ ] IR generator
 
 ## Stages
 
-1. CUDA Backend
+1. CUDA Execution Engine
 
-2. HPVM Backend
-
-3. Optimization
+2. HPVM Code Generator
 
 ## Embedded DSL in Swift
 
@@ -77,22 +87,22 @@ Proposed syntax:
 
 ```
 entry:
-    float [4x2] W2 = param:[4x2]
-    float [2x2] W1 = param:[2x2]
-    float [2x1] x = input:[2x1]
-    float [2x1] b1 = param:[2x1]
-    float [4x1] b2 = param:[4x1]
+    [f32 4x2] W2 = param:[4x2]
+    [f32 2x2] W1 = param:[2x2]
+    [f32 2x1] x = input:[2x1]
+    [f32 2x1] b1 = param:[2x1]
+    [f32 4x1] b2 = param:[4x1]
     int c0 = 0 /// RNN recurrence counter
 label1:
-    x1 = phi x, h2
-    c1 = phi c0, c2
-    float [2x1] v1 = matmul W1, x1
-    float [2x1] v2 = add v1, b1
-    float [2x1] h1 = tanh v
-    float [2x1] v4 = sub float '[1.0], h1
-    float [4x1] v5 = matmul W2, v4
-    float [4x1] v6 = add v5, b2
-    float [4x1] h2 = softmax v6
+    [f32 2x1] x1 = phi x, h2
+    int c1 = phi c0, c2
+    [f32 2x1] v1 = matmul W1, x1
+    [f32 2x1] v2 = add v1, b1
+    [f32 2x1] h1 = tanh v
+    [f32 2x1] v4 = sub float '[1.0], h1
+    [f32 4x1] v5 = matmul W2, v4
+    [f32 4x1] v6 = add v5, b2
+    [f32 4x1] h2 = softmax v6
     bool v7 = cmp.< c0, int 20
     branch v7 ? label1 : label2
 label2:
