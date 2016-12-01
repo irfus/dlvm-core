@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2973AF301DF003F100DD78C1 /* ExecutionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2973AF2F1DF003F100DD78C1 /* ExecutionEngine.swift */; };
 		OBJ_100 /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_25 /* Stream.swift */; };
 		OBJ_106 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* Device.swift */; };
 		OBJ_107 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* Error.swift */; };
@@ -20,7 +21,7 @@
 		OBJ_123 /* CUDADriver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_63 /* CUDADriver.framework */; };
 		OBJ_130 /* Array.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_37 /* Array.swift */; };
 		OBJ_131 /* ArrayBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_38 /* ArrayBuffer.swift */; };
-		OBJ_132 /* DeviceOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_39 /* DeviceOperations.swift */; };
+		OBJ_132 /* CollectionOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_39 /* CollectionOperations.swift */; };
 		OBJ_133 /* DeviceTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_40 /* DeviceTypes.swift */; };
 		OBJ_134 /* KernelDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* KernelDataTypes.swift */; };
 		OBJ_135 /* KernelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* KernelManager.swift */; };
@@ -73,133 +74,133 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		2973AF091DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF1C1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2973AF0A1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF1D1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2973AF0B1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF1E1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2973AF0C1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF1F1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2973AF0D1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF201DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2973AF0E1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF211DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2973AF0F1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF221DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_69;
 			remoteInfo = CuBLAS;
 		};
-		2973AF101DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF231DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_114;
 			remoteInfo = NVRTC;
 		};
-		2973AF111DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF241DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2973AF121DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF251DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2973AF131DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF261DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_69;
 			remoteInfo = CuBLAS;
 		};
-		2973AF141DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF271DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_114;
 			remoteInfo = NVRTC;
 		};
-		2973AF151DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF281DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_125;
 			remoteInfo = Warp;
 		};
-		2973AF161DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF291DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_84;
 			remoteInfo = CUDADriver;
 		};
-		2973AF171DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF2A1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_86;
 			remoteInfo = CUDARuntime;
 		};
-		2973AF181DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF2B1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_69;
 			remoteInfo = CuBLAS;
 		};
-		2973AF191DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF2C1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_114;
 			remoteInfo = NVRTC;
 		};
-		2973AF1A1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF2D1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = OBJ_125;
 			remoteInfo = Warp;
 		};
-		2973AF1B1DEFE28D00DD78C1 /* PBXContainerItemProxy */ = {
+		2973AF2E1DEFFB5F00DD78C1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
@@ -209,6 +210,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2973AF2F1DF003F100DD78C1 /* ExecutionEngine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExecutionEngine.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Level1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level1.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Level2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2.swift; sourceTree = "<group>"; };
@@ -234,7 +236,7 @@
 		OBJ_35 /* Option.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Option.swift; sourceTree = "<group>"; };
 		OBJ_37 /* Array.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
 		OBJ_38 /* ArrayBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrayBuffer.swift; sourceTree = "<group>"; };
-		OBJ_39 /* DeviceOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceOperations.swift; sourceTree = "<group>"; };
+		OBJ_39 /* CollectionOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionOperations.swift; sourceTree = "<group>"; };
 		OBJ_40 /* DeviceTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceTypes.swift; sourceTree = "<group>"; };
 		OBJ_41 /* KernelDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelDataTypes.swift; sourceTree = "<group>"; };
 		OBJ_42 /* KernelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelManager.swift; sourceTree = "<group>"; };
@@ -260,7 +262,7 @@
 		OBJ_65 /* NVRTC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NVRTC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_66 /* Warp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Warp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_67 /* DLVM.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = DLVM.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_68 /* DLVMTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = DLVMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_68 /* DLVMTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = DLVMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_9 /* BLAS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLAS.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -351,7 +353,7 @@
 				OBJ_25 /* Stream.swift */,
 			);
 			name = CUDADriver;
-			path = "Packages/CUDA-1.3.0/Sources/CUDADriver";
+			path = "Packages/CUDA-1.3.1/Sources/CUDADriver";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_26 /* CUDARuntime */ = {
@@ -364,7 +366,7 @@
 				OBJ_31 /* Stream.swift */,
 			);
 			name = CUDARuntime;
-			path = "Packages/CUDA-1.3.0/Sources/CUDARuntime";
+			path = "Packages/CUDA-1.3.1/Sources/CUDARuntime";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_32 /* NVRTC */ = {
@@ -375,7 +377,7 @@
 				OBJ_35 /* Option.swift */,
 			);
 			name = NVRTC;
-			path = "Packages/CUDA-1.3.0/Sources/NVRTC";
+			path = "Packages/CUDA-1.3.1/Sources/NVRTC";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_36 /* Warp */ = {
@@ -383,7 +385,7 @@
 			children = (
 				OBJ_37 /* Array.swift */,
 				OBJ_38 /* ArrayBuffer.swift */,
-				OBJ_39 /* DeviceOperations.swift */,
+				OBJ_39 /* CollectionOperations.swift */,
 				OBJ_40 /* DeviceTypes.swift */,
 				OBJ_41 /* KernelDataTypes.swift */,
 				OBJ_42 /* KernelManager.swift */,
@@ -392,7 +394,7 @@
 				OBJ_45 /* ValueBuffer.swift */,
 			);
 			name = Warp;
-			path = "Packages/CUDA-1.3.0/Sources/Warp";
+			path = "Packages/CUDA-1.3.1/Sources/Warp";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_46 /* DLVM */ = {
@@ -403,6 +405,7 @@
 				OBJ_49 /* Error.swift */,
 				OBJ_50 /* Expression.swift */,
 				OBJ_51 /* Graph.swift */,
+				2973AF2F1DF003F100DD78C1 /* ExecutionEngine.swift */,
 				OBJ_52 /* PrettyPrint.swift */,
 				OBJ_53 /* Shape.swift */,
 				OBJ_54 /* Tensor.swift */,
@@ -480,7 +483,7 @@
 				OBJ_14 /* Types.swift */,
 			);
 			name = CuBLAS;
-			path = "Packages/CUDA-1.3.0/Sources/CuBLAS";
+			path = "Packages/CUDA-1.3.1/Sources/CuBLAS";
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
@@ -677,7 +680,7 @@
 			files = (
 				OBJ_130 /* Array.swift in Sources */,
 				OBJ_131 /* ArrayBuffer.swift in Sources */,
-				OBJ_132 /* DeviceOperations.swift in Sources */,
+				OBJ_132 /* CollectionOperations.swift in Sources */,
 				OBJ_133 /* DeviceTypes.swift in Sources */,
 				OBJ_134 /* KernelDataTypes.swift in Sources */,
 				OBJ_135 /* KernelManager.swift in Sources */,
@@ -698,6 +701,7 @@
 				OBJ_157 /* Graph.swift in Sources */,
 				OBJ_158 /* PrettyPrint.swift in Sources */,
 				OBJ_159 /* Shape.swift in Sources */,
+				2973AF301DF003F100DD78C1 /* ExecutionEngine.swift in Sources */,
 				OBJ_160 /* Tensor.swift in Sources */,
 				OBJ_161 /* TensorOperators.swift in Sources */,
 				OBJ_162 /* Types.swift in Sources */,
@@ -748,97 +752,97 @@
 		OBJ_113 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2973AF0B1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF1E1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_124 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2973AF0C1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF1F1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_144 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2973AF0D1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF201DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_145 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2973AF0E1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF211DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_146 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_69 /* CuBLAS */;
-			targetProxy = 2973AF0F1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF221DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_147 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_114 /* NVRTC */;
-			targetProxy = 2973AF101DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF231DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_169 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2973AF111DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF241DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_170 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2973AF121DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF251DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_171 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_69 /* CuBLAS */;
-			targetProxy = 2973AF131DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF261DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_172 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_114 /* NVRTC */;
-			targetProxy = 2973AF141DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF271DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_173 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_125 /* Warp */;
-			targetProxy = 2973AF151DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF281DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_187 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2973AF161DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF291DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_188 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2973AF171DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF2A1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_189 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_69 /* CuBLAS */;
-			targetProxy = 2973AF181DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF2B1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_190 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_114 /* NVRTC */;
-			targetProxy = 2973AF191DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF2C1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_191 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_125 /* Warp */;
-			targetProxy = 2973AF1A1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF2D1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_192 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_148 /* DLVM */;
-			targetProxy = 2973AF1B1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF2E1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_83 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_84 /* CUDADriver */;
-			targetProxy = 2973AF091DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF1C1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 		OBJ_85 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = OBJ_86 /* CUDARuntime */;
-			targetProxy = 2973AF0A1DEFE28D00DD78C1 /* PBXContainerItemProxy */;
+			targetProxy = 2973AF1D1DEFFB5F00DD78C1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1040,7 +1044,7 @@
 					"Packages/CCUDA-1.4.0",
 				);
 				INFOPLIST_FILE = DLVM.xcodeproj/DLVMTests_Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				TARGET_NAME = DLVMTests;
@@ -1060,7 +1064,7 @@
 					"Packages/CCUDA-1.4.0",
 				);
 				INFOPLIST_FILE = DLVM.xcodeproj/DLVMTests_Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks /usr/local/cuda/lib";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				TARGET_NAME = DLVMTests;
