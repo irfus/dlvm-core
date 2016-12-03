@@ -62,23 +62,29 @@ let graph = try Graph<Float>(expression: o)
 Proposed syntax:
 
 ```
-[type: float]
+[type: float16]
 
-x: input {
-    shape: [2x1] 
+x: in[2x1]
+
+W1: param[auto] = 0.0
+h1: layer[4x1] = tanh(W1 x + b1)
+
+recurrent 0...t {
+    W2, W3, W4, W5: param[auto] = random(from: 0.0, to: 1.0)
+    b2, b3, b4, b5: param[auto] = 0.0
+    h2: layer[16x1] = tanh(W2 [x.t, h5.(t-1)] + b2)
+    h3: layer[128x1] = tanh(W3 h2 + b3)
+    h4: layer[128x1] = relu(W4 h3 + b4)
+    h5: layer[16x1] = tanh(W5 h4 + b5)
 }
 
-h1: hidden {
-    W1 = parameter { shape: [2x2], initial: random(0.0, 1.0) } 
-    b1 = parameter { shape: [2x1], initial: 0.0 }
-    h1 = tanh(W1 x + b1)
-}
+W6: param[auto] = random(from: 0.5, to: 1.0)
+b6: param[auto] = 0.0
+h6: layer[16x1] = sigmoid(W6 h5 + b6)
 
-o: output {
-    W2 = parameter { shape: [4x2], initial: random(0.0, 1.0) }
-    b2 = parameter { shape: [4x2], initial: 0.0 }
-    o = softmax(W2 (1 - h1) + b2)
-}
+W7: param[auto] = random(from: 0.0, to: 1.0)
+b7: param[auto] = 0.0
+o: out[16x1] = softmax(W7 h7 + b7)
 ``````
 
 ## DLVM IR
