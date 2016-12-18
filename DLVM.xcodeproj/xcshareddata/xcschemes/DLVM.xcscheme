@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_69"
-               BuildableName = "CuBLAS.framework"
-               BlueprintName = "CuBLAS"
+               BlueprintIdentifier = "OBJ_58"
+               BuildableName = "Funky.framework"
+               BlueprintName = "Funky"
                ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -28,9 +28,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_84"
-               BuildableName = "CUDADriver.framework"
-               BlueprintName = "CUDADriver"
+               BlueprintIdentifier = "OBJ_74"
+               BuildableName = "Parsey.framework"
+               BlueprintName = "Parsey"
                ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -42,9 +42,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_86"
-               BuildableName = "CUDARuntime.framework"
-               BlueprintName = "CUDARuntime"
+               BlueprintIdentifier = "OBJ_87"
+               BuildableName = "dlc"
+               BlueprintName = "dlc"
                ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -56,37 +56,51 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_114"
-               BuildableName = "NVRTC.framework"
-               BlueprintName = "NVRTC"
-               ReferencedContainer = "container:DLVM.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_125"
-               BuildableName = "Warp.framework"
-               BlueprintName = "Warp"
-               ReferencedContainer = "container:DLVM.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_148"
+               BlueprintIdentifier = "OBJ_98"
                BuildableName = "DLVM.framework"
                BlueprintName = "DLVM"
+               ReferencedContainer = "container:DLVM.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "OBJ_118"
+               BuildableName = "dlvm-dis"
+               BlueprintName = "dlvm-dis"
+               ReferencedContainer = "container:DLVM.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "OBJ_129"
+               BuildableName = "TEL.framework"
+               BlueprintName = "TEL"
+               ReferencedContainer = "container:DLVM.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "OBJ_140"
+               BuildableName = "telc"
+               BlueprintName = "telc"
                ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -102,7 +116,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_174"
+               BlueprintIdentifier = "OBJ_151"
                BuildableName = "DLVMTests.xctest"
                BlueprintName = "DLVMTests"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -125,9 +139,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "OBJ_69"
-            BuildableName = "CuBLAS.framework"
-            BlueprintName = "CuBLAS"
+            BlueprintIdentifier = "OBJ_58"
+            BuildableName = "Funky.framework"
+            BlueprintName = "Funky"
             ReferencedContainer = "container:DLVM.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
