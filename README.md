@@ -11,7 +11,9 @@ This is under **very active** development. Components are **not** ready to use.
       - [ ] Sema
     - [ ] IRBuilder
     - [ ] BPGen (a transformation for backpropagation using automatic differentiation)
+    - [ ] OptGen (a transformation for NN optimization generation, e.g. SGD)
     - [ ] HPVM CodeGen
+    - [ ] Execution engine
 - [ ] DLVM IR - Intermediate Representation
     - [x] Assignment form
     - [ ] Loops
