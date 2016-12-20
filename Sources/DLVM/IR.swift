@@ -6,10 +6,9 @@
 //
 //
 
-import Foundation
-
-public struct IR {
-
-    
-
+/// Module representing a neural network
+public struct Module {
+    private var basicBlocks: BasicBlock
 }
+
+
