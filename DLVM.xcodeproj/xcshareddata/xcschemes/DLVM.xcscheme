@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_58"
+               BlueprintIdentifier = "OBJ_64"
                BuildableName = "Funky.framework"
                BlueprintName = "Funky"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -28,7 +28,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_74"
+               BlueprintIdentifier = "OBJ_80"
                BuildableName = "Parsey.framework"
                BlueprintName = "Parsey"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -42,7 +42,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_87"
+               BlueprintIdentifier = "OBJ_93"
                BuildableName = "dlc"
                BlueprintName = "dlc"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -56,7 +56,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_98"
+               BlueprintIdentifier = "OBJ_106"
                BuildableName = "DLVM.framework"
                BlueprintName = "DLVM"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -70,7 +70,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_118"
+               BlueprintIdentifier = "OBJ_125"
                BuildableName = "dlvm-dis"
                BlueprintName = "dlvm-dis"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -84,7 +84,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_129"
+               BlueprintIdentifier = "OBJ_139"
                BuildableName = "TEL.framework"
                BlueprintName = "TEL"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -98,7 +98,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_140"
+               BlueprintIdentifier = "OBJ_155"
                BuildableName = "telc"
                BlueprintName = "telc"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -116,9 +116,19 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_151"
+               BlueprintIdentifier = "OBJ_170"
                BuildableName = "DLVMTests.xctest"
                BlueprintName = "DLVMTests"
+               ReferencedContainer = "container:DLVM.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "OBJ_183"
+               BuildableName = "TELTests.xctest"
+               BlueprintName = "TELTests"
                ReferencedContainer = "container:DLVM.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -139,7 +149,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "OBJ_58"
+            BlueprintIdentifier = "OBJ_64"
             BuildableName = "Funky.framework"
             BlueprintName = "Funky"
             ReferencedContainer = "container:DLVM.xcodeproj">

@@ -6,13 +6,13 @@ let package = Package(
         /// Core DLVM library: IR, BPGen (libDLVM)
         Target(name: "DLVM"),
         /// DLVM compiler driver
-        Target(name: "dlc"),
+        Target(name: "dlc", dependencies: ["DLVM"]),
         /// DLVM bitcode disassembler
-        Target(name: "dlvm-dis"),
+        Target(name: "dlvm-dis", dependencies: ["DLVM"]),
         /// TEL compiler library (libTEL)
-        Target(name: "TEL"),
+        Target(name: "TEL", dependencies: ["DLVM"]),
         /// TEL compiler driver
-        Target(name: "telc")
+        Target(name: "telc", dependencies: ["DLVM", "TEL"])
     ],
     dependencies: [
     	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 4)
