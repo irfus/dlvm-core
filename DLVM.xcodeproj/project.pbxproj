@@ -7,163 +7,232 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		29C4E9991E074F3C00E0DE2E /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C4E9961E074F2C00E0DE2E /* Grammar.swift */; };
-		29C4E99E1E074F9000E0DE2E /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C4E99D1E074F9000E0DE2E /* Grammar.swift */; };
-		29C4E9A01E074FBB00E0DE2E /* Sema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C4E99F1E074FBB00E0DE2E /* Sema.swift */; };
-		29C4E9A21E09431D00E0DE2E /* BPGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C4E9A11E09431D00E0DE2E /* BPGen.swift */; };
-		29C4E9A41E094B2000E0DE2E /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C4E9A31E094B2000E0DE2E /* Types.swift */; };
-		29C4E9A71E09545500E0DE2E /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C4E9A51E0953EA00E0DE2E /* AST.swift */; };
-		OBJ_103 /* BasicBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* BasicBlock.swift */; };
-		OBJ_104 /* ExecutionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* ExecutionEngine.swift */; };
-		OBJ_106 /* Instruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_31 /* Instruction.swift */; };
-		OBJ_107 /* IR.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_32 /* IR.swift */; };
-		OBJ_108 /* IRBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_33 /* IRBuilder.swift */; };
-		OBJ_109 /* PrettyPrint.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_34 /* PrettyPrint.swift */; };
-		OBJ_110 /* Tensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_35 /* Tensor.swift */; };
-		OBJ_114 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* Funky.framework */; };
-		OBJ_115 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* Parsey.framework */; };
-		OBJ_123 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_39 /* main.swift */; };
-		OBJ_125 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* Funky.framework */; };
-		OBJ_126 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* Parsey.framework */; };
-		OBJ_134 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* Expression.swift */; };
-		OBJ_136 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* Funky.framework */; };
-		OBJ_137 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* Parsey.framework */; };
-		OBJ_145 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* main.swift */; };
-		OBJ_147 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* Funky.framework */; };
-		OBJ_148 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* Parsey.framework */; };
-		OBJ_156 /* DLVMTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* DLVMTests.swift */; };
-		OBJ_158 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* Funky.framework */; };
-		OBJ_159 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* Parsey.framework */; };
-		OBJ_160 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_53 /* DLVM.framework */; };
-		OBJ_63 /* Array.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* Array.swift */; };
-		OBJ_64 /* Associative.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* Associative.swift */; };
-		OBJ_65 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* Collection.swift */; };
-		OBJ_66 /* Function.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* Function.swift */; };
-		OBJ_67 /* Mappable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* Mappable.swift */; };
-		OBJ_68 /* Numeric.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* Numeric.swift */; };
-		OBJ_69 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* Operators.swift */; };
-		OBJ_70 /* Optional.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* Optional.swift */; };
-		OBJ_71 /* Reducible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* Reducible.swift */; };
-		OBJ_72 /* Set.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* Set.swift */; };
-		OBJ_79 /* Combinators.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* Combinators.swift */; };
-		OBJ_80 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* Error.swift */; };
-		OBJ_81 /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* Lexer.swift */; };
-		OBJ_82 /* Location.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* Location.swift */; };
-		OBJ_83 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* Parser.swift */; };
-		OBJ_85 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* Funky.framework */; };
-		OBJ_92 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* main.swift */; };
-		OBJ_94 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* Funky.framework */; };
-		OBJ_95 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* Parsey.framework */; };
+		29D3998D1E0B39EF00357FE5 /* ParseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D3998B1E0B39B100357FE5 /* ParseTests.swift */; };
+		OBJ_100 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_101 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
+		OBJ_102 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
+		OBJ_111 /* BasicBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* BasicBlock.swift */; };
+		OBJ_112 /* BPGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* BPGen.swift */; };
+		OBJ_113 /* ExecutionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_30 /* ExecutionEngine.swift */; };
+		OBJ_114 /* Instruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_31 /* Instruction.swift */; };
+		OBJ_115 /* IR.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_32 /* IR.swift */; };
+		OBJ_116 /* IRBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_33 /* IRBuilder.swift */; };
+		OBJ_117 /* PrettyPrint.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_34 /* PrettyPrint.swift */; };
+		OBJ_118 /* Tensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_35 /* Tensor.swift */; };
+		OBJ_119 /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_36 /* Types.swift */; };
+		OBJ_121 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_122 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
+		OBJ_130 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_38 /* Grammar.swift */; };
+		OBJ_131 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_39 /* main.swift */; };
+		OBJ_133 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_134 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
+		OBJ_135 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
+		OBJ_144 /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* AST.swift */; };
+		OBJ_145 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* Expression.swift */; };
+		OBJ_146 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* Grammar.swift */; };
+		OBJ_147 /* Sema.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_44 /* Sema.swift */; };
+		OBJ_149 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_150 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
+		OBJ_151 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
+		OBJ_160 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* main.swift */; };
+		OBJ_162 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_163 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
+		OBJ_164 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
+		OBJ_165 /* TEL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_60 /* TEL.framework */; };
+		OBJ_175 /* DLVMTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* DLVMTests.swift */; };
+		OBJ_177 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_178 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
+		OBJ_179 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
+		OBJ_188 /* TELTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* TELTests.swift */; };
+		OBJ_190 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_191 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
+		OBJ_192 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
+		OBJ_193 /* TEL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_60 /* TEL.framework */; };
+		OBJ_69 /* Array.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* Array.swift */; };
+		OBJ_70 /* Associative.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* Associative.swift */; };
+		OBJ_71 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* Collection.swift */; };
+		OBJ_72 /* Function.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* Function.swift */; };
+		OBJ_73 /* Mappable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* Mappable.swift */; };
+		OBJ_74 /* Numeric.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* Numeric.swift */; };
+		OBJ_75 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* Operators.swift */; };
+		OBJ_76 /* Optional.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* Optional.swift */; };
+		OBJ_77 /* Reducible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* Reducible.swift */; };
+		OBJ_78 /* Set.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* Set.swift */; };
+		OBJ_85 /* Combinators.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* Combinators.swift */; };
+		OBJ_86 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* Error.swift */; };
+		OBJ_87 /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* Lexer.swift */; };
+		OBJ_88 /* Location.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* Location.swift */; };
+		OBJ_89 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* Parser.swift */; };
+		OBJ_91 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
+		OBJ_98 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* main.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		29C4E9881E074F0200E0DE2E /* PBXContainerItemProxy */ = {
+		29D399741E0B396600357FE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = OBJ_58;
+			remoteGlobalIDString = OBJ_64;
 			remoteInfo = Funky;
 		};
-		29C4E9891E074F0200E0DE2E /* PBXContainerItemProxy */ = {
+		29D399751E0B396600357FE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = OBJ_58;
+			remoteGlobalIDString = OBJ_64;
 			remoteInfo = Funky;
 		};
-		29C4E98A1E074F0200E0DE2E /* PBXContainerItemProxy */ = {
+		29D399761E0B396600357FE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = OBJ_74;
+			remoteGlobalIDString = OBJ_80;
 			remoteInfo = Parsey;
 		};
-		29C4E98B1E074F0200E0DE2E /* PBXContainerItemProxy */ = {
+		29D399771E0B396600357FE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = OBJ_58;
-			remoteInfo = Funky;
-		};
-		29C4E98C1E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_74;
-			remoteInfo = Parsey;
-		};
-		29C4E98D1E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_58;
-			remoteInfo = Funky;
-		};
-		29C4E98E1E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_74;
-			remoteInfo = Parsey;
-		};
-		29C4E98F1E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_58;
-			remoteInfo = Funky;
-		};
-		29C4E9901E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_74;
-			remoteInfo = Parsey;
-		};
-		29C4E9911E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_58;
-			remoteInfo = Funky;
-		};
-		29C4E9921E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_74;
-			remoteInfo = Parsey;
-		};
-		29C4E9931E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_58;
-			remoteInfo = Funky;
-		};
-		29C4E9941E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_74;
-			remoteInfo = Parsey;
-		};
-		29C4E9951E074F0200E0DE2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_98;
+			remoteGlobalIDString = OBJ_106;
 			remoteInfo = DLVM;
+		};
+		29D399781E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_64;
+			remoteInfo = Funky;
+		};
+		29D399791E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_80;
+			remoteInfo = Parsey;
+		};
+		29D3997A1E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_64;
+			remoteInfo = Funky;
+		};
+		29D3997B1E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_80;
+			remoteInfo = Parsey;
+		};
+		29D3997C1E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_106;
+			remoteInfo = DLVM;
+		};
+		29D3997D1E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_64;
+			remoteInfo = Funky;
+		};
+		29D3997E1E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_80;
+			remoteInfo = Parsey;
+		};
+		29D3997F1E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_106;
+			remoteInfo = DLVM;
+		};
+		29D399801E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_64;
+			remoteInfo = Funky;
+		};
+		29D399811E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_80;
+			remoteInfo = Parsey;
+		};
+		29D399821E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_106;
+			remoteInfo = DLVM;
+		};
+		29D399831E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_139;
+			remoteInfo = TEL;
+		};
+		29D399841E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_64;
+			remoteInfo = Funky;
+		};
+		29D399851E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_80;
+			remoteInfo = Parsey;
+		};
+		29D399861E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_106;
+			remoteInfo = DLVM;
+		};
+		29D399871E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_64;
+			remoteInfo = Funky;
+		};
+		29D399881E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_80;
+			remoteInfo = Parsey;
+		};
+		29D399891E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_106;
+			remoteInfo = DLVM;
+		};
+		29D3998A1E0B396600357FE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_139;
+			remoteInfo = TEL;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		29C4E9961E074F2C00E0DE2E /* Grammar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
-		29C4E99D1E074F9000E0DE2E /* Grammar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
-		29C4E99F1E074FBB00E0DE2E /* Sema.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sema.swift; sourceTree = "<group>"; };
-		29C4E9A11E09431D00E0DE2E /* BPGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BPGen.swift; sourceTree = "<group>"; };
-		29C4E9A31E094B2000E0DE2E /* Types.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
-		29C4E9A51E0953EA00E0DE2E /* AST.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AST.swift; sourceTree = "<group>"; };
+		29D3998B1E0B39B100357FE5 /* ParseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ParseTests.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Associative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Associative.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Collection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Function.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Function.swift; sourceTree = "<group>"; };
@@ -180,98 +249,122 @@
 		OBJ_24 /* Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		OBJ_26 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		OBJ_28 /* BasicBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicBlock.swift; sourceTree = "<group>"; };
-		OBJ_29 /* ExecutionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExecutionEngine.swift; sourceTree = "<group>"; };
+		OBJ_29 /* BPGen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPGen.swift; sourceTree = "<group>"; };
+		OBJ_30 /* ExecutionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExecutionEngine.swift; sourceTree = "<group>"; };
 		OBJ_31 /* Instruction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Instruction.swift; sourceTree = "<group>"; };
 		OBJ_32 /* IR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IR.swift; sourceTree = "<group>"; };
 		OBJ_33 /* IRBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRBuilder.swift; sourceTree = "<group>"; };
 		OBJ_34 /* PrettyPrint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrettyPrint.swift; sourceTree = "<group>"; };
 		OBJ_35 /* Tensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tensor.swift; sourceTree = "<group>"; };
+		OBJ_36 /* Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
+		OBJ_38 /* Grammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
 		OBJ_39 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		OBJ_41 /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
-		OBJ_43 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		OBJ_46 /* DLVMTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DLVMTests.swift; sourceTree = "<group>"; };
-		OBJ_47 /* Build */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Build; sourceTree = SOURCE_ROOT; };
-		OBJ_48 /* Documentation */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Documentation; sourceTree = SOURCE_ROOT; };
-		OBJ_50 /* Funky.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Funky.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_51 /* Parsey.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Parsey.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_52 /* dlc */ = {isa = PBXFileReference; lastKnownFileType = text; path = dlc; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_53 /* DLVM.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = DLVM.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_54 /* dlvm-dis */ = {isa = PBXFileReference; lastKnownFileType = text; path = "dlvm-dis"; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_55 /* TEL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = TEL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_56 /* telc */ = {isa = PBXFileReference; lastKnownFileType = text; path = telc; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_57 /* DLVMTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = DLVMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_41 /* AST.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AST.swift; sourceTree = "<group>"; };
+		OBJ_42 /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
+		OBJ_43 /* Grammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
+		OBJ_44 /* Sema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sema.swift; sourceTree = "<group>"; };
+		OBJ_46 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		OBJ_49 /* DLVMTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DLVMTests.swift; sourceTree = "<group>"; };
+		OBJ_51 /* TELTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TELTests.swift; sourceTree = "<group>"; };
+		OBJ_52 /* Build */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Build; sourceTree = SOURCE_ROOT; };
+		OBJ_53 /* Documentation */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Documentation; sourceTree = SOURCE_ROOT; };
+		OBJ_55 /* Funky.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Funky.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_56 /* Parsey.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Parsey.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_57 /* dlc */ = {isa = PBXFileReference; lastKnownFileType = text; path = dlc; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_58 /* DLVM.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = DLVM.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_59 /* dlvm-dis */ = {isa = PBXFileReference; lastKnownFileType = text; path = "dlvm-dis"; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_6 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		OBJ_60 /* TEL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = TEL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_61 /* telc */ = {isa = PBXFileReference; lastKnownFileType = text; path = telc; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_62 /* DLVMTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = DLVMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		OBJ_63 /* TELTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = TELTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_9 /* Array.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		OBJ_113 /* Frameworks */ = {
+		OBJ_120 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_114 /* Funky.framework in Frameworks */,
-				OBJ_115 /* Parsey.framework in Frameworks */,
+				OBJ_121 /* Funky.framework in Frameworks */,
+				OBJ_122 /* Parsey.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_124 /* Frameworks */ = {
+		OBJ_132 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_125 /* Funky.framework in Frameworks */,
-				OBJ_126 /* Parsey.framework in Frameworks */,
+				OBJ_133 /* Funky.framework in Frameworks */,
+				OBJ_134 /* Parsey.framework in Frameworks */,
+				OBJ_135 /* DLVM.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_135 /* Frameworks */ = {
+		OBJ_148 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_136 /* Funky.framework in Frameworks */,
-				OBJ_137 /* Parsey.framework in Frameworks */,
+				OBJ_149 /* Funky.framework in Frameworks */,
+				OBJ_150 /* Parsey.framework in Frameworks */,
+				OBJ_151 /* DLVM.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_146 /* Frameworks */ = {
+		OBJ_161 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_147 /* Funky.framework in Frameworks */,
-				OBJ_148 /* Parsey.framework in Frameworks */,
+				OBJ_162 /* Funky.framework in Frameworks */,
+				OBJ_163 /* Parsey.framework in Frameworks */,
+				OBJ_164 /* DLVM.framework in Frameworks */,
+				OBJ_165 /* TEL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_157 /* Frameworks */ = {
+		OBJ_176 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_158 /* Funky.framework in Frameworks */,
-				OBJ_159 /* Parsey.framework in Frameworks */,
-				OBJ_160 /* DLVM.framework in Frameworks */,
+				OBJ_177 /* Funky.framework in Frameworks */,
+				OBJ_178 /* Parsey.framework in Frameworks */,
+				OBJ_179 /* DLVM.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_73 /* Frameworks */ = {
+		OBJ_189 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_190 /* Funky.framework in Frameworks */,
+				OBJ_191 /* Parsey.framework in Frameworks */,
+				OBJ_192 /* DLVM.framework in Frameworks */,
+				OBJ_193 /* TEL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_79 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_84 /* Frameworks */ = {
+		OBJ_90 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_85 /* Funky.framework in Frameworks */,
+				OBJ_91 /* Funky.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_93 /* Frameworks */ = {
+		OBJ_99 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_94 /* Funky.framework in Frameworks */,
-				OBJ_95 /* Parsey.framework in Frameworks */,
+				OBJ_100 /* Funky.framework in Frameworks */,
+				OBJ_101 /* Parsey.framework in Frameworks */,
+				OBJ_102 /* DLVM.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,7 +381,7 @@
 				OBJ_24 /* Parser.swift */,
 			);
 			name = Parsey;
-			path = "Packages/Parsey-1.4.7/Sources";
+			path = "Packages/Parsey-1.4.9/Sources";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_25 /* dlc */ = {
@@ -304,24 +397,24 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_28 /* BasicBlock.swift */,
-				OBJ_29 /* ExecutionEngine.swift */,
+				OBJ_29 /* BPGen.swift */,
+				OBJ_30 /* ExecutionEngine.swift */,
 				OBJ_31 /* Instruction.swift */,
 				OBJ_32 /* IR.swift */,
-				29C4E9A11E09431D00E0DE2E /* BPGen.swift */,
 				OBJ_33 /* IRBuilder.swift */,
 				OBJ_34 /* PrettyPrint.swift */,
 				OBJ_35 /* Tensor.swift */,
-				29C4E9A31E094B2000E0DE2E /* Types.swift */,
+				OBJ_36 /* Types.swift */,
 			);
 			name = DLVM;
 			path = Sources/DLVM;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_38 /* dlvm-dis */ = {
+		OBJ_37 /* dlvm-dis */ = {
 			isa = PBXGroup;
 			children = (
+				OBJ_38 /* Grammar.swift */,
 				OBJ_39 /* main.swift */,
-				29C4E9961E074F2C00E0DE2E /* Grammar.swift */,
 			);
 			name = "dlvm-dis";
 			path = "Sources/dlvm-dis";
@@ -330,68 +423,80 @@
 		OBJ_40 /* TEL */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_41 /* Expression.swift */,
-				29C4E99D1E074F9000E0DE2E /* Grammar.swift */,
-				29C4E9A51E0953EA00E0DE2E /* AST.swift */,
-				29C4E99F1E074FBB00E0DE2E /* Sema.swift */,
+				OBJ_41 /* AST.swift */,
+				OBJ_42 /* Expression.swift */,
+				OBJ_43 /* Grammar.swift */,
+				OBJ_44 /* Sema.swift */,
 			);
 			name = TEL;
 			path = Sources/TEL;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_42 /* telc */ = {
+		OBJ_45 /* telc */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_43 /* main.swift */,
+				OBJ_46 /* main.swift */,
 			);
 			name = telc;
 			path = Sources/telc;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_44 /* Tests */ = {
+		OBJ_47 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_45 /* DLVMTests */,
+				OBJ_48 /* DLVMTests */,
+				OBJ_50 /* TELTests */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		OBJ_45 /* DLVMTests */ = {
+		OBJ_48 /* DLVMTests */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_46 /* DLVMTests.swift */,
+				OBJ_49 /* DLVMTests.swift */,
 			);
 			name = DLVMTests;
 			path = Tests/DLVMTests;
 			sourceTree = SOURCE_ROOT;
-		};
-		OBJ_49 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				OBJ_50 /* Funky.framework */,
-				OBJ_51 /* Parsey.framework */,
-				OBJ_52 /* dlc */,
-				OBJ_53 /* DLVM.framework */,
-				OBJ_54 /* dlvm-dis */,
-				OBJ_55 /* TEL.framework */,
-				OBJ_56 /* telc */,
-				OBJ_57 /* DLVMTests.xctest */,
-			);
-			name = Products;
-			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		OBJ_5 /*  */ = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
 				OBJ_7 /* Sources */,
-				OBJ_44 /* Tests */,
-				OBJ_47 /* Build */,
-				OBJ_48 /* Documentation */,
-				OBJ_49 /* Products */,
+				OBJ_47 /* Tests */,
+				OBJ_52 /* Build */,
+				OBJ_53 /* Documentation */,
+				OBJ_54 /* Products */,
 			);
 			name = "";
 			sourceTree = "<group>";
+		};
+		OBJ_50 /* TELTests */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_51 /* TELTests.swift */,
+				29D3998B1E0B39B100357FE5 /* ParseTests.swift */,
+			);
+			name = TELTests;
+			path = Tests/TELTests;
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_54 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_55 /* Funky.framework */,
+				OBJ_56 /* Parsey.framework */,
+				OBJ_57 /* dlc */,
+				OBJ_58 /* DLVM.framework */,
+				OBJ_59 /* dlvm-dis */,
+				OBJ_60 /* TEL.framework */,
+				OBJ_61 /* telc */,
+				OBJ_62 /* DLVMTests.xctest */,
+				OBJ_63 /* TELTests.xctest */,
+			);
+			name = Products;
+			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		OBJ_7 /* Sources */ = {
 			isa = PBXGroup;
@@ -400,9 +505,9 @@
 				OBJ_19 /* Parsey */,
 				OBJ_25 /* dlc */,
 				OBJ_27 /* DLVM */,
-				OBJ_38 /* dlvm-dis */,
+				OBJ_37 /* dlvm-dis */,
 				OBJ_40 /* TEL */,
-				OBJ_42 /* telc */,
+				OBJ_45 /* telc */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -428,85 +533,127 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		OBJ_118 /* dlvm-dis */ = {
+		OBJ_106 /* DLVM */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_119 /* Build configuration list for PBXNativeTarget "dlvm-dis" */;
+			buildConfigurationList = OBJ_107 /* Build configuration list for PBXNativeTarget "DLVM" */;
 			buildPhases = (
-				OBJ_122 /* Sources */,
-				OBJ_124 /* Frameworks */,
+				OBJ_110 /* Sources */,
+				OBJ_120 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_127 /* PBXTargetDependency */,
-				OBJ_128 /* PBXTargetDependency */,
+				OBJ_123 /* PBXTargetDependency */,
+				OBJ_124 /* PBXTargetDependency */,
+			);
+			name = DLVM;
+			productName = DLVM;
+			productReference = OBJ_58 /* DLVM.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		OBJ_125 /* dlvm-dis */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_126 /* Build configuration list for PBXNativeTarget "dlvm-dis" */;
+			buildPhases = (
+				OBJ_129 /* Sources */,
+				OBJ_132 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_136 /* PBXTargetDependency */,
+				OBJ_137 /* PBXTargetDependency */,
+				OBJ_138 /* PBXTargetDependency */,
 			);
 			name = "dlvm-dis";
 			productName = dlvm_dis;
-			productReference = OBJ_54 /* dlvm-dis */;
+			productReference = OBJ_59 /* dlvm-dis */;
 			productType = "com.apple.product-type.tool";
 		};
-		OBJ_129 /* TEL */ = {
+		OBJ_139 /* TEL */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_130 /* Build configuration list for PBXNativeTarget "TEL" */;
+			buildConfigurationList = OBJ_140 /* Build configuration list for PBXNativeTarget "TEL" */;
 			buildPhases = (
-				OBJ_133 /* Sources */,
-				OBJ_135 /* Frameworks */,
+				OBJ_143 /* Sources */,
+				OBJ_148 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_138 /* PBXTargetDependency */,
-				OBJ_139 /* PBXTargetDependency */,
+				OBJ_152 /* PBXTargetDependency */,
+				OBJ_153 /* PBXTargetDependency */,
+				OBJ_154 /* PBXTargetDependency */,
 			);
 			name = TEL;
 			productName = TEL;
-			productReference = OBJ_55 /* TEL.framework */;
+			productReference = OBJ_60 /* TEL.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		OBJ_140 /* telc */ = {
+		OBJ_155 /* telc */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_141 /* Build configuration list for PBXNativeTarget "telc" */;
+			buildConfigurationList = OBJ_156 /* Build configuration list for PBXNativeTarget "telc" */;
 			buildPhases = (
-				OBJ_144 /* Sources */,
-				OBJ_146 /* Frameworks */,
+				OBJ_159 /* Sources */,
+				OBJ_161 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_149 /* PBXTargetDependency */,
-				OBJ_150 /* PBXTargetDependency */,
+				OBJ_166 /* PBXTargetDependency */,
+				OBJ_167 /* PBXTargetDependency */,
+				OBJ_168 /* PBXTargetDependency */,
+				OBJ_169 /* PBXTargetDependency */,
 			);
 			name = telc;
 			productName = telc;
-			productReference = OBJ_56 /* telc */;
+			productReference = OBJ_61 /* telc */;
 			productType = "com.apple.product-type.tool";
 		};
-		OBJ_151 /* DLVMTests */ = {
+		OBJ_170 /* DLVMTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_152 /* Build configuration list for PBXNativeTarget "DLVMTests" */;
+			buildConfigurationList = OBJ_171 /* Build configuration list for PBXNativeTarget "DLVMTests" */;
 			buildPhases = (
-				OBJ_155 /* Sources */,
-				OBJ_157 /* Frameworks */,
+				OBJ_174 /* Sources */,
+				OBJ_176 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_161 /* PBXTargetDependency */,
-				OBJ_162 /* PBXTargetDependency */,
-				OBJ_163 /* PBXTargetDependency */,
+				OBJ_180 /* PBXTargetDependency */,
+				OBJ_181 /* PBXTargetDependency */,
+				OBJ_182 /* PBXTargetDependency */,
 			);
 			name = DLVMTests;
 			productName = DLVMTests;
-			productReference = OBJ_57 /* DLVMTests.xctest */;
+			productReference = OBJ_62 /* DLVMTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		OBJ_58 /* Funky */ = {
+		OBJ_183 /* TELTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_59 /* Build configuration list for PBXNativeTarget "Funky" */;
+			buildConfigurationList = OBJ_184 /* Build configuration list for PBXNativeTarget "TELTests" */;
 			buildPhases = (
-				OBJ_62 /* Sources */,
-				OBJ_73 /* Frameworks */,
+				OBJ_187 /* Sources */,
+				OBJ_189 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_194 /* PBXTargetDependency */,
+				OBJ_195 /* PBXTargetDependency */,
+				OBJ_196 /* PBXTargetDependency */,
+				OBJ_197 /* PBXTargetDependency */,
+			);
+			name = TELTests;
+			productName = TELTests;
+			productReference = OBJ_63 /* TELTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		OBJ_64 /* Funky */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_65 /* Build configuration list for PBXNativeTarget "Funky" */;
+			buildPhases = (
+				OBJ_68 /* Sources */,
+				OBJ_79 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -514,61 +661,44 @@
 			);
 			name = Funky;
 			productName = Funky;
-			productReference = OBJ_50 /* Funky.framework */;
+			productReference = OBJ_55 /* Funky.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		OBJ_74 /* Parsey */ = {
+		OBJ_80 /* Parsey */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_75 /* Build configuration list for PBXNativeTarget "Parsey" */;
+			buildConfigurationList = OBJ_81 /* Build configuration list for PBXNativeTarget "Parsey" */;
 			buildPhases = (
-				OBJ_78 /* Sources */,
-				OBJ_84 /* Frameworks */,
+				OBJ_84 /* Sources */,
+				OBJ_90 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_86 /* PBXTargetDependency */,
+				OBJ_92 /* PBXTargetDependency */,
 			);
 			name = Parsey;
 			productName = Parsey;
-			productReference = OBJ_51 /* Parsey.framework */;
+			productReference = OBJ_56 /* Parsey.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		OBJ_87 /* dlc */ = {
+		OBJ_93 /* dlc */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_88 /* Build configuration list for PBXNativeTarget "dlc" */;
+			buildConfigurationList = OBJ_94 /* Build configuration list for PBXNativeTarget "dlc" */;
 			buildPhases = (
-				OBJ_91 /* Sources */,
-				OBJ_93 /* Frameworks */,
+				OBJ_97 /* Sources */,
+				OBJ_99 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_96 /* PBXTargetDependency */,
-				OBJ_97 /* PBXTargetDependency */,
+				OBJ_103 /* PBXTargetDependency */,
+				OBJ_104 /* PBXTargetDependency */,
+				OBJ_105 /* PBXTargetDependency */,
 			);
 			name = dlc;
 			productName = dlc;
-			productReference = OBJ_52 /* dlc */;
+			productReference = OBJ_57 /* dlc */;
 			productType = "com.apple.product-type.tool";
-		};
-		OBJ_98 /* DLVM */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_99 /* Build configuration list for PBXNativeTarget "DLVM" */;
-			buildPhases = (
-				OBJ_102 /* Sources */,
-				OBJ_113 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				OBJ_116 /* PBXTargetDependency */,
-				OBJ_117 /* PBXTargetDependency */,
-			);
-			name = DLVM;
-			productName = DLVM;
-			productReference = OBJ_53 /* DLVM.framework */;
-			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
 
@@ -586,189 +716,244 @@
 				en,
 			);
 			mainGroup = OBJ_5 /*  */;
-			productRefGroup = OBJ_49 /* Products */;
+			productRefGroup = OBJ_54 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				OBJ_58 /* Funky */,
-				OBJ_74 /* Parsey */,
-				OBJ_87 /* dlc */,
-				OBJ_98 /* DLVM */,
-				OBJ_118 /* dlvm-dis */,
-				OBJ_129 /* TEL */,
-				OBJ_140 /* telc */,
-				OBJ_151 /* DLVMTests */,
+				OBJ_64 /* Funky */,
+				OBJ_80 /* Parsey */,
+				OBJ_93 /* dlc */,
+				OBJ_106 /* DLVM */,
+				OBJ_125 /* dlvm-dis */,
+				OBJ_139 /* TEL */,
+				OBJ_155 /* telc */,
+				OBJ_170 /* DLVMTests */,
+				OBJ_183 /* TELTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		OBJ_102 /* Sources */ = {
+		OBJ_110 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_103 /* BasicBlock.swift in Sources */,
-				OBJ_104 /* ExecutionEngine.swift in Sources */,
-				29C4E9A41E094B2000E0DE2E /* Types.swift in Sources */,
-				29C4E9A21E09431D00E0DE2E /* BPGen.swift in Sources */,
-				OBJ_106 /* Instruction.swift in Sources */,
-				OBJ_107 /* IR.swift in Sources */,
-				OBJ_108 /* IRBuilder.swift in Sources */,
-				OBJ_109 /* PrettyPrint.swift in Sources */,
-				OBJ_110 /* Tensor.swift in Sources */,
+				OBJ_111 /* BasicBlock.swift in Sources */,
+				OBJ_112 /* BPGen.swift in Sources */,
+				OBJ_113 /* ExecutionEngine.swift in Sources */,
+				OBJ_114 /* Instruction.swift in Sources */,
+				OBJ_115 /* IR.swift in Sources */,
+				OBJ_116 /* IRBuilder.swift in Sources */,
+				OBJ_117 /* PrettyPrint.swift in Sources */,
+				OBJ_118 /* Tensor.swift in Sources */,
+				OBJ_119 /* Types.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_122 /* Sources */ = {
+		OBJ_129 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_123 /* main.swift in Sources */,
-				29C4E9991E074F3C00E0DE2E /* Grammar.swift in Sources */,
+				OBJ_130 /* Grammar.swift in Sources */,
+				OBJ_131 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_133 /* Sources */ = {
+		OBJ_143 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				29C4E9A71E09545500E0DE2E /* AST.swift in Sources */,
-				OBJ_134 /* Expression.swift in Sources */,
-				29C4E9A01E074FBB00E0DE2E /* Sema.swift in Sources */,
-				29C4E99E1E074F9000E0DE2E /* Grammar.swift in Sources */,
+				OBJ_144 /* AST.swift in Sources */,
+				OBJ_145 /* Expression.swift in Sources */,
+				OBJ_146 /* Grammar.swift in Sources */,
+				OBJ_147 /* Sema.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_144 /* Sources */ = {
+		OBJ_159 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_145 /* main.swift in Sources */,
+				OBJ_160 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_155 /* Sources */ = {
+		OBJ_174 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_156 /* DLVMTests.swift in Sources */,
+				OBJ_175 /* DLVMTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_62 /* Sources */ = {
+		OBJ_187 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_63 /* Array.swift in Sources */,
-				OBJ_64 /* Associative.swift in Sources */,
-				OBJ_65 /* Collection.swift in Sources */,
-				OBJ_66 /* Function.swift in Sources */,
-				OBJ_67 /* Mappable.swift in Sources */,
-				OBJ_68 /* Numeric.swift in Sources */,
-				OBJ_69 /* Operators.swift in Sources */,
-				OBJ_70 /* Optional.swift in Sources */,
-				OBJ_71 /* Reducible.swift in Sources */,
-				OBJ_72 /* Set.swift in Sources */,
+				OBJ_188 /* TELTests.swift in Sources */,
+				29D3998D1E0B39EF00357FE5 /* ParseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_78 /* Sources */ = {
+		OBJ_68 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_79 /* Combinators.swift in Sources */,
-				OBJ_80 /* Error.swift in Sources */,
-				OBJ_81 /* Lexer.swift in Sources */,
-				OBJ_82 /* Location.swift in Sources */,
-				OBJ_83 /* Parser.swift in Sources */,
+				OBJ_69 /* Array.swift in Sources */,
+				OBJ_70 /* Associative.swift in Sources */,
+				OBJ_71 /* Collection.swift in Sources */,
+				OBJ_72 /* Function.swift in Sources */,
+				OBJ_73 /* Mappable.swift in Sources */,
+				OBJ_74 /* Numeric.swift in Sources */,
+				OBJ_75 /* Operators.swift in Sources */,
+				OBJ_76 /* Optional.swift in Sources */,
+				OBJ_77 /* Reducible.swift in Sources */,
+				OBJ_78 /* Set.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_91 /* Sources */ = {
+		OBJ_84 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_92 /* main.swift in Sources */,
+				OBJ_85 /* Combinators.swift in Sources */,
+				OBJ_86 /* Error.swift in Sources */,
+				OBJ_87 /* Lexer.swift in Sources */,
+				OBJ_88 /* Location.swift in Sources */,
+				OBJ_89 /* Parser.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_97 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_98 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		OBJ_116 /* PBXTargetDependency */ = {
+		OBJ_103 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_58 /* Funky */;
-			targetProxy = 29C4E98B1E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D399751E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_117 /* PBXTargetDependency */ = {
+		OBJ_104 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_74 /* Parsey */;
-			targetProxy = 29C4E98C1E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_80 /* Parsey */;
+			targetProxy = 29D399761E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_127 /* PBXTargetDependency */ = {
+		OBJ_105 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_58 /* Funky */;
-			targetProxy = 29C4E98D1E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_106 /* DLVM */;
+			targetProxy = 29D399771E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_128 /* PBXTargetDependency */ = {
+		OBJ_123 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_74 /* Parsey */;
-			targetProxy = 29C4E98E1E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D399781E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_124 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_80 /* Parsey */;
+			targetProxy = 29D399791E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_136 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D3997A1E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_137 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_80 /* Parsey */;
+			targetProxy = 29D3997B1E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
 		OBJ_138 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_58 /* Funky */;
-			targetProxy = 29C4E98F1E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_106 /* DLVM */;
+			targetProxy = 29D3997C1E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_139 /* PBXTargetDependency */ = {
+		OBJ_152 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_74 /* Parsey */;
-			targetProxy = 29C4E9901E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D3997D1E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_149 /* PBXTargetDependency */ = {
+		OBJ_153 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_58 /* Funky */;
-			targetProxy = 29C4E9911E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_80 /* Parsey */;
+			targetProxy = 29D3997E1E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_150 /* PBXTargetDependency */ = {
+		OBJ_154 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_74 /* Parsey */;
-			targetProxy = 29C4E9921E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_106 /* DLVM */;
+			targetProxy = 29D3997F1E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_161 /* PBXTargetDependency */ = {
+		OBJ_166 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_58 /* Funky */;
-			targetProxy = 29C4E9931E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D399801E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_162 /* PBXTargetDependency */ = {
+		OBJ_167 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_74 /* Parsey */;
-			targetProxy = 29C4E9941E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_80 /* Parsey */;
+			targetProxy = 29D399811E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_163 /* PBXTargetDependency */ = {
+		OBJ_168 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_98 /* DLVM */;
-			targetProxy = 29C4E9951E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_106 /* DLVM */;
+			targetProxy = 29D399821E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_86 /* PBXTargetDependency */ = {
+		OBJ_169 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_58 /* Funky */;
-			targetProxy = 29C4E9881E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_139 /* TEL */;
+			targetProxy = 29D399831E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_96 /* PBXTargetDependency */ = {
+		OBJ_180 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_58 /* Funky */;
-			targetProxy = 29C4E9891E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D399841E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
-		OBJ_97 /* PBXTargetDependency */ = {
+		OBJ_181 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = OBJ_74 /* Parsey */;
-			targetProxy = 29C4E98A1E074F0200E0DE2E /* PBXContainerItemProxy */;
+			target = OBJ_80 /* Parsey */;
+			targetProxy = 29D399851E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_182 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_106 /* DLVM */;
+			targetProxy = 29D399861E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_194 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D399871E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_195 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_80 /* Parsey */;
+			targetProxy = 29D399881E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_196 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_106 /* DLVM */;
+			targetProxy = 29D399891E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_197 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_139 /* TEL */;
+			targetProxy = 29D3998A1E0B396600357FE5 /* PBXContainerItemProxy */;
+		};
+		OBJ_92 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = OBJ_64 /* Funky */;
+			targetProxy = 29D399741E0B396600357FE5 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		OBJ_100 /* Debug */ = {
+		OBJ_108 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -788,7 +973,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_101 /* Release */ = {
+		OBJ_109 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -808,7 +993,7 @@
 			};
 			name = Release;
 		};
-		OBJ_120 /* Debug */ = {
+		OBJ_127 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
@@ -826,7 +1011,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_121 /* Release */ = {
+		OBJ_128 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
@@ -844,7 +1029,7 @@
 			};
 			name = Release;
 		};
-		OBJ_131 /* Debug */ = {
+		OBJ_141 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -864,7 +1049,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_132 /* Release */ = {
+		OBJ_142 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -884,7 +1069,7 @@
 			};
 			name = Release;
 		};
-		OBJ_142 /* Debug */ = {
+		OBJ_157 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
@@ -902,7 +1087,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_143 /* Release */ = {
+		OBJ_158 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
@@ -920,7 +1105,7 @@
 			};
 			name = Release;
 		};
-		OBJ_153 /* Debug */ = {
+		OBJ_172 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
@@ -937,7 +1122,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_154 /* Release */ = {
+		OBJ_173 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
@@ -951,6 +1136,40 @@
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				TARGET_NAME = DLVMTests;
+			};
+			name = Release;
+		};
+		OBJ_185 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = DLVM.xcodeproj/TELTests_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				TARGET_NAME = TELTests;
+			};
+			name = Debug;
+		};
+		OBJ_186 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = DLVM.xcodeproj/TELTests_Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				TARGET_NAME = TELTests;
 			};
 			name = Release;
 		};
@@ -996,7 +1215,7 @@
 			};
 			name = Release;
 		};
-		OBJ_60 /* Debug */ = {
+		OBJ_66 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -1016,7 +1235,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_61 /* Release */ = {
+		OBJ_67 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -1036,7 +1255,7 @@
 			};
 			name = Release;
 		};
-		OBJ_76 /* Debug */ = {
+		OBJ_82 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -1056,7 +1275,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_77 /* Release */ = {
+		OBJ_83 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ENABLE_TESTABILITY = YES;
@@ -1076,7 +1295,7 @@
 			};
 			name = Release;
 		};
-		OBJ_89 /* Debug */ = {
+		OBJ_95 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
@@ -1094,7 +1313,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_90 /* Release */ = {
+		OBJ_96 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
@@ -1115,38 +1334,56 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		OBJ_119 /* Build configuration list for PBXNativeTarget "dlvm-dis" */ = {
+		OBJ_107 /* Build configuration list for PBXNativeTarget "DLVM" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_120 /* Debug */,
-				OBJ_121 /* Release */,
+				OBJ_108 /* Debug */,
+				OBJ_109 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		OBJ_130 /* Build configuration list for PBXNativeTarget "TEL" */ = {
+		OBJ_126 /* Build configuration list for PBXNativeTarget "dlvm-dis" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_131 /* Debug */,
-				OBJ_132 /* Release */,
+				OBJ_127 /* Debug */,
+				OBJ_128 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		OBJ_141 /* Build configuration list for PBXNativeTarget "telc" */ = {
+		OBJ_140 /* Build configuration list for PBXNativeTarget "TEL" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_142 /* Debug */,
-				OBJ_143 /* Release */,
+				OBJ_141 /* Debug */,
+				OBJ_142 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		OBJ_152 /* Build configuration list for PBXNativeTarget "DLVMTests" */ = {
+		OBJ_156 /* Build configuration list for PBXNativeTarget "telc" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_153 /* Debug */,
-				OBJ_154 /* Release */,
+				OBJ_157 /* Debug */,
+				OBJ_158 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_171 /* Build configuration list for PBXNativeTarget "DLVMTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_172 /* Debug */,
+				OBJ_173 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		OBJ_184 /* Build configuration list for PBXNativeTarget "TELTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_185 /* Debug */,
+				OBJ_186 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -1160,38 +1397,29 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		OBJ_59 /* Build configuration list for PBXNativeTarget "Funky" */ = {
+		OBJ_65 /* Build configuration list for PBXNativeTarget "Funky" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_60 /* Debug */,
-				OBJ_61 /* Release */,
+				OBJ_66 /* Debug */,
+				OBJ_67 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		OBJ_75 /* Build configuration list for PBXNativeTarget "Parsey" */ = {
+		OBJ_81 /* Build configuration list for PBXNativeTarget "Parsey" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_76 /* Debug */,
-				OBJ_77 /* Release */,
+				OBJ_82 /* Debug */,
+				OBJ_83 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		OBJ_88 /* Build configuration list for PBXNativeTarget "dlc" */ = {
+		OBJ_94 /* Build configuration list for PBXNativeTarget "dlc" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_89 /* Debug */,
-				OBJ_90 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
-		OBJ_99 /* Build configuration list for PBXNativeTarget "DLVM" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				OBJ_100 /* Debug */,
-				OBJ_101 /* Release */,
+				OBJ_95 /* Debug */,
+				OBJ_96 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
