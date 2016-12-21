@@ -8,37 +8,6 @@
 
 import DLVM
 
-/// TEL AST
-public indirect enum Expression {
-    /// Input tensor placeholder
-    case input(shape: TensorShape)
-    /// Parameter of the network
-    case parameter(shape: TensorShape)
-    /// Logarithm
-    case log(Expression)
-    /// Sigmoid
-    case sigmoid(Expression)
-    /// ReLU
-    case relu(Expression)
-    /// Tanh
-    case tanh(Expression)
-    /// Softmax
-    case softmax(Expression)
-    /// Negation
-    case negative(Expression)
-    /// Element-wise addition
-    case add(Expression, Expression)
-    /// Element-wise product
-    case mul(Expression, Expression)
-    /// Element-wise subtraction
-    case min(Expression, Expression)
-    /// Element-wise quotient
-    case max(Expression, Expression)
-    /// Tensor product
-    case product(Expression, Expression)
-    /// Named layer
-    case layer(Expression, name: String)
-}
 //
 //infix operator • : MultiplicationPrecedence
 //infix operator ~
