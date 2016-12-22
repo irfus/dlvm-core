@@ -60,13 +60,17 @@ enum Variable {
 
 struct DeclarationType {
     enum Role {
-        case input, output, hidden
+        case input, output, hidden, parameter
     }
     var role: Role
     var shape: [Int]
 }
 
 indirect enum Expression {
+    /// Integer
+    case int(Int)
+    /// Float
+    case float(Float)
     /// Variable
     case variable(Variable)
     /// Intrinsic call
@@ -88,8 +92,9 @@ indirect enum Declaration {
     case recurrence(String, [Declaration])
 }
 
-struct NeuralNetwork {
-
+struct Program {
+    let macros: [Macro]
+    let declarations: [Declaration]
 }
 
 ///
@@ -107,15 +112,15 @@ extension Variable : Parsible {
 extension Macro : Parsible {
     static let parser: Parser<Macro> =
         "#type" ~~> space ~~>
-            ( Lexer.token("int8")    ^^= DataType.int8
-            | Lexer.token("int16")   ^^= DataType.int16
-            | Lexer.token("int32")   ^^= DataType.int32
-            | Lexer.token("int64")   ^^= DataType.int64
-            | Lexer.token("float8")  ^^= DataType.float8
-            | Lexer.token("float16") ^^= DataType.float16
-            | Lexer.token("float32") ^^= DataType.float32
-            | Lexer.token("float64") ^^= DataType.float64
-            ) ^^ Macro.type
+      ( Lexer.token("int8")    ^^= DataType.int8
+      | Lexer.token("int16")   ^^= DataType.int16
+      | Lexer.token("int32")   ^^= DataType.int32
+      | Lexer.token("int64")   ^^= DataType.int64
+      | Lexer.token("float8")  ^^= DataType.float8
+      | Lexer.token("float16") ^^= DataType.float16
+      | Lexer.token("float32") ^^= DataType.float32
+      | Lexer.token("float64") ^^= DataType.float64
+      ) ^^ Macro.type
 }
 
 extension DeclarationType.Role : Parsible {
@@ -123,6 +128,7 @@ extension DeclarationType.Role : Parsible {
         Lexer.token("in")     ^^= .input
       | Lexer.token("out")    ^^= .output
       | Lexer.token("hidden") ^^= .hidden
+      | Lexer.token("param")  ^^= .parameter
 }
 
 extension DeclarationType : Parsible {
@@ -134,6 +140,7 @@ extension DeclarationType : Parsible {
 }
 
 extension Declaration : Parsible {
+    
     private static let assignmentParser =
         Variable.parser
      ^^ curry(Declaration.assignment)
@@ -159,6 +166,12 @@ extension Expression : Parsible {
     ///
     /// Non-left-recursive grammar begin
     ///
+
+    private static let intParser: Parser<Expression> =
+        Lexer.signedInteger ^^ { .int(Int($0)!) }
+
+    private static let floatParser: Parser<Expression> =
+        Lexer.signedDecimal ^^ { .float(Float($0)!) }
 
     private static let variableParser: Parser<Expression> =
         Variable.parser ^^ Expression.variable
