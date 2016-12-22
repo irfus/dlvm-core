@@ -98,7 +98,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_155"
+               BlueprintIdentifier = "OBJ_154"
                BuildableName = "telc"
                BlueprintName = "telc"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -116,7 +116,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_170"
+               BlueprintIdentifier = "OBJ_169"
                BuildableName = "DLVMTests.xctest"
                BlueprintName = "DLVMTests"
                ReferencedContainer = "container:DLVM.xcodeproj">
@@ -126,7 +126,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "OBJ_183"
+               BlueprintIdentifier = "OBJ_182"
                BuildableName = "TELTests.xctest"
                BlueprintName = "TELTests"
                ReferencedContainer = "container:DLVM.xcodeproj">
