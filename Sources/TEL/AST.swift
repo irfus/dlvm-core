@@ -8,6 +8,7 @@
 
 import enum DLVM.DataType
 import struct DLVM.TensorShape
+import func Funky.curry
 import Parsey
 
 /// Sample
@@ -34,57 +35,33 @@ import Parsey
 /// o: out[16x1] = softmax(W7 h6 + b7)
 /// ``````
 
-let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
-let number = Lexer.signedDecimal ^^ { Int($0)! }
-let lineComment = Lexer.regex("//.*?\n")
-let space = (Lexer.whitespace | Lexer.tab)+
+/// Local primitive parsers
+fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
+fileprivate let number = Lexer.unsignedDecimal ^^ { Int($0)! }
+fileprivate let lineComment = Lexer.regex("//.*?") <~~ Lexer.newLine
+fileprivate let space = (Lexer.whitespace | Lexer.tab)+
 
 protocol Parsible {
     static var parser: Parser<Self> { get }
 }
 
-enum Macro : Parsible {
-    case type(DataType)
+///
+/// AST begin
+///
 
-    static let parser: Parser<Macro> =
-        "#type" ~~> space ~~>
-            ( Lexer.token("int8")    ^^= DataType.int8
-            | Lexer.token("int16")   ^^= DataType.int16
-            | Lexer.token("int32")   ^^= DataType.int32
-            | Lexer.token("int64")   ^^= DataType.int64
-            | Lexer.token("float8")  ^^= DataType.float8
-            | Lexer.token("float16") ^^= DataType.float16
-            | Lexer.token("float32") ^^= DataType.float32
-            | Lexer.token("float64") ^^= DataType.float64
-            ) ^^ Macro.type
+enum Macro {
+    case type(DataType)
 }
 
-struct DeclarationType : Parsible {
-    enum Role : Parsible {
+struct DeclarationType {
+    enum Role {
         case input, output, hidden
-
-        static let parser: Parser<Role> =
-            Lexer.token("in")     ^^= .input
-          | Lexer.token("out")    ^^= .output
-          | Lexer.token("hidden") ^^= .hidden
     }
-    
     var role: Role
     var shape: [Int]
-    
-    static let parser: Parser<DeclarationType> =
-        Role.parser ~~
-            number.many(separatedBy: Lexer.character("x"))
-                  .between("[", "]")
-            ^^ { DeclarationType(role: $0, shape: $1) }
 }
 
-indirect enum Statement {
-    case assignment(String, DeclarationType, Expression)
-    case recurrence([Statement])
-}
-
-indirect enum Expression : Parsible {
+indirect enum Expression {
     /// Variable
     case variable(String)
     /// Intrinsic call
@@ -99,40 +76,120 @@ indirect enum Expression : Parsible {
     case product(Expression, Expression)
     /// Concatenation
     case concat([Expression])
+}
 
-    static var variableParser: Parser<Expression> =
+indirect enum Statement {
+    case assignment(String, DeclarationType, Expression)
+    case recurrence(String, [Statement])
+}
+
+///
+/// Parsers begin
+///
+
+extension Macro : Parsible {
+    static let parser: Parser<Macro> =
+        "#type" ~~> space ~~>
+            ( Lexer.token("int8")    ^^= DataType.int8
+            | Lexer.token("int16")   ^^= DataType.int16
+            | Lexer.token("int32")   ^^= DataType.int32
+            | Lexer.token("int64")   ^^= DataType.int64
+            | Lexer.token("float8")  ^^= DataType.float8
+            | Lexer.token("float16") ^^= DataType.float16
+            | Lexer.token("float32") ^^= DataType.float32
+            | Lexer.token("float64") ^^= DataType.float64
+            ) ^^ Macro.type
+}
+
+extension DeclarationType.Role : Parsible {
+    static let parser: Parser<DeclarationType.Role> =
+        Lexer.token("in")     ^^= .input
+      | Lexer.token("out")    ^^= .output
+      | Lexer.token("hidden") ^^= .hidden
+}
+
+extension DeclarationType : Parsible {
+    static let parser: Parser<DeclarationType> =
+        Role.parser ~~
+        number.many(separatedBy: Lexer.character("x"))
+              .between("[", "]")
+     ^^ { DeclarationType(role: $0, shape: $1) }
+}
+
+extension Statement : Parsible {
+    private static let assignmentParser =
+        identifier
+     ^^ curry(Statement.assignment)
+     ** (Lexer.character(":").amid(space.?) ~~> DeclarationType.parser)
+     ** (Lexer.character("=").amid(space.?) ~~> Expression.parser)
+
+    private static let recurrenceParser =
+        Lexer.token("recurrent") ~~> identifier.amid(space)
+     ^^ curry(Statement.recurrence)
+     ** parser.many(separatedBy: Lexer.newLines)
+              .between(Lexer.character("{") ~~> Lexer.newLines,
+                       Lexer.newLines ~~> Lexer.character("}"))
+
+    static let parser: Parser<Statement> =
+        assignmentParser | recurrenceParser
+}
+
+// MARK: - Parser
+extension Expression : Parsible {
+
+    ///
+    /// Non-left-recursive grammar begin
+    ///
+    
+    private static let variableParser: Parser<Expression> =
         identifier ^^ Expression.variable
 
-    static var callParser: Parser<Expression> =
+    private static let callParser: Parser<Expression> =
         identifier ~~
-        termParser
-            .many(separatedBy: Lexer.regex(", "))
-            .between(Lexer.token("("), Lexer.token(")"))
-        ^^ Expression.call
+        parser.many(separatedBy: Lexer.regex(", "))
+              .between(Lexer.token("("), Lexer.token(")"))
+     ^^ Expression.call
 
-    static var negateParser: Parser<Expression> =
-        Lexer.token("-") ~~> termParser
-        ^^ Expression.negate
+    private static let negateParser: Parser<Expression> =
+        "-" ~~> termParser ^^ Expression.negate
 
-    static var concatParser: Parser<Expression> =
-        termParser.many(separatedBy: ", ").between("[", "]")
-        ^^ Expression.concat
+    private static let concatParser: Parser<Expression> =
+        parser.many(separatedBy: Lexer.character(",").amid(space.?))
+              .between("[", "]")
+     ^^ Expression.concat
+
+    private static let parenthesizedParser: Parser<Expression> =
+        "(" ~~> parser.amid(space.?) <~~ ")"
+
+    /// Composite parser for a term of an infix expression
+    private static let termParser = callParser
+                                  | negateParser
+                                  | concatParser
+                                  | variableParser
+                                  | parenthesizedParser
+
+    ///
+    /// Infix operators begin
+    ///
     
-    static var termParser: Parser<Expression> =
-        negateParser | variableParser
+    /// Tensor product: W x
+    /// - Priority: high
+    private static let productParser: Parser<Expression> =
+        termParser.infixedLeft(by: space ^^= Expression.product)
 
-    static var productParser: Parser<Expression> =
-        termParser.infixedLeft(by: Lexer.token(" ")
-            ^^= Expression.product)
-
-    static var mulParser: Parser<Expression> =
-        productParser.infixedLeft(by: Lexer.token(" * ")
+    /// Tensor element-wise multiplication: x * y
+    /// - Priority: medium
+    private static let mulParser: Parser<Expression> =
+        productParser.infixedLeft(by: Lexer.character("*").amid(space.?)
             ^^= Expression.mul)
 
-    static var addParser: Parser<Expression> =
-        mulParser.infixedLeft(by: Lexer.token(" + ")
+    /// Tensor element-wise addition: x + b
+    /// - Priority: low
+    private static let addParser: Parser<Expression> =
+        mulParser.infixedLeft(by: Lexer.character("+").amid(space.?)
             ^^= Expression.add)
 
-    static var parser: Parser<Expression> = addParser
+    /// Parser head - add operator
+    static let parser: Parser<Expression> = addParser
 
 }
