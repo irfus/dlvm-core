@@ -37,7 +37,7 @@ import Parsey
 
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
-fileprivate let number = Lexer.unsignedDecimal ^^ { Int($0)! }
+fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! }
 fileprivate let lineComment = Lexer.regex("//.*?") <~~ Lexer.newLine
 fileprivate let space = (Lexer.whitespace | Lexer.tab)+
 
@@ -53,6 +53,11 @@ enum Macro {
     case type(DataType)
 }
 
+enum Variable {
+    case simple(String)
+    case recurrent(String, timestep: String, offset: Int)
+}
+
 struct DeclarationType {
     enum Role {
         case input, output, hidden
@@ -63,7 +68,7 @@ struct DeclarationType {
 
 indirect enum Expression {
     /// Variable
-    case variable(String)
+    case variable(Variable)
     /// Intrinsic call
     case call(String, [Expression])
     /// Negation
@@ -78,14 +83,26 @@ indirect enum Expression {
     case concat([Expression])
 }
 
-indirect enum Statement {
-    case assignment(String, DeclarationType, Expression)
-    case recurrence(String, [Statement])
+indirect enum Declaration {
+    case assignment(Variable, DeclarationType, Expression)
+    case recurrence(String, [Declaration])
+}
+
+struct NeuralNetwork {
+
 }
 
 ///
 /// Parsers begin
 ///
+
+extension Variable : Parsible {
+    static let parser =
+        identifier ^^ Variable.simple
+      | identifier ^^ curry(Variable.recurrent)
+     ** ("[" ~~> identifier)
+     ** (number ^^ {-$0} <~~ "]")
+}
 
 extension Macro : Parsible {
     static let parser: Parser<Macro> =
@@ -111,27 +128,29 @@ extension DeclarationType.Role : Parsible {
 extension DeclarationType : Parsible {
     static let parser: Parser<DeclarationType> =
         Role.parser ~~
-        number.many(separatedBy: Lexer.character("x"))
-              .between("[", "]")
+        number.many(separatedBy: Lexer.character("x")).!
+              .between(Lexer.character("[").!, Lexer.character("]").!)
      ^^ { DeclarationType(role: $0, shape: $1) }
 }
 
-extension Statement : Parsible {
+extension Declaration : Parsible {
     private static let assignmentParser =
-        identifier
-     ^^ curry(Statement.assignment)
-     ** (Lexer.character(":").amid(space.?) ~~> DeclarationType.parser)
-     ** (Lexer.character("=").amid(space.?) ~~> Expression.parser)
+        Variable.parser
+     ^^ curry(Declaration.assignment)
+     ** (Lexer.character(":").amid(space.?) ~~> DeclarationType.parser.!)
+     ** (Lexer.character("=").amid(space.?) ~~> Expression.parser.!)
 
     private static let recurrenceParser =
         Lexer.token("recurrent") ~~> identifier.amid(space)
-     ^^ curry(Statement.recurrence)
+     ^^ curry(Declaration.recurrence)
      ** parser.many(separatedBy: Lexer.newLines)
               .between(Lexer.character("{") ~~> Lexer.newLines,
                        Lexer.newLines ~~> Lexer.character("}"))
 
-    static let parser: Parser<Statement> =
-        assignmentParser | recurrenceParser
+    static let parser: Parser<Declaration> = (
+        assignmentParser
+      | recurrenceParser
+    ).amid(space.?)
 }
 
 // MARK: - Parser
@@ -140,9 +159,9 @@ extension Expression : Parsible {
     ///
     /// Non-left-recursive grammar begin
     ///
-    
+
     private static let variableParser: Parser<Expression> =
-        identifier ^^ Expression.variable
+        Variable.parser ^^ Expression.variable
 
     private static let callParser: Parser<Expression> =
         identifier ~~
@@ -190,6 +209,6 @@ extension Expression : Parsible {
             ^^= Expression.add)
 
     /// Parser head - add operator
-    static let parser: Parser<Expression> = addParser
+    static let parser: Parser<Expression> = addParser.amid(space.?)
 
 }
