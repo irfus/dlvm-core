@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		29A8A04C1E0BEAB5006F33E1 /* Parse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A8A04B1E0BEAB5006F33E1 /* Parse.swift */; };
+		29A8A04E1E0CA9AB006F33E1 /* DLGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A8A04D1E0CA9AB006F33E1 /* DLGen.swift */; };
 		OBJ_100 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
 		OBJ_101 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
 		OBJ_102 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
@@ -28,7 +29,6 @@
 		OBJ_134 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
 		OBJ_135 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
 		OBJ_144 /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* AST.swift */; };
-		OBJ_145 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* Expression.swift */; };
 		OBJ_146 /* Sema.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* Sema.swift */; };
 		OBJ_148 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
 		OBJ_149 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
@@ -233,6 +233,7 @@
 
 /* Begin PBXFileReference section */
 		29A8A04B1E0BEAB5006F33E1 /* Parse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Parse.swift; path = Sources/DLVM/Parse.swift; sourceTree = SOURCE_ROOT; };
+		29A8A04D1E0CA9AB006F33E1 /* DLGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DLGen.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Associative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Associative.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Collection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Function.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Function.swift; sourceTree = "<group>"; };
@@ -260,7 +261,6 @@
 		OBJ_38 /* Grammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
 		OBJ_39 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		OBJ_41 /* AST.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AST.swift; sourceTree = "<group>"; };
-		OBJ_42 /* Expression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expression.swift; sourceTree = "<group>"; };
 		OBJ_43 /* Sema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sema.swift; sourceTree = "<group>"; };
 		OBJ_45 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		OBJ_48 /* DLVMTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DLVMTests.swift; sourceTree = "<group>"; };
@@ -425,8 +425,8 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_41 /* AST.swift */,
-				OBJ_42 /* Expression.swift */,
 				OBJ_43 /* Sema.swift */,
+				29A8A04D1E0CA9AB006F33E1 /* DLGen.swift */,
 			);
 			name = TEL;
 			path = Sources/TEL;
@@ -469,7 +469,7 @@
 			path = Tests/TELTests;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -479,7 +479,6 @@
 				OBJ_53 /* Documentation */,
 				OBJ_54 /* Products */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_54 /* Products */ = {
@@ -715,7 +714,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_54 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -765,7 +764,7 @@
 			buildActionMask = 0;
 			files = (
 				OBJ_144 /* AST.swift in Sources */,
-				OBJ_145 /* Expression.swift in Sources */,
+				29A8A04E1E0CA9AB006F33E1 /* DLGen.swift in Sources */,
 				OBJ_146 /* Sema.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
