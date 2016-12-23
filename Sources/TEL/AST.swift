@@ -38,10 +38,12 @@ import Parsey
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
 fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! }
-fileprivate let lineComment = Lexer.regex("//.*?") <~~ Lexer.newLine
-fileprivate let space = (Lexer.whitespace | Lexer.tab)+
+fileprivate let lineComments = ("//" ~~> Lexer.string(until: "\n") <~~ Lexer.newLine)+
+fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
+fileprivate let newLines = Lexer.newLine+
+fileprivate let linebreaks = (newLines | lineComments).amid(spaces.?)+ .. "a linebreak"
 
-protocol Parsible {
+public protocol Parsible {
     static var parser: Parser<Self> { get }
 }
 
@@ -49,24 +51,24 @@ protocol Parsible {
 /// AST begin
 ///
 
-enum Macro {
+public enum Macro {
     case type(DataType)
 }
 
-enum Variable {
+public enum Variable {
     case simple(String)
     case recurrent(String, timestep: String, offset: Int)
 }
 
-struct DeclarationType {
-    enum Role {
+public struct DeclarationType {
+    public enum Role {
         case input, output, hidden, parameter
     }
-    var role: Role
-    var shape: [Int]
+    public let role: Role
+    public let shape: [Int]
 }
 
-indirect enum Expression {
+public indirect enum Expression {
     /// Integer
     case int(Int)
     /// Float
@@ -87,14 +89,18 @@ indirect enum Expression {
     case concat([Expression])
 }
 
-indirect enum Declaration {
-    case assignment(Variable, DeclarationType, Expression)
+public indirect enum Declaration {
+    case assignment(Variable, DeclarationType, Expression?)
     case recurrence(String, [Declaration])
 }
 
-struct Program {
-    let macros: [Macro]
-    let declarations: [Declaration]
+public enum Statement {
+    case macro(Macro)
+    case declaration(Declaration)
+}
+
+public struct ProgramTree {
+    public let statements: [Statement]
 }
 
 ///
@@ -102,16 +108,16 @@ struct Program {
 ///
 
 extension Variable : Parsible {
-    static let parser =
-        identifier ^^ Variable.simple
-      | identifier ^^ curry(Variable.recurrent)
-     ** ("[" ~~> identifier)
-     ** (number ^^ {-$0} <~~ "]")
+    public static let parser =
+        identifier ^^ curry(Variable.recurrent)
+     ** ("[" ~~> identifier.!)
+     ** ("-" ~~> number ^^ {-$0}).withDefault(0) <~~ "]"
+      | identifier ^^ Variable.simple
 }
 
 extension Macro : Parsible {
-    static let parser: Parser<Macro> =
-        "#type" ~~> space ~~>
+    public static let parser: Parser<Macro> =
+        "#type" ~~> spaces ~~>
       ( Lexer.token("int8")    ^^= DataType.int8
       | Lexer.token("int16")   ^^= DataType.int16
       | Lexer.token("int32")   ^^= DataType.int32
@@ -124,7 +130,7 @@ extension Macro : Parsible {
 }
 
 extension DeclarationType.Role : Parsible {
-    static let parser: Parser<DeclarationType.Role> =
+    public static let parser: Parser<DeclarationType.Role> =
         Lexer.token("in")     ^^= .input
       | Lexer.token("out")    ^^= .output
       | Lexer.token("hidden") ^^= .hidden
@@ -132,32 +138,34 @@ extension DeclarationType.Role : Parsible {
 }
 
 extension DeclarationType : Parsible {
-    static let parser: Parser<DeclarationType> =
+    public static let parser: Parser<DeclarationType> =
         Role.parser ~~
-        number.many(separatedBy: Lexer.character("x")).!
+        number.nonbacktracking()
+              .many(separatedBy: Lexer.character("x"))
               .between(Lexer.character("[").!, Lexer.character("]").!)
      ^^ { DeclarationType(role: $0, shape: $1) }
 }
 
 extension Declaration : Parsible {
-    
-    private static let assignmentParser =
+
+    private static let assignmentParser: Parser<Declaration> =
         Variable.parser
      ^^ curry(Declaration.assignment)
-     ** (Lexer.character(":").amid(space.?) ~~> DeclarationType.parser.!)
-     ** (Lexer.character("=").amid(space.?) ~~> Expression.parser.!)
+     ** (Lexer.character(":").amid(spaces.?) ~~> DeclarationType.parser.!)
+     ** (Lexer.character("=").amid(spaces.?) ~~> Expression.parser.!).?
 
-    private static let recurrenceParser =
-        Lexer.token("recurrent") ~~> identifier.amid(space)
+    private static let recurrenceParser: Parser<Declaration> =
+        Lexer.token("recurrent") ~~>
+        identifier.nonbacktracking().amid(spaces)
      ^^ curry(Declaration.recurrence)
-     ** parser.many(separatedBy: Lexer.newLines)
-              .between(Lexer.character("{") ~~> Lexer.newLines,
-                       Lexer.newLines ~~> Lexer.character("}"))
+     ** parser.amid(spaces.?)
+              .many(separatedBy: linebreaks)
+              .between(Lexer.character("{").! ~~> linebreaks.!,
+                       linebreaks.! ~~> Lexer.character("}").!)
 
-    static let parser: Parser<Declaration> = (
-        assignmentParser
-      | recurrenceParser
-    ).amid(space.?)
+    public static let parser = assignmentParser
+                             | recurrenceParser
+                            .. "a declaration"
 }
 
 // MARK: - Parser
@@ -178,27 +186,32 @@ extension Expression : Parsible {
 
     private static let callParser: Parser<Expression> =
         identifier ~~
-        parser.many(separatedBy: Lexer.regex(", "))
-              .between(Lexer.token("("), Lexer.token(")"))
+        parser.nonbacktracking()
+              .many(separatedBy: Lexer.character(",").amid(spaces.?))
+              .between(Lexer.token("("), Lexer.token(")").!)
      ^^ Expression.call
 
     private static let negateParser: Parser<Expression> =
-        "-" ~~> termParser ^^ Expression.negate
+        "-" ~~> parser.! ^^ Expression.negate
 
     private static let concatParser: Parser<Expression> =
-        parser.many(separatedBy: Lexer.character(",").amid(space.?))
+        parser.nonbacktracking()
+              .many(separatedBy: Lexer.character(",").amid(spaces.?))
               .between("[", "]")
      ^^ Expression.concat
 
     private static let parenthesizedParser: Parser<Expression> =
-        "(" ~~> parser.amid(space.?) <~~ ")"
+        "(" ~~> parser.amid(spaces.?) <~~ ")"
 
     /// Composite parser for a term of an infix expression
     private static let termParser = callParser
+                                  | parenthesizedParser
                                   | negateParser
+                                  | floatParser
+                                  | intParser
                                   | concatParser
                                   | variableParser
-                                  | parenthesizedParser
+                                 .. "an expression"
 
     ///
     /// Infix operators begin
@@ -207,21 +220,37 @@ extension Expression : Parsible {
     /// Tensor product: W x
     /// - Priority: high
     private static let productParser: Parser<Expression> =
-        termParser.infixedLeft(by: space ^^= Expression.product)
+        termParser.infixedLeft(by: spaces ^^= Expression.product)
 
     /// Tensor element-wise multiplication: x * y
     /// - Priority: medium
     private static let mulParser: Parser<Expression> =
-        productParser.infixedLeft(by: Lexer.character("*").amid(space.?)
+        productParser.infixedLeft(by: Lexer.character("*").amid(spaces.?)
             ^^= Expression.mul)
 
     /// Tensor element-wise addition: x + b
     /// - Priority: low
     private static let addParser: Parser<Expression> =
-        mulParser.infixedLeft(by: Lexer.character("+").amid(space.?)
+        mulParser.infixedLeft(by: Lexer.character("+").amid(spaces.?)
             ^^= Expression.add)
 
     /// Parser head - add operator
-    static let parser: Parser<Expression> = addParser.amid(space.?)
+    public static let parser: Parser<Expression> =
+        addParser .. "an expression"
 
+}
+
+extension Statement : Parsible {
+    public static let parser: Parser<Statement> =
+        Macro.parser       ^^ Statement.macro
+      | Declaration.parser ^^ Statement.declaration
+     .. "a statement"
+}
+
+extension ProgramTree : Parsible {
+    public static let parser: Parser<ProgramTree> =
+        Statement.parser.amid(spaces.?)
+                        .manyOrNone(separatedBy: linebreaks)
+                        .amid(linebreaks.?)
+     ^^ ProgramTree.init
 }

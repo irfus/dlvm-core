@@ -6,6 +6,13 @@
 //
 //
 
+import enum DLVM.DataType
 import struct DLVM.TensorShape
 
-/// - TODO: Nanjiang, please implement type (dimension) checker for TEL
+public class Environment {
+
+    init(_ parse: ProgramTree) {
+        
+    }
+    
+}
