@@ -7,7 +7,6 @@
 //
 
 import enum DLVM.DataType
-import struct DLVM.TensorShape
 import func Funky.curry
 import Parsey
 
@@ -158,8 +157,7 @@ extension Declaration : Parsible {
         Lexer.token("recurrent") ~~>
         identifier.nonbacktracking().amid(spaces)
      ^^ curry(Declaration.recurrence)
-     ** parser.amid(spaces.?)
-              .many(separatedBy: linebreaks)
+     ** parser.many(separatedBy: linebreaks)
               .between(Lexer.character("{").! ~~> linebreaks.!,
                        linebreaks.! ~~> Lexer.character("}").!)
 
@@ -249,8 +247,7 @@ extension Statement : Parsible {
 
 extension ProgramTree : Parsible {
     public static let parser: Parser<ProgramTree> =
-        Statement.parser.amid(spaces.?)
-                        .manyOrNone(separatedBy: linebreaks)
+        Statement.parser.manyOrNone(separatedBy: linebreaks)
                         .amid(linebreaks.?)
      ^^ ProgramTree.init
 }
