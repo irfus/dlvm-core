@@ -57,6 +57,13 @@ public enum Macro {
 public enum Variable {
     case simple(String)
     case recurrent(String, timestep: String, offset: Int)
+
+    var name: String {
+        switch self {
+        case let .simple(name), let .recurrent(name, _, _):
+            return name
+        }
+    }
 }
 
 public struct DeclarationType {

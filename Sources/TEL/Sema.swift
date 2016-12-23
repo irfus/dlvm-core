@@ -13,8 +13,12 @@ import struct DLVM.TensorShape
 public enum SemanticError : Error {
     case typeMismatch
     case dataTypeRedeclared
+    case inputRedeclared(Variable)
+    case outputRedeclared(Variable)
     case initializerMissing(Variable)
     case initializerUnexpected(Variable)
+    case inputMissing
+    case outputMissing
 }
 
 public protocol Node {
@@ -41,7 +45,8 @@ public class Parameter : Node {
     }
 }
 
-public class InputLayer : Node {
+/// Input (in[])
+public class Input : Node {
     public let name: String
     public let shape: TensorShape
 
@@ -51,10 +56,11 @@ public class InputLayer : Node {
     }
 }
 
-public class OutputLayer : Node {
+/// Layer (hidden[])
+public class Layer : Node {
     public let name: String
     public let shape: TensorShape
-    
+
     /// Add dependency field
 
     public init(name: String, shape: TensorShape) {
@@ -63,18 +69,8 @@ public class OutputLayer : Node {
     }
 }
 
-/// Hidden layer (hidden[xxx])
-public class HiddenLayer : Node {
-    public let name: String
-    public let shape: TensorShape
-    
-    /// Add dependency field
-
-    public init(name: String, shape: TensorShape) {
-        self.name = name
-        self.shape = shape
-    }
-}
+/// Output (out[])
+public class Output : Layer { }
 
 /// Environment for semantics analysis
 /// To be passed to CodeGen
@@ -97,52 +93,79 @@ public class Program {
     /// Default type: float32
     public internal(set) var dataType: DataType = .float32
 
+    public internal(set) var input: Input
+    public internal(set) var output: Output
+    public internal(set) var layers: [Layer] = []
     public internal(set) var parameters: [Parameter] = []
-
+    
     let env = TypeEnvironment()
 
     init(_ parse: ProgramTree) throws {
-        for stmt in parse.statements {
-            try typeCheckStatement(stmt, in: &env)
-        }
-    }
-
-    func typeCheckStatement(_ stmt: Statement, in: inout TypeEnvironment) throws {
         var dataTypeDefined = false
 
-        switch stmt {
-        /// Macro
-        case let .macro(macro):
-            /// Type declaraction
-            if case let .type(type) = macro {
-                if dataTypeDefined {
-                    throw SemanticError.dataTypeRedeclared
+        var maybeInput: Input? = nil
+        var maybeOutput: Output? = nil
+        
+        for stmt in parse.statements {
+            
+            switch stmt {
+            /// Macro
+            case let .macro(macro):
+                /// Type declaraction
+                if case let .type(type) = macro {
+                    if dataTypeDefined {
+                        throw SemanticError.dataTypeRedeclared
+                    }
+                    dataTypeDefined = true
+                    self.dataType = type
                 }
-                dataTypeDefined = true
-                self.dataType = type
-            }
-        /// Declaration
-        case let .declaration(decl):
-            switch decl {
-            case let .assignment(variable, declType, nil):
-                /// If declaration is input layer, expr is required
-                if declType.role != .input {
+            /// Declaration
+            case let .declaration(decl):
+                switch decl {
+                /// Input
+                case let .assignment(variable, declType, nil)
+                    where declType.role == .input:
+                    guard maybeInput == nil else {
+                        throw SemanticError.inputRedeclared(variable)
+                    }
+                    maybeInput = Input(
+                        name: variable.name,
+                        shape: TensorShape(declType.shape)
+                    )
+
+                /// No init expr for a non-input node, error
+                case let .assignment(variable, _, nil):
                     throw SemanticError.initializerMissing(variable)
+
+                /// Output
+                case let .assignment(variable, declType, expr?)
+                    where declType.role == .output:
+                    guard maybeOutput == nil else {
+                        throw SemanticError.outputRedeclared(variable)
+                    }
+                    /// TODO: type-check expr
+                    maybeOutput = Output(
+                        name: variable.name,
+                        shape: TensorShape(declType.shape)
+                    )
+
+                case let .assignment(variable, declType, expr?):
+                    /// If declaration is input layer, expr is not needed
+                    if declType.role == .input {
+                        throw SemanticError.initializerUnexpected(variable)
+                    }
+                    /// TODO: type-check assignment block w/ init expr
+                    break
+                case let .recurrence(timestep, decls):
+                    /// TODO: type-check recurrence block
+                    break
                 }
-                /// TODO: type-check assignment block w/o init expr
-                break
-            case let .assignment(variable, declType, expr?):
-                /// If declaration is input layer, expr is not needed
-                if declType.role == .input {
-                    throw SemanticError.initializerUnexpected(variable)
-                }
-                /// TODO: type-check assignment block w/ init expr
-                break
-            case let .recurrence(timestep, decls):
-                /// TODO: type-check recurrence block
-                break
             }
         }
+        guard let input = maybeInput else { throw SemanticError.inputMissing }
+        self.input = input
+        guard let output = maybeOutput else { throw SemanticError.outputMissing }
+        self.output = output
     }
-    
+
 }
