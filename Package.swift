@@ -3,10 +3,18 @@ import PackageDescription
 let package = Package(
     name: "DLVM",
     targets: [
-        Target(name: "DLVM")
+        /// Core DLVM library: IR, BPGen (libDLVM)
+        Target(name: "DLVM"),
+        /// DLVM compiler driver
+        Target(name: "dlc", dependencies: ["DLVM"]),
+        /// DLVM bitcode disassembler
+        Target(name: "dlvm-dis", dependencies: ["DLVM"]),
+        /// TEL compiler library (libTEL)
+        Target(name: "TEL", dependencies: ["DLVM"]),
+        /// TEL compiler driver
+        Target(name: "telc", dependencies: ["DLVM", "TEL"])
     ],
     dependencies: [
-        .Package(url: "https://github.com/rxwei/cuda-swift", majorVersion: 1, minor: 3),
-        .Package(url: "https://github.com/rxwei/CCUDA", majorVersion: 1, minor: 4)
+    	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 5)
     ]
 )

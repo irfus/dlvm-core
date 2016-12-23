@@ -2,43 +2,48 @@
 
 This is under **very active** development. Components are **not** ready to use. 
 
-# The DLVM Infrastructure for Neural Networks
+# Deep Learning Virtual Machine
+## Compiler Infrastructure for Neural Networks
 
-- [x] Embedded DSL in Swift
+- [ ] libDLVM
+    - [ ] IR
+      - [ ] Parser
+      - [ ] Sema
+    - [ ] IRBuilder
+    - [ ] BPGen (a transformation for backpropagation using automatic differentiation)
+    - [ ] OptGen (a transformation for NN optimization generation, e.g. SGD)
+    - [ ] HPVM CodeGen
+    - [ ] Execution engine
 - [ ] DLVM IR - Intermediate Representation
     - [x] Assignment form
     - [ ] Loops
     - [ ] Optimization passes
-- [ ] Execution Engine
+    - [ ] Batch management
+- [ ] libTEL - The Tensor Expression Language
+    - [ ] Parser
+    - [ ] Tensor type checker
+    - [ ] DLVM IR generator
+    - [ ] Special Networks
+        - [ ] RNN
+        - [ ] CNN
+        - [ ] GRU
+        - [ ] LSTM
+- [ ] DLVM toolchain
+    - [ ] telc - TEL compiler driver
+    - [ ] dlvm-dis
+    - [ ] dlc
+- [ ] Interpretation Engines
     - [ ] CPU
         - [ ] Forward propagation
         - [ ] Backward propagation
     - [ ] CUDA GPU
-        - [x] Forward propagation
-        - [x] Backward propagation
+        - [ ] Forward propagation
+        - [ ] Backward propagation
     - [ ] Metal GPU
         - [ ] Forward propagation
         - [ ] Backward propagation
-    - [ ] Batch management
-- [ ] Code Generator
-    - [ ] HPVM
-- [ ] Special Networks
-    - [ ] RNN
-    - [ ] CNN
-    - [ ] GRU
-    - [ ] LSTM
-- [ ] TEL - The Tensor Expression Language
-    - [ ] Parser
-    - [ ] Tensor type checker
-    - [ ] IR generator
 
-## Stages
-
-1. CUDA Execution Engine
-
-2. HPVM Code Generator
-
-## Embedded DSL in Swift
+## TEL AST builder (embedded DSL)
 
 Syntax:
 
@@ -120,24 +125,12 @@ whereas loops are necessary for recurrent neural networks.
 
 ## Build
 
-You can use `make`, which invokes one of the following commands depending on the
+You can use `swift build`, which invokes one of the following commands depending on the
 platform.
-
-### macOS
-```
-swift build -Xcc -I/usr/local/cuda/include -Xlinker -L/usr/local/cuda/lib
-``````
-
-### Linux
-```
-swift build -Xcc -I/usr/local/cuda/include -Xlinker -L/usr/local/cuda/lib64
-``````
 
 ## Dependencies
 
-- [cuda-swift](https://github.com/rxwei/CCUDA) - `CUDARuntime`, `CuBLAS`
-- [CCUDA](https://github.com/rxwei/CCUDA) - `CCuDNN`
-- NVIDIA CUDA library
+- Parsey
 
 ## License
 
