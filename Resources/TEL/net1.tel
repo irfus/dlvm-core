@@ -4,6 +4,7 @@
 // Input
 i: in[2x1]
 
+// Parameter declarations
 W1: param[2x2] = random(0.0)
 W2: param[2x2] = random(0.0, 1.0)
 W3: param[2x2] = random(0.0, 1.0)
