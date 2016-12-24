@@ -13,10 +13,10 @@ import struct DLVM.TensorShape
 public enum SemanticError : Error {
     case typeMismatch
     case dataTypeRedeclared
-    case inputRedeclared(Variable)
     case outputRedeclared(Variable)
     case initializerMissing(Variable)
     case initializerUnexpected(Variable)
+    case variableRedeclared(Variable)
     case inputMissing
     case outputMissing
 }
@@ -27,7 +27,7 @@ public protocol Node {
 }
 
 /// Parameter (param[xxx])
-public class Parameter : Node {
+public struct Parameter : Node {
     public enum Initializer {
         case int(Int)
         case float(Float)
@@ -37,45 +37,50 @@ public class Parameter : Node {
     public let name: String
     public let shape: TensorShape
     public let initializer: Initializer
-
-    public init(name: String, shape: TensorShape, initializer: Initializer) {
-        self.name = name
-        self.shape = shape
-        self.initializer = initializer
-    }
 }
 
 /// Input (in[])
-public class Input : Node {
+public struct Input : Node {
     public let name: String
     public let shape: TensorShape
-
-    public init(name: String, shape: TensorShape) {
-        self.name = name
-        self.shape = shape
-    }
 }
 
 /// Layer (hidden[])
-public class Layer : Node {
+public struct Layer : Node {
     public let name: String
     public let shape: TensorShape
-
-    /// Add dependency field
-
-    public init(name: String, shape: TensorShape) {
-        self.name = name
-        self.shape = shape
-    }
+    public let expression: Expression
 }
 
-/// Output (out[])
-public class Output : Layer { }
+struct RecurrenceContext {
+    let timestep: String
+    let shapes: [String : TensorShape]
+}
 
 /// Environment for semantics analysis
-/// To be passed to CodeGen
 struct TypeEnvironment {
     private var shapes: [String : TensorShape] = [:]
+
+    var parameters: [Parameter] = []
+    var inputs: [Input] = []
+    var layers: [Layer] = []
+    var output: Layer?
+    var dataType: DataType = .float32
+    var isCustomDataType = false
+
+    private var recurrences: [RecurrenceContext] = []
+
+    mutating func pushRecurrence(_ recurrence: RecurrenceContext) {
+        recurrences.append(recurrence)
+    }
+
+    mutating func popRecurrence() {
+        recurrences.removeLast()
+    }
+
+    func contains(_ key: String) -> Bool {
+        return shapes.keys.contains(key)
+    }
 
     subscript(key: String) -> TensorShape? {
         get {
@@ -89,83 +94,141 @@ struct TypeEnvironment {
 
 /// Program semantics
 public class Program {
-
+    
     /// Default type: float32
     public internal(set) var dataType: DataType = .float32
-
-    public internal(set) var input: Input
-    public internal(set) var output: Output
-    public internal(set) var layers: [Layer] = []
-    public internal(set) var parameters: [Parameter] = []
     
-    let env = TypeEnvironment()
+    public internal(set) var inputs: [Input] = []
+    public internal(set) var layers: [Layer] = []
+    public internal(set) var output: Layer
+    public internal(set) var parameters: [Parameter] = []
 
     init(_ parse: ProgramTree) throws {
-        var dataTypeDefined = false
-
-        var maybeInput: Input? = nil
-        var maybeOutput: Output? = nil
-        
+        /// Create a type environment for semantic analysis
+        var env = TypeEnvironment()
+        /// Check every statement (top-level items)
         for stmt in parse.statements {
+            try Program.check(stmt, in: &env)
+        }
+        /// Check existence of proper declarations
+        guard !env.inputs.isEmpty else {
+            throw SemanticError.inputMissing
+        }
+        guard let output = env.output else {
+            throw SemanticError.outputMissing
+        }
+        /// Initialize properties
+        self.inputs = env.inputs
+        self.layers = env.layers
+        self.output = output
+        self.parameters = env.parameters
+    }
+
+    /// Check statement
+    /// - Throws: SemanticError
+    static func check(_ statement: Statement, in env: inout TypeEnvironment) throws {
+        switch statement {
+        /// Type macro
+        case let .macro(.type(type)):
+            guard !env.isCustomDataType else {
+                throw SemanticError.dataTypeRedeclared
+            }
+            env.isCustomDataType = true
+            env.dataType = type
             
-            switch stmt {
-            /// Macro
-            case let .macro(macro):
-                /// Type declaraction
-                if case let .type(type) = macro {
-                    if dataTypeDefined {
-                        throw SemanticError.dataTypeRedeclared
-                    }
-                    dataTypeDefined = true
-                    self.dataType = type
-                }
-            /// Declaration
-            case let .declaration(decl):
-                switch decl {
-                /// Input
-                case let .assignment(variable, declType, nil)
-                    where declType.role == .input:
-                    guard maybeInput == nil else {
-                        throw SemanticError.inputRedeclared(variable)
-                    }
-                    maybeInput = Input(
-                        name: variable.name,
-                        shape: TensorShape(declType.shape)
-                    )
+        /// Declaration
+        case let .declaration(decl):
+            try check(decl, in: &env)
+        }
+    }
 
-                /// No init expr for a non-input node, error
-                case let .assignment(variable, _, nil):
-                    throw SemanticError.initializerMissing(variable)
+    /// Check declaration
+    /// - Throws: SemanticError
+    static func check(_ declaration: Declaration, in env: inout TypeEnvironment) throws {
+        switch declaration {
 
-                /// Output
-                case let .assignment(variable, declType, expr?)
-                    where declType.role == .output:
-                    guard maybeOutput == nil else {
-                        throw SemanticError.outputRedeclared(variable)
-                    }
-                    /// TODO: type-check expr
-                    maybeOutput = Output(
-                        name: variable.name,
-                        shape: TensorShape(declType.shape)
-                    )
+        /// ## Grand sanity check begin ##
+        
+        /// Check for redeclaration
+        case let .assignment(variable, _, _, _)
+            where env.contains(variable.name):
+            throw SemanticError.variableRedeclared(variable)
+            
+        /// If declaration is input layer with an init expr assigned
+        /// to it, erorr
+        case let .assignment(variable, .input, _, _?):
+            throw SemanticError.initializerUnexpected(variable)
 
-                case let .assignment(variable, declType, expr?):
-                    /// If declaration is input layer, expr is not needed
-                    if declType.role == .input {
-                        throw SemanticError.initializerUnexpected(variable)
-                    }
-                    /// TODO: type-check assignment block w/ init expr
-                    break
-                case let .recurrence(timestep, decls):
-                    /// TODO: type-check recurrence block
-                    break
+        /// No init expr for a non-input node, error
+        case let .assignment(variable, .output, _, nil),
+             let .assignment(variable, .hidden, _, nil),
+             let .assignment(variable, .parameter, _, nil):
+            throw SemanticError.initializerMissing(variable)
+
+        /// If more than one output, error
+        case let .assignment(variable, .output, _, _)
+            where env.contains(variable.name):
+            throw SemanticError.outputRedeclared(variable)
+
+        /// ## Grand environment filling begin ##
+            
+        /// Input
+        case let .assignment(variable, .input, shapeComponents, nil):
+            let shape = TensorShape(shapeComponents)
+            let input = Input(name: variable.name, shape: shape)
+            env.inputs.append(input)
+
+        /// Parameter
+        case let .assignment(variable, .parameter, shapeComponents, expr?):
+            let shape = TensorShape(shapeComponents)
+            /// TODO:
+            /// 1. Error when `expr` is not float/int/floatRandom/intRandom
+            /// 2. Error when `expr`'s type (int/float) does not match env.dataType
+            /// - note: make use of pattern matching under the same switch
+            //  let param = Parameter(name: variable.name, shape: shape, initializer: TODO)
+            //  env.parameters.append(param)
+            break
+
+        /// ## Grand deep check begin ##
+            
+        /// Hidden and output checked the same way
+        case let .assignment(variable, role, shapeComponents, expr?)
+            where role == .hidden || role == .output:
+            let shape = TensorShape(shapeComponents)
+            try check(expr, for: shape, in: &env)
+            env[variable.name] = shape
+
+        case let .recurrence(timestep, decls):
+            /// Recurrent timestep ('t', for example) is bound only within the
+            /// recurrence. Unlike timestep, declarations in a recurrence are
+            /// **globally bound**.
+            /// Recurrence allows circular dependencies. To do this, we push
+            /// the enclosing declarations as a 'recurrence context' into env
+            /// before checking inner-scope declarations in normal order.
+            /// Create a recurrent context containing a timestep and a symbol
+            /// table of shapes
+            var contextShapes: [String : TensorShape] = [:]
+            for decl in decls {
+                if case let .assignment(variable, _, shapeComponents, _) = decl {
+                    contextShapes[variable.name] = TensorShape(shapeComponents)
                 }
             }
+            let context = RecurrenceContext(timestep: timestep, shapes: contextShapes)
+            /// Push recurrent context for inner scope
+            env.pushRecurrence(context)
+            for decl in decls {
+                try check(decl, in: &env)
+            }
+            /// Pop recurrent context to parent scope
+            env.popRecurrence()
+
+        default: break
         }
-        guard let input = maybeInput else { throw SemanticError.inputMissing }
-        self.input = input
-        guard let output = maybeOutput else { throw SemanticError.outputMissing }
-        self.output = output
+    }
+
+    static func check(_ expression: Expression, for shape: TensorShape,
+                      in env: inout TypeEnvironment) throws {
+        /// TODO
     }
 
 }
