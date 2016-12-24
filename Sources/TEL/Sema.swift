@@ -29,10 +29,12 @@ public protocol Node {
 /// Parameter (param[xxx])
 public struct Parameter : Node {
     public enum Initializer {
-        case int(Int)
-        case float(Float)
-        case intRandom(Int, Int)
-        case floatRandom(Float, Float)
+        public enum Value {
+            case int(Int)
+            case float(Float)
+        }
+        case constant(Value)
+        case random(Value, Value)
     }
     public let name: String
     public let shape: TensorShape
@@ -69,6 +71,8 @@ struct TypeEnvironment {
     var isCustomDataType = false
 
     private var recurrences: [RecurrenceContext] = []
+
+    /// TODO: add accessors for each
 
     mutating func pushRecurrence(_ recurrence: RecurrenceContext) {
         recurrences.append(recurrence)
@@ -183,7 +187,17 @@ public class Program {
             let shape = TensorShape(shapeComponents)
             /// TODO:
             /// 1. Error when `expr` is not float/int/floatRandom/intRandom
+            switch expr {
+            case .int(_), .float(_):
+                // TODO
+                break
+            default:
+                // TODO
+                break
+            }
             /// 2. Error when `expr`'s type (int/float) does not match env.dataType
+
+            
             /// - note: make use of pattern matching under the same switch
             //  let param = Parameter(name: variable.name, shape: shape, initializer: TODO)
             //  env.parameters.append(param)
@@ -208,10 +222,8 @@ public class Program {
             /// Create a recurrent context containing a timestep and a symbol
             /// table of shapes
             var contextShapes: [String : TensorShape] = [:]
-            for decl in decls {
-                if case let .assignment(variable, _, shapeComponents, _) = decl {
-                    contextShapes[variable.name] = TensorShape(shapeComponents)
-                }
+            for case let .assignment(variable, _, shapeComponents, _) in decls {
+                contextShapes[variable.name] = TensorShape(shapeComponents)
             }
             let context = RecurrenceContext(timestep: timestep, shapes: contextShapes)
             /// Push recurrent context for inner scope
