@@ -66,12 +66,8 @@ public enum Variable {
     }
 }
 
-public struct DeclarationType {
-    public enum Role {
-        case input, output, hidden, parameter
-    }
-    public let role: Role
-    public let shape: [Int]
+public enum Role {
+    case input, output, hidden, parameter
 }
 
 public indirect enum Expression {
@@ -96,7 +92,7 @@ public indirect enum Expression {
 }
 
 public indirect enum Declaration {
-    case assignment(Variable, DeclarationType, Expression?)
+    case assignment(Variable, Role, [Int], Expression?)
     case recurrence(String, [Declaration])
 }
 
@@ -135,21 +131,12 @@ extension Macro : Parsible {
       ) ^^ Macro.type
 }
 
-extension DeclarationType.Role : Parsible {
-    public static let parser: Parser<DeclarationType.Role> =
+extension Role : Parsible {
+    public static let parser: Parser<Role> =
         Lexer.token("in")     ^^= .input
       | Lexer.token("out")    ^^= .output
       | Lexer.token("hidden") ^^= .hidden
       | Lexer.token("param")  ^^= .parameter
-}
-
-extension DeclarationType : Parsible {
-    public static let parser: Parser<DeclarationType> =
-        Role.parser ~~
-        number.nonbacktracking()
-              .many(separatedBy: Lexer.character("x"))
-              .between(Lexer.character("[").!, Lexer.character("]").!)
-     ^^ { DeclarationType(role: $0, shape: $1) }
 }
 
 extension Declaration : Parsible {
@@ -157,7 +144,10 @@ extension Declaration : Parsible {
     private static let assignmentParser: Parser<Declaration> =
         Variable.parser
      ^^ curry(Declaration.assignment)
-     ** (Lexer.character(":").amid(spaces.?) ~~> DeclarationType.parser.!)
+     ** (Lexer.character(":").amid(spaces.?) !~~> Role.parser)
+     ** number.nonbacktracking()
+              .many(separatedBy: Lexer.character("x"))
+              .between(Lexer.character("[").!, Lexer.character("]").!)
      ** (Lexer.character("=").amid(spaces.?) ~~> Expression.parser.!).?
 
     private static let recurrenceParser: Parser<Declaration> =
