@@ -10,30 +10,6 @@ import enum DLVM.DataType
 import func Funky.curry
 import Parsey
 
-/// Sample
-/// ```
-/// #type float16
-///
-/// W1, W2, W3, W4, W5, W6: param[auto] = random(from: 0.0, to: 1.0)
-/// b1, b2, b3, b4, b5, b6: param[auto] = 0.0
-/// 
-/// x: in[2x1]
-/// 
-/// W1: param[auto] = 0.0
-/// h1: layer[4x1] = tanh(W1 x + b1)
-/// 
-/// recurrent t {
-///     h2: layer[16x1] = tanh(W2 [h1.t, h5.(t-1)] + b2)
-///     h3: layer[128x1] = tanh(W3 h2 + b3)
-///     h4: layer[128x1] = relu(W4 h3 + b4)
-///     h5: layer[16x1] = tanh(W5 h4 + b5)
-/// }
-///
-/// h6: layer[16x1] = sigmoid(W6 h5 + b6)
-///
-/// o: out[16x1] = softmax(W7 h6 + b7)
-/// ``````
-
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
 fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! }
