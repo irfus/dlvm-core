@@ -124,13 +124,11 @@ label2:
     ...
 ``````
 
-Currently DLVM IR does not support loops. It's a goal for the second stage, 
-whereas loops are necessary for recurrent neural networks.
-
 ## Build
 
-You can use `swift build`, which invokes one of the following commands depending on the
-platform.
+```
+swift build
+``````
 
 ## Dependencies
 
@@ -138,7 +136,4 @@ platform.
 
 ## License
 
-MIT License
-
-CUDA is a registered trademark of NVIDIA Corporation.
-
+University of Illinois/NCSA Open Source License
