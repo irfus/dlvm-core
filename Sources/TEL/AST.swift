@@ -144,7 +144,7 @@ extension Declaration : Parsible {
     private static let assignmentParser: Parser<Declaration> =
         Variable.parser
      ^^ curry(Declaration.assignment)
-     ** (Lexer.character(":").amid(spaces.?) !~~> Role.parser)
+     ** (Lexer.character(":").amid(spaces.?) ~~> Role.parser)
      ** number.nonbacktracking()
               .many(separatedBy: Lexer.character("x"))
               .between(Lexer.character("[").!, Lexer.character("]").!)
