@@ -1,37 +1,41 @@
-*IN PROGRESS*
+Under **very active** development. Components are **not** ready to use.
 
-This is under **very active** development. Components are **not** ready to use. 
+- Main repo: [GitHub](https://github.com/rxwei/DLVM)
+- Mirror: [LLVM Group GitLab](https://gitlab-beta.engr.illinois.edu/llvm/dlvm)
 
 # Deep Learning Virtual Machine
-## Compiler Infrastructure for Neural Networks
+## Compiler Infrastructure for Deep Neural Networks
 
 - [ ] libDLVM
     - [ ] IR
       - [ ] Parser
       - [ ] Sema
+    - [ ] BasicBlock
+    - [x] Instruction
+    - [x] Intrinsic
     - [ ] IRBuilder
     - [ ] BPGen (a transformation for backpropagation using automatic differentiation)
     - [ ] OptGen (a transformation for NN optimization generation, e.g. SGD)
-    - [ ] HPVM CodeGen
-    - [ ] Execution engine
-- [ ] DLVM IR - Intermediate Representation
-    - [x] Assignment form
-    - [ ] Loops
-    - [ ] Optimization passes
-    - [ ] Batch management
+    - [ ] IRGen (HPVM/LLVM IR)
+    - [ ] ExecutionEngine
 - [ ] libTEL - The Tensor Expression Language
-    - [ ] Parser
-    - [ ] Tensor type checker
-    - [ ] DLVM IR generator
+    - [x] Parser
+    - [ ] Sema
+    - [ ] DLGen (DLVM IR)
     - [ ] Special Networks
         - [ ] RNN
         - [ ] CNN
         - [ ] GRU
         - [ ] LSTM
-- [ ] DLVM toolchain
+- [ ] DLVM Toolchain
     - [ ] telc - TEL compiler driver
-    - [ ] dlvm-dis
     - [ ] dlc
+- [ ] Swift-TEL Bridge
+- [ ] Swift Runtime Library
+    - [ ] Trainer
+    - [ ] Batch management
+    - [ ] Stochastic optimizer
+    - [ ] Execution control
 - [ ] Interpretation Engines
     - [ ] CPU
         - [ ] Forward propagation
