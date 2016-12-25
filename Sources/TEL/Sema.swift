@@ -22,7 +22,8 @@ public enum SemanticError : Error {
     case notAnInitializer(Expression)
     case constantTypeMismatch(Expression, expected: DataType)
     case cannotInferShape(Expression)
-    case cannotConcatenate([Expression])
+    case cannotConcatenate(Expression, TensorShape, TensorShape)
+    case cannotFormProduct(Expression, TensorShape, Expression, TensorShape)
     case operatorShapeMismatch(Expression)
     case shapeMismatch(Expression, expected: TensorShape, in: Variable)
     case inputMissing
@@ -322,14 +323,23 @@ public class Program {
             return try shape(of: e, in: &env)
 
         case let .concat(exprs):
-            precondition(!exprs.isEmpty)
-            let shapes = try exprs.map { try shape(of: $0, in: &env) }
-            return try shapes.dropFirst().reduce(shapes[0]) { acc, x in
-                guard let newShape = acc.concatenating(with: x) else {
-                    throw SemanticError.cannotConcatenate(exprs)
+            precondition(!exprs.isEmpty) // Not possible
+            let firstShape = try shape(of: exprs[0], in: &env)
+            return try exprs.dropFirst().reduce(firstShape) { acc, expr in
+                let nextShape = try shape(of: expr, in: &env)
+                guard let newShape = acc.concatenating(with: nextShape) else {
+                    throw SemanticError.cannotConcatenate(expr, acc, nextShape)
                 }
                 return newShape
             }
+
+        case let .product(lhs, rhs):
+            let lhsShape = try shape(of: lhs, in: &env)
+            let rhsShape = try shape(of: rhs, in: &env)
+            guard let prodShape = lhsShape.product(with: rhsShape) else {
+                throw SemanticError.cannotFormProduct( lhs, lhsShape, rhs, rhsShape)
+            }
+            return prodShape
 
         default:
             throw SemanticError.cannotInferShape(expression)
