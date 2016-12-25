@@ -6,13 +6,12 @@ do {
         print("No file given")
         exit(0)
     }
-//    guard let path = Bundle.main.path(forResource: file, ofType: nil) else {
-//        print("Cannot open file \(file)")
-//        exit(0)
-//    }
     let telSource = try String(contentsOfFile: file, encoding: .utf8)
+    print("Source file:", file)
     let ast = try ProgramTree.parser.parse(telSource)
-    dump(ast)
+    print("Parse\n", ast)
+    let program = try Program(parse: ast)
+    print("Type-checking passed")
 }
 catch {
     print(error)
