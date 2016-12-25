@@ -17,7 +17,7 @@ recurrent t {
     i: in[2x1]
     // Hidden layers
     h1: hidden[4x1] = sigmoid(W1 [i[t-1], h2[t-1]] + b1)
-    h2: hidden[2x1] = tanh(W2 h1[t] + b2)
+    h2: hidden[2x1] = tanh(W2 (1 - h1[t]) + b2)
 }
 
 // Output layer
