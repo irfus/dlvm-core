@@ -8,8 +8,8 @@
 
 public class Variable {
     public enum Kind {
-        case scalar
-        case tensor
+        case scalar(DataType)
+        case tensor(TensorShape)
     }
     
     public let name: String
@@ -28,13 +28,8 @@ public class Variable {
     }
 }
 
-public enum Intrinsic {
-    case log(Variable)
-    case sigmoid(Variable)
-    case relu(Variable)
-    case tanh(Variable)
-    case softmax(Variable)
-    case logSoftmax(Variable)
+public enum ActivationFunction {
+    case sigmoid, relu, tanh
 }
 
 public indirect enum Instruction {
@@ -47,6 +42,8 @@ public indirect enum Instruction {
     case max(Variable, Variable)
     case dotProduct(Variable, Variable)
     case product(Variable, Variable)
-    case intrinsic(Intrinsic)
+    case activation(ActivationFunction, Variable)
+    case concat(Variable)
     case phi([Variable])
+    case condBranch(Variable, BasicBlock, BasicBlock)
 }
