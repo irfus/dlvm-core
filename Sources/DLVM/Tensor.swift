@@ -89,16 +89,18 @@ extension TensorShape : Equatable {
     }
 }
 
-extension TensorShape {
+infix operator • : MultiplicationPrecedence
 
+extension TensorShape {
     /// Concatenate two tensor shapes that have the first n-1 dimensions equal,
     /// storing the sum of the last dimensions
     /// - Precondition: The first n-1 dimensions must be the same
     /// - Parameter other: shape to concatenate with
     /// - Returns: concatenated shape
-    public func concatenating(with other: TensorShape) -> TensorShape {
-        precondition(dimensions.dropLast() == other.dimensions.dropLast(),
-                     "Shapes don't match")
+    public func concatenating(with other: TensorShape) -> TensorShape? {
+        guard dimensions.dropLast() == other.dimensions.dropLast() else {
+            return nil
+        }
         var newShape = self
         newShape[rank-1] = self[rank-1] + other[rank-1]
         return newShape
@@ -114,5 +116,12 @@ extension TensorShape {
                      "Shapes don't match")
         self[rank-1] += other[rank-1]
     }
-    
+
+    public static func • (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
+        guard lhs.last == rhs.first else { return nil }
+        let newDim = lhs.dimensions.dropLast() + rhs.dimensions.dropFirst()
+        let newShape = TensorShape(newDim)
+        return newShape
+    }
+
 }

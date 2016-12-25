@@ -22,6 +22,7 @@ public enum SemanticError : Error {
     case notAnInitializer(Expression)
     case constantTypeMismatch(Expression, expected: DataType)
     case cannotInferShape(Expression)
+    case cannotConcatenate([Expression])
     case operatorShapeMismatch(Expression)
     case shapeMismatch(Expression, expected: TensorShape, in: Variable)
     case inputMissing
@@ -323,11 +324,12 @@ public class Program {
         case let .concat(exprs):
             precondition(!exprs.isEmpty)
             let shapes = try exprs.map { try shape(of: $0, in: &env) }
-            return shapes.dropFirst().reduce(shapes[0]) { acc, x in
-                acc.concatenating(with: x)
+            return try shapes.dropFirst().reduce(shapes[0]) { acc, x in
+                guard let newShape = acc.concatenating(with: x) else {
+                    throw SemanticError.cannotConcatenate(exprs)
+                }
+                return newShape
             }
-
-        /// TODO
 
         default:
             throw SemanticError.cannotInferShape(expression)
