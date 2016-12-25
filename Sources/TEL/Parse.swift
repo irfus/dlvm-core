@@ -77,7 +77,7 @@ extension Declaration : Parsible {
 
 extension Constant : Parsible {
     public static let parser: Parser<Constant> =
-        Lexer.signedDecimal ^^ { .float(Float($0)!) }
+        Lexer.signedDecimal ^^ { .float(Double($0)!) }
       | Lexer.signedInteger ^^ { .int(Int($0)!) }
 }
 
