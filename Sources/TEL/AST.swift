@@ -46,11 +46,16 @@ public enum Role {
     case input, output, hidden, parameter
 }
 
+public enum Constant {
+    case int(Int)
+    case float(Float)
+}
+
 public indirect enum Expression {
     /// Integer
-    case int(Int)
-    /// Float
-    case float(Float)
+    case constant(Constant)
+    /// Random
+    case random(Constant, Constant)
     /// Variable
     case variable(Variable)
     /// Intrinsic call
@@ -139,6 +144,12 @@ extension Declaration : Parsible {
                             .. "a declaration"
 }
 
+extension Constant : Parsible {
+    public static let parser: Parser<Constant> =
+        Lexer.signedDecimal ^^ { .float(Float($0)!) }
+      | Lexer.signedInteger ^^ { .int(Int($0)!) }
+}
+
 // MARK: - Parser
 extension Expression : Parsible {
 
@@ -146,14 +157,17 @@ extension Expression : Parsible {
     /// Non-left-recursive grammar begin
     ///
 
-    private static let intParser: Parser<Expression> =
-        Lexer.signedInteger ^^ { .int(Int($0)!) }
-
-    private static let floatParser: Parser<Expression> =
-        Lexer.signedDecimal ^^ { .float(Float($0)!) }
+    private static let constantParser: Parser<Expression> =
+        Constant.parser ^^ Expression.constant
 
     private static let variableParser: Parser<Expression> =
         Variable.parser ^^ Expression.variable
+
+    private static let randomParser: Parser<Expression> =
+        "random" ~~> Lexer.character("(") ~~>
+        (Constant.parser.! <~~ Lexer.character(",").amid(spaces.?).!) ~~
+        (Constant.parser.! <~~ Lexer.character(")").!)
+     ^^ Expression.random
 
     private static let callParser: Parser<Expression> =
         identifier ~~
@@ -175,11 +189,11 @@ extension Expression : Parsible {
         "(" ~~> parser.amid(spaces.?) <~~ ")"
 
     /// Composite parser for a term of an infix expression
-    private static let termParser = callParser
+    private static let termParser = randomParser
+                                  | callParser
                                   | parenthesizedParser
                                   | negateParser
-                                  | floatParser
-                                  | intParser
+                                  | constantParser
                                   | concatParser
                                   | variableParser
                                  .. "an expression"
