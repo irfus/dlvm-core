@@ -145,11 +145,12 @@ extension Expression : Parsible {
         productParser.infixedLeft(by: Lexer.character("*").amid(spaces.?)
             ^^= Expression.mul)
 
-    /// Tensor element-wise addition: x + b
+    /// Tensor element-wise addition/subtraction: x + b, x - b
     /// - Priority: low
     private static let addParser: Parser<Expression> =
-        mulParser.infixedLeft(by: Lexer.character("+").amid(spaces.?)
-            ^^= Expression.add)
+        mulParser.infixedLeft(by:
+            Lexer.character("+").amid(spaces.?) ^^= Expression.add
+          | Lexer.character("-").amid(spaces.?) ^^= Expression.add)
 
     /// Parser head - add operator
     public static let parser: Parser<Expression> =
