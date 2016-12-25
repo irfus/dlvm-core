@@ -89,7 +89,7 @@ extension TensorShape : Equatable {
     }
 }
 
-infix operator • : MultiplicationPrecedence
+infix operator ⊗ : MultiplicationPrecedence
 
 extension TensorShape {
     /// Concatenate two tensor shapes that have the first n-1 dimensions equal,
@@ -117,11 +117,14 @@ extension TensorShape {
         self[rank-1] += other[rank-1]
     }
 
-    public static func • (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
-        guard lhs.last == rhs.first else { return nil }
-        let newDim = lhs.dimensions.dropLast() + rhs.dimensions.dropFirst()
-        let newShape = TensorShape(newDim)
-        return newShape
+    public func product(with other: TensorShape) -> TensorShape? {
+        guard last == other.first else { return nil }
+        let newDim = dimensions.dropLast() + other.dimensions.dropFirst()
+        return TensorShape(newDim)
+    }
+
+    public static func ⊗ (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
+        return lhs.product(with: rhs)
     }
 
 }
