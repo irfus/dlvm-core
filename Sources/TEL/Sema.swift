@@ -26,6 +26,8 @@ public enum SemanticError : Error {
     case operatorShapeMismatch(Expression)
     case shapeMismatch(Expression, expected: TensorShape, in: Variable)
     case typeDeclarationNotOnTop(Macro)
+    case argumentCountMismatch(Expression, count: Int, expected: Int)
+    case functionUnknown(Expression, String)
     case inputMissing
     case outputMissing
 }
@@ -412,6 +414,14 @@ public class Program {
              let .call("log", args) where args.count == 1,
              let .call("softmax", args) where args.count == 1:
             return try shape(of: args[0], in: &env)
+
+        case let .call(_, args) where args.count != 1:
+            throw SemanticError.argumentCountMismatch(expression,
+                                                      count: args.count,
+                                                      expected: 1)
+
+        case let .call(funcName, _):
+            throw SemanticError.functionUnknown(expression, funcName)
             
         default:
             throw SemanticError.cannotInferShape(expression)
