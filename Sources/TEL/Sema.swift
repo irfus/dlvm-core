@@ -25,6 +25,7 @@ public enum SemanticError : Error {
     case cannotFormProduct(Expression, TensorShape, Expression, TensorShape)
     case operatorShapeMismatch(Expression)
     case shapeMismatch(Expression, expected: TensorShape, in: Variable)
+    case typeDeclarationNotOnTop(Macro)
     case inputMissing
     case outputMissing
 }
@@ -69,11 +70,14 @@ struct RecurrenceContext {
 
 /// Environment for semantics analysis
 struct TypeEnvironment {
+
+    /// Symbol table of nodes
     private var nodes: [String : Node] = [:]
 
     private(set) var parameters: [Parameter] = []
     private(set) var inputs: [Input] = []
     private(set) var layers: [Layer] = []
+    
     var output: Layer? {
         willSet {
             if let newValue = newValue {
@@ -81,8 +85,15 @@ struct TypeEnvironment {
             }
         }
     }
-    var dataType: DataType = .float32
-    var isCustomDataType = false
+
+    /// Default data type: float32
+    var dataType: DataType = .float32 {
+        didSet {
+            isCustomDataType = true
+        }
+    }
+    
+    private(set) var isCustomDataType = false
 
     private var recurrences: [RecurrenceContext] = []
 
@@ -90,17 +101,17 @@ struct TypeEnvironment {
         nodes[node.name] = node
     }
 
-    mutating func insertInput(_ input: Input) {
+    mutating func insert(_ input: Input) {
         register(input)
         inputs.append(input)
     }
 
-    mutating func insertParameter(_ parameter: Parameter) {
+    mutating func insert(_ parameter: Parameter) {
         register(parameter)
         parameters.append(parameter)
     }
 
-    mutating func insertHiddenLayer(_ layer: Layer) {
+    mutating func insert(_ layer: Layer) {
         register(layer)
         layers.append(layer)
     }
@@ -113,13 +124,33 @@ struct TypeEnvironment {
         recurrences.removeLast()
     }
 
+    var inRecurrence: Bool {
+        return !recurrences.isEmpty
+    }
+
+    var isEmpty: Bool {
+        return nodes.isEmpty
+    }
+
     func contains(_ key: String) -> Bool {
         return nodes.keys.contains(key)
     }
 
     subscript(key: String) -> TensorShape? {
         get {
-            return nodes[key]?.shape
+            let lookup = nodes[key]?.shape
+            /// If not in recurrence or lookup is available, return
+            if !inRecurrence || lookup != nil {
+                return lookup
+            }
+            /// Otherwise, look through all recurrence contexts for
+            /// the symbol
+            for recCtx in recurrences.reversed() {
+                if let shape = recCtx.shapes[key] {
+                    return shape
+                }
+            }
+            return nil
         }
     }
 }
@@ -135,13 +166,11 @@ public class Program {
     public internal(set) var output: Layer
     public internal(set) var parameters: [Parameter] = []
 
-    init(_ parse: ProgramTree) throws {
+    public init(parse: ProgramTree) throws {
         /// Create a type environment for semantic analysis
         var env = TypeEnvironment()
-        /// Check every statement (top-level items)
-        for stmt in parse.statements {
-            try Program.check(stmt, in: &env)
-        }
+        /// Type-check
+        try Program.check(parse, in: &env)
         /// Check existence of proper declarations
         guard !env.inputs.isEmpty else {
             throw SemanticError.inputMissing
@@ -156,24 +185,35 @@ public class Program {
         self.parameters = env.parameters
     }
 
+    static func check(_ parse: ProgramTree, in env: inout TypeEnvironment) throws {
+        for stmt in parse.statements {
+            try Program.check(stmt, in: &env)
+        }
+    }
+
     /// Check statement
     /// - Throws: SemanticError
     static func check(_ statement: Statement, in env: inout TypeEnvironment) throws {
         switch statement {
         /// Type macro
-        case let .macro(.type(type)):
-            guard !env.isCustomDataType else {
-                throw SemanticError.dataTypeRedeclared
+        case let .macro(macro):
+            switch macro {
+            case let .type(type):
+                guard env.isEmpty else {
+                    throw SemanticError.typeDeclarationNotOnTop(macro)
+                }
+                guard !env.isCustomDataType else {
+                    throw SemanticError.dataTypeRedeclared
+                }
+                env.dataType = type
             }
-            env.isCustomDataType = true
-            env.dataType = type
             
         /// Declaration
         case let .declaration(decl):
             try check(decl, in: &env)
         }
     }
-
+    
     /// Check declaration
     /// - Throws: SemanticError
     static func check(_ declaration: Declaration, in env: inout TypeEnvironment) throws {
@@ -208,7 +248,7 @@ public class Program {
         case let .assignment(variable, .input, shapeComponents, nil):
             let shape = TensorShape(shapeComponents)
             let input = Input(name: variable.name, shape: shape)
-            env.insertInput(input)
+            env.insert(input)
 
         /// Parameter
         case let .assignment(variable, .parameter, shapeComponents, expr?):
@@ -251,18 +291,25 @@ public class Program {
             let parameter = Parameter(name: variable.name,
                                       shape: shape,
                                       initializer: initializer)
-            env.insertParameter(parameter)
+            env.insert(parameter)
 
         /// ## Grand deep check begin ##
-            
-        /// Hidden and output checked the same way
+
         case let .assignment(variable, .hidden, shapeComponents, expr?):
             let shape = TensorShape(shapeComponents)
             try check(expr, variable: variable, expectedShape: shape, in: &env)
             let layer = Layer(name: variable.name,
                               shape: shape,
                               expression: expr)
-            env.insertHiddenLayer(layer)
+            env.insert(layer)
+
+        case let .assignment(variable, .output, shapeComponents, expr?):
+            let shape = TensorShape(shapeComponents)
+            try check(expr, variable: variable, expectedShape: shape, in: &env)
+            let output = Layer(name: variable.name,
+                               shape: shape,
+                               expression: expr)
+            env.output = output
 
         case let .recurrence(timestep, decls):
             /// Recurrent timestep ('t', for example) is bound only within the
@@ -275,6 +322,9 @@ public class Program {
             /// table of shapes
             var contextShapes: [String : TensorShape] = [:]
             for case let .assignment(variable, _, shapeComponents, _) in decls {
+                guard !env.contains(variable.name) else {
+                    throw SemanticError.variableRedeclared(variable)
+                }
                 contextShapes[variable.name] = TensorShape(shapeComponents)
             }
             let context = RecurrenceContext(timestep: timestep, shapes: contextShapes)
@@ -310,22 +360,22 @@ public class Program {
             }
             return shape
 
-        case let .add(side, .constant(const)),
-             let .add(.constant(const), side),
-             let .sub(side, .constant(const)),
-             let .sub(.constant(const), side),
-             let .mul(side, .constant(const)),
-             let .mul(.constant(const), side):
-            let sideShape = try shape(of: side, in: &env)
-            switch const {
-            case .int(_) where !env.dataType.isInt,
-                 .float(_) where !env.dataType.isFloat:
+        case let .add(sideExpr, .constant(const)),
+             let .add(.constant(const), sideExpr),
+             let .sub(sideExpr, .constant(const)),
+             let .sub(.constant(const), sideExpr),
+             let .mul(sideExpr, .constant(const)),
+             let .mul(.constant(const), sideExpr):
+            let sideShape = try shape(of: sideExpr, in: &env)
+            /// If a float constant is used under an int context, error
+            if case .float(_) = const, !env.dataType.isInt {
                 throw SemanticError.cannotInferShape(expression)
-            default:
-                return sideShape
             }
+            return sideShape
 
-        case let .add(lhs, rhs), let .mul(lhs, rhs):
+        case let .add(lhs, rhs),
+             let .sub(lhs, rhs),
+             let .mul(lhs, rhs):
             let leftShape = try shape(of: lhs, in: &env)
             let rightShape = try shape(of: rhs, in: &env)
             guard leftShape == rightShape else {
@@ -355,10 +405,18 @@ public class Program {
             }
             return prodShape
 
+        /// For now we assume only unary functions
+        case let .call("sigmoid", args) where args.count == 1,
+             let .call("tanh", args) where args.count == 1,
+             let .call("relu", args) where args.count == 1,
+             let .call("log", args) where args.count == 1,
+             let .call("softmax", args) where args.count == 1:
+            return try shape(of: args[0], in: &env)
+            
         default:
             throw SemanticError.cannotInferShape(expression)
-
+            
         }
     }
-
+    
 }
