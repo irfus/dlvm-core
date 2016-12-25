@@ -11,7 +11,6 @@ import enum DLVM.DataType
 import struct DLVM.TensorShape
 
 public enum SemanticError : Error {
-    case typeMismatch
     case dataTypeRedeclared
     case outputRedeclared(Variable)
     case initializerMissing(Variable)
@@ -310,6 +309,21 @@ public class Program {
                 throw SemanticError.variableUndefined(v)
             }
             return shape
+
+        case let .add(side, .constant(const)),
+             let .add(.constant(const), side),
+             let .sub(side, .constant(const)),
+             let .sub(.constant(const), side),
+             let .mul(side, .constant(const)),
+             let .mul(.constant(const), side):
+            let sideShape = try shape(of: side, in: &env)
+            switch const {
+            case .int(_) where !env.dataType.isInt,
+                 .float(_) where !env.dataType.isFloat:
+                throw SemanticError.cannotInferShape(expression)
+            default:
+                return sideShape
+            }
 
         case let .add(lhs, rhs), let .mul(lhs, rhs):
             let leftShape = try shape(of: lhs, in: &env)
