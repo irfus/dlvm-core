@@ -10,7 +10,7 @@ Under **very active** development. Components are **not** ready to use.
     - [ ] IR
       - [ ] Parser
       - [ ] Sema
-    - [ ] BasicBlock
+    - [x] BasicBlock
     - [x] Instruction
     - [x] Intrinsic
     - [ ] IRBuilder
@@ -20,7 +20,7 @@ Under **very active** development. Components are **not** ready to use.
     - [ ] ExecutionEngine
 - [ ] libTEL - The Tensor Expression Language
     - [x] Parser
-    - [ ] Sema
+    - [x] Sema
     - [ ] DLGen (DLVM IR)
     - [ ] Special Networks
         - [ ] RNN
