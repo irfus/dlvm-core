@@ -9,7 +9,7 @@
 /// Tensor shape
 public struct TensorShape : ExpressibleByArrayLiteral {
 
-    public var dimensions: [Int]
+    var dimensions: [Int]
 
     /// Initialize with rank, and set the size of each dimension to 1.
     /// - parameter rank: rank of the tensor
@@ -40,12 +40,6 @@ public struct TensorShape : ExpressibleByArrayLiteral {
         self.init(elements)
     }
 
-    /// Get the size of i-th dimension.
-    /// - parameter i: dimension
-    public subscript(i: Int) -> Int {
-        return dimensions[i]
-    }
-
     /// Rank of the tensor
     public var rank: Int {
         return dimensions.count
@@ -58,8 +52,67 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 
 }
 
+extension TensorShape : RandomAccessCollection {
+    
+    public func index(after i: Int) -> Int {
+        return dimensions.index(after: i)
+    }
+
+    public func index(before i: Int) -> Int {
+        return dimensions.index(before: i)
+    }
+
+    public var startIndex: Int {
+        return dimensions.startIndex
+    }
+
+    public var endIndex: Int {
+        return dimensions.endIndex
+    }
+
+    /// Size of i-th dimension
+    /// - parameter i: dimension
+    public subscript(i: Int) -> Int {
+        get {
+            return dimensions[i]
+        }
+        set {
+            dimensions[i] = newValue
+        }
+    }
+
+}
+
 extension TensorShape : Equatable {
     public static func ==(lhs: TensorShape, rhs: TensorShape) -> Bool {
         return lhs.dimensions == rhs.dimensions
     }
+}
+
+extension TensorShape {
+
+    /// Concatenate two tensor shapes that have the first n-1 dimensions equal,
+    /// storing the sum of the last dimensions
+    /// - Precondition: The first n-1 dimensions must be the same
+    /// - Parameter other: shape to concatenate with
+    /// - Returns: concatenated shape
+    public func concatenating(with other: TensorShape) -> TensorShape {
+        precondition(dimensions.dropLast() == other.dimensions.dropLast(),
+                     "Shapes don't match")
+        var newShape = self
+        newShape[rank-1] = self[rank-1] + other[rank-1]
+        return newShape
+    }
+
+    /// Form in-place concatenation with the other tensor shape, storing the
+    /// sum of the last dimensions
+    ///
+    /// - Precondition: The first n-1 dimensions must be the same
+    /// - Parameter other: shape to concatenate with
+    public mutating func formConcatenation(with other: TensorShape) {
+        precondition(dimensions.dropLast() == other.dimensions.dropLast(),
+                     "Shapes don't match")
+        self[rank-1] += other[rank-1]
+    }
+    
 }
