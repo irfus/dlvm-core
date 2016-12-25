@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		29A8A04C1E0BEAB5006F33E1 /* Parse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A8A04B1E0BEAB5006F33E1 /* Parse.swift */; };
 		29A8A04E1E0CA9AB006F33E1 /* DLGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A8A04D1E0CA9AB006F33E1 /* DLGen.swift */; };
+		29A8A0521E0FE2A4006F33E1 /* Parse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A8A0511E0FE2A4006F33E1 /* Parse.swift */; };
 		OBJ_100 /* Funky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* Funky.framework */; };
 		OBJ_101 /* Parsey.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* Parsey.framework */; };
 		OBJ_102 /* DLVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* DLVM.framework */; };
@@ -234,6 +235,7 @@
 /* Begin PBXFileReference section */
 		29A8A04B1E0BEAB5006F33E1 /* Parse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Parse.swift; path = Sources/DLVM/Parse.swift; sourceTree = SOURCE_ROOT; };
 		29A8A04D1E0CA9AB006F33E1 /* DLGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DLGen.swift; sourceTree = "<group>"; };
+		29A8A0511E0FE2A4006F33E1 /* Parse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Parse.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Associative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Associative.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Collection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Function.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Function.swift; sourceTree = "<group>"; };
@@ -425,6 +427,7 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_41 /* AST.swift */,
+				29A8A0511E0FE2A4006F33E1 /* Parse.swift */,
 				OBJ_43 /* Sema.swift */,
 				29A8A04D1E0CA9AB006F33E1 /* DLGen.swift */,
 			);
@@ -764,6 +767,7 @@
 			buildActionMask = 0;
 			files = (
 				OBJ_144 /* AST.swift in Sources */,
+				29A8A0521E0FE2A4006F33E1 /* Parse.swift in Sources */,
 				29A8A04E1E0CA9AB006F33E1 /* DLGen.swift in Sources */,
 				OBJ_146 /* Sema.swift in Sources */,
 			);
