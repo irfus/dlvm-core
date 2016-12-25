@@ -105,7 +105,7 @@ extension Expression : CustomStringConvertible {
         case let .add(lhs, rhs):
             return "(+ \(lhs) \(rhs))"
         case let .sub(lhs, rhs):
-            return "(+ \(lhs) \(rhs))"
+            return "(- \(lhs) \(rhs))"
         case let .mul(lhs, rhs):
             return "(* \(lhs) \(rhs))"
         case let .product(lhs, rhs):
@@ -122,7 +122,7 @@ extension Declaration : CustomStringConvertible {
     public var description: String {
         switch self {
         case let .assignment(v, role, dim, expr):
-            return "(define \(v):\(role)[\(dim.map{$0.description}.joined(separator: "x"))] \(expr))"
+            return "(define \(v):\(role)[\(dim.map{$0.description}.joined(separator: "x"))]\(expr == nil ? "" : " " + expr!.description))"
         case let .recurrence(timestep, decls):
             return "(recurrent \(timestep) \(decls.map{$0.description}.joined(separator: " ")))"
         }
@@ -134,7 +134,7 @@ extension Macro : CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case let .type(t): return "(#type \(t))"
+        case let .type(t): return "(define-type \(t))"
         }
     }
 
