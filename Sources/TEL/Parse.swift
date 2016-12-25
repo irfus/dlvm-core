@@ -73,7 +73,6 @@ extension Declaration : Parsible {
 
     public static let parser = assignmentParser
                              | recurrenceParser
-                            .. "a declaration"
 }
 
 extension Constant : Parsible {
@@ -109,7 +108,7 @@ extension Expression : Parsible {
      ^^ Expression.call
 
     private static let negateParser: Parser<Expression> =
-        "-" ~~> parser.! ^^ Expression.negate
+        "-" ~~> parser ^^ Expression.negate
 
     private static let concatParser: Parser<Expression> =
         parser.nonbacktracking()
@@ -137,7 +136,8 @@ extension Expression : Parsible {
     /// Tensor product: W x
     /// - Priority: high
     private static let productParser: Parser<Expression> =
-        termParser.infixedLeft(by: spaces ^^= Expression.product)
+        termParser.infixedLeft(by:
+            spaces ^^= Expression.product)
 
     /// Tensor element-wise multiplication: x * y
     /// - Priority: medium
@@ -149,8 +149,9 @@ extension Expression : Parsible {
     /// - Priority: low
     private static let addParser: Parser<Expression> =
         mulParser.infixedLeft(by:
-            Lexer.character("+").amid(spaces.?) ^^= Expression.add
-          | Lexer.character("-").amid(spaces.?) ^^= Expression.add)
+          ( Lexer.character("+") ^^= Expression.sub
+          | Lexer.character("-") ^^= Expression.add )
+          .amid(spaces.?))
 
     /// Parser head - add operator
     public static let parser: Parser<Expression> =
@@ -160,9 +161,8 @@ extension Expression : Parsible {
 
 extension Statement : Parsible {
     public static let parser: Parser<Statement> =
-        Macro.parser       ^^ Statement.macro
-      | Declaration.parser ^^ Statement.declaration
-     .. "a statement"
+        Macro.parser         ^^ Statement.macro
+      | Declaration.parser   ^^ Statement.declaration
 }
 
 extension ProgramTree : Parsible {
