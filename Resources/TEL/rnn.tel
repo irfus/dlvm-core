@@ -7,18 +7,18 @@
 W1: param[4x4] = random(0.0, 1.0)
 W2: param[4x2] = random(0.0, 1.0)
 W3: param[2x2] = random(0.0, 1.0)
-b1: param[4x1] = 0.0
-b2: param[2x1] = 0.0
-b3: param[2x1] = 0.0
+b1: param[1x4] = 0.0
+b2: param[1x2] = 0.0
+b3: param[1x2] = 0.0
 
 // Recurrent block
 recurrent t {
     // Input layer
-    i: in[2x1]
+    i: in[1x2]
     // Hidden layers
-    h1: hidden[4x1] = sigmoid(W1 [i[t-1], h2[t-1]] + b1)
-    h2: hidden[2x1] = tanh(W2 (1 - h1[t]) + b2)
+    h1: hidden[1x4] = sigmoid([i[t-1], h2[t-1]] W1 + b1)
+    h2: hidden[1x2] = tanh((1 - h1[t]) W2 + b2)
 }
 
 // Output layer
-o: out[2x1] = softmax(W3 h2 + b3)
+o: out[1x2] = softmax(h2 W3 + b3)
