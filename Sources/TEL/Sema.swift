@@ -17,6 +17,13 @@ public enum SemanticError : Error {
     case initializerMissing(Variable)
     case initializerUnexpected(Variable)
     case variableRedeclared(Variable)
+    case variableUndefined(Variable)
+    case randomBoundsTypeMismatch(Expression)
+    case notAnInitializer(Expression)
+    case constantTypeMismatch(Expression, expected: DataType)
+    case cannotInferShape(Expression)
+    case operatorShapeMismatch(Expression)
+    case shapeMismatch(Expression, expected: TensorShape, in: Variable)
     case inputMissing
     case outputMissing
 }
@@ -61,18 +68,41 @@ struct RecurrenceContext {
 
 /// Environment for semantics analysis
 struct TypeEnvironment {
-    private var shapes: [String : TensorShape] = [:]
+    private var nodes: [String : Node] = [:]
 
-    var parameters: [Parameter] = []
-    var inputs: [Input] = []
-    var layers: [Layer] = []
-    var output: Layer?
+    private(set) var parameters: [Parameter] = []
+    private(set) var inputs: [Input] = []
+    private(set) var layers: [Layer] = []
+    var output: Layer? {
+        willSet {
+            if let newValue = newValue {
+                nodes[newValue.name] = newValue
+            }
+        }
+    }
     var dataType: DataType = .float32
     var isCustomDataType = false
 
     private var recurrences: [RecurrenceContext] = []
 
-    /// TODO: add accessors for each
+    private mutating func register(_ node: Node) {
+        nodes[node.name] = node
+    }
+
+    mutating func insertInput(_ input: Input) {
+        register(input)
+        inputs.append(input)
+    }
+
+    mutating func insertParameter(_ parameter: Parameter) {
+        register(parameter)
+        parameters.append(parameter)
+    }
+
+    mutating func insertHiddenLayer(_ layer: Layer) {
+        register(layer)
+        layers.append(layer)
+    }
 
     mutating func pushRecurrence(_ recurrence: RecurrenceContext) {
         recurrences.append(recurrence)
@@ -83,15 +113,12 @@ struct TypeEnvironment {
     }
 
     func contains(_ key: String) -> Bool {
-        return shapes.keys.contains(key)
+        return nodes.keys.contains(key)
     }
 
     subscript(key: String) -> TensorShape? {
         get {
-            return shapes[key]
-        }
-        set {
-            shapes[key] = newValue
+            return nodes[key]?.shape
         }
     }
 }
@@ -180,37 +207,61 @@ public class Program {
         case let .assignment(variable, .input, shapeComponents, nil):
             let shape = TensorShape(shapeComponents)
             let input = Input(name: variable.name, shape: shape)
-            env.inputs.append(input)
+            env.insertInput(input)
 
         /// Parameter
         case let .assignment(variable, .parameter, shapeComponents, expr?):
             let shape = TensorShape(shapeComponents)
-            /// TODO:
-            /// 1. Error when `expr` is not float/int/floatRandom/intRandom
-            switch expr {
-            case .int(_), .float(_):
-                // TODO
-                break
-            default:
-                // TODO
-                break
-            }
-            /// 2. Error when `expr`'s type (int/float) does not match env.dataType
 
+            let initializer: Parameter.Initializer
+
+            /// Initializer
+            switch expr {
+
+            /// Constant type mismatch
+            case .constant(.int(_)) where !env.dataType.isInt,
+                 .constant(.float(_)) where !env.dataType.isFloat:
+                throw SemanticError.constantTypeMismatch(expr, expected: env.dataType)
+
+            /// Int constant
+            case let .constant(.int(i)):
+                initializer = .constant(.int(i))
+
+            /// Float constant
+            case let .constant(.float(f)):
+                initializer = .constant(.float(f))
+
+            /// Random int initializer
+            case let .random(.int(lo), .int(hi)):
+                initializer = .random(.int(lo), .int(hi))
+
+            /// Random float initializer
+            case let .random(.float(lo), .float(hi)):
+                initializer = .random(.float(lo), .float(hi))
+
+            /// Non-matching types of random bounds
+            case .random(_, _):
+                throw SemanticError.randomBoundsTypeMismatch(expr)
+
+            default:
+                throw SemanticError.notAnInitializer(expr)
+            }
             
-            /// - note: make use of pattern matching under the same switch
-            //  let param = Parameter(name: variable.name, shape: shape, initializer: TODO)
-            //  env.parameters.append(param)
-            break
+            let parameter = Parameter(name: variable.name,
+                                      shape: shape,
+                                      initializer: initializer)
+            env.insertParameter(parameter)
 
         /// ## Grand deep check begin ##
             
         /// Hidden and output checked the same way
-        case let .assignment(variable, role, shapeComponents, expr?)
-            where role == .hidden || role == .output:
+        case let .assignment(variable, .hidden, shapeComponents, expr?):
             let shape = TensorShape(shapeComponents)
-            try check(expr, for: shape, in: &env)
-            env[variable.name] = shape
+            try check(expr, variable: variable, expectedShape: shape, in: &env)
+            let layer = Layer(name: variable.name,
+                              shape: shape,
+                              expression: expr)
+            env.insertHiddenLayer(layer)
 
         case let .recurrence(timestep, decls):
             /// Recurrent timestep ('t', for example) is bound only within the
@@ -238,9 +289,50 @@ public class Program {
         }
     }
 
-    static func check(_ expression: Expression, for shape: TensorShape,
-                      in env: inout TypeEnvironment) throws {
+    static func check(_ expression: Expression, variable: Variable,
+                      expectedShape: TensorShape, in env: inout TypeEnvironment) throws {
+        let shape = try Program.shape(of: expression, in: &env)
+        guard shape == expectedShape else {
+            throw SemanticError.shapeMismatch(expression,
+                                              expected: expectedShape,
+                                              in: variable)
+        }
+    }
+
+    static func shape(of expression: Expression,
+                      in env: inout TypeEnvironment) throws -> TensorShape {
+        switch expression {
+
+        case let .variable(v):
+            guard let shape = env[v.name] else {
+                throw SemanticError.variableUndefined(v)
+            }
+            return shape
+
+        case let .add(lhs, rhs), let .mul(lhs, rhs):
+            let leftShape = try shape(of: lhs, in: &env)
+            let rightShape = try shape(of: rhs, in: &env)
+            guard leftShape == rightShape else {
+                throw SemanticError.operatorShapeMismatch(expression)
+            }
+            return leftShape
+
+        case let .negate(e):
+            return try shape(of: e, in: &env)
+
+        case let .concat(exprs):
+            precondition(!exprs.isEmpty)
+            let shapes = try exprs.map { try shape(of: $0, in: &env) }
+            return shapes.dropFirst().reduce(shapes[0]) { acc, x in
+                acc.concatenating(with: x)
+            }
+
         /// TODO
+
+        default:
+            throw SemanticError.cannotInferShape(expression)
+
+        }
     }
 
 }
