@@ -11,6 +11,6 @@ public enum DataType {
     case float8, float16, float32, float64
 }
 
-public protocol DLVMDataProtocol {
+public protocol DataProtocol {
     static var dataType: DataType { get }
 }
