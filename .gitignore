@@ -4,6 +4,10 @@
 /Build
 /build
 
+# Xcode projects
+*.xcodeproj
+*.xcworkspace
+
 *.o
 *.d
 *.dylib
