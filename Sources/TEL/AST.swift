@@ -46,6 +46,8 @@ public indirect enum Expression {
     case negate(Expression)
     /// Element-wise addition
     case add(Expression, Expression)
+    /// Element-wise subtraction
+    case sub(Expression, Expression)
     /// Element-wise product
     case mul(Expression, Expression)
     /// Tensor product
