@@ -6,11 +6,18 @@
 //
 //
 
-public class BasicBlock {
+public class BasicBlock : IRCollection, IRObject {
     public var name: String
-    private var instructions: [Instruction] = []
+    public var elements: [Instruction]
+    public weak var parent: Module?
 
     public init(name: String) {
         self.name = name
+        elements = []
+    }
+
+    public init(name: String, instructions: [Instruction]) {
+        self.name = name
+        self.elements = instructions
     }
 }
