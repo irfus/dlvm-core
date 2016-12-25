@@ -7,12 +7,12 @@
 //
 
 public enum DataType {
-    case int1, int8, int16, int32, int64
+    case int8, int16, int32, int64
     case float8, float16, float32, float64
 
     public var isInt: Bool {
         switch self {
-        case .int1, .int8, .int16, .int32, .int64:
+        case .int8, .int16, .int32, .int64:
             return true
         default:
             return false
@@ -24,6 +24,10 @@ public enum DataType {
     }
 }
 
-public protocol DataProtocol {
+public enum ScalarType {
+    case bool, int, float
+}
+
+public protocol TensorBase {
     static var dataType: DataType { get }
 }

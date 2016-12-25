@@ -6,8 +6,12 @@
 //
 //
 
-class IRBuilder {
+public class IRBuilder {
 
+    let module: Module
     
+    public init() {
+        module = Module()
+    }
     
 }

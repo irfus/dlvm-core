@@ -91,7 +91,7 @@ extension TensorShape : Equatable {
 
 infix operator ⊗ : MultiplicationPrecedence
 
-extension TensorShape {
+public extension TensorShape {
     /// Concatenate two tensor shapes that have the first n-1 dimensions equal,
     /// storing the sum of the last dimensions
     /// - Precondition: The first n-1 dimensions must be the same

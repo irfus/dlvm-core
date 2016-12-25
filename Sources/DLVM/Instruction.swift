@@ -2,48 +2,51 @@
 //  Instruction.swift
 //  DLVM
 //
-//  Created by Richard Wei on 12/18/16.
+//  Created by Richard Wei on 12/25/16.
 //
 //
 
-public class Variable {
+public class Instruction : IRObject {
     public enum Kind {
-        case scalar(DataType)
-        case tensor(TensorShape)
+        case negate(Operand)
+        case add(Operand, Operand)
+        case mul(Operand, Operand)
+        case min(Operand, Operand)
+        case max(Operand, Operand)
+        case compare(Operand, Operand)
+        case dotProduct(Tensor, Tensor)
+        case random(Scalar, Scalar)
+        case product(Tensor, Tensor)
+        case activation(ActivationFunction, Tensor)
+        case transfer(TransferFunction, Tensor)
+        case concat([Tensor])
+        case phi([Variable])
+        case condBranch(Operand, then: BasicBlock, else: BasicBlock)
+        case uncondBranch(BasicBlock)
+        case output(Tensor)
     }
-    
-    public let name: String
-    public let id: Int
-    public let dataType: DataType
     public let kind: Kind
-    public let instruction: Instruction
-    
-    init(name: String, id: Int, dataType: DataType,
-         kind: Kind, instruction: Instruction) {
-        self.name = name
-        self.dataType = dataType
+    public weak var parent: BasicBlock? = nil
+
+    /// Initialize a standalone instruction by specifying its kind
+    ///
+    /// - Parameter kind: kind of instruction
+    public init(kind: Kind) {
         self.kind = kind
-        self.id = id
-        self.instruction = instruction
     }
 }
 
-public enum ActivationFunction {
-    case sigmoid, relu, tanh
-}
+// MARK: - Hashable
+extension Instruction : Hashable {
 
-public indirect enum Instruction {
-    case input(shape: TensorShape)
-    case parameter(shape: TensorShape)
-    case negate(Variable)
-    case add(Variable, Variable)
-    case mul(Variable, Variable)
-    case min(Variable, Variable)
-    case max(Variable, Variable)
-    case dotProduct(Variable, Variable)
-    case product(Variable, Variable)
-    case activation(ActivationFunction, Variable)
-    case concat(Variable)
-    case phi([Variable])
-    case condBranch(Variable, BasicBlock, BasicBlock)
+    /// Equatable by reference
+    public static func == (lhs: Instruction, rhs: Instruction) -> Bool {
+        return lhs === rhs
+    }
+    
+    /// Hashable by object identifier
+    public var hashValue: Int {
+        return ObjectIdentifier(self).hashValue
+    }
+    
 }
