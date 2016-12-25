@@ -42,7 +42,7 @@ public struct Parameter : Node {
     public enum Initializer {
         public enum Value {
             case int(Int)
-            case float(Float)
+            case float(Double)
         }
         case constant(Value)
         case random(Value, Value)

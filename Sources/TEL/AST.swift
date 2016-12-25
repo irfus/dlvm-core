@@ -30,7 +30,7 @@ public enum Role {
 
 public enum Constant {
     case int(Int)
-    case float(Float)
+    case float(Double)
 }
 
 public indirect enum Expression {
