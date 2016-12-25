@@ -149,8 +149,8 @@ extension Expression : Parsible {
     /// - Priority: low
     private static let addParser: Parser<Expression> =
         mulParser.infixedLeft(by:
-          ( Lexer.character("+") ^^= Expression.sub
-          | Lexer.character("-") ^^= Expression.add )
+          ( Lexer.character("+") ^^= Expression.add
+          | Lexer.character("-") ^^= Expression.sub )
           .amid(spaces.?))
 
     /// Parser head - add operator
