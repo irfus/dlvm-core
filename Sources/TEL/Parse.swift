@@ -8,7 +8,6 @@
 
 import Parsey
 import func Funky.curry
-import enum DLVM.DataType
 
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
@@ -34,16 +33,8 @@ extension Macro : Parsible {
 
     public static let typeParser: Parser<Macro> =
         Lexer.token("type") ~~> spaces ~~>
-      ( Lexer.token("int8")    ^^= DataType.int8
-      | Lexer.token("int16")   ^^= DataType.int16
-      | Lexer.token("int32")   ^^= DataType.int32
-      | Lexer.token("int64")   ^^= DataType.int64
-      | Lexer.token("float8")  ^^= DataType.float8
-      | Lexer.token("float16") ^^= DataType.float16
-      | Lexer.token("float32") ^^= DataType.float32
-      | Lexer.token("float64") ^^= DataType.float64
-     .. "a data type"
-      ).!  ^^ Macro.type
+        identifier.! .. "a data type"
+     ^^ Macro.type
 
     public static let parser: Parser<Macro> =
         "#" ~~> typeParser.! .. "a macro"
@@ -72,11 +63,12 @@ extension Declaration : Parsible {
 
     private static let recurrenceParser: Parser<Declaration> =
         Lexer.token("recurrent") ~~>
-        identifier.nonbacktracking().amid(spaces) .. "a recurrent timestep"
+        identifier.nonbacktracking().between(spaces, spaces | linebreaks)
+     .. "a timestep variable"
      ^^ curry(Declaration.recurrence)
      ** parser.many(separatedBy: linebreaks)
-              .between(Lexer.character("{").! ~~> linebreaks.!,
-                       linebreaks.! ~~> Lexer.character("}").!)
+              .between(Lexer.character("{").! .. "{" ~~> linebreaks.!,
+                       linebreaks.! ~~> Lexer.character("}").! .. "}")
 
     public static let parser = assignmentParser
                              | recurrenceParser
