@@ -8,6 +8,10 @@
 
 public protocol Operand {}
 
+public protocol ScalarOperand : Operand {
+    var type: ScalarType { get }
+}
+
 public protocol Variable : class, Operand {
     var name: String { get }
     weak var definition: Instruction? { get }
@@ -24,13 +28,21 @@ open class UnavailableVariable : Variable {
     private init() { }
 }
 
-public enum Immediate : Operand {
+public enum Immediate : Operand, ScalarOperand {
     case bool(Bool)
     case int(Int)
     case float(Double)
+
+    public var type: ScalarType {
+        switch self {
+        case .bool(_): return .bool
+        case .int(_): return .int
+        case .float(_): return .float
+        }
+    }
 }
 
-open class ScalarVariable : Variable {
+open class ScalarVariable : Variable, ScalarOperand {
     public let name: String
     public let type: ScalarType
     public internal(set) weak var definition: Instruction?

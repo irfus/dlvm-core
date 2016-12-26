@@ -21,11 +21,13 @@ open class Instruction : IRObject {
         case log, softmax
     }
     public enum Kind {
+        case tensor(DataType, TensorShape, ScalarOperand)
+        case scalar(ScalarOperand)
         case negate(Operand)
         case binaryOp(BinaryOperator, Operand, Operand)
         case compare(ComparisonOperator, Operand, Operand)
         case dotProduct(TensorVariable, TensorVariable)
-        case random(ScalarVariable, ScalarVariable)
+        case random(DataType, TensorShape, ScalarOperand, ScalarOperand)
         case product(TensorVariable, TensorVariable)
         case activation(ActivationFunction, TensorVariable)
         case transformation(TransformationFunction, TensorVariable)
@@ -36,7 +38,7 @@ open class Instruction : IRObject {
         case output(TensorVariable)
     }
     public let kind: Kind
-    public weak var parent: BasicBlock? = nil
+    public internal(set) weak var parent: BasicBlock?
 
     /// Initialize a standalone instruction by specifying its kind
     ///
@@ -61,6 +63,11 @@ extension Instruction : VariableProducer {
             case .float: type = .float
             }
             return ScalarVariable(name: name, type: type, definition: self)
+
+        /// Random instruction
+        case let .random(dataType, shape, _, _):
+            return TensorVariable(name: name, dataType: dataType,
+                                  shape: shape, definition: self)
 
         /// Scalar-only instructions
         case let .negate(op as ScalarVariable),
