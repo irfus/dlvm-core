@@ -8,34 +8,16 @@
 
 public protocol Operand {}
 
-public protocol Variable : Operand {
+public protocol Variable : class, Operand {
     var name: String { get }
     weak var definition: Instruction? { get }
-    static func ~=(lhs: Variable, rhs: Variable) -> Bool
-}
-
-public extension Variable {
-    /// Determine if two variables are similar, i.e. have the same
-    /// type characteristics
-    public static func ~= (lhs: Variable, rhs: Variable) -> Bool {
-        switch (lhs, rhs) {
-        case let (lhs as ScalarVariable, rhs as ScalarVariable):
-            return lhs.type == rhs.type
-        case let (lhs as TensorVariable, rhs as TensorVariable):
-            return lhs.shape == rhs.shape && lhs.dataType == rhs.dataType
-        case (_ as UnavailableVariable, _ as UnavailableVariable):
-            return true
-        default:
-            return false
-        }
-    }
 }
 
 public protocol VariableProducer {
     func makeVariable(named name: String) -> Variable
 }
 
-public struct UnavailableVariable : Variable {
+open class UnavailableVariable : Variable {
     public static let shared = UnavailableVariable()
     public let name: String = "ε"
     public let definition: Instruction? = nil
@@ -48,7 +30,7 @@ public enum Immediate : Operand {
     case float(Double)
 }
 
-public struct ScalarVariable : Variable {
+open class ScalarVariable : Variable {
     public let name: String
     public let type: ScalarType
     public internal(set) weak var definition: Instruction?
@@ -61,7 +43,7 @@ public struct ScalarVariable : Variable {
     }
 }
 
-public struct TensorVariable : Variable {
+open class TensorVariable : Variable {
     public let name: String
     public let dataType: DataType
     public let shape: TensorShape
