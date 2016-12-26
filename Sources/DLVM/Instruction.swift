@@ -6,7 +6,7 @@
 //
 //
 
-public class Instruction : IRObject {
+open class Instruction : IRObject {
     public typealias Parent = BasicBlock
     public enum ComparisonOperator {
         case lt, leq, gt, geq, eq
@@ -40,6 +40,7 @@ public class Instruction : IRObject {
     }
 }
 
+// MARK: - VariableProducer
 extension Instruction : VariableProducer {
 
     public func makeVariable(named name: String) -> Variable {
@@ -69,10 +70,6 @@ extension Instruction : VariableProducer {
              let .transformation(_, op):
             return TensorVariable(name: name, dataType: op.dataType,
                           shape: op.shape, definition: self)
-
-        /// Branch instructions
-        case .uncondBranch, .condBranch:
-            return UnavailableVariable.shared
 
         /// Phi node
         /// Args are either all tensors (of the same shape) or all scalars

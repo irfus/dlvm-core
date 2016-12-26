@@ -66,7 +66,7 @@ public extension IRBuilder {
     @inline(__always)
     @discardableResult
     func build(_ instructionKind: Instruction.Kind, named name: String? = nil) -> Variable {
-        precondition(currentBlock != nil, "Current basic block unavailable")
+        precondition(currentBlock != nil, "No current basic block")
         let instruction = Instruction(kind: instructionKind)
         currentBlock!.append(instruction)
         return instruction.makeVariable(named: name ?? makeName())
@@ -139,13 +139,11 @@ public extension IRBuilder {
         return build(.phi(variables), named: name) as! T
     }
 
-    @discardableResult
     public func makeBranch(condition: Variable,
                            thenBlock: BasicBlock, elseBlock: BasicBlock) {
         build(.condBranch(condition, then: thenBlock, else: elseBlock))
     }
 
-    @discardableResult
     public func makeBranch(_ block: BasicBlock) {
         build(.uncondBranch(block))
     }
