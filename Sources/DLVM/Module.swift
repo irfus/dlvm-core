@@ -13,7 +13,7 @@ open class Module : IRCollection {
 
     public typealias Element = BasicBlock
     
-    var declarations: [String : Variable] = [:]
+    var declarationTable: [String : Variable] = [:]
     let basicBlocks = NSMutableOrderedSet()
 
     public var elements: [BasicBlock] {
@@ -24,7 +24,7 @@ open class Module : IRCollection {
 
     public init(declarations: [Variable], basicBlocks: [BasicBlock]) {
         for decl in declarations {
-            self.declarations[decl.name] = decl
+            self.declarationTable[decl.name] = decl
         }
         self.basicBlocks.addObjects(from: basicBlocks)
     }
@@ -48,25 +48,29 @@ extension Module {
     
 }
 
-// MARK: - Variables
+// MARK: - Declarations (global variables)
 public extension Module {
 
-    public func declare(_ variable: Variable) {
-        declarations[variable.name] = variable
+    public var declarations: AnyCollection<Variable> {
+        return AnyCollection(declarationTable.values)
+    }
+
+    public func addDeclaration(_ variable: Variable) {
+        declarationTable[variable.name] = variable
     }
 
     public func declaration(named name: String) -> Variable? {
-        return declarations[name]
+        return declarationTable[name]
     }
 
     public func removeDeclaration(_ variable: Variable) {
-        declarations.removeValue(forKey: variable.name)
+        declarationTable.removeValue(forKey: variable.name)
     }
 
     @discardableResult
     public func removeDeclaration(named name: String) -> Variable? {
-        let variable = declarations[name]
-        declarations.removeValue(forKey: name)
+        let variable = declarationTable[name]
+        declarationTable.removeValue(forKey: name)
         return variable
     }
 

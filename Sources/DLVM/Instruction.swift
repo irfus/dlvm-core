@@ -14,6 +14,12 @@ open class Instruction : IRObject {
     public enum BinaryOperator {
         case add, sub, mul, min, max
     }
+    public enum ActivationFunction {
+        case sigmoid, relu, tanh
+    }
+    public enum TransformationFunction {
+        case log, softmax
+    }
     public enum Kind {
         case negate(Operand)
         case binaryOp(BinaryOperator, Operand, Operand)
