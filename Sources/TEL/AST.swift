@@ -12,7 +12,7 @@ public enum Macro {
 
 public enum Variable {
     case simple(String)
-    case recurrent(String, timestep: String, offset: Int)
+    case recurrent(String, timeStep: String, offset: Int)
 
     var name: String {
         switch self {
@@ -82,7 +82,7 @@ extension Variable : CustomStringConvertible {
     public var description: String {
         switch self {
         case let .simple(name): return name
-        case let .recurrent(name, timestep: t, offset: offset):
+        case let .recurrent(name, timeStep: t, offset: offset):
             return name + "[" + t + offset.description + "]"
         }
     }

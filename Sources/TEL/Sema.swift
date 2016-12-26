@@ -67,7 +67,7 @@ public struct Layer : Node {
 }
 
 struct RecurrenceContext {
-    let timestep: String
+    let timeStep: String
     let shapes: [String : TensorShape]
 }
 
@@ -200,23 +200,29 @@ public class Program {
         switch statement {
         /// Type macro
         case let .macro(macro):
-            switch macro {
-            case let .type(typeName):
-                guard env.isEmpty else {
-                    throw SemanticError.typeDeclarationNotOnTop(macro)
-                }
-                guard !env.isCustomDataType else {
-                    throw SemanticError.dataTypeRedeclared
-                }
-                guard let type = DataType(rawValue: typeName) else {
-                    throw SemanticError.dataTypeUnknown(typeName)
-                }
-                env.dataType = type
-            }
+            try check(macro, in: &env)
             
         /// Declaration
         case let .declaration(decl):
             try check(decl, in: &env)
+        }
+    }
+
+    /// Check macro
+    /// - Throws: SemanticError
+    static func check(_ macro: Macro, in env: inout TypeEnvironment) throws {
+        switch macro {
+        case let .type(typeName):
+            guard env.isEmpty else {
+                throw SemanticError.typeDeclarationNotOnTop(macro)
+            }
+            guard !env.isCustomDataType else {
+                throw SemanticError.dataTypeRedeclared
+            }
+            guard let type = DataType(rawValue: typeName) else {
+                throw SemanticError.dataTypeUnknown(typeName)
+            }
+            env.dataType = type
         }
     }
     
@@ -224,7 +230,7 @@ public class Program {
     /// - Throws: SemanticError
     static func check(_ declaration: Declaration, in env: inout TypeEnvironment) throws {
         switch declaration {
-
+            
         /// ## Grand sanity check begin ##
         
         /// Check for redeclaration
@@ -317,14 +323,14 @@ public class Program {
                                expression: expr)
             env.output = output
 
-        case let .recurrence(timestep, decls):
-            /// Recurrent timestep ('t', for example) is bound only within the
-            /// recurrence. Unlike timestep, declarations in a recurrence are
+        case let .recurrence(timeStep, decls):
+            /// Recurrent time step ('t', for example) is bound only within the
+            /// recurrence. Unlike time step, declarations in a recurrence are
             /// **globally bound**.
             /// Recurrence allows circular dependencies. To do this, we push
             /// the enclosing declarations as a 'recurrence context' into env
             /// before checking inner-scope declarations in normal order.
-            /// Create a recurrent context containing a timestep and a symbol
+            /// Create a recurrent context containing a time step and a symbol
             /// table of shapes
             var contextShapes: [String : TensorShape] = [:]
             for case let .assignment(variable, _, shapeComponents, _) in decls {
@@ -333,7 +339,7 @@ public class Program {
                 }
                 contextShapes[variable.name] = TensorShape(shapeComponents)
             }
-            let context = RecurrenceContext(timestep: timestep, shapes: contextShapes)
+            let context = RecurrenceContext(timeStep: timeStep, shapes: contextShapes)
             /// Push recurrent context for inner scope
             env.pushRecurrence(context)
             for decl in decls {
@@ -346,6 +352,8 @@ public class Program {
         }
     }
 
+    /// Check expression
+    /// - Throws: SemanticError
     static func check(_ expression: Expression, variable: Variable,
                       expectedShape: TensorShape, in env: inout TypeEnvironment) throws {
         let shape = try Program.shape(of: expression, in: &env)
@@ -356,6 +364,8 @@ public class Program {
         }
     }
 
+    /// Infer type of expression
+    /// - Throws: SemanticError
     static func shape(of expression: Expression,
                       in env: inout TypeEnvironment) throws -> TensorShape {
         switch expression {
