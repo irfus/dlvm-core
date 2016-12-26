@@ -12,15 +12,15 @@ open class BasicBlock : IRCollection, IRObject {
 
     public typealias Element = Instruction
 
-    public var name: String
+    open var name: String
     
     /// Take advantange of great data structures from Foundation
     let definitions = NSMutableOrderedSet()
     let instructions = NSMutableOrderedSet()
     
-    public weak var parent: Module?
+    open internal(set) weak var parent: Module?
 
-    public var elements: [Instruction] {
+    open var elements: [Instruction] {
         return instructions.array as! [Instruction]
     }
 
@@ -37,13 +37,13 @@ open class BasicBlock : IRCollection, IRObject {
 }
 
 // MARK: - IRCollection
-public extension BasicBlock {
+extension BasicBlock {
 
     /// Append the definition instruction of the variable to the
     /// basic block, storing the variable into the basic block
     ///
     /// - Precondition: variable has a defining instruction
-    public func appendDefinition(of variable: Variable) {
+    open func appendDefinition(of variable: Variable) {
         guard let instruction = variable.definition else {
             preconditionFailure("Variable has no definition")
         }
@@ -52,21 +52,22 @@ public extension BasicBlock {
     }
 
     /// Append the instruction to the basic block
-    public func append(_ instruction: Instruction) {
+    open func append(_ instruction: Instruction) {
         instructions.add(instruction)
         instruction.parent = self
     }
 
     /// Index of the instruction in the basic block
-    public func index(of instruction: Instruction) -> Int? {
+    open func index(of instruction: Instruction) -> Int? {
         return instructions.index(of: instruction)
     }
 
     /// Remove the instruction from the basic block
     ///
     /// - Precondition: instruction is in the basic block
-    public func remove(_ instruction: Instruction) {
+    open func remove(_ instruction: Instruction) {
         instructions.remove(instruction)
+        instruction.parent = nil
     }
     
 }
