@@ -12,63 +12,82 @@ import Foundation
 open class Module : IRCollection {
 
     public typealias Element = BasicBlock
+
+    open var name: String?
     
     var declarationTable: [String : Variable] = [:]
     let basicBlocks = NSMutableOrderedSet()
+    var basicBlockTable: [String : BasicBlock] = [:]
 
-    public var elements: [BasicBlock] {
+    open lazy var entryBlock: BasicBlock? = self.first
+
+    open var elements: [BasicBlock] {
         return basicBlocks.array as! [BasicBlock]
     }
 
-    public init() {}
+    public init(name: String? = nil) {
+        self.name = name
+    }
 
-    public init(declarations: [Variable], basicBlocks: [BasicBlock]) {
+    public init(name: String? = nil,
+                declarations: [Variable], basicBlocks: [BasicBlock]) {
+        self.name = name
         for decl in declarations {
-            self.declarationTable[decl.name] = decl
+            declarationTable[decl.name] = decl
         }
         self.basicBlocks.addObjects(from: basicBlocks)
+        for bb in basicBlocks {
+            basicBlockTable[bb.name] = bb
+        }
     }
 }
 
 // MARK: - IRCollection
 extension Module {
 
-    public func append(_ basicBlock: BasicBlock) {
+    open func append(_ basicBlock: BasicBlock) {
         basicBlocks.add(basicBlock)
+        basicBlockTable[basicBlock.name] = basicBlock
         basicBlock.parent = self
     }
 
-    public func index(of basicBlock: BasicBlock) -> Int? {
+    open func index(of basicBlock: BasicBlock) -> Int? {
         return elements.index(of: basicBlock)
     }
 
-    public func remove(_ basicBlock: BasicBlock) {
+    open func remove(_ basicBlock: BasicBlock) {
         basicBlocks.remove(basicBlock)
+        basicBlockTable.removeValue(forKey: basicBlock.name)
+        basicBlock.parent = nil
+    }
+
+    open func basicBlock(named name: String) -> BasicBlock? {
+        return basicBlockTable[name]
     }
     
 }
 
 // MARK: - Declarations (global variables)
-public extension Module {
+extension Module {
 
-    public var declarations: AnyCollection<Variable> {
+    open var declarations: AnyCollection<Variable> {
         return AnyCollection(declarationTable.values)
     }
 
-    public func addDeclaration(_ variable: Variable) {
+    open func addDeclaration(_ variable: Variable) {
         declarationTable[variable.name] = variable
     }
 
-    public func declaration(named name: String) -> Variable? {
+    open func declaration(named name: String) -> Variable? {
         return declarationTable[name]
     }
 
-    public func removeDeclaration(_ variable: Variable) {
+    open func removeDeclaration(_ variable: Variable) {
         declarationTable.removeValue(forKey: variable.name)
     }
 
     @discardableResult
-    public func removeDeclaration(named name: String) -> Variable? {
+    open func removeDeclaration(named name: String) -> Variable? {
         let variable = declarationTable[name]
         declarationTable.removeValue(forKey: name)
         return variable
