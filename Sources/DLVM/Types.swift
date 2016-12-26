@@ -6,9 +6,15 @@
 //
 //
 
-public enum DataType {
-    case int8, int16, int32, int64
-    case float8, float16, float32, float64
+public enum DataType : String {
+    case int8 = "int8"
+    case int16 = "int16"
+    case int32 = "int32"
+    case int64 = "int64"
+    case float8 = "float8"
+    case float16 = "float16"
+    case float32 = "float32"
+    case float64 = "float64"
 
     public var isInt: Bool {
         switch self {

@@ -12,6 +12,7 @@ import struct DLVM.TensorShape
 
 public enum SemanticError : Error {
     case dataTypeRedeclared
+    case dataTypeUnknown(String)
     case outputRedeclared(Variable)
     case initializerMissing(Variable)
     case initializerUnexpected(Variable)
@@ -200,12 +201,15 @@ public class Program {
         /// Type macro
         case let .macro(macro):
             switch macro {
-            case let .type(type):
+            case let .type(typeName):
                 guard env.isEmpty else {
                     throw SemanticError.typeDeclarationNotOnTop(macro)
                 }
                 guard !env.isCustomDataType else {
                     throw SemanticError.dataTypeRedeclared
+                }
+                guard let type = DataType(rawValue: typeName) else {
+                    throw SemanticError.dataTypeUnknown(typeName)
                 }
                 env.dataType = type
             }

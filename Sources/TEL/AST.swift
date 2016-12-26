@@ -6,10 +6,8 @@
 //
 //
 
-import enum DLVM.DataType
-
 public enum Macro {
-    case type(DataType)
+    case type(String)
 }
 
 public enum Variable {
