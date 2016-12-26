@@ -12,7 +12,7 @@ import enum DLVM.DataType
 
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
-fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! }
+fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! } .. "a number"
 fileprivate let lineComments = ("//" ~~> Lexer.string(until: "\n") <~~ Lexer.newLine)+
 fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
 fileprivate let newLines = Lexer.newLine+
@@ -31,8 +31,9 @@ extension Variable : Parsible {
 }
 
 extension Macro : Parsible {
-    public static let parser: Parser<Macro> =
-        "#type" ~~> spaces ~~>
+
+    public static let typeParser: Parser<Macro> =
+        Lexer.token("type") ~~> spaces ~~>
       ( Lexer.token("int8")    ^^= DataType.int8
       | Lexer.token("int16")   ^^= DataType.int16
       | Lexer.token("int32")   ^^= DataType.int32
@@ -41,7 +42,11 @@ extension Macro : Parsible {
       | Lexer.token("float16") ^^= DataType.float16
       | Lexer.token("float32") ^^= DataType.float32
       | Lexer.token("float64") ^^= DataType.float64
-      ) ^^ Macro.type
+     .. "a data type"
+      ).!  ^^ Macro.type
+
+    public static let parser: Parser<Macro> =
+        "#" ~~> typeParser.! .. "a macro"
 }
 
 extension Role : Parsible {
@@ -50,6 +55,7 @@ extension Role : Parsible {
       | Lexer.token("out")    ^^= .output
       | Lexer.token("hidden") ^^= .hidden
       | Lexer.token("param")  ^^= .parameter
+     .. "a role: in, out, hidden or param"
 }
 
 extension Declaration : Parsible {
@@ -57,15 +63,16 @@ extension Declaration : Parsible {
     private static let assignmentParser: Parser<Declaration> =
         Variable.parser
      ^^ curry(Declaration.assignment)
-     ** (Lexer.character(":").amid(spaces.?) ~~> Role.parser)
+     ** (Lexer.character(":").amid(spaces.?) ~~> Role.parser.!)
      ** number.nonbacktracking()
               .many(separatedBy: Lexer.character("x"))
-              .between(Lexer.character("[").!, Lexer.character("]").!)
+              .between(Lexer.character("[").!, Lexer.character("]").! .. "]")
+           .. "a shape, e.g. [2x4], [1x2x3]"
      ** (Lexer.character("=").amid(spaces.?) ~~> Expression.parser.!).?
 
     private static let recurrenceParser: Parser<Declaration> =
         Lexer.token("recurrent") ~~>
-        identifier.nonbacktracking().amid(spaces)
+        identifier.nonbacktracking().amid(spaces) .. "a recurrent timestep"
      ^^ curry(Declaration.recurrence)
      ** parser.many(separatedBy: linebreaks)
               .between(Lexer.character("{").! ~~> linebreaks.!,
@@ -73,6 +80,7 @@ extension Declaration : Parsible {
 
     public static let parser = assignmentParser
                              | recurrenceParser
+                            .. "a declaration"
 }
 
 extension Constant : Parsible {
@@ -114,6 +122,7 @@ extension Expression : Parsible {
         parser.nonbacktracking()
               .many(separatedBy: Lexer.character(",").amid(spaces.?))
               .between("[", "]")
+     ~~ ("@" ~~> number.!).withDefault(0)
      ^^ Expression.concat
 
     private static let parenthesizedParser: Parser<Expression> =
@@ -163,6 +172,7 @@ extension Statement : Parsible {
     public static let parser: Parser<Statement> =
         Macro.parser         ^^ Statement.macro
       | Declaration.parser   ^^ Statement.declaration
+     .. "a statement"
 }
 
 extension ProgramTree : Parsible {

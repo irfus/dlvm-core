@@ -53,7 +53,7 @@ public indirect enum Expression {
     /// Tensor product
     case product(Expression, Expression)
     /// Concatenation
-    case concat([Expression])
+    case concat([Expression], dimension: Int)
 }
 
 public indirect enum Declaration {
@@ -110,8 +110,8 @@ extension Expression : CustomStringConvertible {
             return "(* \(lhs) \(rhs))"
         case let .product(lhs, rhs):
             return "(⊗ \(lhs) \(rhs))"
-        case let .concat(exprs):
-            return "(concat \(exprs.map{$0.description}.joined(separator: " ")))"
+        case let .concat(exprs, dim):
+            return "(concat \(dim) \(exprs.map{$0.description}.joined(separator: " ")))"
         }
     }
     
