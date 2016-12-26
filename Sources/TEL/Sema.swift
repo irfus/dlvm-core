@@ -388,12 +388,13 @@ public class Program {
         case let .negate(e):
             return try shape(of: e, in: &env)
 
-        case let .concat(exprs):
+        case let .concat(exprs, dimension: dim):
             precondition(!exprs.isEmpty) // Not possible
             let firstShape = try shape(of: exprs[0], in: &env)
             return try exprs.dropFirst().reduce(firstShape) { acc, expr in
                 let nextShape = try shape(of: expr, in: &env)
-                guard let newShape = acc.concatenating(with: nextShape) else {
+                guard let newShape = acc.concatenating(
+                    with: nextShape, alongDimension: dim) else {
                     throw SemanticError.cannotConcatenate(expr, acc, nextShape)
                 }
                 return newShape
