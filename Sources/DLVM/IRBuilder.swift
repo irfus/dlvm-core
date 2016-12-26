@@ -43,7 +43,7 @@ public extension IRBuilder {
     public func declareTensor(named name: String, dataType: DataType,
                               shape: TensorShape) -> TensorVariable {
         let tensor = TensorVariable(name: name, dataType: dataType, shape: shape)
-        module.declare(tensor)
+        module.addDeclaration(tensor)
         return tensor
     }
 
@@ -51,7 +51,7 @@ public extension IRBuilder {
     public func declareScalar(named name: String,
                               type: ScalarType) -> ScalarVariable {
         let scalar = ScalarVariable(name: name, type: type)
-        module.declare(scalar)
+        module.addDeclaration(scalar)
         return scalar
     }
 
@@ -116,14 +116,14 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeActivation(_ function: ActivationFunction, _ argument: TensorVariable,
-                               name: String? = nil) -> TensorVariable {
+    public func makeActivation(_ function: Instruction.ActivationFunction,
+                               _ argument: TensorVariable, name: String? = nil) -> TensorVariable {
         return build(.activation(function, argument), named: name) as! TensorVariable
     }
 
     @discardableResult
     public func makeTransformation(
-        _ function: TransformationFunction, _ argument: TensorVariable,
+        _ function: Instruction.TransformationFunction, _ argument: TensorVariable,
         name: String? = nil) -> TensorVariable {
         return build(.transformation(function, argument), named: name) as! TensorVariable
     }

@@ -1,5 +1,5 @@
 //
-//  Instruction.swift
+//  Variable.swift
 //  DLVM
 //
 //  Created by Richard Wei on 12/18/16.
@@ -56,12 +56,4 @@ open class TensorVariable : Variable {
         self.shape = shape
         self.definition = definition
     }
-}
-
-public enum ActivationFunction {
-    case sigmoid, relu, tanh
-}
-
-public enum TransformationFunction {
-    case log, softmax
 }
