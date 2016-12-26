@@ -18,8 +18,7 @@ public class IRBuilder {
     }
 }
 
-// MARK: - Name generation and disambiguation
-public extension IRBuilder {
+extension IRBuilder {
 
     func makeName() -> String {
         return disambiguatedName(for: "v\(globalNameId)")
@@ -32,6 +31,14 @@ public extension IRBuilder {
         }
         nameIdTable[name] = 1
         return name
+    }
+
+    @discardableResult
+    func build(_ instructionKind: Instruction.Kind, named name: String? = nil) -> Variable {
+        precondition(currentBlock != nil, "No current basic block")
+        let instruction = Instruction(kind: instructionKind)
+        currentBlock!.append(instruction)
+        return instruction.makeVariable(named: name ?? makeName())
     }
     
 }
@@ -63,13 +70,22 @@ public extension IRBuilder {
         return block
     }
 
-    @inline(__always)
     @discardableResult
-    func build(_ instructionKind: Instruction.Kind, named name: String? = nil) -> Variable {
-        precondition(currentBlock != nil, "No current basic block")
-        let instruction = Instruction(kind: instructionKind)
-        currentBlock!.append(instruction)
-        return instruction.makeVariable(named: name ?? makeName())
+    public func makeScalar(_ operand: ScalarOperand, name: String? = nil) -> ScalarVariable {
+        return build(.scalar(operand), named: name) as! ScalarVariable
+    }
+
+    @discardableResult
+    public func makeTensor(dataType: DataType, shape: TensorShape,
+                           repeating operand: ScalarOperand, name: String? = nil) -> TensorVariable {
+        return build(.tensor(dataType, shape, operand), named: name) as! TensorVariable
+    }
+
+    @discardableResult
+    public func makeRandom(dataType: DataType, shape: TensorShape,
+                           lowerBound: ScalarOperand, upperBound: ScalarOperand,
+                           name: String? = nil) -> TensorVariable {
+        return build(.random(dataType, shape, lowerBound, upperBound), named: name) as! TensorVariable
     }
 
     /// Addition of the same type
@@ -144,7 +160,23 @@ public extension IRBuilder {
         build(.condBranch(condition, then: thenBlock, else: elseBlock))
     }
 
-    public func makeBranch(_ block: BasicBlock) {
+    public func makeBranch(_ basicBlock: BasicBlock) {
+        build(.uncondBranch(basicBlock))
+    }
+
+    public func makeBranch(condition: Variable,
+                           thenBlock: String, elseBlock: String) {
+        guard let thenBB = module.basicBlock(named: thenBlock),
+            let elseBB = module.basicBlock(named: elseBlock) else {
+            preconditionFailure("Basic block not present")
+        }
+        build(.condBranch(condition, then: thenBB, else: elseBB))
+    }
+
+    public func makeBranch(_ basicBlockName: String) {
+        guard let block = module.basicBlock(named: basicBlockName) else {
+            preconditionFailure("Basic block not present")
+        }
         build(.uncondBranch(block))
     }
 
