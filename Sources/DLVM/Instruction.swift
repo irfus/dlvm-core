@@ -7,26 +7,27 @@
 //
 
 public class Instruction : IRObject {
+    public typealias Parent = BasicBlock
     public enum ComparisonOperator {
         case lt, leq, gt, geq, eq
     }
+    public enum BinaryOperator {
+        case add, sub, mul, min, max
+    }
     public enum Kind {
         case negate(Operand)
-        case add(Operand, Operand)
-        case mul(Operand, Operand)
-        case min(Operand, Operand)
-        case max(Operand, Operand)
+        case binaryOp(BinaryOperator, Operand, Operand)
         case compare(ComparisonOperator, Operand, Operand)
-        case dotProduct(Tensor, Tensor)
-        case random(Scalar, Scalar)
-        case product(Tensor, Tensor)
-        case activation(ActivationFunction, Tensor)
-        case transfer(TransferFunction, Tensor)
-        case concat([Tensor])
+        case dotProduct(TensorVariable, TensorVariable)
+        case random(ScalarVariable, ScalarVariable)
+        case product(TensorVariable, TensorVariable)
+        case activation(ActivationFunction, TensorVariable)
+        case transformation(TransformationFunction, TensorVariable)
+        case concat([TensorVariable])
         case phi([Variable])
         case condBranch(Operand, then: BasicBlock, else: BasicBlock)
         case uncondBranch(BasicBlock)
-        case output(Tensor)
+        case output(TensorVariable)
     }
     public let kind: Kind
     public weak var parent: BasicBlock? = nil
@@ -43,17 +44,50 @@ extension Instruction : VariableProducer {
 
     public func makeVariable(named name: String) -> Variable {
         switch kind {
-        case let .negate(op as Tensor),
-             let .add(op as Tensor, _), let .add(_, op as Tensor),
-             let .mul(op as Tensor, _), let .mul(_, op as Tensor),
-             let .min(op as Tensor, _), let .min(_, op as Tensor),
-             let .max(op as Tensor, _), let .max(_, op as Tensor),
+        /// Immediate-only instructions yield scalars
+        case let .negate(op as Immediate),
+             let .binaryOp(_, op as Immediate, _ as Immediate):
+            let type: ScalarType
+            switch op {
+            case .bool:  type = .bool
+            case .int:   type = .int
+            case .float: type = .float
+            }
+            return ScalarVariable(name: name, type: type, definition: self)
+
+        /// Scalar-only instructions
+        case let .negate(op as ScalarVariable),
+             let .binaryOp(_, op as ScalarVariable, _ as ScalarVariable):
+            return ScalarVariable(name: name, type: op.type, definition: self)
+
+        /// Tensor instructions
+        case let .negate(op as TensorVariable),
+             let .binaryOp(_, op as TensorVariable, _),
+             let .binaryOp(_, _, op as TensorVariable),
              let .dotProduct(op, _),
              let .activation(_, op),
-             let .transfer(_, op):
-            return Tensor(name: name, dataType: op.dataType,
+             let .transformation(_, op):
+            return TensorVariable(name: name, dataType: op.dataType,
                           shape: op.shape, definition: self)
 
+        /// Branch instructions
+        case .uncondBranch, .condBranch:
+            return UnavailableVariable.shared
+
+        /// Phi node
+        /// Args are either all tensors (of the same shape) or all scalars
+        case let .phi(vars):
+            let firstVar = vars[0]
+            switch firstVar {
+            case let arg as TensorVariable:
+                return TensorVariable(name: name, dataType: arg.dataType,
+                              shape: arg.shape, definition: self)
+            case let arg as ScalarVariable:
+                return ScalarVariable(name: name, type: arg.type, definition: self)
+            default:
+                return UnavailableVariable.shared
+            }
+            
         default: /// TODO
             return UnavailableVariable.shared
         }

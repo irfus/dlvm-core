@@ -6,7 +6,7 @@
 //
 //
 
-public protocol IRCollection : Hashable, RandomAccessCollection, MutableCollection {
+public protocol IRCollection : class, Hashable, RandomAccessCollection, MutableCollection {
     associatedtype Element
     var elements: [Element] { get set }
 }
@@ -81,7 +81,7 @@ public extension IRCollection where Element : IRObject, Element.Parent == Self {
     /// Append instruction to the end
     ///
     /// - Parameter instruction: instruction to append
-    public mutating func append(_ element: Element) {
+    public func append(_ element: Element) {
         element.parent = self
         elements.append(element)
     }
@@ -101,7 +101,7 @@ public extension IRCollection where Element : IRObject, Element.Parent == Self {
     ///
     /// - Precondition: instruction ∈ block
     /// - Parameter instruction: instruction to remove from the block
-    public mutating func remove(_ instruction: Element) {
+    public func remove(_ instruction: Element) {
         let index = self.index(of: instruction)!
         elements.remove(at: index)
     }

@@ -11,6 +11,24 @@ public protocol Operand {}
 public protocol Variable : Operand {
     var name: String { get }
     weak var definition: Instruction? { get }
+    static func ~=(lhs: Variable, rhs: Variable) -> Bool
+}
+
+public extension Variable {
+    /// Determine if two variables are similar, i.e. have the same
+    /// type characteristics
+    public static func ~= (lhs: Variable, rhs: Variable) -> Bool {
+        switch (lhs, rhs) {
+        case let (lhs as ScalarVariable, rhs as ScalarVariable):
+            return lhs.type == rhs.type
+        case let (lhs as TensorVariable, rhs as TensorVariable):
+            return lhs.shape == rhs.shape && lhs.dataType == rhs.dataType
+        case (_ as UnavailableVariable, _ as UnavailableVariable):
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 public protocol VariableProducer {
@@ -30,10 +48,11 @@ public enum Immediate : Operand {
     case float(Double)
 }
 
-public struct Scalar : Variable {
+public struct ScalarVariable : Variable {
     public let name: String
     public let type: ScalarType
     public internal(set) weak var definition: Instruction?
+    
     public init(name: String, type: ScalarType,
                 definition: Instruction? = nil) {
         self.name = name
@@ -42,11 +61,12 @@ public struct Scalar : Variable {
     }
 }
 
-public struct Tensor : Variable {
+public struct TensorVariable : Variable {
     public let name: String
     public let dataType: DataType
     public let shape: TensorShape
     public internal(set) weak var definition: Instruction?
+    
     public init(name: String, dataType: DataType,
                 shape: TensorShape, definition: Instruction? = nil) {
         self.name = name
@@ -57,9 +77,9 @@ public struct Tensor : Variable {
 }
 
 public enum ActivationFunction {
-    case sigmoid, relu, tanh, log
+    case sigmoid, relu, tanh
 }
 
-public enum TransferFunction {
-    case softmax
+public enum TransformationFunction {
+    case log, softmax
 }
