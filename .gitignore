@@ -8,6 +8,9 @@
 *.xcodeproj
 *.xcworkspace
 
+# AppCode
+.idea/
+
 *.o
 *.d
 *.dylib
