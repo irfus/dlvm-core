@@ -8,8 +8,20 @@
 
 public protocol Operand {}
 
-public protocol Variable : class, Operand {
+public protocol Variable : Operand {
     var name: String { get }
+    weak var definition: Instruction? { get }
+}
+
+public protocol VariableProducer {
+    func makeVariable(named name: String) -> Variable
+}
+
+public struct UnavailableVariable : Variable {
+    public static let shared = UnavailableVariable()
+    public let name: String = "ε"
+    public let definition: Instruction? = nil
+    private init() { }
 }
 
 public enum Immediate : Operand {
@@ -18,24 +30,29 @@ public enum Immediate : Operand {
     case float(Double)
 }
 
-public class Scalar : Variable {
+public struct Scalar : Variable {
     public let name: String
     public let type: ScalarType
-    public init(name: String, type: ScalarType) {
+    public internal(set) weak var definition: Instruction?
+    public init(name: String, type: ScalarType,
+                definition: Instruction? = nil) {
         self.name = name
         self.type = type
+        self.definition = definition
     }
 }
 
-public class Tensor : Variable {
+public struct Tensor : Variable {
     public let name: String
     public let dataType: DataType
     public let shape: TensorShape
+    public internal(set) weak var definition: Instruction?
     public init(name: String, dataType: DataType,
-                shape: TensorShape) {
+                shape: TensorShape, definition: Instruction? = nil) {
         self.name = name
         self.dataType = dataType
         self.shape = shape
+        self.definition = definition
     }
 }
 
@@ -46,4 +63,3 @@ public enum ActivationFunction {
 public enum TransferFunction {
     case softmax
 }
-

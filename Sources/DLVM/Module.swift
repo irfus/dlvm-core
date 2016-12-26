@@ -8,16 +8,24 @@
 
 /// Module representing a neural network
 public class Module : IRCollection {
-    var definitions: [Operand]
+    var declarations: [Variable]
     public var elements: [BasicBlock]
 
     public init() {
-        definitions = []
+        declarations = []
         elements = []
     }
 
-    public init(definitions: [Operand], basicBlocks: [BasicBlock]) {
-        self.definitions = definitions
+    public init(declarations: [Variable], basicBlocks: [BasicBlock]) {
+        self.declarations = declarations
         self.elements = basicBlocks
     }
+}
+
+public extension Module {
+
+    public func declare(_ variable: Variable) {
+        declarations.append(variable)
+    }
+    
 }
