@@ -47,5 +47,13 @@ class ParseTests : XCTestCase {
             XCTFail("\(error)")
         }
     }
-    
+
+    public static var allTests: [(String, (ParseTests) -> () throws -> Void)] {
+        return [
+            ("testParseExpression", testParseExpression),
+            ("testParseDeclaration", testParseDeclaration),
+            ("testParseMacro", testParseMacro),
+        ]
+    }
+
 }
