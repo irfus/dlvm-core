@@ -64,7 +64,7 @@ extension Declaration : Parsible {
     private static let recurrenceParser: Parser<Declaration> =
         Lexer.token("recurrent") ~~>
         identifier.nonbacktracking().between(spaces, spaces | linebreaks)
-     .. "a timestep variable"
+     .. "a time step variable"
      ^^ curry(Declaration.recurrence)
      ** parser.many(separatedBy: linebreaks)
               .between(Lexer.character("{").! .. "{" ~~> linebreaks.!,
