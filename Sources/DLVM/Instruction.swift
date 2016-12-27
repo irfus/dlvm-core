@@ -53,6 +53,13 @@ extension Instruction : VariableProducer {
 
     public func makeVariable(named name: String) -> Variable {
         switch kind {
+        case let .scalar(op):
+            return ScalarVariable(name: name, type: op.type, definition: self)
+
+        case let .tensor(type, shape, _):
+            return TensorVariable(name: name, dataType: type,
+                                  shape: shape, definition: self)
+            
         /// Immediate-only instructions yield scalars
         case let .negate(op as Immediate),
              let .binaryOp(_, op as Immediate, _ as Immediate):
