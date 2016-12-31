@@ -34,7 +34,7 @@ extension IRBuilder {
     }
 
     @discardableResult
-    func build(_ instructionKind: Instruction.Kind, named name: String? = nil) -> Variable {
+    func build(_ instructionKind: Instruction.Kind, named name: String? = nil) -> VariableOperand {
         precondition(currentBlock != nil, "No current basic block")
         let instruction = Instruction(kind: instructionKind)
         currentBlock!.append(instruction)
@@ -90,7 +90,7 @@ public extension IRBuilder {
 
     /// Addition of the same type
     @discardableResult
-    public func makeBinaryOperation<T: Variable>(
+    public func makeBinaryOperation<T:VariableOperand>(
         _ `operator`: Instruction.BinaryOperator,
         _ lhs: T, _ rhs: T, name: String? = nil) -> T {
         return build(.binaryOp(`operator`, lhs, rhs), named: name) as! T
@@ -151,11 +151,11 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makePhi<T: Variable>(_ variables: T..., name: String? = nil) -> T {
+    public func makePhi<T:VariableOperand>(_ variables: T..., name: String? = nil) -> T {
         return build(.phi(variables), named: name) as! T
     }
 
-    public func makeBranch(condition: Variable,
+    public func makeBranch(condition: VariableOperand,
                            thenBlock: BasicBlock, elseBlock: BasicBlock) {
         build(.condBranch(condition, then: thenBlock, else: elseBlock))
     }
@@ -164,7 +164,7 @@ public extension IRBuilder {
         build(.uncondBranch(basicBlock))
     }
 
-    public func makeBranch(condition: Variable,
+    public func makeBranch(condition: VariableOperand,
                            thenBlock: String, elseBlock: String) {
         guard let thenBB = module.basicBlock(named: thenBlock),
             let elseBB = module.basicBlock(named: elseBlock) else {

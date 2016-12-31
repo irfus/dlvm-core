@@ -12,23 +12,23 @@ public protocol ScalarOperand : Operand {
     var type: ScalarType { get }
 }
 
-public protocol Variable : class, Operand {
+public protocol VariableOperand: Operand {
     var name: String { get }
     weak var definition: Instruction? { get }
 }
 
 public protocol VariableProducer {
-    func makeVariable(named name: String) -> Variable
+    func makeVariable(named name: String) -> VariableOperand
 }
 
-open class UnavailableVariable : Variable {
+open class UnavailableVariable : VariableOperand {
     public static let shared = UnavailableVariable()
     public let name: String = "ε"
     public let definition: Instruction? = nil
     private init() { }
 }
 
-public enum Immediate : Operand, ScalarOperand {
+public enum ImmediateOperand: Operand, ScalarOperand {
     case bool(Bool)
     case int(Int)
     case float(Double)
@@ -42,7 +42,7 @@ public enum Immediate : Operand, ScalarOperand {
     }
 }
 
-open class ScalarVariable : Variable, ScalarOperand {
+open class ScalarVariable : VariableOperand, ScalarOperand {
     public let name: String
     public let type: ScalarType
     public internal(set) weak var definition: Instruction?
@@ -55,7 +55,7 @@ open class ScalarVariable : Variable, ScalarOperand {
     }
 }
 
-open class TensorVariable : Variable {
+open class TensorVariable : VariableOperand {
     public let name: String
     public let dataType: DataType
     public let shape: TensorShape
