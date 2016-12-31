@@ -20,9 +20,9 @@ public extension Program {
 }
 
 struct CodeGenEnvironment {
-    var variables: [String : DLVM.Variable] = [:]
+    var variables: [String : DLVM.VariableOperand] = [:]
     
-    subscript(key: String) -> DLVM.Variable? {
+    subscript(key: String) -> DLVM.VariableOperand? {
         get {
             return variables[key]
         }
@@ -59,24 +59,24 @@ class CodeGenerator {
             case let .constant(.int(i)):
                 variable = builder.makeTensor(dataType: program.dataType,
                                               shape: param.shape,
-                                              repeating: Immediate.int(i),
+                                              repeating: ImmediateOperand.int(i),
                                               name: param.name)
             case let .constant(.float(f)):
                 variable = builder.makeTensor(dataType: program.dataType,
                                               shape: param.shape,
-                                              repeating: Immediate.float(f),
+                                              repeating: ImmediateOperand.float(f),
                                               name: param.name)
             case let .random(.int(i1), .int(i2)):
                 variable = builder.makeRandom(dataType: program.dataType,
                                               shape: param.shape,
-                                              lowerBound: Immediate.int(i1),
-                                              upperBound: Immediate.int(i2),
+                                              lowerBound: ImmediateOperand.int(i1),
+                                              upperBound: ImmediateOperand.int(i2),
                                               name: param.name)
             case let .random(.float(f1), .float(f2)):
                 variable = builder.makeRandom(dataType: program.dataType,
                                               shape: param.shape,
-                                              lowerBound: Immediate.float(f1),
-                                              upperBound: Immediate.float(f2),
+                                              lowerBound: ImmediateOperand.float(f1),
+                                              upperBound: ImmediateOperand.float(f2),
                                               name: param.name)
             default:
                 preconditionFailure("This should not have passed Sema")

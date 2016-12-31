@@ -15,7 +15,7 @@ open class Module : IRCollection {
 
     open var name: String?
     
-    var declarationTable: [String : Variable] = [:]
+    var declarationTable: [String : VariableOperand] = [:]
     let basicBlocks = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
 
@@ -30,7 +30,7 @@ open class Module : IRCollection {
     }
 
     public init(name: String? = nil,
-                declarations: [Variable], basicBlocks: [BasicBlock]) {
+                declarations: [VariableOperand], basicBlocks: [BasicBlock]) {
         self.name = name
         for decl in declarations {
             declarationTable[decl.name] = decl
@@ -70,24 +70,24 @@ extension Module {
 // MARK: - Declarations (global variables)
 extension Module {
 
-    open var declarations: AnyCollection<Variable> {
+    open var declarations: AnyCollection<VariableOperand> {
         return AnyCollection(declarationTable.values)
     }
 
-    open func addDeclaration(_ variable: Variable) {
+    open func addDeclaration(_ variable: VariableOperand) {
         declarationTable[variable.name] = variable
     }
 
-    open func declaration(named name: String) -> Variable? {
+    open func declaration(named name: String) -> VariableOperand? {
         return declarationTable[name]
     }
 
-    open func removeDeclaration(_ variable: Variable) {
+    open func removeDeclaration(_ variable: VariableOperand) {
         declarationTable.removeValue(forKey: variable.name)
     }
 
     @discardableResult
-    open func removeDeclaration(named name: String) -> Variable? {
+    open func removeDeclaration(named name: String) -> VariableOperand? {
         let variable = declarationTable[name]
         declarationTable.removeValue(forKey: name)
         return variable

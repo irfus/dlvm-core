@@ -32,7 +32,7 @@ open class Instruction : IRObject {
         case activation(ActivationFunction, TensorVariable)
         case transformation(TransformationFunction, TensorVariable)
         case concat([TensorVariable])
-        case phi([Variable])
+        case phi([VariableOperand])
         case condBranch(Operand, then: BasicBlock, else: BasicBlock)
         case uncondBranch(BasicBlock)
         case output(TensorVariable)
@@ -51,7 +51,7 @@ open class Instruction : IRObject {
 // MARK: - VariableProducer
 extension Instruction : VariableProducer {
 
-    public func makeVariable(named name: String) -> Variable {
+    public func makeVariable(named name: String) -> VariableOperand {
         switch kind {
         case let .scalar(op):
             return ScalarVariable(name: name, type: op.type, definition: self)
@@ -61,8 +61,8 @@ extension Instruction : VariableProducer {
                                   shape: shape, definition: self)
             
         /// Immediate-only instructions yield scalars
-        case let .negate(op as Immediate),
-             let .binaryOp(_, op as Immediate, _ as Immediate):
+        case let .negate(op as ImmediateOperand),
+             let .binaryOp(_, op as ImmediateOperand, _ as ImmediateOperand):
             let type: ScalarType
             switch op {
             case .bool:  type = .bool

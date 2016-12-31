@@ -28,7 +28,7 @@ open class BasicBlock : IRCollection, IRObject {
         self.name = name
     }
 
-    public init(name: String, definitions: [Variable], instructions: [Instruction]) {
+    public init(name: String, definitions: [VariableOperand], instructions: [Instruction]) {
         self.name = name
         self.definitions.addObjects(from: definitions)
         self.instructions.addObjects(from: instructions)
@@ -43,7 +43,7 @@ extension BasicBlock {
     /// basic block, storing the variable into the basic block
     ///
     /// - Precondition: variable has a defining instruction
-    open func appendDefinition(of variable: Variable) {
+    open func appendDefinition(of variable: VariableOperand) {
         guard let instruction = variable.definition else {
             preconditionFailure("Variable has no definition")
         }
