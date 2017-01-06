@@ -16,7 +16,7 @@ fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
 fileprivate let newLines = Lexer.newLine+
 fileprivate let linebreaks = (newLines | lineComments).amid(spaces.?)+ .. "a linebreak"
 
-public protocol Parsible {
+protocol Parsible {
     static var parser: Parser<Self> { get }
 }
 

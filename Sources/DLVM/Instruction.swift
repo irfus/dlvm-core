@@ -6,7 +6,7 @@
 //
 //
 
-open class Instruction : IRObject {
+open class Instruction : IRObject, VariableDefiner {
     public typealias Parent = BasicBlock
     public enum ComparisonOperator {
         case lt, leq, gt, geq, eq
@@ -56,7 +56,7 @@ extension Instruction : VariableProducer {
         case let .scalar(op):
             return ScalarVariable(name: name, type: op.type, definition: self)
 
-        case let .tensor(type, shape, _):
+        case let .tensor(type, shape, op) where type ~= op.type:
             return TensorVariable(name: name, dataType: type,
                                   shape: shape, definition: self)
             
@@ -89,7 +89,7 @@ extension Instruction : VariableProducer {
              let .activation(_, op),
              let .transformation(_, op):
             return TensorVariable(name: name, dataType: op.dataType,
-                          shape: op.shape, definition: self)
+                                  shape: op.shape, definition: self)
 
         /// Phi node
         /// Args are either all tensors (of the same shape) or all scalars

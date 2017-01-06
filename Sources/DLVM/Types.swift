@@ -28,10 +28,21 @@ public enum DataType : String {
     public var isFloat: Bool {
         return !isInt
     }
+
+    public static func ~=(lhs: DataType, rhs: ScalarType) -> Bool {
+        switch rhs {
+        case .int where lhs.isInt, .float where lhs.isFloat:
+            return true
+        default:
+            return false
+        }
+    }
 }
 
-public enum ScalarType {
-    case bool, int, float
+public enum ScalarType : String {
+    case bool = "bool"
+    case int = "int"
+    case float = "float"
 }
 
 public protocol TensorBase {
