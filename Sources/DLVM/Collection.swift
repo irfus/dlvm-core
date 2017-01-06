@@ -6,7 +6,22 @@
 //
 //
 
-public protocol IRCollection : class, RandomAccessCollection {
+public protocol EquatableByReference : class, Equatable {}
+public protocol HashableByReference : EquatableByReference, Hashable {}
+
+public extension EquatableByReference {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        return lhs === rhs
+    }
+}
+
+public extension HashableByReference {
+    public var hashValue: Int {
+        return ObjectIdentifier(self).hashValue
+    }
+}
+
+public protocol IRCollection : class, RandomAccessCollection, HashableByReference {
     associatedtype Element : AnyObject
     var elements: [Element] { get }
     func append(_: Element)
@@ -14,22 +29,9 @@ public protocol IRCollection : class, RandomAccessCollection {
     func remove(_: Element)
 }
 
-public protocol IRObject : class, Hashable {
+public protocol IRObject : class, HashableByReference {
     associatedtype Parent : IRCollection
     weak var parent: Parent? { get }
-}
-
-// MARK: - Hashable
-public extension IRCollection {
-
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        return lhs === rhs
-    }
-
-    public var hashValue: Int {
-        return ObjectIdentifier(self).hashValue
-    }
-    
 }
 
 // MARK: - RandomAccessCollection
