@@ -37,17 +37,15 @@ extension Variable : Parsible {
 extension Macro : Parsible {
 
     public static let typeParser: Parser<Macro> =
-        "type" ~~> spaces ~~>
-        identifier.! .. "a data type"
+        "type" ~~> (spaces ~~> identifier.! .. "a data type")
      ^^ Macro.type
 
     public static let nameParser: Parser<Macro> =
-        "name" ~~> spaces ~~>
-        identifier.! .. "a name"
+        "name" ~~> (spaces ~~> identifier.! .. "a name")
      ^^ Macro.name
 
     public static let parser: Parser<Macro> =
-        "#" ~~> (typeParser | nameParser) .. "a macro"
+        "#" ~~> (typeParser | nameParser).! .. "a macro"
 }
 
 extension Role : Parsible {
