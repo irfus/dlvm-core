@@ -11,7 +11,7 @@ extension UnavailableVariable : TextOutputStreamable {
 extension ScalarVariable : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
-        target.write(" ")
+        target.write(" @")
         name.write(to: &target)
     }
 }
@@ -27,7 +27,7 @@ extension TensorVariable : TextOutputStreamable {
         dataType.write(to: &target)
         target.write(" ")
         shape.write(to: &target)
-        target.write(" ")
+        target.write(" @")
         name.write(to: &target)
     }
 }
@@ -71,6 +71,36 @@ public extension TextOutputStreamable where Self : SelfDescribing {
     }
 }
 
+extension RandomizingTensorDefinition : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        dataType.write(to: &target)
+        target.write(" ")
+        shape.write(to: &target)
+        target.write(" ")
+        target.write("random ")
+        lowerBound.write(to: &target)
+        target.write(", ")
+        upperBound.write(to: &target)
+    }
+}
+
+extension ImmediateTensorDefinition : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        dataType.write(to: &target)
+        target.write(" ")
+        shape.write(to: &target)
+        target.write(" ")
+        target.write("repeating ")
+        value.write(to: &target)
+    }
+}
+
+extension ImmediateScalarDefinition : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        value.write(to: &target)
+    }
+}
+
 extension Instruction.ActivationFunction : SelfDescribing, TextOutputStreamable {}
 extension Instruction.TransformationFunction : SelfDescribing, TextOutputStreamable {}
 extension Instruction.BinaryOperator : SelfDescribing, TextOutputStreamable {}
@@ -80,6 +110,29 @@ extension Instruction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch kind {
         // TODO
+        case let .negate(op):
+            target.write("neg ")
+            op.write(to: &target)
+
+        case let .binaryOp(op, lhs, rhs):
+            op.write(to: &target)
+            target.write(" ")
+            lhs.write(to: &target)
+            target.write(", ")
+            rhs.write(to: &target)
+
+        case let .compare(op, lhs, rhs):
+            target.write("cmp ")
+            op.write(to: &target)
+            target.write(" ")
+            lhs.write(to: &target)
+            target.write(", ")
+            rhs.write(to: &target)
+
+        case let .output(v):
+            target.write("output ")
+            v.write(to: &target)
+
         case let .activation(f as TextOutputStreamable, v),
              let .transformation(f as TextOutputStreamable, v):
             f.write(to: &target)
@@ -104,6 +157,17 @@ extension BasicBlock : TextOutputStreamable {
 
 extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        name?.write(to: &target)
+        target.write("module " + name + "\n\n")
+        for decl in declarations {
+            if let def = decl.definition {
+                target.write("define @" + decl.name + " = ")
+                def.write(to: &target)
+            }
+            else {
+                target.write("declare ")
+                decl.write(to: &target)
+            }
+            target.write("\n")
+        }
     }
 }
