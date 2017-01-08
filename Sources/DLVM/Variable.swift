@@ -6,7 +6,7 @@
 //
 //
 
-public protocol Operand {}
+public protocol Operand : TextOutputStreamable {}
 
 public protocol ScalarOperand : Operand {
     var type: ScalarType { get }
@@ -14,19 +14,17 @@ public protocol ScalarOperand : Operand {
 
 public protocol VariableOperand: Operand {
     var name: String { get }
-    weak var definition: VariableDefiner? { get }
+    var definition: VariableProducer? { get }
 }
 
-public protocol VariableDefiner : class {}
-
-public protocol VariableProducer {
+public protocol VariableProducer : class, TextOutputStreamable {
     func makeVariable(named name: String) -> VariableOperand
 }
 
 open class UnavailableVariable : VariableOperand {
     public static let shared = UnavailableVariable()
     public let name: String = "ε"
-    public let definition: VariableDefiner? = nil
+    public let definition: VariableProducer? = nil
     private init() { }
 }
 
@@ -47,10 +45,10 @@ public enum ImmediateOperand: Operand, ScalarOperand {
 open class ScalarVariable : VariableOperand, ScalarOperand {
     public let name: String
     public let type: ScalarType
-    public internal(set) weak var definition: VariableDefiner?
+    public internal(set) var definition: VariableProducer?
     
     public init(name: String, type: ScalarType,
-                definition: VariableDefiner? = nil) {
+                definition: VariableProducer?) {
         self.name = name
         self.type = type
         self.definition = definition
@@ -61,10 +59,10 @@ open class TensorVariable : VariableOperand {
     public let name: String
     public let dataType: DataType
     public let shape: TensorShape
-    public internal(set) weak var definition: VariableDefiner?
-    
+    public internal(set) var definition: VariableProducer?
+
     public init(name: String, dataType: DataType,
-                shape: TensorShape, definition: VariableDefiner? = nil) {
+                shape: TensorShape, definition: VariableProducer?) {
         self.name = name
         self.dataType = dataType
         self.shape = shape

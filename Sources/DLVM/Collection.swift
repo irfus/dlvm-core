@@ -30,7 +30,7 @@ public protocol IRCollection : class, RandomAccessCollection, HashableByReferenc
 }
 
 public protocol IRObject : class, HashableByReference {
-    associatedtype Parent : IRCollection
+    associatedtype Parent : AnyObject
     weak var parent: Parent? { get }
 }
 
@@ -65,7 +65,7 @@ public extension IRCollection {
     
 }
 
-public extension IRObject where Parent.Element == Self {
+public extension IRObject where Parent : IRCollection, Parent.Element == Self {
 
     /// Remove self from parent basic block (if any)
     public func removeFromParent() {

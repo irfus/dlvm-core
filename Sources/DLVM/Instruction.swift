@@ -6,7 +6,7 @@
 //
 //
 
-open class Instruction : IRObject, VariableDefiner {
+open class Instruction : IRObject {
     public typealias Parent = BasicBlock
     public enum ComparisonOperator {
         case lt, leq, gt, geq, eq
@@ -21,13 +21,11 @@ open class Instruction : IRObject, VariableDefiner {
         case log, softmax
     }
     public enum Kind {
-        case tensor(DataType, TensorShape, ScalarOperand)
-        case scalar(ScalarOperand)
         case negate(Operand)
         case binaryOp(BinaryOperator, Operand, Operand)
         case compare(ComparisonOperator, Operand, Operand)
         case dotProduct(TensorVariable, TensorVariable)
-        case random(DataType, TensorShape, ScalarOperand, ScalarOperand)
+//        case random(DataType, TensorShape, ScalarOperand, ScalarOperand)
         case product(TensorVariable, TensorVariable)
         case activation(ActivationFunction, TensorVariable)
         case transformation(TransformationFunction, TensorVariable)
@@ -53,13 +51,6 @@ extension Instruction : VariableProducer {
 
     public func makeVariable(named name: String) -> VariableOperand {
         switch kind {
-        case let .scalar(op):
-            return ScalarVariable(name: name, type: op.type, definition: self)
-
-        case let .tensor(type, shape, op) where type ~= op.type:
-            return TensorVariable(name: name, dataType: type,
-                                  shape: shape, definition: self)
-            
         /// Immediate-only instructions yield scalars
         case let .negate(op as ImmediateOperand),
              let .binaryOp(_, op as ImmediateOperand, _ as ImmediateOperand):
@@ -70,11 +61,6 @@ extension Instruction : VariableProducer {
             case .float: type = .float
             }
             return ScalarVariable(name: name, type: type, definition: self)
-
-        /// Random instruction
-        case let .random(dataType, shape, _, _):
-            return TensorVariable(name: name, dataType: dataType,
-                                  shape: shape, definition: self)
 
         /// Scalar-only instructions
         case let .negate(op as ScalarVariable),

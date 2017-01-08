@@ -9,33 +9,34 @@
 import Foundation
 
 /// Module representing a neural network
-open class Module : IRCollection {
+open class Module {
 
     public typealias Element = BasicBlock
 
-    open var name: String?
+    open var name: String
     
     var declarationTable: [String : VariableOperand] = [:]
-    let basicBlocks = NSMutableOrderedSet()
+    let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
 
-    open lazy var entryBlock: BasicBlock? = self.first
+    open lazy var entryBlock: BasicBlock? = self.basicBlocks.first
 
-    open var elements: [BasicBlock] {
-        return basicBlocks.array as! [BasicBlock]
+    open var basicBlocks: [BasicBlock] {
+        return basicBlockSet.array as! [BasicBlock]
     }
 
-    public init(name: String? = nil) {
+    public init(name: String) {
         self.name = name
     }
 
-    public init(name: String? = nil,
-                declarations: [VariableOperand], basicBlocks: [BasicBlock]) {
+    public init(name: String,
+                declarations: [VariableOperand],
+                basicBlocks: [BasicBlock]) {
         self.name = name
         for decl in declarations {
             declarationTable[decl.name] = decl
         }
-        self.basicBlocks.addObjects(from: basicBlocks)
+        self.basicBlockSet.addObjects(from: basicBlocks)
         for bb in basicBlocks {
             basicBlockTable[bb.name] = bb
         }
@@ -46,17 +47,17 @@ open class Module : IRCollection {
 extension Module {
 
     open func append(_ basicBlock: BasicBlock) {
-        basicBlocks.add(basicBlock)
+        basicBlockSet.add(basicBlock)
         basicBlockTable[basicBlock.name] = basicBlock
         basicBlock.parent = self
     }
 
     open func index(of basicBlock: BasicBlock) -> Int? {
-        return elements.index(of: basicBlock)
+        return basicBlocks.index(of: basicBlock)
     }
 
     open func remove(_ basicBlock: BasicBlock) {
-        basicBlocks.remove(basicBlock)
+        basicBlockSet.remove(basicBlock)
         basicBlockTable.removeValue(forKey: basicBlock.name)
         basicBlock.parent = nil
     }
