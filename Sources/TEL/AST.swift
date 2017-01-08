@@ -33,6 +33,9 @@ public enum Constant {
 }
 
 public indirect enum Expression {
+    public enum InfixOperator {
+        case add, sub, mul, div
+    }
     /// Integer
     case constant(Constant)
     /// Random
@@ -44,11 +47,7 @@ public indirect enum Expression {
     /// Negation
     case negate(Expression)
     /// Element-wise addition
-    case add(Expression, Expression)
-    /// Element-wise subtraction
-    case sub(Expression, Expression)
-    /// Element-wise product
-    case mul(Expression, Expression)
+    case infixOp(InfixOperator, Expression, Expression)
     /// Tensor product
     case product(Expression, Expression)
     /// Concatenation
@@ -92,8 +91,18 @@ extension Variable : CustomStringConvertible {
     
 }
 
-extension Expression : CustomStringConvertible {
+extension Expression.InfixOperator : CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .add: return "+"
+        case .sub: return "-"
+        case .mul: return "*"
+        case .div: return "/"
+        }
+    }
+}
 
+extension Expression : CustomStringConvertible {
     public var description: String {
         switch self {
         case let .constant(c): return c.description
@@ -103,12 +112,8 @@ extension Expression : CustomStringConvertible {
             return "(\(name) \(args.map{$0.description}.joined(separator: " ")))"
         case let .negate(expr):
             return "(- \(expr))"
-        case let .add(lhs, rhs):
-            return "(+ \(lhs) \(rhs))"
-        case let .sub(lhs, rhs):
-            return "(- \(lhs) \(rhs))"
-        case let .mul(lhs, rhs):
-            return "(* \(lhs) \(rhs))"
+        case let .infixOp(op, lhs, rhs):
+            return "(\(op) \(lhs) \(rhs))"
         case let .product(lhs, rhs):
             return "(⊗ \(lhs) \(rhs))"
         case let .concat(exprs, dim):
@@ -117,11 +122,9 @@ extension Expression : CustomStringConvertible {
             return "(reshape \(expr) [\(shape.map{$0.description}.joined(separator: "x"))])"
         }
     }
-
 }
 
 extension Declaration : CustomStringConvertible {
-
     public var description: String {
         switch self {
         case let .assignment(v, role, dim, expr):
@@ -130,7 +133,6 @@ extension Declaration : CustomStringConvertible {
             return "(recurrent \(timestep) \(decls.map{$0.description}.joined(separator: " ")))"
         }
     }
-    
 }
 
 extension Macro : CustomStringConvertible {

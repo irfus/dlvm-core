@@ -18,9 +18,9 @@ public extension Program {
 }
 
 struct CodeGenEnvironment {
-    var variables: [String : DLVM.VariableOperand] = [:]
+    var variables: [String : VariableOperand] = [:]
     
-    subscript(key: String) -> DLVM.VariableOperand? {
+    subscript(key: String) -> VariableOperand? {
         get {
             return variables[key]
         }
@@ -100,6 +100,7 @@ class CodeGenerator {
         return builder.module
     }
 
+    /// TODO: support recurrence
     @discardableResult
     func build(_ expression: Expression, named name: String? = nil) -> TensorVariable {
         switch expression {
@@ -120,21 +121,20 @@ class CodeGenerator {
             return builder.makeTransformation(.softmax, argOp, name: name)
         case let .variable(variable):
             guard let op = environment[variable.name] as? TensorVariable else {
-                preconditionFailure("Undeclared variable. This shouldn't have passed Sema.")
+                preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")
             }
             return op
-        case let .add(lhs, rhs):
+        case let .infixOp(op, lhs, rhs):
             let lhsOp = build(lhs)
             let rhsOp = build(rhs)
-            return builder.makeBinaryOperation(.add, lhsOp, rhsOp, name: name)
-        case let .sub(lhs, rhs):
-            let lhsOp = build(lhs)
-            let rhsOp = build(rhs)
-            return builder.makeBinaryOperation(.sub, lhsOp, rhsOp, name: name)
-        case let .mul(lhs, rhs):
-            let lhsOp = build(lhs)
-            let rhsOp = build(rhs)
-            return builder.makeBinaryOperation(.mul, lhsOp, rhsOp, name: name)
+            let dlvmOp: Instruction.ArithmeticOperator
+            switch op {
+            case .add: dlvmOp = .add
+            case .sub: dlvmOp = .sub
+            case .mul: dlvmOp = .mul
+            case .div: dlvmOp = .div
+            }
+            return builder.makeBinaryOperation(dlvmOp, lhsOp, rhsOp, name: name)
         case let .negate(expr):
             let exprOp = build(expr)
             return builder.makeBinaryOperation(.sub, ImmediateOperand.int(0),
@@ -153,7 +153,7 @@ class CodeGenerator {
                          "Tensor shape cast mismatch. This shouldn't have passed Sema.")
             return builder.makeShapeCast(exprOp, shape: targetShape)
         default:
-            preconditionFailure("Unsupported expression. This shouldn't have passed Sema.")
+            preconditionFailure("Unsupported expression \(expression). This shouldn't have passed Sema.")
         }
     }
 

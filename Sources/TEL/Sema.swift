@@ -164,6 +164,7 @@ struct TypeEnvironment {
 }
 
 /// Program semantics
+/// TODO: support recurrence
 public class Program {
 
     public var moduleName: String
@@ -391,12 +392,8 @@ public class Program {
             }
             return shape
 
-        case let .add(sideExpr, .constant(const)),
-             let .add(.constant(const), sideExpr),
-             let .sub(sideExpr, .constant(const)),
-             let .sub(.constant(const), sideExpr),
-             let .mul(sideExpr, .constant(const)),
-             let .mul(.constant(const), sideExpr):
+        case let .infixOp(_, sideExpr, .constant(const)),
+             let .infixOp(_, .constant(const), sideExpr):
             let sideShape = try shape(of: sideExpr, in: &env)
             /// If a float constant is used under an int context, error
             if case .float(_) = const, !env.dataType.isInt {
@@ -404,9 +401,7 @@ public class Program {
             }
             return sideShape
 
-        case let .add(lhs, rhs),
-             let .sub(lhs, rhs),
-             let .mul(lhs, rhs):
+        case let .infixOp(_, lhs, rhs):
             let leftShape = try shape(of: lhs, in: &env)
             let rightShape = try shape(of: rhs, in: &env)
             guard leftShape == rightShape else {
