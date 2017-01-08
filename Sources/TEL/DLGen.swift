@@ -35,7 +35,7 @@ struct CodeGenEnvironment {
 class CodeGenerator {
     
     let program: Program
-    let builder = IRBuilder()
+    lazy var builder: IRBuilder = IRBuilder(moduleName: self.program.moduleName)
     var env = CodeGenEnvironment()
     
     init(program: Program) {
@@ -50,41 +50,46 @@ class CodeGenerator {
                                                  shape: input.shape)
             env[variable.name] = variable
         }
-        /// Initialize parameters
-        let initBB = builder.makeBasicBlock(named: "init")
-        builder.module.entryBlock = initBB
+        /// Define globals
         for param in program.parameters {
-            let variable: TensorVariable
+            let def: TensorDefinition
             switch param.initializer {
             case let .constant(.int(i)):
-                variable = builder.makeTensor(dataType: program.dataType,
-                                              shape: param.shape,
-                                              repeating: ImmediateOperand.int(i),
-                                              name: param.name)
+                def = ImmediateTensorDefinition(dataType: program.dataType,
+                                                shape: param.shape,
+                                                value: .int(i))
+
             case let .constant(.float(f)):
-                variable = builder.makeTensor(dataType: program.dataType,
-                                              shape: param.shape,
-                                              repeating: ImmediateOperand.float(f),
-                                              name: param.name)
+                def = ImmediateTensorDefinition(dataType: program.dataType,
+                                                shape: param.shape,
+                                                value: .float(f))
+                
             case let .random(.int(i1), .int(i2)):
-                variable = builder.makeRandom(dataType: program.dataType,
-                                              shape: param.shape,
-                                              lowerBound: ImmediateOperand.int(i1),
-                                              upperBound: ImmediateOperand.int(i2),
-                                              name: param.name)
+                def = RandomizingTensorDefinition(
+                    dataType: program.dataType, shape: param.shape,
+                    lowerBound: .int(i1), upperBound: .int(i2)
+                )
+
             case let .random(.float(f1), .float(f2)):
-                variable = builder.makeRandom(dataType: program.dataType,
-                                              shape: param.shape,
-                                              lowerBound: ImmediateOperand.float(f1),
-                                              upperBound: ImmediateOperand.float(f2),
-                                              name: param.name)
+                def = RandomizingTensorDefinition(
+                    dataType: program.dataType, shape: param.shape,
+                    lowerBound: .float(f1), upperBound: .float(f2)
+                )
+
             default:
                 preconditionFailure("This should not have passed Sema")
             }
+
+            let variable = builder.declareTensor(def, name: param.name)
             env.variables[variable.name] = variable
         }
+
+        /// Entry block
+        let initBB = builder.makeBasicBlock(named: "init")
+        builder.module.entryBlock = initBB
+
         /// TODO
         return builder.module
     }
-    
+
 }
