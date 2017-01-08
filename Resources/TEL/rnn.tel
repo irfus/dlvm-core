@@ -1,4 +1,5 @@
 // A simple recurrent neural network described in TEL
+#name rnn
 
 // Universal data type for data flow
 #type float16
