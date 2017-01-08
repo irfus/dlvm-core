@@ -21,13 +21,6 @@ public protocol VariableProducer : class, TextOutputStreamable {
     func makeVariable(named name: String) -> VariableOperand
 }
 
-open class UnavailableVariable : VariableOperand {
-    public static let shared = UnavailableVariable()
-    public let name: String = "ε"
-    public let definition: VariableProducer? = nil
-    private init() { }
-}
-
 public enum ImmediateOperand: Operand, ScalarOperand {
     case bool(Bool)
     case int(Int)
