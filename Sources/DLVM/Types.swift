@@ -39,10 +39,10 @@ public enum DataType : String {
     }
 }
 
-public enum ScalarType : String {
-    case bool = "bool"
-    case int = "int"
-    case float = "float"
+public enum ScalarType {
+    case bool
+    case int
+    case float
 }
 
 public protocol TensorBase {
