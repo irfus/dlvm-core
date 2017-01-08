@@ -15,7 +15,7 @@ open class BasicBlock : IRCollection, IRObject {
     open var name: String
     
     /// Take advantange of great data structures from Foundation
-    let definitions = NSMutableOrderedSet()
+    let variables = NSMutableOrderedSet()
     let instructions = NSMutableOrderedSet()
     
     open internal(set) weak var parent: Module?
@@ -28,9 +28,10 @@ open class BasicBlock : IRCollection, IRObject {
         self.name = name
     }
 
-    public init(name: String, definitions: [VariableOperand], instructions: [Instruction]) {
+    public init(name: String, definitions: [VariableOperand],
+                instructions: [Instruction]) {
         self.name = name
-        self.definitions.addObjects(from: definitions)
+        self.variables.addObjects(from: definitions)
         self.instructions.addObjects(from: instructions)
     }
 
@@ -39,15 +40,19 @@ open class BasicBlock : IRCollection, IRObject {
 // MARK: - IRCollection
 extension BasicBlock {
 
+    public func contains(_ element: Instruction) -> Bool {
+        return instructions.contains(element)
+    }
+
     /// Append the definition instruction of the variable to the
     /// basic block, storing the variable into the basic block
     ///
     /// - Precondition: variable has a defining instruction
-    open func appendDefinition(of variable: VariableOperand) {
+    open func append(_ variable: VariableOperand) {
         guard let instruction = variable.definition else {
             preconditionFailure("Variable has no definition")
         }
-        definitions.add(variable)
+        variables.add(variable)
         instructions.add(instruction)
     }
 
@@ -66,8 +71,20 @@ extension BasicBlock {
     ///
     /// - Precondition: instruction is in the basic block
     open func remove(_ instruction: Instruction) {
+        precondition(instructions.contains(instruction),
+                     "Instruction is not in the basic block")
         instructions.remove(instruction)
         instruction.parent = nil
     }
-    
+
+    /// Remove variable and its definition from the basic block
+    open func remove(_ variable: VariableOperand) {
+        precondition(variables.contains(variable),
+                     "Variable is not in the basic block")
+        guard let instruction = variable.definition as? Instruction else { preconditionFailure("Definition is not an instruction")
+        }
+        remove(instruction)
+        variables.remove(variable)
+    }
+
 }

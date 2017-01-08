@@ -158,7 +158,7 @@ extension BasicBlock : TextOutputStreamable {
 extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module " + name + "\n\n")
-        for decl in declarations {
+        for decl in variables {
             if let def = decl.definition {
                 target.write("define @" + decl.name + " = ")
                 def.write(to: &target)

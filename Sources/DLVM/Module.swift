@@ -15,7 +15,7 @@ open class Module {
 
     open var name: String
     
-    var declarationTable: [String : VariableOperand] = [:]
+    var variableTable: [String : VariableOperand] = [:]
     let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
 
@@ -29,12 +29,11 @@ open class Module {
         self.name = name
     }
 
-    public init(name: String,
-                declarations: [VariableOperand],
+    public init(name: String, variables: [VariableOperand],
                 basicBlocks: [BasicBlock]) {
         self.name = name
-        for decl in declarations {
-            declarationTable[decl.name] = decl
+        for variable in variables {
+            variableTable[variable.name] = variable
         }
         self.basicBlockSet.addObjects(from: basicBlocks)
         for bb in basicBlocks {
@@ -47,6 +46,8 @@ open class Module {
 extension Module {
 
     open func append(_ basicBlock: BasicBlock) {
+        precondition(!basicBlockTable.keys.contains(basicBlock.name),
+                     "Basic block named \(basicBlock.name) already exists")
         basicBlockSet.add(basicBlock)
         basicBlockTable[basicBlock.name] = basicBlock
         basicBlock.parent = self
@@ -68,29 +69,44 @@ extension Module {
     
 }
 
-// MARK: - Declarations (global variables)
+// MARK: - Global variables
 extension Module {
 
-    open var declarations: AnyCollection<VariableOperand> {
-        return AnyCollection(declarationTable.values)
+    /// Global variables
+    open var variables: AnyCollection<VariableOperand> {
+        return AnyCollection(variableTable.values)
     }
 
-    open func addDeclaration(_ variable: VariableOperand) {
-        declarationTable[variable.name] = variable
+    open var externalVariables: AnyCollection<VariableOperand> {
+        let variables = variableTable.values.filter { $0.definition == nil }
+        return AnyCollection(variables)
     }
 
-    open func declaration(named name: String) -> VariableOperand? {
-        return declarationTable[name]
+    open var definedVariables: AnyCollection<VariableOperand> {
+        let variables = variableTable.values.filter { $0.definition != nil }
+        return AnyCollection(variables)
     }
 
-    open func removeDeclaration(_ variable: VariableOperand) {
-        declarationTable.removeValue(forKey: variable.name)
+    open func add(_ variable: VariableOperand) {
+        precondition(!variableTable.keys.contains(variable.name),
+                     "Variable named \(variable.name) already exists")
+        precondition(!(variable.definition is Instruction),
+                     "Global variable definition cannot be an instruction")
+        variableTable[variable.name] = variable
+    }
+
+    open func variable(named name: String) -> VariableOperand? {
+        return variableTable[name]
+    }
+
+    open func remove(_ variable: VariableOperand) {
+        variableTable.removeValue(forKey: variable.name)
     }
 
     @discardableResult
-    open func removeDeclaration(named name: String) -> VariableOperand? {
-        let variable = declarationTable[name]
-        declarationTable.removeValue(forKey: name)
+    open func removeVariable(named name: String) -> VariableOperand? {
+        let variable = variableTable[name]
+        variableTable.removeValue(forKey: name)
         return variable
     }
 

@@ -53,7 +53,7 @@ public extension IRBuilder {
                               definition: TensorDefinition? = nil) -> TensorVariable {
         let tensor = TensorVariable(name: name, dataType: dataType, shape: shape,
                                     definition: definition)
-        module.addDeclaration(tensor)
+        module.add(tensor)
         return tensor
     }
     
@@ -62,7 +62,7 @@ public extension IRBuilder {
                               type: ScalarType,
                               definition: ScalarDefinition? = nil) -> ScalarVariable {
         let scalar = ScalarVariable(name: name, type: type, definition: definition)
-        module.addDeclaration(scalar)
+        module.add(scalar)
         return scalar
     }
 
@@ -70,7 +70,7 @@ public extension IRBuilder {
     public func declareTensor(_ definition: TensorDefinition,
                               named name: String) -> TensorVariable {
         let variable = definition.makeVariable(named: name) as! TensorVariable
-        module.addDeclaration(variable)
+        module.add(variable)
         return variable
     }
 
@@ -78,7 +78,7 @@ public extension IRBuilder {
     public func declareScalar(_ definition: ScalarDefinition,
                               named name: String) -> ScalarVariable {
         let variable = definition.makeVariable(named: name) as! ScalarVariable
-        module.addDeclaration(variable)
+        module.add(variable)
         return variable
     }
     
