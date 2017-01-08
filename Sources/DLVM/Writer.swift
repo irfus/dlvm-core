@@ -40,7 +40,7 @@ extension DataType : TextOutputStreamable {
 
 extension ScalarType : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write(rawValue)
+        String(describing: self).write(to: &target)
     }
 }
 

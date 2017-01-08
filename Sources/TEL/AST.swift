@@ -114,7 +114,7 @@ extension Expression : CustomStringConvertible {
         case let .concat(exprs, dim):
             return "(concat \(dim) \(exprs.map{$0.description}.joined(separator: " ")))"
         case let .reshape(expr, shape: shape):
-            return "(reshape \(expr) \(shape.map{$0.description}.joined(separator: "x")))"
+            return "(reshape \(expr) [\(shape.map{$0.description}.joined(separator: "x"))])"
         }
     }
 

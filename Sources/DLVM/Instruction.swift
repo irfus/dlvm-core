@@ -25,12 +25,12 @@ open class Instruction : IRObject {
         case binaryOp(BinaryOperator, Operand, Operand)
         case compare(ComparisonOperator, Operand, Operand)
         case dotProduct(TensorVariable, TensorVariable)
-//        case random(DataType, TensorShape, ScalarOperand, ScalarOperand)
         case product(TensorVariable, TensorVariable)
         case activation(ActivationFunction, TensorVariable)
         case transformation(TransformationFunction, TensorVariable)
-        case concat([TensorVariable])
+        case concat([TensorVariable], dimension: Int)
         case phi([VariableOperand])
+        case shapeCast(TensorShape, TensorVariable)
         case condBranch(Operand, then: BasicBlock, else: BasicBlock)
         case uncondBranch(BasicBlock)
         case output(TensorVariable)
@@ -76,6 +76,11 @@ extension Instruction : VariableProducer {
              let .transformation(_, op):
             return TensorVariable(name: name, dataType: op.dataType,
                                   shape: op.shape, definition: self)
+
+        /// Cast instruction
+        case let .shapeCast(targetShape, variable):
+            return TensorVariable(name: variable.name, dataType: variable.dataType,
+                                  shape: targetShape, definition: self)
 
         /// Phi node
         /// Args are either all tensors (of the same shape) or all scalars

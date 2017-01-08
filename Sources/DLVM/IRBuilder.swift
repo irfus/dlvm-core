@@ -68,7 +68,7 @@ public extension IRBuilder {
 
     @discardableResult
     public func declareTensor(_ definition: TensorDefinition,
-                              name: String) -> TensorVariable {
+                              named name: String) -> TensorVariable {
         let variable = definition.makeVariable(named: name) as! TensorVariable
         module.addDeclaration(variable)
         return variable
@@ -76,7 +76,7 @@ public extension IRBuilder {
 
     @discardableResult
     public func declareScalar(_ definition: ScalarDefinition,
-                              name: String) -> ScalarVariable {
+                              named name: String) -> ScalarVariable {
         let variable = definition.makeVariable(named: name) as! ScalarVariable
         module.addDeclaration(variable)
         return variable
@@ -92,25 +92,35 @@ public extension IRBuilder {
 
     /// Addition of the same type
     @discardableResult
-    public func makeBinaryOperation<T: VariableOperand>(
+    public func makeBinaryOperation(
         _ `operator`: Instruction.BinaryOperator,
-        _ lhs: T, _ rhs: T, name: String? = nil) -> T {
-        return build(.binaryOp(`operator`, lhs, rhs), named: name) as! T
+        _ lhs: TensorVariable, _ rhs: TensorVariable,
+        name: String? = nil) -> TensorVariable {
+        return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
+    }
+
+    /// Addition of the same type
+    @discardableResult
+    public func makeBinaryOperation(
+        _ `operator`: Instruction.BinaryOperator,
+        _ lhs: ScalarVariable, _ rhs: ScalarVariable,
+        name: String? = nil) -> ScalarVariable {
+        return build(.binaryOp(`operator`, lhs, rhs), named: name) as! ScalarVariable
     }
     
     /// Addition of any operand with tensor
     @discardableResult
-    public func makeBinaryOperation(
+    public func makeBinaryOperation<T: Operand>(
         _ `operator`: Instruction.BinaryOperator
-        , _ lhs: Operand, _ rhs: TensorVariable, name: String? = nil) -> TensorVariable {
+        , _ lhs: T, _ rhs: TensorVariable, name: String? = nil) -> TensorVariable {
         return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
     }
     
     /// Addition of any operand with tensor
     @discardableResult
-    public func makeBinaryOperation(
+    public func makeBinaryOperation<T: Operand>(
         _ `operator`: Instruction.BinaryOperator
-        , _ lhs: TensorVariable, _ rhs: Operand, name: String? = nil) -> TensorVariable {
+        , _ lhs: TensorVariable, _ rhs: T, name: String? = nil) -> TensorVariable {
         return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
     }
     
@@ -148,8 +158,14 @@ public extension IRBuilder {
     
     @discardableResult
     public func makeConcatenation(
-        _ arguments: [TensorVariable], name: String? = nil) -> TensorVariable {
-        return build(.concat(arguments), named: name) as! TensorVariable
+        _ arguments: [TensorVariable], dimension: Int, name: String? = nil) -> TensorVariable {
+        return build(.concat(arguments, dimension: dimension), named: name) as! TensorVariable
+    }
+
+    @discardableResult
+    public func makeShapeCast(_ variable: TensorVariable, shape: TensorShape,
+                              name: String? = nil) -> TensorVariable {
+        return build(.shapeCast(shape, variable), named: name) as! TensorVariable
     }
     
     @discardableResult
