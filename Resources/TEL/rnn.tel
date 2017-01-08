@@ -10,7 +10,7 @@ W2: param[2x4] = random(0.0, 1.0)
 W3: param[2x2] = random(0.0, 1.0)
 b1: param[4x1] = 0.0
 b2: param[2x1] = 0.0
-b3: param[2x1] = 0.0
+b3: param[1x2] = 0.0
 
 // Recurrent block
 recurrent t {
@@ -22,4 +22,4 @@ recurrent t {
 }
 
 // Output layer
-o: out[2x1] = softmax(W3 h2 + b3)
+o: out[2x1] = softmax((h2 : [1x2]) W3 + b3) : [2x1] // reshape

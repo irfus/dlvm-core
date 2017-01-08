@@ -27,6 +27,7 @@ public enum SemanticError : Error {
     case cannotConcatenate(Expression, TensorShape, TensorShape)
     case cannotFormProduct(Expression, TensorShape, Expression, TensorShape)
     case operatorShapeMismatch(Expression)
+    case reshapingSizeMismatch(Expression, size: Int, expected: Int)
     case shapeMismatch(Expression, expected: TensorShape, in: Variable)
     case macroNotOnTop(Macro)
     case argumentCountMismatch(Expression, count: Int, expected: Int)
@@ -427,6 +428,16 @@ public class Program {
                 }
                 return newShape
             }
+
+        case let .reshape(expr, shape: dims):
+            let exprShape = try shape(of: expr, in: &env)
+            let exprSize = exprShape.contiguousSize
+            let targetSize = dims.reduce(1, *)
+            guard exprSize == targetSize else {
+                throw SemanticError.reshapingSizeMismatch(expr, size: exprSize,
+                                                          expected: targetSize)
+            }
+            return TensorShape(dims)
 
         case let .product(lhs, rhs):
             let lhsShape = try shape(of: lhs, in: &env)
