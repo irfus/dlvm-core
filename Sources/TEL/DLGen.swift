@@ -124,17 +124,21 @@ class CodeGenerator {
                 preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")
             }
             return op
+        case let .infixOp(op, .constant(c), rhs):
+            let lhsOp = c.operand(for: program.dataType)
+            let rhsOp = build(rhs)
+            return builder.makeBinaryOperation(op.instructionOperator,
+                                               lhsOp, rhsOp, name: name)
+        case let .infixOp(op, lhs, .constant(c)):
+            let lhsOp = build(lhs)
+            let rhsOp = c.operand(for: program.dataType)
+            return builder.makeBinaryOperation(op.instructionOperator,
+                                               lhsOp, rhsOp, name: name)
         case let .infixOp(op, lhs, rhs):
             let lhsOp = build(lhs)
             let rhsOp = build(rhs)
-            let dlvmOp: Instruction.ArithmeticOperator
-            switch op {
-            case .add: dlvmOp = .add
-            case .sub: dlvmOp = .sub
-            case .mul: dlvmOp = .mul
-            case .div: dlvmOp = .div
-            }
-            return builder.makeBinaryOperation(dlvmOp, lhsOp, rhsOp, name: name)
+            return builder.makeBinaryOperation(op.instructionOperator,
+                                               lhsOp, rhsOp, name: name)
         case let .negate(expr):
             let exprOp = build(expr)
             return builder.makeBinaryOperation(.sub, ImmediateOperand.int(0),
@@ -157,4 +161,25 @@ class CodeGenerator {
         }
     }
 
+}
+
+fileprivate extension Constant {
+    func operand(for dataType: DataType) -> ImmediateOperand {
+        switch self {
+        case let .int(i) where dataType.isFloat: return .float(Double(i))
+        case let .int(i): return .int(i)
+        case let .float(f): return .float(f)
+        }
+    }
+}
+
+fileprivate extension Expression.InfixOperator {
+    var instructionOperator: Instruction.ArithmeticOperator {
+        switch self {
+        case .add: return .add
+        case .sub: return .sub
+        case .mul: return .mul
+        case .div: return .div
+        }
+    }
 }
