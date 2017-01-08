@@ -2,12 +2,6 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-extension UnavailableVariable : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("ε")
-    }
-}
-
 extension ScalarVariable : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
@@ -103,7 +97,7 @@ extension ImmediateScalarDefinition : TextOutputStreamable {
 
 extension Instruction.ActivationFunction : SelfDescribing, TextOutputStreamable {}
 extension Instruction.TransformationFunction : SelfDescribing, TextOutputStreamable {}
-extension Instruction.BinaryOperator : SelfDescribing, TextOutputStreamable {}
+extension Instruction.ArithmeticOperator : SelfDescribing, TextOutputStreamable {}
 extension Instruction.ComparisonOperator : SelfDescribing, TextOutputStreamable {}
 
 extension Instruction : TextOutputStreamable {
@@ -158,16 +152,19 @@ extension BasicBlock : TextOutputStreamable {
 extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module " + name + "\n\n")
-        for decl in variables {
-            if let def = decl.definition {
-                target.write("define @" + decl.name + " = ")
+        for variable in variables {
+            if let def = variable.definition {
+                target.write("define @" + variable.name + " = ")
                 def.write(to: &target)
             }
             else {
                 target.write("declare ")
-                decl.write(to: &target)
+                variable.write(to: &target)
             }
             target.write("\n")
+        }
+        for bb in basicBlocks {
+            bb.write(to: &target)
         }
     }
 }

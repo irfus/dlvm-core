@@ -42,7 +42,6 @@ open class Module {
     }
 }
 
-// MARK: - IRCollection
 extension Module {
 
     open func append(_ basicBlock: BasicBlock) {

@@ -11,8 +11,8 @@ open class Instruction : IRObject {
     public enum ComparisonOperator {
         case lt, leq, gt, geq, eq
     }
-    public enum BinaryOperator {
-        case add, sub, mul, min, max
+    public enum ArithmeticOperator {
+        case add, sub, mul, div, min, max
     }
     public enum ActivationFunction {
         case sigmoid, relu, tanh
@@ -22,7 +22,7 @@ open class Instruction : IRObject {
     }
     public enum Kind {
         case negate(Operand)
-        case binaryOp(BinaryOperator, Operand, Operand)
+        case binaryOp(ArithmeticOperator, Operand, Operand)
         case compare(ComparisonOperator, Operand, Operand)
         case dotProduct(TensorVariable, TensorVariable)
         case product(TensorVariable, TensorVariable)
@@ -77,6 +77,11 @@ extension Instruction : VariableProducer {
             return TensorVariable(name: name, dataType: op.dataType,
                                   shape: op.shape, definition: self)
 
+        case let .product(lhs, rhs):
+            let newShape = lhs.shape.product(with: rhs.shape)!
+            return TensorVariable(name: name, dataType: lhs.dataType,
+                                  shape: newShape, definition: self)
+
         /// Cast instruction
         case let .shapeCast(targetShape, variable):
             return TensorVariable(name: variable.name, dataType: variable.dataType,
@@ -89,15 +94,23 @@ extension Instruction : VariableProducer {
             switch firstVar {
             case let arg as TensorVariable:
                 return TensorVariable(name: name, dataType: arg.dataType,
-                              shape: arg.shape, definition: self)
+                                      shape: arg.shape, definition: self)
             case let arg as ScalarVariable:
                 return ScalarVariable(name: name, type: arg.type, definition: self)
             default:
-                return UnavailableVariable.shared
+                preconditionFailure("Unsupported variable type")
             }
-            
+
+        case let .concat(variables, dimension: dim):
+            let firstShape = variables[0].shape
+            let newShape = variables.dropFirst().reduce(firstShape) { acc, x in
+                acc.concatenating(with: x.shape, alongDimension: dim)!
+            }
+            return TensorVariable(name: name, dataType: variables[0].dataType,
+                                  shape: newShape, definition: self)
+
         default: /// TODO
-            return UnavailableVariable.shared
+            preconditionFailure("Unsupported instruction \(kind)")
         }
     }
 

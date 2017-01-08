@@ -93,7 +93,7 @@ public extension IRBuilder {
     /// Addition of the same type
     @discardableResult
     public func makeBinaryOperation(
-        _ `operator`: Instruction.BinaryOperator,
+        _ `operator`: Instruction.ArithmeticOperator,
         _ lhs: TensorVariable, _ rhs: TensorVariable,
         name: String? = nil) -> TensorVariable {
         return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
@@ -102,7 +102,7 @@ public extension IRBuilder {
     /// Addition of the same type
     @discardableResult
     public func makeBinaryOperation(
-        _ `operator`: Instruction.BinaryOperator,
+        _ `operator`: Instruction.ArithmeticOperator,
         _ lhs: ScalarVariable, _ rhs: ScalarVariable,
         name: String? = nil) -> ScalarVariable {
         return build(.binaryOp(`operator`, lhs, rhs), named: name) as! ScalarVariable
@@ -111,7 +111,7 @@ public extension IRBuilder {
     /// Addition of any operand with tensor
     @discardableResult
     public func makeBinaryOperation<T: Operand>(
-        _ `operator`: Instruction.BinaryOperator
+        _ `operator`: Instruction.ArithmeticOperator
         , _ lhs: T, _ rhs: TensorVariable, name: String? = nil) -> TensorVariable {
         return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
     }
@@ -119,7 +119,7 @@ public extension IRBuilder {
     /// Addition of any operand with tensor
     @discardableResult
     public func makeBinaryOperation<T: Operand>(
-        _ `operator`: Instruction.BinaryOperator
+        _ `operator`: Instruction.ArithmeticOperator
         , _ lhs: TensorVariable, _ rhs: T, name: String? = nil) -> TensorVariable {
         return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
     }
