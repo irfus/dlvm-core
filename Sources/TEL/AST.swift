@@ -7,6 +7,7 @@
 //
 
 public enum Macro {
+    case name(String)
     case type(String)
 }
 
@@ -132,6 +133,7 @@ extension Macro : CustomStringConvertible {
 
     public var description: String {
         switch self {
+        case let .name(n): return "(define-module-name \(n))"
         case let .type(t): return "(define-type \(t))"
         }
     }
