@@ -53,6 +53,8 @@ public indirect enum Expression {
     case product(Expression, Expression)
     /// Concatenation
     case concat([Expression], dimension: Int)
+    /// Reshape
+    case reshape(Expression, shape: [Int])
 }
 
 public indirect enum Declaration {
@@ -111,9 +113,11 @@ extension Expression : CustomStringConvertible {
             return "(⊗ \(lhs) \(rhs))"
         case let .concat(exprs, dim):
             return "(concat \(dim) \(exprs.map{$0.description}.joined(separator: " ")))"
+        case let .reshape(expr, shape: shape):
+            return "(reshape \(expr) \(shape.map{$0.description}.joined(separator: "x")))"
         }
     }
-    
+
 }
 
 extension Declaration : CustomStringConvertible {

@@ -8,6 +8,7 @@
 
 import Parsey
 import func Funky.curry
+import func Funky.flip
 
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
@@ -16,6 +17,10 @@ fileprivate let lineComments = ("//" ~~> Lexer.string(until: "\n") <~~ Lexer.new
 fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
 fileprivate let newLines = Lexer.newLine+
 fileprivate let linebreaks = (newLines | lineComments).amid(spaces.?)+ .. "a linebreak"
+
+fileprivate let keywords: Set<String> = [
+    "as", "in", "out", "param", "hidden", "recurrent", "random"
+]
 
 public protocol Parsible {
     static var parser: Parser<Self> { get }
@@ -136,13 +141,24 @@ extension Expression : Parsible {
                                  .. "an expression"
 
     ///
-    /// Infix operators begin
+    /// Operators begin
     ///
+
+    private static let shapeParser: Parser<(Expression) -> Expression> =
+        spaces.? ~~> Lexer.token(":") ~~> spaces.? ~~>
+        number.nonbacktracking()
+              .many(separatedBy: Lexer.character("x"))
+              .between(Lexer.character("[").!, Lexer.character("]").! .. "]")
+           .. "a shape, e.g. [2x4], [1x2x3]"
+     ^^ flip(curry(Expression.reshape))
+
+    private static let reshapeParser: Parser<Expression> =
+        termParser.suffixed(by: shapeParser)
     
     /// Tensor product: W x
     /// - Priority: high
     private static let productParser: Parser<Expression> =
-        termParser.infixedLeft(by:
+        reshapeParser.infixedLeft(by:
             spaces ^^= Expression.product)
 
     /// Tensor element-wise multiplication: x * y
