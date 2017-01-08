@@ -13,6 +13,8 @@ import struct DLVM.TensorShape
 public enum SemanticError : Error {
     case dataTypeRedeclared
     case dataTypeUnknown(String)
+    case moduleNameRedeclared
+    case moduleNameMissing
     case outputRedeclared(Variable)
     case initializerMissing(Variable)
     case initializerUnexpected(Variable)
@@ -26,7 +28,7 @@ public enum SemanticError : Error {
     case cannotFormProduct(Expression, TensorShape, Expression, TensorShape)
     case operatorShapeMismatch(Expression)
     case shapeMismatch(Expression, expected: TensorShape, in: Variable)
-    case typeDeclarationNotOnTop(Macro)
+    case macroNotOnTop(Macro)
     case argumentCountMismatch(Expression, count: Int, expected: Int)
     case functionUnknown(Expression, String)
     case inputMissing
@@ -73,6 +75,8 @@ struct RecurrenceContext {
 
 /// Environment for semantics analysis
 struct TypeEnvironment {
+
+    public var moduleName: String?
 
     /// Symbol table of nodes
     private var nodes: [String : Node] = [:]
@@ -160,6 +164,8 @@ struct TypeEnvironment {
 
 /// Program semantics
 public class Program {
+
+    public var moduleName: String
     
     /// Default type: float32
     public internal(set) var dataType: DataType = .float32
@@ -181,11 +187,15 @@ public class Program {
         guard let output = env.output else {
             throw SemanticError.outputMissing
         }
+        guard let moduleName = env.moduleName else {
+            throw SemanticError.moduleNameMissing
+        }
         /// Initialize properties
         self.inputs = env.inputs
         self.layers = env.layers
         self.output = output
         self.parameters = env.parameters
+        self.moduleName = moduleName
     }
 
     static func check(_ parse: ProgramTree, in env: inout TypeEnvironment) throws {
@@ -201,7 +211,6 @@ public class Program {
         /// Type macro
         case let .macro(macro):
             try check(macro, in: &env)
-            
         /// Declaration
         case let .declaration(decl):
             try check(decl, in: &env)
@@ -211,11 +220,11 @@ public class Program {
     /// Check macro
     /// - Throws: SemanticError
     static func check(_ macro: Macro, in env: inout TypeEnvironment) throws {
+        guard env.isEmpty else {
+            throw SemanticError.macroNotOnTop(macro)
+        }
         switch macro {
         case let .type(typeName):
-            guard env.isEmpty else {
-                throw SemanticError.typeDeclarationNotOnTop(macro)
-            }
             guard !env.isCustomDataType else {
                 throw SemanticError.dataTypeRedeclared
             }
@@ -223,6 +232,11 @@ public class Program {
                 throw SemanticError.dataTypeUnknown(typeName)
             }
             env.dataType = type
+        case let .name(name):
+            guard env.moduleName == nil else {
+                throw SemanticError.moduleNameRedeclared
+            }
+            env.moduleName = name
         }
     }
     
