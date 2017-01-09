@@ -12,13 +12,13 @@ public protocol ScalarOperand : Operand {
     var type: ScalarType { get }
 }
 
-public protocol VariableOperand: Operand {
+public protocol VariableOperand: class, Operand {
     var name: String { get }
     var definition: VariableProducer? { get }
 }
 
 public protocol VariableProducer : class, TextOutputStreamable {
-    func makeVariable(named name: String) -> VariableOperand
+    func makeVariable(named name: String) -> VariableOperand?
 }
 
 public enum ImmediateOperand: Operand, ScalarOperand {
@@ -39,12 +39,15 @@ open class ScalarVariable : VariableOperand, ScalarOperand {
     public let name: String
     public let type: ScalarType
     public internal(set) var definition: VariableProducer?
-    
+
     public init(name: String, type: ScalarType,
                 definition: VariableProducer?) {
         self.name = name
         self.type = type
         self.definition = definition
+        if let inst = definition as? Instruction {
+            inst.variable = self
+        }
     }
 }
 
@@ -60,5 +63,8 @@ open class TensorVariable : VariableOperand {
         self.dataType = dataType
         self.shape = shape
         self.definition = definition
+        if let inst = definition as? Instruction {
+            inst.variable = self
+        }
     }
 }

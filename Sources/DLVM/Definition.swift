@@ -16,14 +16,14 @@ public protocol ScalarDefinition : VariableProducer {
 }
 
 public extension TensorDefinition {
-    public func makeVariable(named name: String) -> VariableOperand {
+    public func makeVariable(named name: String) -> VariableOperand? {
         return TensorVariable(name: name, dataType: dataType,
                               shape: shape, definition: self)
     }
 }
 
 public extension ScalarDefinition {
-    public func makeVariable(named name: String) -> VariableOperand {
+    public func makeVariable(named name: String) -> VariableOperand? {
         return ScalarVariable(name: name, type: type, definition: self)
     }
 }
