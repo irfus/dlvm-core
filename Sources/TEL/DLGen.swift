@@ -157,7 +157,7 @@ class CodeGenerator {
             let targetShape = TensorShape(dims)
             precondition(exprOp.shape.contiguousSize == targetShape.contiguousSize,
                          "Tensor shape cast mismatch. This shouldn't have passed Sema.")
-            return builder.makeShapeCast(exprOp, shape: targetShape)
+            return builder.makeShapeCast(exprOp, shape: targetShape, name: name)
         default:
             preconditionFailure("Unsupported expression \(expression). This shouldn't have passed Sema.")
         }
