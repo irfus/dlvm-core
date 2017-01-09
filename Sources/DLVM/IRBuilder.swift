@@ -34,7 +34,7 @@ extension IRBuilder {
     }
     
     @discardableResult
-    func build(_ instructionKind: Instruction.Kind, named name: String? = nil) -> VariableOperand {
+    func build(_ instructionKind: Instruction.Kind, named name: String? = nil) -> VariableOperand? {
         precondition(currentBlock != nil, "No current basic block")
         let instruction = Instruction(kind: instructionKind)
         currentBlock!.append(instruction)
@@ -96,7 +96,7 @@ public extension IRBuilder {
         _ `operator`: Instruction.ArithmeticOperator,
         _ lhs: TensorVariable, _ rhs: TensorVariable,
         name: String? = nil) -> TensorVariable {
-        return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
+        return build(.arithOp(`operator`, lhs, rhs), named: name) as! TensorVariable
     }
 
     /// Addition of the same type
@@ -105,7 +105,7 @@ public extension IRBuilder {
         _ `operator`: Instruction.ArithmeticOperator,
         _ lhs: ScalarVariable, _ rhs: ScalarVariable,
         name: String? = nil) -> ScalarVariable {
-        return build(.binaryOp(`operator`, lhs, rhs), named: name) as! ScalarVariable
+        return build(.arithOp(`operator`, lhs, rhs), named: name) as! ScalarVariable
     }
     
     /// Addition of any operand with tensor
@@ -113,7 +113,7 @@ public extension IRBuilder {
     public func makeBinaryOperation<T: Operand>(
         _ `operator`: Instruction.ArithmeticOperator
         , _ lhs: T, _ rhs: TensorVariable, name: String? = nil) -> TensorVariable {
-        return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
+        return build(.arithOp(`operator`, lhs, rhs), named: name) as! TensorVariable
     }
     
     /// Addition of any operand with tensor
@@ -121,7 +121,7 @@ public extension IRBuilder {
     public func makeBinaryOperation<T: Operand>(
         _ `operator`: Instruction.ArithmeticOperator
         , _ lhs: TensorVariable, _ rhs: T, name: String? = nil) -> TensorVariable {
-        return build(.binaryOp(`operator`, lhs, rhs), named: name) as! TensorVariable
+        return build(.arithOp(`operator`, lhs, rhs), named: name) as! TensorVariable
     }
     
     @discardableResult
@@ -196,6 +196,11 @@ public extension IRBuilder {
             preconditionFailure("Basic block not present")
         }
         build(.uncondBranch(block))
+    }
+
+    public func makeOutput(_ variable: TensorVariable) {
+        build(.output(variable))
+        module.output = variable
     }
     
 }

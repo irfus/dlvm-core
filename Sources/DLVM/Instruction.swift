@@ -9,7 +9,7 @@
 open class Instruction : IRObject {
     public typealias Parent = BasicBlock
     public enum ComparisonOperator {
-        case lt, leq, gt, geq, eq
+        case lt, leq, gt, geq, eq, neq
     }
     public enum ArithmeticOperator {
         case add, sub, mul, div, min, max
@@ -22,7 +22,7 @@ open class Instruction : IRObject {
     }
     public enum Kind {
         case negate(Operand)
-        case binaryOp(ArithmeticOperator, Operand, Operand)
+        case arithOp(ArithmeticOperator, Operand, Operand)
         case compare(ComparisonOperator, Operand, Operand)
         case dotProduct(TensorVariable, TensorVariable)
         case product(TensorVariable, TensorVariable)
@@ -36,6 +36,7 @@ open class Instruction : IRObject {
         case output(TensorVariable)
     }
     public let kind: Kind
+    public internal(set) weak var variable: VariableOperand?
     public internal(set) weak var parent: BasicBlock?
 
     /// Initialize a standalone instruction by specifying its kind
@@ -49,11 +50,11 @@ open class Instruction : IRObject {
 // MARK: - VariableProducer
 extension Instruction : VariableProducer {
 
-    public func makeVariable(named name: String) -> VariableOperand {
+    public func makeVariable(named name: String) -> VariableOperand? {
         switch kind {
         /// Immediate-only instructions yield scalars
         case let .negate(op as ImmediateOperand),
-             let .binaryOp(_, op as ImmediateOperand, _ as ImmediateOperand):
+             let .arithOp(_, op as ImmediateOperand, _ as ImmediateOperand):
             let type: ScalarType
             switch op {
             case .bool:  type = .bool
@@ -64,13 +65,13 @@ extension Instruction : VariableProducer {
 
         /// Scalar-only instructions
         case let .negate(op as ScalarVariable),
-             let .binaryOp(_, op as ScalarVariable, _ as ScalarVariable):
+             let .arithOp(_, op as ScalarVariable, _ as ScalarVariable):
             return ScalarVariable(name: name, type: op.type, definition: self)
 
         /// Tensor instructions
         case let .negate(op as TensorVariable),
-             let .binaryOp(_, op as TensorVariable, _),
-             let .binaryOp(_, _, op as TensorVariable),
+             let .arithOp(_, op as TensorVariable, _),
+             let .arithOp(_, _, op as TensorVariable),
              let .dotProduct(op, _),
              let .activation(_, op),
              let .transformation(_, op):
@@ -109,8 +110,8 @@ extension Instruction : VariableProducer {
             return TensorVariable(name: name, dataType: variables[0].dataType,
                                   shape: newShape, definition: self)
 
-        default: /// TODO
-            preconditionFailure("Unsupported instruction \(kind)")
+        default: /// TODO: many cases like `compare` are not handled!
+            return nil
         }
     }
 

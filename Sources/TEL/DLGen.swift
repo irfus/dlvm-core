@@ -95,6 +95,8 @@ class CodeGenerator {
         /// Generate output layer
         let outputVar = build(program.output.expression, named: program.output.name)
         environment[program.output.name] = outputVar
+        
+        builder.makeOutput(outputVar)
 
         /// Done!
         return builder.module

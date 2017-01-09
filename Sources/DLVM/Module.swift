@@ -19,6 +19,8 @@ open class Module {
     let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
 
+    open internal(set) var output: TensorVariable?
+
     open lazy var entryBlock: BasicBlock? = self.basicBlocks.first
 
     open var basicBlocks: [BasicBlock] {
