@@ -2,39 +2,21 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-fileprivate extension VariableOperand {
-    /// Temporary simple solution
-    var fullDescription: String {
-        switch self {
-        case let v as TensorVariable: return v.fullDescription
-        case let v as ScalarVariable: return v.fullDescription
-        default:
-            preconditionFailure("Not possible")
-        }
-    }
-}
-
-fileprivate extension ScalarVariable {
-    var fullDescription: String {
-        return "%\(name): <\(type)>"
-    }
-}
-
-fileprivate extension TensorVariable {
-    var fullDescription: String {
-        return "%\(name): [\(dataType),\(shape)]"
-    }
-}
-
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("\(dimensions.map{String($0)}.joined(separator: "x"))")
     }
 }
 
-public extension VariableOperand {
+public extension ScalarVariable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("%\(name)")
+        target.write("\(type) %\(name)")
+    }
+}
+
+public extension TensorVariable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("[\(dataType),\(shape)] %\(name)")
     }
 }
 
@@ -55,11 +37,13 @@ extension DataType : TextOutputStreamable {
 
 extension ScalarType : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("<")
         switch self {
         case .bool: target.write("bool")
         case .int: target.write("int")
         case .float: target.write("float")
         }
+        target.write(">")
     }
 }
 
@@ -67,11 +51,11 @@ extension ImmediateOperand : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .bool(b):
-            target.write("bool \(b)")
+            target.write("\(type) \(b)")
         case let .int(i):
-            target.write("int \(i)")
+            target.write("\(type) \(i)")
         case let .float(f):
-            target.write("float \(f)")
+            target.write("\(type) \(f)")
         }
     }
 }
@@ -146,7 +130,7 @@ extension Instruction.ComparisonOperator : TextOutputStreamable {
 extension Instruction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         if let variable = self.variable {
-            target.write("\(variable.fullDescription) = ")
+            target.write("%\(variable.name) = ")
         }
         switch kind {
         // TODO
@@ -208,11 +192,11 @@ extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n\n")
         for variable in externalVariables {
-            target.write("extern \(variable.fullDescription)\n")
+            target.write("extern \(variable)\n")
         }
         target.write("\n")
         for variable in definedVariables {
-            target.write("define \(variable.fullDescription) = \(variable.definition!)\n")
+            target.write("define \(variable) = \(variable.definition!)\n")
         }
         target.write("\n")
         for bb in basicBlocks {
