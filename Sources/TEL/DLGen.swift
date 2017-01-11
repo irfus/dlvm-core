@@ -176,7 +176,7 @@ fileprivate extension Constant {
 }
 
 fileprivate extension Expression.InfixOperator {
-    var instructionOperator: Instruction.ArithmeticOperator {
+    var instructionOperator: InstructionOld.ArithmeticOperator {
         switch self {
         case .add: return .add
         case .sub: return .sub

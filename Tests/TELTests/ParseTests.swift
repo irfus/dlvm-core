@@ -38,10 +38,10 @@ class ParseTests : XCTestCase {
 
     func testParseMacro() {
         do {
-            _ = try Macro.parser.parse("#type float8")
-            _ = try Macro.parser.parse("#type float16")
-            _ = try Macro.parser.parse("#type int32")
-            _ = try Macro.parser.parse("#type int64")
+            _ = try Attribute.parser.parse("#type float8")
+            _ = try Attribute.parser.parse("#type float16")
+            _ = try Attribute.parser.parse("#type int32")
+            _ = try Attribute.parser.parse("#type int64")
         }
         catch {
             XCTFail("\(error)")

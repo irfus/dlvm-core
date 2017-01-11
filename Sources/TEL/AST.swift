@@ -6,7 +6,7 @@
 //
 //
 
-public enum Macro {
+public enum Attribute {
     case name(String)
     case type(String)
 }
@@ -62,7 +62,7 @@ public indirect enum Declaration {
 }
 
 public enum Statement {
-    case macro(Macro)
+    case attribute(Attribute)
     case declaration(Declaration)
 }
 
@@ -135,7 +135,7 @@ extension Declaration : CustomStringConvertible {
     }
 }
 
-extension Macro : CustomStringConvertible {
+extension Attribute: CustomStringConvertible {
 
     public var description: String {
         switch self {
@@ -150,7 +150,7 @@ extension Statement : CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case let .macro(m): return m.description
+        case let .attribute(m): return m.description
         case let .declaration(decl): return decl.description
         }
     }
