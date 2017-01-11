@@ -29,7 +29,7 @@ public enum SemanticError : Error {
     case operatorShapeMismatch(Expression)
     case reshapingSizeMismatch(Expression, size: Int, expected: Int)
     case shapeMismatch(Expression, expected: TensorShape, in: Variable)
-    case macroNotOnTop(Macro)
+    case macroNotOnTop(Attribute)
     case argumentCountMismatch(Expression, count: Int, expected: Int)
     case functionUnknown(Expression, String)
     case inputMissing
@@ -211,7 +211,7 @@ public class Program {
     static func check(_ statement: Statement, in env: inout TypeEnvironment) throws {
         switch statement {
         /// Type macro
-        case let .macro(macro):
+        case let .attribute(macro):
             try check(macro, in: &env)
         /// Declaration
         case let .declaration(decl):
@@ -221,7 +221,7 @@ public class Program {
 
     /// Check macro
     /// - Throws: SemanticError
-    static func check(_ macro: Macro, in env: inout TypeEnvironment) throws {
+    static func check(_ macro: Attribute, in env: inout TypeEnvironment) throws {
         guard env.isEmpty else {
             throw SemanticError.macroNotOnTop(macro)
         }

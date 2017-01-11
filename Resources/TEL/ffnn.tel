@@ -1,8 +1,8 @@
-// A simple recurrent neural network described in TEL
-#name ffnn
+// A simple feed-forward neural network described in TEL
+@name ffnn
 
 // Universal data type for data flow
-#type float16
+@type float16
 
 // Parameter declarations
 W1: param[4x4] = random(0.0, 1.0)
@@ -18,8 +18,8 @@ i1: in[4x1]
 i2: in[4x1]
 
 // Hidden layers
-h1: hidden[4x1] = sigmoid(W1 i1 + b1)
-h2: hidden[8x1] = tanh(W2 (1 - [h1, i2]) + b2)
+h1: hidden[4x1] = sigmoid(W1 • i1 + b1)
+h2: hidden[8x1] = tanh(W2 • (1 - [h1, i2]) + b2)
 
 // Output layer
-o: out[1x8] = softmax(W3 h2 + b3) : [1x8]
+o: out[1x8] = softmax(W3 • h2 + b3) as [1x8]

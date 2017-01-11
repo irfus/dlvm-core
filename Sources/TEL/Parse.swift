@@ -34,18 +34,18 @@ extension Variable : Parsible {
       | identifier ^^ Variable.simple
 }
 
-extension Macro : Parsible {
+extension Attribute: Parsible {
 
-    public static let typeParser: Parser<Macro> =
+    public static let typeParser: Parser<Attribute> =
         "type" ~~> (spaces ~~> identifier.! .. "a data type")
-     ^^ Macro.type
+     ^^ Attribute.type
 
-    public static let nameParser: Parser<Macro> =
+    public static let nameParser: Parser<Attribute> =
         "name" ~~> (spaces ~~> identifier.! .. "a name")
-     ^^ Macro.name
+     ^^ Attribute.name
 
-    public static let parser: Parser<Macro> =
-        "#" ~~> (typeParser | nameParser).! .. "a macro"
+    public static let parser: Parser<Attribute> =
+        "@" ~~> (typeParser | nameParser).! .. "an attribute"
 }
 
 extension Role : Parsible {
@@ -143,8 +143,8 @@ extension Expression : Parsible {
     ///
 
     private static let shapeParser: Parser<(Expression) -> Expression> =
-        spaces.? ~~> Lexer.token(":") ~~> spaces.? ~~>
-        number.nonbacktracking()
+        spaces ~~> Lexer.token("as") ~~>
+        (spaces ~~> number).nonbacktracking()
               .many(separatedBy: Lexer.character("x"))
               .between(Lexer.character("[").!, Lexer.character("]").! .. "]")
            .. "a shape, e.g. [2x4], [1x2x3]"
@@ -153,11 +153,12 @@ extension Expression : Parsible {
     private static let reshapeParser: Parser<Expression> =
         termParser.suffixed(by: shapeParser)
     
-    /// Tensor product: W x
+    /// Tensor product: W . x | W • x
     /// - Priority: high
     private static let productParser: Parser<Expression> =
         reshapeParser.infixedLeft(by:
-            spaces ^^= Expression.product)
+            Lexer.anyCharacter(in: [".", "•", "⊗"]).amid(spaces.?)
+            ^^= Expression.product)
 
     /// Tensor element-wise multiplication: x * y
     /// - Priority: medium
@@ -181,7 +182,7 @@ extension Expression : Parsible {
 
 extension Statement : Parsible {
     public static let parser: Parser<Statement> =
-        Macro.parser         ^^ Statement.macro
+        Attribute.parser         ^^ Statement.attribute
       | Declaration.parser   ^^ Statement.declaration
      .. "a statement"
 }
