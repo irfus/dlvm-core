@@ -6,31 +6,55 @@
 //
 //
 
-public struct DataType : Equatable {
-    public enum Base {
-        case bool, int, float
-    }
-    
-    public let base: Base
+public enum TypeBase {
+    case bool, int, float
+}
+
+public protocol DataType : TextOutputStreamable {
+    var base: TypeBase { get }
+    var size: Int { get }
+}
+
+public struct ScalarType : DataType, Equatable {
+    public let base: TypeBase
     public let size: Int
-    
-    public static func ~=(lhs: DataType, rhs: DataType) -> Bool {
+
+    public static func ~=(lhs: ScalarType, rhs: ScalarType) -> Bool {
         return lhs.base == rhs.base
     }
     
-    public static func ==(lhs: DataType, rhs: DataType) -> Bool {
+    public static func ==(lhs: ScalarType, rhs: ScalarType) -> Bool {
         return lhs.base == rhs.base && lhs.size == rhs.size
     }
 
-    public static var bool: DataType {
+    public func makeTensorType(with shape: TensorShape) -> TensorType {
+        return TensorType(base: base, size: size, shape: shape)
+    }
+}
+
+extension ScalarType {
+    public static var bool: ScalarType {
         return self.init(base: .bool, size: 1)
     }
-
-    public static func int(_ size: Int) -> DataType {
+    public static func int(_ size: Int) -> ScalarType {
         return self.init(base: .int, size: size)
     }
 
-    public static func float(_ size: Int) -> DataType {
+    public static func float(_ size: Int) -> ScalarType {
         return self.init(base: .float, size: size)
+    }
+}
+
+public struct TensorType : DataType, Equatable {
+    public var base: TypeBase
+    public var size: Int
+    public var shape: TensorShape
+
+    public static func ==(lhs: TensorType, rhs: TensorType) -> Bool {
+        return lhs.base == rhs.base && lhs.size == rhs.size
+    }
+
+    public var scalarType: ScalarType {
+        return ScalarType(base: base, size: size)
     }
 }

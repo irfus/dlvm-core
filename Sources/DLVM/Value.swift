@@ -13,17 +13,16 @@
 public protocol Value : class {
     var name: String? { get set }
     var type: DataType { get set }
-    var shape: TensorShape? { get set }
 }
 
 public extension Value {
 
     public var isTensor: Bool {
-        return shape != nil
+        return type is TensorType
     }
 
     public var isScalar: Bool {
-        return shape == nil
+        return type is ScalarType
     }
 
 }
@@ -32,43 +31,48 @@ public enum Immediate {
     case int(Int), float(Float), bool(Bool)
 }
 
-public protocol Constant : Value {
+public class Input : Value {
+    public var name: String?
+    public var type: DataType
 
+    public init(type: DataType) {
+        self.type = type
+    }
+}
+
+public class Parameter : Value {
+    public var name: String?
+    public var type: DataType
+
+    fileprivate init(type: DataType) {
+        self.type = type
+    }
 }
 
 ///
 /// Constant types
 ///
 
-public class ConstantScalar : Constant {
-    public var name: String? = nil
-    public var type: DataType
-    public var shape: TensorShape? = nil
+public class ScalarParameter : Parameter {
     public var immediate: Immediate
 
     public init(type: DataType, immediate: Immediate) {
-        self.type = type
         self.immediate = immediate
+        super.init(type: type)
     }
 }
 
-public enum TensorInitializer {
-    case randomized(Immediate, Immediate)
-    case repeated(Immediate)
-    case elements([Immediate])
-}
+public class TensorParameter : Parameter {
+    public enum Initializer {
+        case randomized(Immediate, Immediate)
+        case repeated(Immediate)
+        case elements([Immediate])
+    }
 
-public class ConstantTensor : Constant {
-    public var name: String? = nil
-    public var shape: TensorShape?
-    public var type: DataType
-    public var initializer: TensorInitializer
-
-
-    public init(type: DataType, shape: TensorShape,
-                initializer: TensorInitializer) {
-        self.type = type
-        self.shape = shape
+    public var initializer: Initializer
+    
+    public init(type: DataType, initializer: Initializer) {
         self.initializer = initializer
+        super.init(type: type)
     }
 }

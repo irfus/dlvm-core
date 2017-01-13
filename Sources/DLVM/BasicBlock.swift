@@ -27,8 +27,8 @@ open class BasicBlock : IRCollection, IRObject {
         self.name = name
     }
 
-    public init(name: String, instructions: [Instruction]) {
-        self.name = name
+    public convenience init(name: String, instructions: [Instruction]) {
+        self.init(name: name)
         self.instructions.addObjects(from: instructions)
     }
 

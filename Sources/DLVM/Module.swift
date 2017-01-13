@@ -15,7 +15,8 @@ open class Module {
 
     open var name: String
     
-    var variableTable: [String : Constant] = [:]
+    var inputTable: [String : Input] = [:]
+    var parameterTable: [String : Parameter] = [:]
     let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
 
@@ -29,13 +30,22 @@ open class Module {
         self.name = name
     }
 
-    public init(name: String, variables: [Constant], basicBlocks: [BasicBlock]) {
+    public init(name: String, inputs: [Input], parameters: [Parameter],
+                basicBlocks: [BasicBlock]) {
         self.name = name
-        for variable in variables {
-            if let name = variable.name {
-                variableTable[name] = variable
+        /// Add inputs
+        for input in inputs {
+            if let name = input.name {
+                inputTable[name] = input
             }
         }
+        /// Add parameters
+        for parameter in parameters {
+            if let name = parameter.name {
+                parameterTable[name] = parameter
+            }
+        }
+        /// Add basic blocks
         self.basicBlockSet.addObjects(from: basicBlocks)
         for bb in basicBlocks {
             basicBlockTable[bb.name] = bb
@@ -68,46 +78,69 @@ extension Module {
     }
     
 }
-//
-//// MARK: - Global variables
-//extension Module {
-//
-//    /// Global variables
-//    open var variables: AnyCollection<Value> {
-//        return AnyCollection(variableTable.values)
-//    }
-//
-//    open var externalVariables: AnyCollection<VariableOperand> {
-//        let variables = variableTable.values.filter { $0.definition == nil }
-//        return AnyCollection(variables)
-//    }
-//
-//    open var definedVariables: AnyCollection<VariableOperand> {
-//        let variables = variableTable.values.filter { $0.definition != nil }
-//        return AnyCollection(variables)
-//    }
-//
-//    open func add(_ variable: VariableOperand) {
-//        precondition(!variableTable.keys.contains(variable.name),
-//                     "Variable named \(variable.name) already exists")
-//        precondition(!(variable.definition is Instruction),
-//                     "Global variable definition cannot be an instruction")
-//        variableTable[variable.name] = variable
-//    }
-//
-//    open func variable(named name: String) -> VariableOperand? {
-//        return variableTable[name]
-//    }
-//
-//    open func remove(_ variable: VariableOperand) {
-//        variableTable.removeValue(forKey: variable.name)
-//    }
-//
-//    @discardableResult
-//    open func removeVariable(named name: String) -> VariableOperand? {
-//        let variable = variableTable[name]
-//        variableTable.removeValue(forKey: name)
-//        return variable
-//    }
-//
-//}
+
+// MARK: - Global variables
+extension Module {
+
+    /// Global inputs
+    open var inputs: AnyCollection<Input> {
+        return AnyCollection(inputTable.values)
+    }
+
+    open func add(_ input: Input) {
+        if let name = input.name { /// Ignore nameless inputs
+            inputTable[name] = input
+        }
+    }
+
+    open func input(named name: String) -> Input? {
+        return inputTable[name]
+    }
+
+    open func remove(_ input: Input) {
+        if let name = input.name {
+            inputTable.removeValue(forKey: name)
+        }
+    }
+
+    @discardableResult
+    open func removeVariable(named name: String) -> Input? {
+        let input = inputTable[name]
+        inputTable.removeValue(forKey: name)
+        return input
+    }
+
+}
+
+// MARK: - Global variables
+extension Module {
+
+    /// Global inputs
+    open var parameters: AnyCollection<Parameter> {
+        return AnyCollection(parameterTable.values)
+    }
+
+    open func add(_ parameter: Parameter) {
+        if let name = parameter.name { /// Ignore nameless parameters
+            parameterTable[name] = parameter
+        }
+    }
+
+    open func parameter(named name: String) -> Parameter? {
+        return parameterTable[name]
+    }
+
+    open func remove(_ parameter: Parameter) {
+        if let name = parameter.name {
+            parameterTable.removeValue(forKey: name)
+        }
+    }
+
+    @discardableResult
+    open func removeVariable(named name: String) -> Parameter? {
+        let parameter = parameterTable[name]
+        parameterTable.removeValue(forKey: name)
+        return parameter
+    }
+
+}
