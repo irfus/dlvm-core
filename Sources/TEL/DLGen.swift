@@ -9,6 +9,8 @@
 
 import DLVM
 
+/*
+
 public extension Program {
     public func makeModule() -> Module {
         let cgen = CodeGenerator(program: self)
@@ -18,9 +20,9 @@ public extension Program {
 }
 
 struct CodeGenEnvironment {
-    var variables: [String : VariableOperand] = [:]
+    var variables: [String : Value] = [:]
     
-    subscript(key: String) -> VariableOperand? {
+    subscript(key: String) -> Value? {
         get {
             return variables[key]
         }
@@ -39,7 +41,8 @@ class CodeGenerator {
     init(program: Program) {
         self.program = program
     }
-    
+
+    /*
     func makeModule() -> Module {
         /// Declare input
         for input in program.inputs {
@@ -162,6 +165,7 @@ class CodeGenerator {
             preconditionFailure("Unsupported expression \(expression). This shouldn't have passed Sema.")
         }
     }
+    */
 
 }
 
@@ -176,7 +180,7 @@ fileprivate extension Constant {
 }
 
 fileprivate extension Expression.InfixOperator {
-    var instructionOperator: InstructionOld.ArithmeticOperator {
+    var instructionOperator: Instruction.ArithmeticOperator {
         switch self {
         case .add: return .add
         case .sub: return .sub
@@ -185,3 +189,5 @@ fileprivate extension Expression.InfixOperator {
         }
     }
 }
+
+ */
