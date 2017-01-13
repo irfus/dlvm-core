@@ -6,128 +6,192 @@
 //
 //
 
-open class Instruction : IRObject {
-    public typealias Parent = BasicBlock
-    public enum ComparisonOperator {
-        case lt, leq, gt, geq, eq, neq
-    }
-    public enum ArithmeticOperator {
-        case add, sub, mul, div, min, max
-    }
-    public enum ActivationFunction {
-        case sigmoid, relu, tanh
-    }
-    public enum TransformationFunction {
-        case log, softmax
-    }
-    public enum Kind {
-        case negate(Operand)
-        case arithOp(ArithmeticOperator, Operand, Operand)
-        case compare(ComparisonOperator, Operand, Operand)
-        case dotProduct(TensorVariable, TensorVariable)
-        case product(TensorVariable, TensorVariable)
-        case activation(ActivationFunction, TensorVariable)
-        case transformation(TransformationFunction, TensorVariable)
-        case concat([TensorVariable], dimension: Int)
-        case phi([VariableOperand])
-        case shapeCast(TensorShape, TensorVariable)
-        case condBranch(Operand, then: BasicBlock, else: BasicBlock)
-        case uncondBranch(BasicBlock)
-        case output(TensorVariable)
-    }
-    public let kind: Kind
-    public internal(set) weak var variable: VariableOperand?
-    public internal(set) weak var parent: BasicBlock?
+//open class Instruction : Value, IRObject {
+//    public typealias Parent = BasicBlock
+//    public enum ComparisonOperator {
+//        case lt, leq, gt, geq, eq, neq
+//    }
+//    public enum ArithmeticOperator {
+//        case add, sub, mul, div, min, max
+//    }
+//    public enum ActivationFunction {
+//        case sigmoid, relu, tanh
+//    }
+//    public enum TransformationFunction {
+//        case log, softmax
+//    }
+//    public enum Kind {
+//        case negate(Value)
+//        case arithOp(ArithmeticOperator, Operand, Operand)
+//        case compare(ComparisonOperator, Operand, Operand)
+//        case dotProduct(TensorVariable, TensorVariable)
+//        case product(TensorVariable, TensorVariable)
+//        case activation(ActivationFunction, TensorVariable)
+//        case transformation(TransformationFunction, TensorVariable)
+//        case concat([TensorVariable], dimension: Int)
+//        case phi([VariableOperand])
+//        case shapeCast(TensorShape, TensorVariable)
+//        case condBranch(Operand, then: BasicBlock, else: BasicBlock)
+//        case uncondBranch(BasicBlock)
+//        case output(TensorVariable)
+//    }
+//    public let kind: Kind
+//    public internal(set) weak var variable: VariableOperand?
+//    public internal(set) weak var parent: BasicBlock?
+//
+//    /// Initialize a standalone instruction by specifying its kind
+//    ///
+//    /// - Parameter kind: kind of instruction
+//    public init(kind: Kind) {
+//        self.kind = kind
+//    }
+//}
 
-    /// Initialize a standalone instruction by specifying its kind
-    ///
-    /// - Parameter kind: kind of instruction
-    public init(kind: Kind) {
-        self.kind = kind
-    }
+public enum ComparisonPredicate {
+    case lessThan, lessThanOrEqualTo, greaterThan, greaterThanOrEqualTo, equalTo, notEqualTo
 }
 
-// MARK: - VariableProducer
-extension Instruction : VariableProducer {
+public enum ArithmeticOperator {
+    case add, subtract, multiply, divide, min, max
+}
 
-    public func makeVariable(named name: String) -> VariableOperand? {
-        switch kind {
-        /// Immediate-only instructions yield scalars
-        case let .negate(op as ImmediateOperand),
-             let .arithOp(_, op as ImmediateOperand, _ as ImmediateOperand):
-            let type: ScalarType
-            switch op {
-            case .bool:  type = .bool
-            case .int:   type = .int
-            case .float: type = .float
-            }
-            return ScalarVariable(name: name, type: type, definition: self)
+public enum ElementwiseFunction {
+    case sigmoid, relu, tanh, log
+}
 
-        /// Scalar-only instructions
-        case let .negate(op as ScalarVariable),
-             let .arithOp(_, op as ScalarVariable, _ as ScalarVariable):
-            return ScalarVariable(name: name, type: op.type, definition: self)
+public enum AggregateFunction {
+    case softmax
+}
 
-        /// Tensor instructions
-        case let .negate(op as TensorVariable),
-             let .arithOp(_, op as TensorVariable, _),
-             let .arithOp(_, _, op as TensorVariable),
-             let .dotProduct(op, _),
-             let .activation(_, op),
-             let .transformation(_, op):
-            return TensorVariable(name: name, dataType: op.dataType,
-                                  shape: op.shape, definition: self)
+public class Instruction : Value, IRObject {
+    public var name: String?
+    public var type: DataType
+    public var shape: TensorShape?
+    public weak var parent: BasicBlock?
 
-        case let .product(lhs, rhs):
-            let newShape = lhs.shape.product(with: rhs.shape)!
-            return TensorVariable(name: name, dataType: lhs.dataType,
-                                  shape: newShape, definition: self)
+    fileprivate init(name: String? = nil, type: DataType,
+                     shape: TensorShape?, parent: BasicBlock? = nil) {
+        self.name = name
+        self.type = type
+        self.shape = shape
+        self.parent = parent
+    }
 
-        /// Cast instruction
-        case let .shapeCast(targetShape, variable):
-            return TensorVariable(name: variable.name, dataType: variable.dataType,
-                                  shape: targetShape, definition: self)
-
-        /// Phi node
-        /// Args are either all tensors (of the same shape) or all scalars
-        case let .phi(vars):
-            let firstVar = vars[0]
-            switch firstVar {
-            case let arg as TensorVariable:
-                return TensorVariable(name: name, dataType: arg.dataType,
-                                      shape: arg.shape, definition: self)
-            case let arg as ScalarVariable:
-                return ScalarVariable(name: name, type: arg.type, definition: self)
-            default:
-                preconditionFailure("Unsupported variable type")
-            }
-
-        case let .concat(variables, dimension: dim):
-            let firstShape = variables[0].shape
-            let newShape = variables.dropFirst().reduce(firstShape) { acc, x in
-                acc.concatenating(with: x.shape, alongDimension: dim)!
-            }
-            return TensorVariable(name: name, dataType: variables[0].dataType,
-                                  shape: newShape, definition: self)
-
-        default: /// TODO: many cases like `compare` are not handled!
-            return nil
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        if let name = name {
+            target.write("%\(name) = ")
         }
     }
-
 }
 
-// MARK: - Hashable
-extension Instruction : Hashable {
+public class NegateInstruction : Instruction {
+    public unowned var operand: Value
 
-    /// Equatable by reference
-    public static func == (lhs: Instruction, rhs: Instruction) -> Bool {
-        return lhs === rhs
+    public init(operand: Value) {
+        self.operand = operand
+        super.init(type: operand.type, shape: nil)
     }
-    
-    /// Hashable by object identifier
-    public var hashValue: Int {
-        return ObjectIdentifier(self).hashValue
+
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
+        super.write(to: &target)
+        target.write("neg \(operand)")
     }
-    
+}
+
+public class ArithmeticInstruction : Instruction {
+    public var `operator`: ArithmeticOperator
+    public unowned var leftOperand, rightOperand: Value
+
+    public init(operator: ArithmeticOperator, leftOperand: Value, rightOperand: Value) {
+        self.operator = `operator`
+        self.leftOperand = leftOperand
+        self.rightOperand = rightOperand
+        super.init(type: leftOperand.type, shape: nil)
+    }
+
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("\(`operator`) \(leftOperand) \(rightOperand)")
+    }
+}
+
+public class ComparisonInstruction : Instruction {
+    public var predicate: ComparisonPredicate
+    public unowned var leftOperand, rightOperand: Value
+
+    public init(predicate: ComparisonPredicate, leftOperand: Value, rightOperand: Value) {
+        self.predicate = predicate
+        self.leftOperand = leftOperand
+        self.rightOperand = rightOperand
+        super.init(type: .bool, shape: nil)
+    }
+
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("\(predicate) \(leftOperand) \(rightOperand)")
+    }
+}
+
+public class TensorProductInstruction : Instruction {
+    public unowned var leftOperand, rightOperand: Value
+
+    public init(leftOperand: Value, rightOperand: Value) {
+        self.leftOperand = leftOperand
+        self.rightOperand = rightOperand
+        super.init(type: .bool, shape: nil)
+    }
+
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("tmul \(leftOperand) \(rightOperand)")
+    }
+}
+
+public class ConcatenationInstruction : Instruction {
+    public var operands: [Value]
+    public var axis: Int
+
+    public init(operands: [Value], axis: Int) {
+        precondition(!operands.isEmpty)
+        self.operands = Array(operands)
+        self.axis = axis
+        let firstShape = operands.first?.shape
+        let shape = operands.dropFirst().reduce(firstShape, { acc, x in
+            x.shape.flatMap {
+                acc?.concatenating(with: $0, alongDimension: axis)
+            }
+        })
+        super.init(type: operands[0].type, shape: shape)
+    }
+
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("concat \(operands.map{"\($0)"}.joined(separator: ", "))")
+    }
+}
+
+public class ElementwiseCallInstruction : Instruction {
+    public var function: ElementwiseFunction
+    public unowned var operand: Value
+
+    public init(function: ElementwiseFunction, operand: Value) {
+        self.function = function
+        self.operand = operand
+        super.init(type: .bool, shape: operand.shape)
+    }
+
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("\(function) \(operand)")
+    }
+}
+
+public class ShapeCastInstruction : Instruction {
+    public var operand: Value
+    public var targetShape: TensorShape
+
+    public init(operand: Value, targetShape: TensorShape) {
+        self.operand = operand
+        self.targetShape = targetShape
+        super.init(type: operand.type, shape: targetShape)
+    }
+
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("shapecast \(operand) to \(targetShape)")
+    }
 }

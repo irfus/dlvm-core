@@ -6,45 +6,31 @@
 //
 //
 
-public enum DataType : String {
-    case int8 = "int8"
-    case int16 = "int16"
-    case int32 = "int32"
-    case int64 = "int64"
-    case float8 = "float8"
-    case float16 = "float16"
-    case float32 = "float32"
-    case float64 = "float64"
-
-    public var isInt: Bool {
-        switch self {
-        case .int8, .int16, .int32, .int64:
-            return true
-        default:
-            return false
-        }
+public struct DataType : Equatable {
+    public enum Base {
+        case bool, int, float
+    }
+    
+    public let base: Base
+    public let size: Int
+    
+    public static func ~=(lhs: DataType, rhs: DataType) -> Bool {
+        return lhs.base == rhs.base
+    }
+    
+    public static func ==(lhs: DataType, rhs: DataType) -> Bool {
+        return lhs.base == rhs.base && lhs.size == rhs.size
     }
 
-    public var isFloat: Bool {
-        return !isInt
+    public static var bool: DataType {
+        return self.init(base: .bool, size: 1)
     }
 
-    public static func ~=(lhs: DataType, rhs: ScalarType) -> Bool {
-        switch rhs {
-        case .int where lhs.isInt, .float where lhs.isFloat:
-            return true
-        default:
-            return false
-        }
+    public static func int(_ size: Int) -> DataType {
+        return self.init(base: .int, size: size)
     }
-}
 
-public enum ScalarType {
-    case bool
-    case int
-    case float
-}
-
-public protocol TensorBase {
-    static var dataType: DataType { get }
+    public static func float(_ size: Int) -> DataType {
+        return self.init(base: .float, size: size)
+    }
 }
