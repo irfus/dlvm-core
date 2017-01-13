@@ -8,7 +8,7 @@ extension TensorShape : TextOutputStreamable {
     }
 }
 
-extension DataType : TextOutputStreamable {
+extension ScalarType : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch base {
         case .float: target.write("f")
@@ -16,6 +16,19 @@ extension DataType : TextOutputStreamable {
         case .bool: target.write("b")
         }
         size.description.write(to: &target)
+    }
+}
+
+extension TensorType : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch base {
+        case .float: target.write("f")
+        case .int: target.write("i")
+        case .bool: target.write("b")
+        }
+        size.description.write(to: &target)
+        target.write(" ")
+        shape.write(to: &target)
     }
 }
 
