@@ -12,10 +12,6 @@ do {
     print("Parse\n", ast)
     let program = try Program(parse: ast)
     print("Type-checking passed")
-    let module = program.makeModule()
-    var string = ""
-    module.write(to: &string)
-    print(string)
 }
 catch {
     print(error)
