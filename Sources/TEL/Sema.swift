@@ -162,10 +162,10 @@ extension DataType {
         case "int16": self = .int(16)
         case "int32": self = .int(32)
         case "int64": self = .int(64)
-        case "float8": self = .int(8)
-        case "float16": self = .int(16)
-        case "float32": self = .int(32)
-        case "float64": self = .int(64)
+        case "float8": self = .float(8)
+        case "float16": self = .float(16)
+        case "float32": self = .float(32)
+        case "float64": self = .float(64)
         default: return nil
         }
     }
@@ -193,7 +193,7 @@ public class Program {
         guard !env.inputs.isEmpty else {
             throw SemanticError.inputMissing
         }
-        guard layers.contains(where: {$0.isOutput}) else {
+        guard env.layers.contains(where: {$0.isOutput}) else {
             throw SemanticError.outputMissing
         }
         guard let moduleName = env.moduleName else {

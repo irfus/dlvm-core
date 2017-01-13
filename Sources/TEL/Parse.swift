@@ -144,7 +144,8 @@ extension Expression : Parsible {
 
     private static let shapeParser: Parser<(Expression) -> Expression> =
         spaces ~~> Lexer.token("as") ~~>
-        (spaces ~~> number).nonbacktracking()
+        (spaces.! .. "a space followed by a shape") ~~>
+        number.nonbacktracking()
               .many(separatedBy: Lexer.character("x"))
               .between(Lexer.character("[").!, Lexer.character("]").! .. "]")
            .. "a shape, e.g. [2x4], [1x2x3]"
