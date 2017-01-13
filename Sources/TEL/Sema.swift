@@ -7,7 +7,7 @@
 //  This file contains type checker and semantic analyzer
 //
 
-import enum DLVM.DataType
+import struct DLVM.DataType
 import struct DLVM.TensorShape
 
 public enum SemanticError : Error {
@@ -15,7 +15,6 @@ public enum SemanticError : Error {
     case dataTypeUnknown(String)
     case moduleNameRedeclared
     case moduleNameMissing
-    case outputRedeclared(Variable)
     case initializerMissing(Variable)
     case initializerUnexpected(Variable)
     case variableRedeclared(Variable)
@@ -67,6 +66,7 @@ public struct Layer : Node {
     public let name: String
     public let shape: TensorShape
     public let expression: Expression
+    public let isOutput: Bool
 }
 
 struct RecurrenceContext {
@@ -86,16 +86,8 @@ struct TypeEnvironment {
     private(set) var inputs: [Input] = []
     private(set) var layers: [Layer] = []
     
-    var output: Layer? {
-        willSet {
-            if let newValue = newValue {
-                nodes[newValue.name] = newValue
-            }
-        }
-    }
-
     /// Default data type: float32
-    var dataType: DataType = .float32 {
+    var dataType: DataType = .float(32) {
         didSet {
             isCustomDataType = true
         }
@@ -163,6 +155,22 @@ struct TypeEnvironment {
     }
 }
 
+extension DataType {
+    init?(name: String) {
+        switch name {
+        case "int8": self = .int(8)
+        case "int16": self = .int(16)
+        case "int32": self = .int(32)
+        case "int64": self = .int(64)
+        case "float8": self = .int(8)
+        case "float16": self = .int(16)
+        case "float32": self = .int(32)
+        case "float64": self = .int(64)
+        default: return nil
+        }
+    }
+}
+
 /// Program semantics
 /// TODO: support recurrence
 public class Program {
@@ -170,11 +178,10 @@ public class Program {
     public var moduleName: String
     
     /// Default type: float32
-    public internal(set) var dataType: DataType = .float32
+    public internal(set) var dataType: DataType = .float(32)
     
     public internal(set) var inputs: [Input] = []
     public internal(set) var layers: [Layer] = []
-    public internal(set) var output: Layer
     public internal(set) var parameters: [Parameter] = []
 
     public init(parse: ProgramTree) throws {
@@ -186,7 +193,7 @@ public class Program {
         guard !env.inputs.isEmpty else {
             throw SemanticError.inputMissing
         }
-        guard let output = env.output else {
+        guard layers.contains(where: {$0.isOutput}) else {
             throw SemanticError.outputMissing
         }
         guard let moduleName = env.moduleName else {
@@ -195,7 +202,6 @@ public class Program {
         /// Initialize properties
         self.inputs = env.inputs
         self.layers = env.layers
-        self.output = output
         self.parameters = env.parameters
         self.moduleName = moduleName
     }
@@ -230,7 +236,7 @@ public class Program {
             guard !env.isCustomDataType else {
                 throw SemanticError.dataTypeRedeclared
             }
-            guard let type = DataType(rawValue: typeName) else {
+            guard let type = DataType(name: typeName) else {
                 throw SemanticError.dataTypeUnknown(typeName)
             }
             env.dataType = type
@@ -265,11 +271,6 @@ public class Program {
              let .assignment(variable, .parameter, _, nil):
             throw SemanticError.initializerMissing(variable)
 
-        /// If more than one output, error
-        case let .assignment(variable, .output, _, _)
-            where env.contains(variable.name):
-            throw SemanticError.outputRedeclared(variable)
-
         /// ## Grand environment filling begin ##
             
         /// Input
@@ -288,8 +289,8 @@ public class Program {
             switch expr {
 
             /// Constant type mismatch
-            case .constant(.int(_)) where !env.dataType.isInt,
-                 .constant(.float(_)) where !env.dataType.isFloat:
+            case .constant(.int(_)) where env.dataType.base != .int,
+                 .constant(.float(_)) where env.dataType.base != .float:
                 throw SemanticError.constantTypeMismatch(expr, expected: env.dataType)
 
             /// Int constant
@@ -328,7 +329,8 @@ public class Program {
             try check(expr, variable: variable, expectedShape: shape, in: &env)
             let layer = Layer(name: variable.name,
                               shape: shape,
-                              expression: expr)
+                              expression: expr,
+                              isOutput: false)
             env.insert(layer)
 
         case let .assignment(variable, .output, shapeComponents, expr?):
@@ -336,8 +338,9 @@ public class Program {
             try check(expr, variable: variable, expectedShape: shape, in: &env)
             let output = Layer(name: variable.name,
                                shape: shape,
-                               expression: expr)
-            env.output = output
+                               expression: expr,
+                               isOutput: true)
+            env.insert(output)
 
         case let .recurrence(timeStep, decls):
             /// Recurrent time step ('t', for example) is bound only within the
@@ -363,8 +366,6 @@ public class Program {
             }
             /// Pop recurrent context to parent scope
             env.popRecurrence()
-
-        default: break
         }
     }
 
@@ -396,7 +397,7 @@ public class Program {
              let .infixOp(_, .constant(const), sideExpr):
             let sideShape = try shape(of: sideExpr, in: &env)
             /// If a float constant is used under an int context, error
-            if case .float(_) = const, !env.dataType.isInt {
+            if case .float(_) = const, env.dataType.base == .int {
                 throw SemanticError.cannotInferShape(expression)
             }
             return sideShape
