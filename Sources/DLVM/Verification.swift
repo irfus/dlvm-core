@@ -6,4 +6,14 @@
 //
 //
 
+public extension Module {
 
+    public enum VerificationError : Error {
+        
+    }
+
+    public func verify() throws {
+        /// TODO
+    }
+    
+}

@@ -6,6 +6,8 @@
 //
 //
 
+/*
+
 public class IRBuilder {
     public let module: Module
     public var currentBlock: BasicBlock?
@@ -151,8 +153,8 @@ public extension IRBuilder {
     
     @discardableResult
     public func makeTransformation(
-        _ function: Instruction.TransformationFunction, _ argument: TensorVariable,
-        name: String? = nil) -> TensorVariable {
+            _ function: Instruction.TransformationFunction, _ argument: TensorVariable,
+            name: String? = nil) -> TensorVariable {
         return build(.transformation(function, argument), named: name) as! TensorVariable
     }
     
@@ -204,3 +206,4 @@ public extension IRBuilder {
     }
     
 }
+*/

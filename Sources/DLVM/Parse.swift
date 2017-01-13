@@ -19,4 +19,3 @@ fileprivate let linebreaks = (newLines | lineComments).amid(spaces.?)+ .. "a lin
 protocol Parsible {
     static var parser: Parser<Self> { get }
 }
-

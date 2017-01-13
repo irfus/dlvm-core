@@ -15,11 +15,9 @@ open class Module {
 
     open var name: String
     
-    var variableTable: [String : VariableOperand] = [:]
+    var variableTable: [String : Constant] = [:]
     let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
-
-    open internal(set) var output: TensorVariable?
 
     open lazy var entryBlock: BasicBlock? = self.basicBlocks.first
 
@@ -31,11 +29,12 @@ open class Module {
         self.name = name
     }
 
-    public init(name: String, variables: [VariableOperand],
-                basicBlocks: [BasicBlock]) {
+    public init(name: String, variables: [Constant], basicBlocks: [BasicBlock]) {
         self.name = name
         for variable in variables {
-            variableTable[variable.name] = variable
+            if let name = variable.name {
+                variableTable[name] = variable
+            }
         }
         self.basicBlockSet.addObjects(from: basicBlocks)
         for bb in basicBlocks {
@@ -69,46 +68,46 @@ extension Module {
     }
     
 }
-
-// MARK: - Global variables
-extension Module {
-
-    /// Global variables
-    open var variables: AnyCollection<VariableOperand> {
-        return AnyCollection(variableTable.values)
-    }
-
-    open var externalVariables: AnyCollection<VariableOperand> {
-        let variables = variableTable.values.filter { $0.definition == nil }
-        return AnyCollection(variables)
-    }
-
-    open var definedVariables: AnyCollection<VariableOperand> {
-        let variables = variableTable.values.filter { $0.definition != nil }
-        return AnyCollection(variables)
-    }
-
-    open func add(_ variable: VariableOperand) {
-        precondition(!variableTable.keys.contains(variable.name),
-                     "Variable named \(variable.name) already exists")
-        precondition(!(variable.definition is Instruction),
-                     "Global variable definition cannot be an instruction")
-        variableTable[variable.name] = variable
-    }
-
-    open func variable(named name: String) -> VariableOperand? {
-        return variableTable[name]
-    }
-
-    open func remove(_ variable: VariableOperand) {
-        variableTable.removeValue(forKey: variable.name)
-    }
-
-    @discardableResult
-    open func removeVariable(named name: String) -> VariableOperand? {
-        let variable = variableTable[name]
-        variableTable.removeValue(forKey: name)
-        return variable
-    }
-
-}
+//
+//// MARK: - Global variables
+//extension Module {
+//
+//    /// Global variables
+//    open var variables: AnyCollection<Value> {
+//        return AnyCollection(variableTable.values)
+//    }
+//
+//    open var externalVariables: AnyCollection<VariableOperand> {
+//        let variables = variableTable.values.filter { $0.definition == nil }
+//        return AnyCollection(variables)
+//    }
+//
+//    open var definedVariables: AnyCollection<VariableOperand> {
+//        let variables = variableTable.values.filter { $0.definition != nil }
+//        return AnyCollection(variables)
+//    }
+//
+//    open func add(_ variable: VariableOperand) {
+//        precondition(!variableTable.keys.contains(variable.name),
+//                     "Variable named \(variable.name) already exists")
+//        precondition(!(variable.definition is Instruction),
+//                     "Global variable definition cannot be an instruction")
+//        variableTable[variable.name] = variable
+//    }
+//
+//    open func variable(named name: String) -> VariableOperand? {
+//        return variableTable[name]
+//    }
+//
+//    open func remove(_ variable: VariableOperand) {
+//        variableTable.removeValue(forKey: variable.name)
+//    }
+//
+//    @discardableResult
+//    open func removeVariable(named name: String) -> VariableOperand? {
+//        let variable = variableTable[name]
+//        variableTable.removeValue(forKey: name)
+//        return variable
+//    }
+//
+//}
