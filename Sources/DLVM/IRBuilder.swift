@@ -94,7 +94,7 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeNegation(_ operand: Value, name: String? = nil) -> Value {
+    public func makeNegation(_ operand: Value, name: String? = nil) -> DefiningInstruction {
         let inst = NegationInstruction(name: name ?? makeName(), operand: operand)
         return build(inst)
     }
@@ -150,7 +150,7 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeStore<T : GlobalValue>(source: DefiningInstruction, destination: T) -> Instruction {
+    public func makeStore<T : GlobalValue>(source: Value, destination: T) -> Instruction {
         let inst = StoreInstruction(source: source, destination: destination)
         return build(inst)
     }
