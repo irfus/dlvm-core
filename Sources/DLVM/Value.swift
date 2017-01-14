@@ -11,7 +11,6 @@
 ///
 
 public protocol Value : class {
-    var name: String? { get set }
     var type: DataType { get set }
 }
 
@@ -25,27 +24,33 @@ public extension Value {
     }
 }
 
-public protocol GlobalValue : Value, IRObject {
+public protocol NamedValue : Value {
+    var name: String { get set }
+}
+
+public protocol GlobalValue : NamedValue, IRObject {
     typealias Parent = Module
 }
 
 public class Input : GlobalValue {
-    public var name: String?
+    public var name: String
     public var type: DataType
     public weak var parent: Module?
 
-    public init(type: DataType) {
+    public init(name: String, type: DataType) {
+        self.name = name
         self.type = type
     }
 }
 
 public class Parameter : GlobalValue {
-    public var name: String?
+    public var name: String
     public var type: DataType
     public var initializer: Initializer
     public weak var parent: Module?
 
-    public init(type: DataType, initializer: Initializer) {
+    public init(name: String, type: DataType, initializer: Initializer) {
+        self.name = name
         self.type = type
         self.initializer = initializer
     }
