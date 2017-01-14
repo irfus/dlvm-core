@@ -47,10 +47,23 @@ public extension IRBuilder {
     }
 
     @discardableResult
+    public func declare<T : GlobalValue>(_ globalValue: T) -> T {
+        module.add(globalValue)
+        return globalValue
+    }
+
+    @discardableResult
     public func declareInput(name: String, type: DataType) -> Input {
         let input = Input(name: name, type: type)
         module.add(input)
         return input
+    }
+
+    @discardableResult
+    public func declareOutput(name: String, type: DataType) -> Output {
+        let output = Output(name: name, type: type)
+        module.add(output)
+        return output
     }
 
     @discardableResult
