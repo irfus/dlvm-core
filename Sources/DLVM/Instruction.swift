@@ -49,7 +49,7 @@ public class DefiningInstruction : Instruction, Value {
     }
 }
 
-public class NegateInstruction : DefiningInstruction {
+public class NegationInstruction : DefiningInstruction {
     public unowned var operand: Value
 
     public init(name: String, operand: Value) {
