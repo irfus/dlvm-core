@@ -2,6 +2,46 @@
 // Created by Richard Wei on 12/25/16.
 //
 
+extension Input : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("input \(type) %\(name)")
+    }
+}
+
+extension Parameter : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("parameter \(type) %\(name) = \(initializer)")
+    }
+}
+
+extension Immediate : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .bool(b): target.write(b.description)
+        case let .int(i): target.write(i.description)
+        case let .float(f): target.write(f.description)
+        }
+    }
+}
+
+extension TensorInitializer : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .elements(elements):
+            target.write("elements [")
+            for elem in elements {
+                elem.write(to: &target)
+                target.write(", ")
+            }
+            target.write("]")
+        case let .repeating(immediate):
+            target.write("repeating \(immediate)")
+        case let .random(from: lowerBound, to: upperBound):
+            target.write("random from \(lowerBound) to \(upperBound)")
+        }
+    }
+}
+
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("[\(dimensions.map{String($0)}.joined(separator: "x"))]")

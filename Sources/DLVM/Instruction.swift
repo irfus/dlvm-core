@@ -24,7 +24,7 @@ public enum AggregateFunction {
     case softmax
 }
 
-public class Instruction : IRObject, TextOutputStreamable {
+public class Instruction : IRObject {
     public weak var parent: BasicBlock?
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
@@ -210,7 +210,7 @@ public class StoreInstruction<T : GlobalValue> : Instruction {
         self.destination = destination
     }
 
-//    public override func write<Target : TextOutputStream>(to target: inout Target) {
-//        target.write("store \(source) to \(destination)")
-//    }
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("store \(source) to \(destination)")
+    }
 }
