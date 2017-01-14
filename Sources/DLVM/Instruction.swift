@@ -36,26 +36,25 @@ public class Instruction : IRObject, TextOutputStreamable {
 
 /// Instruction base class
 public class DefiningInstruction : Instruction, Value {
-    public var name: String?
+    public var name: String
     public var type: DataType
 
-    fileprivate init(type: DataType) {
+    fileprivate init(name: String, type: DataType) {
+        self.name = name
         self.type = type
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
-        if let name = name {
-            target.write("%\(name) = ")
-        }
+        target.write("%\(name) = ")
     }
 }
 
 public class NegateInstruction : DefiningInstruction {
     public unowned var operand: Value
 
-    public init(operand: Value) {
+    public init(name: String, operand: Value) {
         self.operand = operand
-        super.init(type: operand.type)
+        super.init(name: name, type: operand.type)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
@@ -68,11 +67,12 @@ public class ArithmeticInstruction : DefiningInstruction {
     public var `operator`: ArithmeticOperator
     public unowned var leftOperand, rightOperand: Value
 
-    public init(operator: ArithmeticOperator, leftOperand: Value, rightOperand: Value) {
+    public init(name: String, operator: ArithmeticOperator,
+                leftOperand: Value, rightOperand: Value) {
         self.operator = `operator`
         self.leftOperand = leftOperand
         self.rightOperand = rightOperand
-        super.init(type: leftOperand.type)
+        super.init(name: name, type: leftOperand.type)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
@@ -85,11 +85,12 @@ public class ComparisonInstruction : DefiningInstruction {
     public var predicate: ComparisonPredicate
     public unowned var leftOperand, rightOperand: Value
 
-    public init(predicate: ComparisonPredicate, leftOperand: Value, rightOperand: Value) {
+    public init(name: String, predicate: ComparisonPredicate,
+                leftOperand: Value, rightOperand: Value) {
         self.predicate = predicate
         self.leftOperand = leftOperand
         self.rightOperand = rightOperand
-        super.init(type: ScalarType.bool)
+        super.init(name: name, type: ScalarType.bool)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
@@ -101,7 +102,7 @@ public class ComparisonInstruction : DefiningInstruction {
 public class TensorProductInstruction : DefiningInstruction {
     public unowned var leftOperand, rightOperand: Value
 
-    public init(leftOperand: Value, rightOperand: Value) {
+    public init(name: String, leftOperand: Value, rightOperand: Value) {
         self.leftOperand = leftOperand
         self.rightOperand = rightOperand
         let newType: DataType
@@ -112,7 +113,7 @@ public class TensorProductInstruction : DefiningInstruction {
         } else {
             newType = leftOperand.type
         }
-        super.init(type: newType)
+        super.init(name: name, type: newType)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
@@ -125,12 +126,12 @@ public class ConcatenationInstruction : DefiningInstruction {
     public var operands: [Value]
     public var axis: Int
 
-    public init(operands: [Value], axis: Int) {
+    public init(name: String, operands: [Value], axis: Int) {
         precondition(!operands.isEmpty)
         self.operands = Array(operands)
         self.axis = axis
         guard let types = operands.map({$0.type}) as? [TensorType] else {
-            super.init(type: operands[0].type)
+            super.init(name: name, type: operands[0].type)
             return
         }
         let firstShape = types[0].shape
@@ -140,7 +141,7 @@ public class ConcatenationInstruction : DefiningInstruction {
         let newType = newShape.flatMap { shape in
             TensorType(base: types[0].base, size: types[0].size, shape: shape)
         }
-        super.init(type: newType ?? operands[0].type)
+        super.init(name: name, type: newType ?? operands[0].type)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
@@ -153,10 +154,10 @@ public class ElementwiseCallInstruction : DefiningInstruction {
     public var function: ElementwiseFunction
     public unowned var operand: Value
 
-    public init(function: ElementwiseFunction, operand: Value) {
+    public init(name: String, function: ElementwiseFunction, operand: Value) {
         self.function = function
         self.operand = operand
-        super.init(type: operand.type)
+        super.init(name: name, type: operand.type)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
@@ -169,10 +170,10 @@ public class AggregateCallInstruction : DefiningInstruction {
     public var function: AggregateFunction
     public unowned var operand: Value
 
-    public init(function: AggregateFunction, operand: Value) {
+    public init(name: String, function: AggregateFunction, operand: Value) {
         self.function = function
         self.operand = operand
-        super.init(type: operand.type)
+        super.init(name: name, type: operand.type)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
@@ -185,13 +186,13 @@ public class ShapeCastInstruction : DefiningInstruction {
     public var operand: Value
     public var targetShape: TensorShape
 
-    public init(operand: Value, targetShape: TensorShape) {
+    public init(name: String, operand: Value, targetShape: TensorShape) {
         self.operand = operand
         self.targetShape = targetShape
         let newType = TensorType(base: operand.type.base,
                                  size: operand.type.size,
                                  shape: targetShape)
-        super.init(type: newType)
+        super.init(name: name, type: newType)
     }
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
