@@ -8,6 +8,12 @@ extension Input : TextOutputStreamable {
     }
 }
 
+extension Output : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("output \(type) %\(name)")
+    }
+}
+
 extension Parameter : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("parameter \(type) %\(name) = \(initializer)")

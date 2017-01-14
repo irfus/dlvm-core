@@ -16,6 +16,7 @@ open class Module {
     
     var inputTable: [String : Input] = [:]
     var parameterTable: [String : Parameter] = [:]
+    var outputTable: [String : Output] = [:]
     let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
     
@@ -48,6 +49,7 @@ open class Module {
     }
 }
 
+// MARK: - Basic block
 extension Module {
     
     open func append(_ basicBlock: BasicBlock) {
@@ -74,7 +76,7 @@ extension Module {
     
 }
 
-// MARK: - Global variables
+// MARK: - Input
 extension Module {
     
     /// Global inputs
@@ -95,7 +97,7 @@ extension Module {
     }
     
     @discardableResult
-    open func removeVariable(named name: String) -> Input? {
+    open func removeInput(named name: String) -> Input? {
         let input = inputTable[name]
         inputTable.removeValue(forKey: name)
         return input
@@ -103,7 +105,36 @@ extension Module {
     
 }
 
-// MARK: - Global variables
+// MARK: - Output
+extension Module {
+    
+    /// Global outputs
+    open var outputs: AnyCollection<Output> {
+        return AnyCollection(outputTable.values)
+    }
+    
+    open func add(_ output: Output) {
+        outputTable[name] = output
+    }
+    
+    open func output(named name: String) -> Output? {
+        return outputTable[name]
+    }
+    
+    open func remove(_ output: Output) {
+        outputTable.removeValue(forKey: name)
+    }
+    
+    @discardableResult
+    open func removeOutput(named name: String) -> Output? {
+        let output = outputTable[name]
+        outputTable.removeValue(forKey: name)
+        return output
+    }
+    
+}
+
+// MARK: - Parameter
 extension Module {
     
     /// Global inputs
@@ -124,7 +155,7 @@ extension Module {
     }
     
     @discardableResult
-    open func removeVariable(named name: String) -> Parameter? {
+    open func removeParameter(named name: String) -> Parameter? {
         let parameter = parameterTable[name]
         parameterTable.removeValue(forKey: name)
         return parameter
