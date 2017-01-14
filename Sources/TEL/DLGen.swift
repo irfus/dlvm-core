@@ -93,19 +93,19 @@ class CodeGenerator {
         switch expression {
         case let .call("sigmoid", args):
             let argOp = build(args[0])
-            return builder.makeElementwiseCall(.sigmoid, argOp)
+            return builder.makeElementwiseCall(.sigmoid, argOp, name: name)
         case let .call("tanh", args):
             let argOp = build(args[0])
-            return builder.makeElementwiseCall(.sigmoid, argOp)
+            return builder.makeElementwiseCall(.sigmoid, argOp, name: name)
         case let .call("relu", args):
             let argOp = build(args[0])
-            return builder.makeElementwiseCall(.sigmoid, argOp)
+            return builder.makeElementwiseCall(.sigmoid, argOp, name: name)
         case let .call("log", args):
             let argOp = build(args[0])
-            return builder.makeElementwiseCall(.sigmoid, argOp)
+            return builder.makeElementwiseCall(.sigmoid, argOp, name: name)
         case let .call("softmax", args):
             let argOp = build(args[0])
-            return builder.makeAggregateCall(.softmax, argOp)
+            return builder.makeAggregateCall(.softmax, argOp, name: name)
         case let .variable(variable):
             guard let op = environment[variable.name] else {
                 preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")

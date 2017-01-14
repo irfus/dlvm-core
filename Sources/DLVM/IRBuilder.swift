@@ -21,6 +21,7 @@ public class IRBuilder {
 extension IRBuilder {
     
     func makeName() -> String {
+        defer { globalNameId += 1 }
         return disambiguatedName(for: "v\(globalNameId)")
     }
     
