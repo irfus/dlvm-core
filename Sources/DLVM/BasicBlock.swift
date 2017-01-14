@@ -16,7 +16,7 @@ open class BasicBlock : IRCollection, IRObject {
     
     /// Take advantange of great data structures from Foundation
     let instructions = NSMutableOrderedSet()
-    
+
     open weak var parent: Module?
 
     open var elements: [Instruction] {

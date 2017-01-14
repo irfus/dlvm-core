@@ -24,24 +24,33 @@ public enum AggregateFunction {
     case softmax
 }
 
+public class Instruction : IRObject, TextOutputStreamable {
+    public weak var parent: BasicBlock?
+
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+    }
+
+    fileprivate init() {
+    }
+}
+
 /// Instruction base class
-public class Instruction : Value, IRObject {
+public class DefiningInstruction : Instruction, Value {
     public var name: String?
     public var type: DataType
-    public weak var parent: BasicBlock?
 
     fileprivate init(type: DataType) {
         self.type = type
     }
 
-    public func write<Target : TextOutputStream>(to target: inout Target) {
+    public override func write<Target : TextOutputStream>(to target: inout Target) {
         if let name = name {
             target.write("%\(name) = ")
         }
     }
 }
 
-public class NegateInstruction : Instruction {
+public class NegateInstruction : DefiningInstruction {
     public unowned var operand: Value
 
     public init(operand: Value) {
@@ -55,7 +64,7 @@ public class NegateInstruction : Instruction {
     }
 }
 
-public class ArithmeticInstruction : Instruction {
+public class ArithmeticInstruction : DefiningInstruction {
     public var `operator`: ArithmeticOperator
     public unowned var leftOperand, rightOperand: Value
 
@@ -72,7 +81,7 @@ public class ArithmeticInstruction : Instruction {
     }
 }
 
-public class ComparisonInstruction : Instruction {
+public class ComparisonInstruction : DefiningInstruction {
     public var predicate: ComparisonPredicate
     public unowned var leftOperand, rightOperand: Value
 
@@ -89,7 +98,7 @@ public class ComparisonInstruction : Instruction {
     }
 }
 
-public class TensorProductInstruction : Instruction {
+public class TensorProductInstruction : DefiningInstruction {
     public unowned var leftOperand, rightOperand: Value
 
     public init(leftOperand: Value, rightOperand: Value) {
@@ -112,7 +121,7 @@ public class TensorProductInstruction : Instruction {
     }
 }
 
-public class ConcatenationInstruction : Instruction {
+public class ConcatenationInstruction : DefiningInstruction {
     public var operands: [Value]
     public var axis: Int
 
@@ -140,7 +149,7 @@ public class ConcatenationInstruction : Instruction {
     }
 }
 
-public class ElementwiseCallInstruction : Instruction {
+public class ElementwiseCallInstruction : DefiningInstruction {
     public var function: ElementwiseFunction
     public unowned var operand: Value
 
@@ -156,7 +165,7 @@ public class ElementwiseCallInstruction : Instruction {
     }
 }
 
-public class AggregateCallInstruction : Instruction {
+public class AggregateCallInstruction : DefiningInstruction {
     public var function: AggregateFunction
     public unowned var operand: Value
 
@@ -172,7 +181,7 @@ public class AggregateCallInstruction : Instruction {
     }
 }
 
-public class ShapeCastInstruction : Instruction {
+public class ShapeCastInstruction : DefiningInstruction {
     public var operand: Value
     public var targetShape: TensorShape
 
@@ -189,4 +198,18 @@ public class ShapeCastInstruction : Instruction {
         super.write(to: &target)
         target.write("shapecast \(operand) to \(targetShape)")
     }
+}
+
+public class StoreInstruction<T : GlobalValue> : Instruction {
+    public var source: DefiningInstruction
+    public var destination: T
+
+    public init(source: DefiningInstruction, destination: T) {
+        self.source = source
+        self.destination = destination
+    }
+
+//    public override func write<Target : TextOutputStream>(to target: inout Target) {
+//        target.write("store \(source) to \(destination)")
+//    }
 }

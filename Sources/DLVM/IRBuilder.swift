@@ -38,8 +38,10 @@ extension IRBuilder {
 // MARK: - Main builder API
 public extension IRBuilder {
 
-    func build(_ instruction: Instruction, name: String?) -> Instruction {
-        instruction.name = name ?? makeName()
+    func build<Inst: Instruction>(_ instruction: Inst, name: String?) -> Inst {
+        if let inst = instruction as? DefiningInstruction {
+            inst.name = name ?? makeName()
+        }
         guard let block = currentBlock else {
             preconditionFailure("Current block doesn't exist")
         }
@@ -57,18 +59,9 @@ public extension IRBuilder {
 
     @discardableResult
     public func declareParameter(type: DataType,
-                                 initializer: TensorParameter.Initializer,
-                                 name: String) -> TensorParameter {
-        let parameter = TensorParameter(type: type, initializer: initializer)
-        parameter.name = name
-        module.add(parameter)
-        return parameter
-    }
-
-    @discardableResult
-    public func declareParameter(type: DataType, immediateValue: Immediate,
-                                 name: String) -> ScalarParameter {
-        let parameter = ScalarParameter(type: type, immediate: immediateValue)
+                                 initializer: Initializer,
+                                 name: String) -> Parameter {
+        let parameter = Parameter(type: type, initializer: initializer)
         parameter.name = name
         module.add(parameter)
         return parameter
@@ -86,7 +79,7 @@ public extension IRBuilder {
     @discardableResult
     public func makeArithmeticOperation(_ `operator`: ArithmeticOperator,
                                         _ lhs: Value, _ rhs: Value,
-                                        name: String? = nil) -> Instruction {
+                                        name: String? = nil) -> DefiningInstruction {
         let inst = ArithmeticInstruction(
             operator: `operator`, leftOperand: lhs, rightOperand: rhs)
         return build(inst, name: name)
@@ -95,7 +88,7 @@ public extension IRBuilder {
     @discardableResult
     public func makeComparison(_ `operator`: ComparisonPredicate,
                                _ lhs: Value, _ rhs: Value,
-                               name: String? = nil) -> Instruction {
+                               name: String? = nil) -> DefiningInstruction {
         let inst = ComparisonInstruction(
             predicate: `operator`, leftOperand: lhs, rightOperand: rhs)
         return build(inst, name: name)
@@ -103,30 +96,36 @@ public extension IRBuilder {
     
     @discardableResult
     public func makeTensorProduct(_ lhs: Value, _ rhs: Value,
-                                  name: String? = nil) -> Instruction {
+                                  name: String? = nil) -> DefiningInstruction {
         let inst = TensorProductInstruction(leftOperand: lhs, rightOperand: rhs)
         return build(inst, name: name)
     }
     
     @discardableResult
     public func makeElementwiseCall(_ function: ElementwiseFunction,
-                                    _ operand: Value, name: String? = nil) -> Instruction {
+                                    _ operand: Value, name: String? = nil) -> DefiningInstruction {
         let inst = ElementwiseCallInstruction(function: function, operand: operand)
         return build(inst, name: name)
     }
     
     @discardableResult
     public func makeAggregateCall(_ function: AggregateFunction,
-                                  _ operand: Value, name: String? = nil) -> Instruction {
+                                  _ operand: Value, name: String? = nil) -> DefiningInstruction {
         let inst = AggregateCallInstruction(function: function, operand: operand)
         return build(inst, name: name)
     }
     
     @discardableResult
     public func makeConcatenation(
-        _ operands: [Value], axis: Int, name: String? = nil) -> Instruction {
+        _ operands: [Value], axis: Int, name: String? = nil) -> DefiningInstruction {
         let inst = ConcatenationInstruction(operands: operands, axis: axis)
         return build(inst, name: name)
+    }
+
+    @discardableResult
+    public func makeStore<T : GlobalValue>(source: DefiningInstruction, destination: T) -> Instruction {
+        let inst = StoreInstruction(source: source, destination: destination)
+        return build(inst, name: nil)
     }
 
 }
