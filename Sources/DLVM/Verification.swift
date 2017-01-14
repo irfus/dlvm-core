@@ -6,14 +6,16 @@
 //
 //
 
-public extension Module {
-
-    public enum VerificationError : Error {
-        
-    }
-
-    public func verify() throws {
-        /// TODO
-    }
+public enum VerificationError : Error {
     
+}
+
+extension Module {
+
+    open func verify() throws {
+        for input in inputs {
+            
+        }
+    }
+
 }
