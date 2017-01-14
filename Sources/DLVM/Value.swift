@@ -10,7 +10,7 @@
 /// Base
 ///
 
-public protocol Value : class, TextOutputStreamable {
+public protocol Value : TextOutputStreamable {
     var type: DataType { get set }
 }
 
@@ -71,6 +71,16 @@ public class Output : GlobalValue {
 
 public protocol Initializer : TextOutputStreamable {
     var typeBase: TypeBase { get }
+}
+
+public struct ImmediateValue : Value {
+    public var type: DataType
+    public var immediate: Immediate
+
+    public init(type: DataType, immediate: Immediate) {
+        self.type = type
+        self.immediate = immediate
+    }
 }
 
 public enum Immediate : Initializer {
