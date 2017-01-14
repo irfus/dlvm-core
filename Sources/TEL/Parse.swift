@@ -103,15 +103,17 @@ extension Expression : Parsible {
         Variable.parser ^^ Expression.variable
 
     private static let randomParser: Parser<Expression> =
-        "random" ~~> Lexer.character("(") ~~>
-        (Constant.parser.! <~~ Lexer.character(",").amid(spaces.?).!) ~~
-        (Constant.parser.! <~~ Lexer.character(")").!)
+        "random" ~~> (Constant.parser.! <~~
+            Lexer.character(",").amid(spaces.?).! ~~ Constant.parser.!)
+            .amid(spaces.?)
+            .between(Lexer.character("("), Lexer.character(")").!)
      ^^ Expression.random
 
     private static let callParser: Parser<Expression> =
         identifier ~~
         parser.nonbacktracking()
               .many(separatedBy: Lexer.character(",").amid(spaces.?))
+              .amid(spaces.?)
               .between(Lexer.token("("), Lexer.token(")").!)
      ^^ Expression.call
 
