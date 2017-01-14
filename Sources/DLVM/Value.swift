@@ -35,6 +35,7 @@ public protocol GlobalValue : NamedValue, IRObject {
 public class Input : GlobalValue {
     public var name: String
     public var type: DataType
+    public var isRecurrent: Bool = false
     public weak var parent: Module?
 
     public init(name: String, type: DataType) {
@@ -53,6 +54,18 @@ public class Parameter : GlobalValue {
         self.name = name
         self.type = type
         self.initializer = initializer
+    }
+}
+
+public class Output : GlobalValue {
+    public var name: String
+    public var type: DataType
+    public var isRecurrent: Bool = false
+    public weak var parent: Module?
+
+    public init(name: String, type: DataType) {
+        self.name = name
+        self.type = type
     }
 }
 
