@@ -27,25 +27,18 @@ public enum AggregateFunction {
 public class Instruction : IRObject {
     public weak var parent: BasicBlock?
 
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-    }
-
     fileprivate init() {
     }
 }
 
 /// Instruction base class
-public class DefiningInstruction : Instruction, Value {
+public class DefiningInstruction : Instruction, NamedValue {
     public var name: String
     public var type: DataType
 
     fileprivate init(name: String, type: DataType) {
         self.name = name
         self.type = type
-    }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("%\(name) = ")
     }
 }
 
@@ -55,11 +48,6 @@ public class NegationInstruction : DefiningInstruction {
     public init(name: String, operand: Value) {
         self.operand = operand
         super.init(name: name, type: operand.type)
-    }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("neg \(operand)")
     }
 }
 
@@ -74,11 +62,6 @@ public class ArithmeticInstruction : DefiningInstruction {
         self.rightOperand = rightOperand
         super.init(name: name, type: leftOperand.type)
     }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("\(`operator`) \(leftOperand) \(rightOperand)")
-    }
 }
 
 public class ComparisonInstruction : DefiningInstruction {
@@ -91,11 +74,6 @@ public class ComparisonInstruction : DefiningInstruction {
         self.leftOperand = leftOperand
         self.rightOperand = rightOperand
         super.init(name: name, type: ScalarType.bool)
-    }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("\(predicate) \(leftOperand) \(rightOperand)")
     }
 }
 
@@ -114,11 +92,6 @@ public class TensorProductInstruction : DefiningInstruction {
             newType = leftOperand.type
         }
         super.init(name: name, type: newType)
-    }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("tmul \(leftOperand), \(rightOperand)")
     }
 }
 
@@ -143,11 +116,6 @@ public class ConcatenationInstruction : DefiningInstruction {
         }
         super.init(name: name, type: newType ?? operands[0].type)
     }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("concat \(operands.map{"\($0)"}.joined(separator: ", "))")
-    }
 }
 
 public class ElementwiseCallInstruction : DefiningInstruction {
@@ -159,11 +127,6 @@ public class ElementwiseCallInstruction : DefiningInstruction {
         self.operand = operand
         super.init(name: name, type: operand.type)
     }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("\(function) \(operand)")
-    }
 }
 
 public class AggregateCallInstruction : DefiningInstruction {
@@ -174,11 +137,6 @@ public class AggregateCallInstruction : DefiningInstruction {
         self.function = function
         self.operand = operand
         super.init(name: name, type: operand.type)
-    }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("\(function) \(operand)")
     }
 }
 
@@ -194,23 +152,14 @@ public class ShapeCastInstruction : DefiningInstruction {
                                  shape: targetShape)
         super.init(name: name, type: newType)
     }
-
-    public override func write<Target : TextOutputStream>(to target: inout Target) {
-        super.write(to: &target)
-        target.write("shapecast \(operand) to \(targetShape)")
-    }
 }
 
 public class StoreInstruction<T : GlobalValue> : Instruction {
-    public var source: DefiningInstruction
+    public var source: Value
     public var destination: T
 
-    public init(source: DefiningInstruction, destination: T) {
+    public init(source: Value, destination: T) {
         self.source = source
         self.destination = destination
-    }
-
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("store \(source) to \(destination)")
     }
 }
