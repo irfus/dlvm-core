@@ -25,14 +25,65 @@ public enum SemanticError : Error {
     case cannotInferShape(Expression)
     case cannotConcatenate(Expression, TensorShape, TensorShape)
     case cannotFormProduct(Expression, TensorShape, Expression, TensorShape)
-    case operatorShapeMismatch(Expression)
-    case reshapingSizeMismatch(Expression, size: Int, expected: Int)
-    case shapeMismatch(Expression, expected: TensorShape, in: Variable)
-    case macroNotOnTop(Attribute)
+    case operatorShapeMismatch(Expression, TensorShape, Expression, TensorShape)
+    case cannotReshape(Expression, TensorShape, TensorShape)
+    case shapeMismatch(Expression, TensorShape, expected: TensorShape, in: Variable)
+    case attributeNotOnTop(Attribute)
     case argumentCountMismatch(Expression, count: Int, expected: Int)
     case functionUnknown(Expression, String)
     case inputMissing
     case outputMissing
+}
+
+extension SemanticError : CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .dataTypeRedeclared:
+            return "Data type is redeclared"
+        case let .dataTypeUnknown(typeName):
+            return "Data type '\(typeName)' is not a known"
+        case .moduleNameRedeclared:
+            return "Network name is redeclared"
+        case .moduleNameMissing:
+            return "Network name is undefined. Would you like to add a '@name ...'?"
+        case let .initializerMissing(variable):
+            return "Variable \(variable) needs an initializer"
+        case let .initializerUnexpected(variable):
+            return "Variable \(variable) should not have an initializer"
+        case let .variableRedeclared(variable):
+            return "Variable \(variable) is redeclared"
+        case let .variableUndefined(variable):
+            return "Variable \(variable) is undefined"
+        case let .randomBoundsTypeMismatch(expr):
+            return "Operands of the random expression do not have the same type \(expr)"
+        case let .notAnInitializer(expr):
+            return "Expression \(expr) is not an initializer expression"
+        case let .constantTypeMismatch(expr, expected: type):
+            return "The type of the constant \(expr) does not match the data type of the network (\(type))"
+        case let .cannotInferShape(expr):
+            return "Cannot infer the shape of expresison \(expr)"
+        case let .cannotConcatenate(expr, shape1, shape2):
+            return "Cannot perform concatenation \(expr) on shapes \(shape1) and \(shape2)"
+        case let .cannotFormProduct(lhsExpr, lhsShape, rhsExpr, rhsShape):
+            return "Cannot form product between \(lhsExpr) of shape \(lhsShape) and \(rhsExpr) of shape \(rhsShape)"
+        case let .operatorShapeMismatch(lhs, lShape, rhs, rShape):
+            return "The shape of the left-hand side \(lhs) (\(lShape)) does not match the shape of right-hand side \(rhs) (\(rShape))"
+        case let .cannotReshape(expr, shape, targetShape):
+            return "Experssion \(expr) of shape \(shape) cannot be reshaped to \(targetShape) due to mismatch in contiguous memory size"
+        case let .shapeMismatch(expr, shape, expected: expectedShape, in: variable):
+            return "Expression \(expr) of shape \(shape) does not match the expected shape \(expectedShape) of variable \(variable)"
+        case let .attributeNotOnTop(attr):
+            return "Attribute \(attr) is not placed on the top of declarations"
+        case let .argumentCountMismatch(expr, count: count, expected: expectedCount):
+            return "Function call \(expr) has \(count) arguments, but \(expectedCount) are expected"
+        case let .functionUnknown(expr, funcName):
+            return "Unknown function name '\(funcName)' is found in expression \(expr)"
+        case .inputMissing:
+            return "I can't find any input layer"
+        case .outputMissing:
+            return "I can't find any output layer"
+        }
+    }
 }
 
 public protocol Node {
@@ -229,7 +280,7 @@ public class Program {
     /// - Throws: SemanticError
     static func check(_ macro: Attribute, in env: inout TypeEnvironment) throws {
         guard env.isEmpty else {
-            throw SemanticError.macroNotOnTop(macro)
+            throw SemanticError.attributeNotOnTop(macro)
         }
         switch macro {
         case let .type(typeName):
@@ -375,7 +426,7 @@ public class Program {
                       expectedShape: TensorShape, in env: inout TypeEnvironment) throws {
         let shape = try Program.shape(of: expression, in: &env)
         guard shape == expectedShape else {
-            throw SemanticError.shapeMismatch(expression,
+            throw SemanticError.shapeMismatch(expression, shape,
                                               expected: expectedShape,
                                               in: variable)
         }
@@ -406,7 +457,7 @@ public class Program {
             let leftShape = try shape(of: lhs, in: &env)
             let rightShape = try shape(of: rhs, in: &env)
             guard leftShape == rightShape else {
-                throw SemanticError.operatorShapeMismatch(expression)
+                throw SemanticError.operatorShapeMismatch(lhs, leftShape, rhs, rightShape)
             }
             return leftShape
 
@@ -428,10 +479,10 @@ public class Program {
         case let .reshape(expr, shape: dims):
             let exprShape = try shape(of: expr, in: &env)
             let exprSize = exprShape.contiguousSize
-            let targetSize = dims.reduce(1, *)
+            let targetShape = TensorShape(dims)
+            let targetSize = targetShape.contiguousSize
             guard exprSize == targetSize else {
-                throw SemanticError.reshapingSizeMismatch(expr, size: exprSize,
-                                                          expected: targetSize)
+                throw SemanticError.cannotReshape(expr, exprShape, targetShape)
             }
             return TensorShape(dims)
 
