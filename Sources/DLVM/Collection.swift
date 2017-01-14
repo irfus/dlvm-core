@@ -29,7 +29,7 @@ public protocol IRCollection : class, RandomAccessCollection, HashableByReferenc
     func remove(_: Element)
 }
 
-public protocol IRObject : class, HashableByReference, TextOutputStreamable {
+public protocol IRObject : class, HashableByReference {
     associatedtype Parent : AnyObject
     weak var parent: Parent? { get set }
 }
