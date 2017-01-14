@@ -83,7 +83,6 @@ public extension IRBuilder {
         return block
     }
 
-    /// Addition of the same type
     @discardableResult
     public func makeArithmeticOperation(_ `operator`: ArithmeticOperator,
                                         _ lhs: Value, _ rhs: Value,
@@ -91,6 +90,12 @@ public extension IRBuilder {
         let inst = ArithmeticInstruction(name: name ?? makeName(),
                                          operator: `operator`,
                                          leftOperand: lhs, rightOperand: rhs)
+        return build(inst)
+    }
+
+    @discardableResult
+    public func makeNegation(_ operand: Value, name: String? = nil) -> Value {
+        let inst = NegationInstruction(name: name ?? makeName(), operand: operand)
         return build(inst)
     }
 
