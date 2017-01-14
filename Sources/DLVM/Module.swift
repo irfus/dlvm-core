@@ -74,6 +74,19 @@ extension Module {
         return basicBlockTable[name]
     }
     
+    open func add<T: GlobalValue>(_ value: T) {
+        switch value {
+        case let input as Input:
+            inputTable[input.name] = input
+        case let parameter as Parameter:
+            parameterTable[parameter.name] = parameter
+        case let output as Output:
+            outputTable[output.name] = output
+        default:
+            preconditionFailure("Unsupported global value")
+        }
+    }
+    
 }
 
 // MARK: - Input
@@ -84,16 +97,12 @@ extension Module {
         return AnyCollection(inputTable.values)
     }
     
-    open func add(_ input: Input) {
-        inputTable[name] = input
-    }
-    
     open func input(named name: String) -> Input? {
         return inputTable[name]
     }
     
     open func remove(_ input: Input) {
-        inputTable.removeValue(forKey: name)
+        inputTable.removeValue(forKey: input.name)
     }
     
     @discardableResult
@@ -112,17 +121,13 @@ extension Module {
     open var outputs: AnyCollection<Output> {
         return AnyCollection(outputTable.values)
     }
-    
-    open func add(_ output: Output) {
-        outputTable[name] = output
-    }
-    
+
     open func output(named name: String) -> Output? {
         return outputTable[name]
     }
     
     open func remove(_ output: Output) {
-        outputTable.removeValue(forKey: name)
+        outputTable.removeValue(forKey: output.name)
     }
     
     @discardableResult
@@ -142,16 +147,12 @@ extension Module {
         return AnyCollection(parameterTable.values)
     }
     
-    open func add(_ parameter: Parameter) {
-        parameterTable[name] = parameter
-    }
-    
     open func parameter(named name: String) -> Parameter? {
         return parameterTable[name]
     }
-    
+
     open func remove(_ parameter: Parameter) {
-        parameterTable.removeValue(forKey: name)
+        parameterTable.removeValue(forKey: parameter.name)
     }
     
     @discardableResult
