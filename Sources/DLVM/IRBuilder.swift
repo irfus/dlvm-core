@@ -38,7 +38,7 @@ extension IRBuilder {
 // MARK: - Main builder API
 public extension IRBuilder {
 
-    func build<Inst: Instruction>(_ instruction: Inst) -> Inst {
+    private func build<Inst: Instruction>(_ instruction: Inst) -> Inst {
         guard let block = currentBlock else {
             preconditionFailure("Current block doesn't exist")
         }
@@ -138,6 +138,14 @@ public extension IRBuilder {
         _ operands: [Value], axis: Int, name: String? = nil) -> DefiningInstruction {
         let inst = ConcatenationInstruction(name: name ?? makeName(),
                                             operands: operands, axis: axis)
+        return build(inst)
+    }
+
+    @discardableResult
+    public func makeShapeCast(_ operand: Value, targetShape: TensorShape,
+                              name: String? = nil) -> DefiningInstruction {
+        let inst = ShapeCastInstruction(name: name ?? makeName(),
+                                        operand: operand, targetShape: targetShape)
         return build(inst)
     }
 
