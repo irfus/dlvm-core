@@ -50,7 +50,7 @@ public class DefiningInstruction : Instruction, Value {
 }
 
 public class NegationInstruction : DefiningInstruction {
-    public unowned var operand: Value
+    public var operand: Value
 
     public init(name: String, operand: Value) {
         self.operand = operand
@@ -65,7 +65,7 @@ public class NegationInstruction : DefiningInstruction {
 
 public class ArithmeticInstruction : DefiningInstruction {
     public var `operator`: ArithmeticOperator
-    public unowned var leftOperand, rightOperand: Value
+    public var leftOperand, rightOperand: Value
 
     public init(name: String, operator: ArithmeticOperator,
                 leftOperand: Value, rightOperand: Value) {
@@ -83,7 +83,7 @@ public class ArithmeticInstruction : DefiningInstruction {
 
 public class ComparisonInstruction : DefiningInstruction {
     public var predicate: ComparisonPredicate
-    public unowned var leftOperand, rightOperand: Value
+    public var leftOperand, rightOperand: Value
 
     public init(name: String, predicate: ComparisonPredicate,
                 leftOperand: Value, rightOperand: Value) {
@@ -100,7 +100,7 @@ public class ComparisonInstruction : DefiningInstruction {
 }
 
 public class TensorProductInstruction : DefiningInstruction {
-    public unowned var leftOperand, rightOperand: Value
+    public var leftOperand, rightOperand: Value
 
     public init(name: String, leftOperand: Value, rightOperand: Value) {
         self.leftOperand = leftOperand
@@ -118,7 +118,7 @@ public class TensorProductInstruction : DefiningInstruction {
 
     public override func write<Target : TextOutputStream>(to target: inout Target) {
         super.write(to: &target)
-        target.write("tmul \(leftOperand) \(rightOperand)")
+        target.write("tmul \(leftOperand), \(rightOperand)")
     }
 }
 
@@ -152,7 +152,7 @@ public class ConcatenationInstruction : DefiningInstruction {
 
 public class ElementwiseCallInstruction : DefiningInstruction {
     public var function: ElementwiseFunction
-    public unowned var operand: Value
+    public var operand: Value
 
     public init(name: String, function: ElementwiseFunction, operand: Value) {
         self.function = function
@@ -168,7 +168,7 @@ public class ElementwiseCallInstruction : DefiningInstruction {
 
 public class AggregateCallInstruction : DefiningInstruction {
     public var function: AggregateFunction
-    public unowned var operand: Value
+    public var operand: Value
 
     public init(name: String, function: AggregateFunction, operand: Value) {
         self.function = function
