@@ -54,24 +54,26 @@ extension TensorShape : TextOutputStreamable {
     }
 }
 
-extension ScalarType : TextOutputStreamable {
+extension TypeBase : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch base {
+        switch self {
         case .float: target.write("f")
         case .int: target.write("i")
         case .bool: target.write("b")
         }
+    }
+}
+
+extension ScalarType : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        base.write(to: &target)
         size.description.write(to: &target)
     }
 }
 
 extension TensorType : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch base {
-        case .float: target.write("f")
-        case .int: target.write("i")
-        case .bool: target.write("b")
-        }
+        base.write(to: &target)
         size.description.write(to: &target)
         target.write(" ")
         shape.write(to: &target)
@@ -152,11 +154,9 @@ extension BasicBlock : TextOutputStreamable {
                 inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
                 target.write(" along \(inst.axis)")
             case let inst as ShapeCastInstruction:
-                target.write("shapecast ")
-                inst.operand.write(to: &target)
-                target.write(" to ")
-                inst.targetShape.write(to: &target)
-                
+                target.write("shapecast \(inst.operand) to \(inst.targetShape)")
+            case let inst as TypeCastInstruction:
+                target.write("typecast \(inst.operand) to \(inst.targetBase)\(inst.targetSize)")
             default:
                 preconditionFailure("Unsupported instruction class \(type(of: inst))")
                 break
@@ -170,13 +170,13 @@ extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n\n")
         for input in inputs {
-            target.write("input ")
+            target.write("declare input ")
             input.write(to: &target)
             target.write("\n")
         }
         target.write("\n")
         for parameter in parameters {
-            target.write("parameter ")
+            target.write("declare parameter ")
             parameter.write(to: &target)
             target.write(" = ")
             parameter.initializer.write(to: &target)
@@ -184,7 +184,7 @@ extension Module : TextOutputStreamable {
         }
         target.write("\n")
         for output in outputs {
-            target.write("output ")
+            target.write("declare output ")
             output.write(to: &target)
             target.write("\n")
         }

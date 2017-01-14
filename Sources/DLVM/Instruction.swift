@@ -152,6 +152,22 @@ public final class ShapeCastInstruction : DefiningInstruction {
     }
 }
 
+public final class TypeCastInstruction : DefiningInstruction {
+    public var operand: Value
+    public var targetBase: TypeBase
+    public var targetSize: Int
+    
+    public init(name: String, operand: Value, targetBase: TypeBase, targetSize: Int) {
+        self.operand = operand
+        self.targetBase = targetBase
+        self.targetSize = targetSize
+        var newType = operand.type
+        newType.base = targetBase
+        newType.size = targetSize
+        super.init(name: name, type: newType)
+    }
+}
+
 public final class StoreInstruction : Instruction {
     public var source: Value
     public var destination: Value

@@ -11,13 +11,13 @@ public enum TypeBase {
 }
 
 public protocol DataType : TextOutputStreamable {
-    var base: TypeBase { get }
-    var size: Int { get }
+    var base: TypeBase { get set }
+    var size: Int { get set }
 }
 
 public struct ScalarType : DataType, Equatable {
-    public let base: TypeBase
-    public let size: Int
+    public var base: TypeBase
+    public var size: Int
 
     public static func ~=(lhs: ScalarType, rhs: ScalarType) -> Bool {
         return lhs.base == rhs.base
