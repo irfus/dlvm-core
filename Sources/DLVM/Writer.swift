@@ -145,16 +145,12 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("\(inst.function) \(inst.operand)")
             case let inst as AggregateCallInstruction:
                 target.write("\(inst.function) \(inst.operand)")
-            case let inst as StoreInstruction<Parameter>:
-                target.write("store \(inst.source) to \(inst.destination)")
-            case let inst as StoreInstruction<Input>:
-                target.write("store \(inst.source) to \(inst.destination)")
-            case let inst as StoreInstruction<Output>:
+            case let inst as StoreInstruction:
                 target.write("store \(inst.source) to \(inst.destination)")
             case let inst as ConcatenationInstruction:
                 target.write("concat ")
                 inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
-                target.write(" at axis \(inst.axis)")
+                target.write(" along \(inst.axis)")
             case let inst as ShapeCastInstruction:
                 target.write("shapecast ")
                 inst.operand.write(to: &target)
