@@ -15,12 +15,17 @@ open class BasicBlock : IRCollection, IRObject {
     open var name: String
     
     /// Take advantange of great data structures from Foundation
-    let instructions = NSMutableOrderedSet()
+    let instructionSet = NSMutableOrderedSet()
 
     open weak var parent: Module?
-
+    
+    /// Same as instructions
     open var elements: [Instruction] {
-        return instructions.array as! [Instruction]
+        return instructions
+    }
+
+    open var instructions: [Instruction] {
+        return instructionSet.array as! [Instruction]
     }
 
     public init(name: String) {
@@ -29,7 +34,7 @@ open class BasicBlock : IRCollection, IRObject {
 
     public convenience init(name: String, instructions: [Instruction]) {
         self.init(name: name)
-        self.instructions.addObjects(from: instructions)
+        self.instructionSet.addObjects(from: instructions)
     }
 
 }
@@ -38,27 +43,27 @@ open class BasicBlock : IRCollection, IRObject {
 extension BasicBlock {
 
     public func contains(_ element: Instruction) -> Bool {
-        return instructions.contains(element)
+        return instructionSet.contains(element)
     }
 
     /// Append the instruction to the basic block
     open func append(_ instruction: Instruction) {
-        instructions.add(instruction)
+        instructionSet.add(instruction)
         instruction.parent = self
     }
 
     /// Index of the instruction in the basic block
     open func index(of instruction: Instruction) -> Int? {
-        return instructions.index(of: instruction)
+        return instructionSet.index(of: instruction)
     }
 
     /// Remove the instruction from the basic block
     ///
     /// - Precondition: instruction is in the basic block
     open func remove(_ instruction: Instruction) {
-        precondition(instructions.contains(instruction),
+        precondition(instructionSet.contains(instruction),
                      "Instruction is not in the basic block")
-        instructions.remove(instruction)
+        instructionSet.remove(instruction)
         instruction.parent = nil
     }
 

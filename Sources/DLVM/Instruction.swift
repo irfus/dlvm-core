@@ -26,9 +26,7 @@ public enum AggregateFunction {
 
 public class Instruction : IRObject {
     public weak var parent: BasicBlock?
-
-    fileprivate init() {
-    }
+    fileprivate init() {}
 }
 
 /// Instruction base class
@@ -42,7 +40,7 @@ public class DefiningInstruction : Instruction, NamedValue {
     }
 }
 
-public class NegationInstruction : DefiningInstruction {
+public final class NegationInstruction : DefiningInstruction {
     public var operand: Value
 
     public init(name: String, operand: Value) {
@@ -51,7 +49,7 @@ public class NegationInstruction : DefiningInstruction {
     }
 }
 
-public class ArithmeticInstruction : DefiningInstruction {
+public final class ArithmeticInstruction : DefiningInstruction {
     public var `operator`: ArithmeticOperator
     public var leftOperand, rightOperand: Value
 
@@ -77,7 +75,7 @@ public class ComparisonInstruction : DefiningInstruction {
     }
 }
 
-public class TensorProductInstruction : DefiningInstruction {
+public final class TensorProductInstruction : DefiningInstruction {
     public var leftOperand, rightOperand: Value
 
     public init(name: String, leftOperand: Value, rightOperand: Value) {
@@ -95,7 +93,7 @@ public class TensorProductInstruction : DefiningInstruction {
     }
 }
 
-public class ConcatenationInstruction : DefiningInstruction {
+public final class ConcatenationInstruction : DefiningInstruction {
     public var operands: [Value]
     public var axis: Int
 
@@ -118,7 +116,7 @@ public class ConcatenationInstruction : DefiningInstruction {
     }
 }
 
-public class ElementwiseCallInstruction : DefiningInstruction {
+public final class ElementwiseCallInstruction : DefiningInstruction {
     public var function: ElementwiseFunction
     public var operand: Value
 
@@ -129,7 +127,7 @@ public class ElementwiseCallInstruction : DefiningInstruction {
     }
 }
 
-public class AggregateCallInstruction : DefiningInstruction {
+public final class AggregateCallInstruction : DefiningInstruction {
     public var function: AggregateFunction
     public var operand: Value
 
@@ -140,7 +138,7 @@ public class AggregateCallInstruction : DefiningInstruction {
     }
 }
 
-public class ShapeCastInstruction : DefiningInstruction {
+public final class ShapeCastInstruction : DefiningInstruction {
     public var operand: Value
     public var targetShape: TensorShape
 
@@ -154,7 +152,7 @@ public class ShapeCastInstruction : DefiningInstruction {
     }
 }
 
-public class StoreInstruction : Instruction {
+public final class StoreInstruction : Instruction {
     public var source: Value
     public var destination: Value
 
