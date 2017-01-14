@@ -74,7 +74,7 @@ public protocol Initializer : TextOutputStreamable {
 }
 
 public enum Immediate : Initializer {
-    case int(Int), float(Float), bool(Bool)
+    case int(Int), float(Double), bool(Bool)
 
     public var typeBase: TypeBase {
         switch self {
