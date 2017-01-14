@@ -2,21 +2,21 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-extension Input : TextOutputStreamable {
+extension NamedValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("input \(type) %\(name)")
+        target.write("\(type) %\(name)")
     }
 }
 
-extension Output : TextOutputStreamable {
+extension GlobalValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("output \(type) %\(name)")
+        target.write("\(type) @\(name)")
     }
 }
 
-extension Parameter : TextOutputStreamable {
+extension ImmediateValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("parameter \(type) %\(name) = \(initializer)")
+        target.write("\(type) \(immediate)")
     }
 }
 
@@ -129,7 +129,42 @@ extension BasicBlock : TextOutputStreamable {
         target.write(":\n")
         for inst in elements {
             target.write("\t")
-            inst.write(to: &target)
+            if let defInst = inst as? DefiningInstruction {
+                target.write("%\(defInst.name) = ")
+            }
+            switch inst {
+            case let inst as NegationInstruction:
+                target.write("neg \(inst.operand)")
+            case let inst as TensorProductInstruction:
+                target.write("tmul \(inst.leftOperand), \(inst.rightOperand)")
+            case let inst as ArithmeticInstruction:
+                target.write("\(inst.operator) \(inst.leftOperand), \(inst.rightOperand)")
+            case let inst as ComparisonInstruction:
+                target.write("cmp \(inst.predicate) \(inst.leftOperand), \(inst.rightOperand)")
+            case let inst as ElementwiseCallInstruction:
+                target.write("\(inst.function) \(inst.operand)")
+            case let inst as AggregateCallInstruction:
+                target.write("\(inst.function) \(inst.operand)")
+            case let inst as StoreInstruction<Parameter>:
+                target.write("store \(inst.source) to \(inst.destination)")
+            case let inst as StoreInstruction<Input>:
+                target.write("store \(inst.source) to \(inst.destination)")
+            case let inst as StoreInstruction<Output>:
+                target.write("store \(inst.source) to \(inst.destination)")
+            case let inst as ConcatenationInstruction:
+                target.write("concat ")
+                inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
+                target.write(" at axis \(inst.axis)")
+            case let inst as ShapeCastInstruction:
+                target.write("shapecast ")
+                inst.operand.write(to: &target)
+                target.write(" to ")
+                inst.targetShape.write(to: &target)
+                
+            default:
+                preconditionFailure("Unsupported instruction class \(type(of: inst))")
+                break
+            }
             target.write("\n")
         }
     }
@@ -138,6 +173,25 @@ extension BasicBlock : TextOutputStreamable {
 extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n\n")
+        for input in inputs {
+            target.write("input ")
+            input.write(to: &target)
+            target.write("\n")
+        }
+        target.write("\n")
+        for parameter in parameters {
+            target.write("parameter ")
+            parameter.write(to: &target)
+            target.write(" = ")
+            parameter.initializer.write(to: &target)
+            target.write("\n")
+        }
+        target.write("\n")
+        for output in outputs {
+            target.write("output ")
+            output.write(to: &target)
+            target.write("\n")
+        }
         target.write("\n")
         for bb in basicBlocks {
             bb.write(to: &target)
