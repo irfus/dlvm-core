@@ -53,8 +53,6 @@ open class Module {
 extension Module {
     
     open func append(_ basicBlock: BasicBlock) {
-        precondition(!basicBlockTable.keys.contains(basicBlock.name),
-                     "Basic block named \(basicBlock.name) already exists")
         basicBlockSet.add(basicBlock)
         basicBlockTable[basicBlock.name] = basicBlock
         basicBlock.parent = self

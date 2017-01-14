@@ -6,13 +6,13 @@
 //
 //
 
-public class IRBuilder {
-    public let module: Module
-    public var currentBlock: BasicBlock?
+open class IRBuilder {
+    open let module: Module
+    open var currentBlock: BasicBlock?
     
     fileprivate var globalNameId: Int = 0
     fileprivate var nameIdTable: [String : Int] = [:]
-    
+
     public init(moduleName: String) {
         module = Module(name: moduleName)
     }
@@ -25,7 +25,7 @@ extension IRBuilder {
         return disambiguatedName(for: "v\(globalNameId)")
     }
     
-    fileprivate func disambiguatedName(for name: String) -> String {
+    func disambiguatedName(for name: String) -> String {
         if let id = nameIdTable[name] {
             nameIdTable[name] = id + 1
             return name + ".\(id)"
@@ -37,9 +37,9 @@ extension IRBuilder {
 }
 
 // MARK: - Main builder API
-public extension IRBuilder {
+extension IRBuilder {
 
-    private func build<Inst: Instruction>(_ instruction: Inst) -> Inst {
+    private func build<Inst : Instruction>(_ instruction: Inst) -> Inst {
         guard let block = currentBlock else {
             preconditionFailure("Current block doesn't exist")
         }
@@ -48,27 +48,27 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func declare<T : GlobalValue>(_ globalValue: T) -> T {
+    open func declare<T : GlobalValue>(_ globalValue: T) -> T {
         module.add(globalValue)
         return globalValue
     }
 
     @discardableResult
-    public func declareInput(name: String, type: DataType) -> Input {
+    open func declareInput(name: String, type: DataType) -> Input {
         let input = Input(name: name, type: type)
         module.add(input)
         return input
     }
 
     @discardableResult
-    public func declareOutput(name: String, type: DataType) -> Output {
+    open func declareOutput(name: String, type: DataType) -> Output {
         let output = Output(name: name, type: type)
         module.add(output)
         return output
     }
 
     @discardableResult
-    public func declareParameter(name: String, type: DataType,
+    open func declareParameter(name: String, type: DataType,
                                  initializer: Initializer) -> Parameter {
         let parameter = Parameter(name: name, type: type, initializer: initializer)
         parameter.name = name
@@ -77,7 +77,7 @@ public extension IRBuilder {
     }
     
     @discardableResult
-    public func makeBasicBlock(named name: String) -> BasicBlock {
+    open func makeBasicBlock(named name: String) -> BasicBlock {
         let block = BasicBlock(name: disambiguatedName(for: name))
         currentBlock = block
         module.append(block)
@@ -85,7 +85,7 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeArithmeticOperation(_ `operator`: ArithmeticOperator,
+    open func makeArithmeticOperation(_ `operator`: ArithmeticOperator,
                                         _ lhs: Value, _ rhs: Value,
                                         name: String? = nil) -> DefiningInstruction {
         let inst = ArithmeticInstruction(name: name ?? makeName(),
@@ -95,13 +95,13 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeNegation(_ operand: Value, name: String? = nil) -> DefiningInstruction {
+    open func makeNegation(_ operand: Value, name: String? = nil) -> DefiningInstruction {
         let inst = NegationInstruction(name: name ?? makeName(), operand: operand)
         return build(inst)
     }
 
     @discardableResult
-    public func makeComparison(_ `operator`: ComparisonPredicate,
+    open func makeComparison(_ `operator`: ComparisonPredicate,
                                _ lhs: Value, _ rhs: Value,
                                name: String? = nil) -> DefiningInstruction {
         let inst = ComparisonInstruction(name: name ?? makeName(),
@@ -111,7 +111,7 @@ public extension IRBuilder {
     }
     
     @discardableResult
-    public func makeTensorProduct(_ lhs: Value, _ rhs: Value,
+    open func makeTensorProduct(_ lhs: Value, _ rhs: Value,
                                   name: String? = nil) -> DefiningInstruction {
         let inst = TensorProductInstruction(name: name ?? makeName(),
                                             leftOperand: lhs, rightOperand: rhs)
@@ -119,7 +119,7 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeElementwiseCall(_ function: ElementwiseFunction,
+    open func makeElementwiseCall(_ function: ElementwiseFunction,
                                     _ operand: Value, name: String? = nil) -> DefiningInstruction {
         let inst = ElementwiseCallInstruction(name: name ?? makeName(),
                                               function: function, operand: operand)
@@ -127,7 +127,7 @@ public extension IRBuilder {
     }
     
     @discardableResult
-    public func makeAggregateCall(_ function: AggregateFunction,
+    open func makeAggregateCall(_ function: AggregateFunction,
                                   _ operand: Value, name: String? = nil) -> DefiningInstruction {
         let inst = AggregateCallInstruction(name: name ?? makeName(),
                                             function: function, operand: operand)
@@ -135,7 +135,7 @@ public extension IRBuilder {
     }
     
     @discardableResult
-    public func makeConcatenation(
+    open func makeConcatenation(
         _ operands: [Value], axis: Int, name: String? = nil) -> DefiningInstruction {
         let inst = ConcatenationInstruction(name: name ?? makeName(),
                                             operands: operands, axis: axis)
@@ -143,7 +143,7 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeShapeCast(_ operand: Value, targetShape: TensorShape,
+    open func makeShapeCast(_ operand: Value, targetShape: TensorShape,
                               name: String? = nil) -> DefiningInstruction {
         let inst = ShapeCastInstruction(name: name ?? makeName(),
                                         operand: operand, targetShape: targetShape)
@@ -151,7 +151,7 @@ public extension IRBuilder {
     }
 
     @discardableResult
-    public func makeStore<T : GlobalValue>(source: Value, destination: T) -> Instruction {
+    open func makeStore<T : GlobalValue>(source: Value, destination: T) -> Instruction {
         let inst = StoreInstruction(source: source, destination: destination)
         return build(inst)
     }

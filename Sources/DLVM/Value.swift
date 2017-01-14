@@ -22,9 +22,13 @@ public extension Value {
     public var isScalar: Bool {
         return type is ScalarType
     }
+
+    public var shape: TensorShape? {
+        return (type as? TensorType)?.shape
+    }
 }
 
-public protocol NamedValue : Value {
+public protocol NamedValue : class, Value {
     var name: String { get set }
 }
 
@@ -32,7 +36,7 @@ public protocol GlobalValue : NamedValue, IRObject {
     typealias Parent = Module
 }
 
-public class Input : GlobalValue {
+public final class Input : GlobalValue {
     public var name: String
     public var type: DataType
     public var isRecurrent: Bool = false
@@ -44,7 +48,7 @@ public class Input : GlobalValue {
     }
 }
 
-public class Parameter : GlobalValue {
+public final class Parameter : GlobalValue {
     public var name: String
     public var type: DataType
     public var initializer: Initializer
@@ -57,7 +61,7 @@ public class Parameter : GlobalValue {
     }
 }
 
-public class Output : GlobalValue {
+public final class Output : GlobalValue {
     public var name: String
     public var type: DataType
     public var isRecurrent: Bool = false
