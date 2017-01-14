@@ -73,8 +73,14 @@ class CodeGenerator {
         
         /// Generate hidden layers
         for layer in program.layers {
-            let variable = build(layer.expression, named: layer.name)
-            environment[layer.name] = variable
+            let value = build(layer.expression, named: layer.name)
+            if layer.isOutput {
+                let type = program.dataType.makeTensorType(with: layer.shape)
+                let output = builder.declareOutput(name: layer.name, type: type)
+                environment[output.name] = output
+                builder.makeStore(source: value, destination: output)
+            }
+            environment[layer.name] = value
         }
 
         /// Done!
