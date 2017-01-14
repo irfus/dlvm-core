@@ -154,11 +154,11 @@ public class ShapeCastInstruction : DefiningInstruction {
     }
 }
 
-public class StoreInstruction<T : GlobalValue> : Instruction {
+public class StoreInstruction : Instruction {
     public var source: Value
-    public var destination: T
+    public var destination: Value
 
-    public init(source: Value, destination: T) {
+    public init(source: Value, destination: Value) {
         self.source = source
         self.destination = destination
     }
