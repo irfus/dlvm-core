@@ -36,6 +36,7 @@ extension ScalarType {
     public static var bool: ScalarType {
         return self.init(base: .bool, size: 1)
     }
+    
     public static func int(_ size: Int) -> ScalarType {
         return self.init(base: .int, size: size)
     }

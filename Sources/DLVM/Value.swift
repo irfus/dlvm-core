@@ -10,7 +10,7 @@
 /// Base
 ///
 
-public protocol Value : class {
+public protocol Value : class, TextOutputStreamable {
     var type: DataType { get set }
 }
 
@@ -56,7 +56,7 @@ public class Parameter : GlobalValue {
     }
 }
 
-public protocol Initializer {
+public protocol Initializer : TextOutputStreamable {
     var typeBase: TypeBase { get }
 }
 
