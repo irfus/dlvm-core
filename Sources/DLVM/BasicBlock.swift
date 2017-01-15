@@ -8,16 +8,17 @@
 
 import Foundation
 
-open class BasicBlock : IRCollection, IRObject {
+open class BasicBlock : IRCollection, IRObject, Differentiable {
 
     public typealias Element = Instruction
 
     open var name: String
-    
+    open weak var parent: Module?
+
+    open var gradient: BasicBlock?
+
     /// Take advantange of great data structures from Foundation
     let instructionSet = NSMutableOrderedSet()
-
-    open weak var parent: Module?
     
     /// Same as instructions
     open var elements: [Instruction] {
