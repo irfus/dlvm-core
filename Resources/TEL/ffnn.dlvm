@@ -1,26 +1,28 @@
 module ffnn
 
-extern %i2: [f32,4x1]
-extern %i1: [f32,4x1]
+// declare input f32 [4x1] @i2
+// declare input f32 [4x1] @i1
 
-define %W3: [f32,8x8] = random float 0.0, float 1.0
-define %W1: [f32,4x4] = random float 0.0, float 1.0
-define %b2: [f32,8x1] = repeat float 0.0
-define %b3: [f32,8x1] = repeat float 0.0
-define %b1: [f32,4x1] = repeat float 0.0
-define %W2: [f32,8x8] = random float 0.0, float 1.0
+// declare parameter f32 [8x8] @W3 = random from f32 0.0 to f32 1.0
+// declare parameter f32 [4x4] @W1 = random from f32 0.0 to f32 1.0
+// declare parameter f32 [8x1] @b3 = repeating f32 0.0
+// declare parameter f32 [8x1] @b2 = repeating f32 0.0
+// declare parameter f32 [4x1] @b1 = repeating f32 0.0
+// declare parameter f32 [8x8] @W2 = random from 0.0 to 1.0
+
+// declare output f32 [1x8] @o
 
 entry:
-	%v0: [f32,4x1] = prod %W1, %i1
-	%v0.1: [f32,4x1] = arith.add %v0, %b1
-	%h1: [f32,4x1] = activ.sigmoid %v0.1
-	%v0.2: [f32,8x1] = concat.0 %h1, %i2
-	%v0.3: [f32,8x1] = arith.sub float 1.0, %v0.2
-	%v0.4: [f32,8x1] = prod %W2, %v0.3
-	%v0.5: [f32,8x1] = arith.add %v0.4, %b2
-	%h2: [f32,8x1] = activ.tanh %v0.5
-	%v0.6: [f32,8x1] = prod %W3, %h2
-	%v0.7: [f32,8x1] = arith.add %v0.6, %b3
-	%v0.8: [f32,8x1] = trans.softmax %v0.7
-	%v0.8: [f32,1x8] = shapecast [1x8], %v0.8
-	out %v0.8
+	%v0 = tmul f32 [4x4] @W1, f32 [4x1] @i1
+	%v1 = add f32 [4x1] %v0, f32 [4x1] @b1
+	%h1 = sigmoid f32 [4x1] %v1
+	%v2 = concat f32 [4x1] %h1, f32 [4x1] @i2 along 0
+	%v3 = sub f32 1.0, f32 [8x1] %v2
+	%v4 = tmul f32 [8x8] @W2, f32 %v3
+	%v5 = add f32 [8x8] %v4, f32 [8x1] @b2
+	%h2 = sigmoid f32 [8x8] %v5
+	%v6 = tmul f32 [8x8] @W3, f32 [8x8] %h2
+	%v7 = add f32 [8x8] %v6, f32 [8x1] @b3
+	%v8 = softmax f32 [8x8] %v7
+	%o = shapecast f32 [8x8] %v8 to [1x8]
+	store f32 [1x8] %o to f32 [1x8] @o
