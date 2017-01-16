@@ -13,18 +13,54 @@ protocol ASTNode {
 }
 
 struct ModuleNode : ASTNode {
-    let name: String
-    let declarations: [DeclarationNode]
-    let basicBlocks: [BasicBlockNode]
+    let items: [TopLevelItemNode]
     let range: SourceRange
+}
+
+enum TopLevelItemNode : ASTNode {
+    case moduleName(String, SourceRange)
+    case declaration(DeclarationNode, SourceRange)
+    case basicBlock(BasicBlockNode, SourceRange)
+
+    var range: SourceRange {
+        switch self {
+        case let .moduleName(_, sr), let .declaration(_, sr), let .basicBlock(_, sr):
+            return sr
+        }
+    }
 }
 
 struct DeclarationNode : ASTNode {
     enum Role {
         case input, output, parameter
     }
+    let role: Role
     let name: String
+    let variable: VariableNode
+    let initializer: Initializer?
     let range: SourceRange
+}
+
+struct ImmediateValueNode : ASTNode {
+    let type: TypeNode
+    let immediate: ImmediateNode
+
+    var range: SourceRange {
+        return type.range.lowerBound..<immediate.range.upperBound
+    }
+}
+
+enum Initializer : ASTNode {
+    case immediate(ImmediateValueNode, SourceRange)
+    case random(ImmediateValueNode, ImmediateValueNode, SourceRange)
+    case repeating(ImmediateValueNode, SourceRange)
+
+    var range: SourceRange {
+        switch self {
+        case let .immediate(_, sr), let .random(_, _, sr), let .repeating(_, sr):
+            return sr
+        }
+    }
 }
 
 struct BasicBlockNode : ASTNode {
