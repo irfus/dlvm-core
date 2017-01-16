@@ -1,10 +1,10 @@
 OS=$(shell uname)
 ifeq ($(OS), Linux)
-INCDIR := /usr/local/cuda/include
-LIBDIR := /usr/local/cuda/lib64
+INCDIR := /usr/local/include
+LIBDIR := /usr/local/lib64
 else
-INCDIR := /usr/local/cuda/include
-LIBDIR := /usr/local/cuda/lib
+INCDIR := /usr/local/include
+LIBDIR := /usr/local/lib
 endif
 
 CFLAGS=-I$(INCDIR)
