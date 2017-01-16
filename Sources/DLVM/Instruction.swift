@@ -168,6 +168,15 @@ public final class TypeCastInstruction : DefiningInstruction {
     }
 }
 
+public final class LoadInstruction : DefiningInstruction {
+    public var source: Value
+
+    public init(name: String, source: Value) {
+        self.source = source
+        super.init(name: name, type: source.type)
+    }
+}
+
 public final class StoreInstruction : Instruction {
     public var source: Value
     public var destination: Value
