@@ -1,16 +1,16 @@
 module ffnn
 
-// declare input f32 [4x1] @i2
-// declare input f32 [4x1] @i1
+declare input f32 [4x1] @i2
+declare input f32 [4x1] @i1
 
-// declare parameter f32 [8x8] @W3 = random from f32 0.0 to f32 1.0
-// declare parameter f32 [4x4] @W1 = random from f32 0.0 to f32 1.0
-// declare parameter f32 [8x1] @b3 = repeating f32 0.0
-// declare parameter f32 [8x1] @b2 = repeating f32 0.0
-// declare parameter f32 [4x1] @b1 = repeating f32 0.0
-// declare parameter f32 [8x8] @W2 = random from 0.0 to 1.0
+declare parameter f32 [8x8] @W3 = random from f32 0.0 to f32 1.0
+declare parameter f32 [4x4] @W1 = random from f32 0.0 to f32 1.0
+declare parameter f32 [8x1] @b3 = repeating f32 0.0
+declare parameter f32 [8x1] @b2 = repeating f32 0.0
+declare parameter f32 [4x1] @b1 = repeating f32 0.0
+declare parameter f32 [8x8] @W2 = random from f32 0.0 to f32 1.0
 
-// declare output f32 [1x8] @o
+declare output f32 [1x8] @o
 
 entry:
 	%v0 = tmul f32 [4x4] @W1, f32 [4x1] @i1

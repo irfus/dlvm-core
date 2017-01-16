@@ -100,18 +100,18 @@ public enum Immediate : Initializer {
 }
 
 public enum TensorInitializer : Initializer {
-    case elements([Immediate])
-    case random(from: Immediate, to: Immediate)
-    case repeating(Immediate)
+    case elements([ImmediateValue])
+    case random(from: ImmediateValue, to: ImmediateValue)
+    case repeating(ImmediateValue)
 
     public var typeBase: TypeBase {
         switch self {
         case let .elements(elements):
-            return elements[0].typeBase
+            return elements[0].type.base
         case let .random(from: lowerbound, to: _):
-            return lowerbound.typeBase
+            return lowerbound.type.base
         case let .repeating(value):
-            return value.typeBase
+            return value.type.base
         }
     }
 }
