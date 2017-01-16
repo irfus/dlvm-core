@@ -41,11 +41,11 @@ extension Attribute: Parsible {
      ^^ Attribute.type
 
     public static let nameParser: Parser<Attribute> =
-        "name" ~~> (spaces ~~> identifier.! .. "a name")
+        "module" ~~> (spaces ~~> identifier.! .. "a name")
      ^^ Attribute.name
 
     public static let parser: Parser<Attribute> =
-        "@" ~~> (typeParser | nameParser).! .. "an attribute"
+        typeParser | nameParser
 }
 
 extension Role : Parsible {

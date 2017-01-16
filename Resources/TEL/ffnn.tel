@@ -1,8 +1,8 @@
 // A simple feed-forward neural network described in TEL
-@name ffnn
+module ffnn
 
 // Universal data type for data flow
-@type float16
+type float32
 
 // Parameter declarations
 W1: param[4x4] = random(0.0, 1.0)
