@@ -13,7 +13,8 @@ import func Funky.flip
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_.]*")
 fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! }
-fileprivate let lineComments = ("//" ~~> Lexer.string(until: "\n").maybeEmpty() <~~ Lexer.newLine)+
+fileprivate let lineComments = ("//" ~~> Lexer.string(until: ["\n", "\r"]).maybeEmpty() <~~
+                                (newLines | Lexer.end))+
 fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
 fileprivate let comma = Lexer.character(",").amid(spaces.?)
 fileprivate let newLines = Lexer.newLine+
@@ -32,7 +33,7 @@ extension TypeNode : Parsible {
 
 extension ShapeNode : Parsible {
     static let parser: Parser<ShapeNode> =
-        number.many(separatedBy: comma)
+        number.many(separatedBy: "x")
               .between(Lexer.character("["), Lexer.character("]").!)
           ^^^ ShapeNode.init
 }
@@ -47,20 +48,20 @@ extension ImmediateNode : Parsible {
 
 extension ImmediateValueNode : Parsible {
     static let parser: Parser<ImmediateValueNode> =
-        TypeNode.parser ~~ ImmediateNode.parser ^^ ImmediateValueNode.init
+        TypeNode.parser <~~ spaces ~~ ImmediateNode.parser.! ^^ ImmediateValueNode.init
 }
 
 extension VariableNode : Parsible {
     static let parser: Parser<VariableNode> =
-        Lexer.character("@") ~~> identifier ^^^ VariableNode.global
-      | Lexer.character("%") ~~> identifier ^^^ VariableNode.temporary
-      | ImmediateNode.parser ^^^ VariableNode.immediate
+        Lexer.character("@") ~~> identifier.! ^^^ VariableNode.global
+      | Lexer.character("%") ~~> identifier.! ^^^ VariableNode.temporary
+      | ImmediateNode.parser.! ^^^ VariableNode.immediate
 }
 
 extension OperandNode : Parsible {
     static let parser: Parser<OperandNode> =
-        TypeNode.parser ^^ curry(OperandNode.init)
-     ** ShapeNode.parser.?
+        TypeNode.parser <~~ spaces ^^ curry(OperandNode.init)
+     ** (ShapeNode.parser <~~ spaces).?
      ** VariableNode.parser
 }
 
@@ -86,31 +87,31 @@ extension InstructionNode : Parsible {
       ) <~~ spaces
 
     private static let unaryParser: Parser<InstructionNode> =
-        unaryOpParser ** OperandNode.parser
+        unaryOpParser ** OperandNode.parser.!
 
     private static let binaryParser: Parser<InstructionNode> =
         binaryOpParser ^^ curry
-     ** OperandNode.parser <~~ comma ** OperandNode.parser
+     ** OperandNode.parser.! <~~ comma ** OperandNode.parser
 
     private static let concatParser: Parser<InstructionNode> =
         Lexer.token("concat") <~~ spaces ^^= curry(InstructionNode.concat)
-     ** OperandNode.parser.many(separatedBy: comma)
+     ** OperandNode.parser.nonbacktracking().many(separatedBy: comma)
      ** (Lexer.token("along").amid(spaces) ~~> number).?
 
     private static let shapeCastParser: Parser<InstructionNode> =
         Lexer.token("shapecast") <~~ spaces ^^= curry(InstructionNode.shapeCast)
-     ** OperandNode.parser <~~ Lexer.token("to").amid(spaces)
+     ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** ShapeNode.parser
 
     private static let typeCastParser: Parser<InstructionNode> =
         Lexer.token("typecast") <~~ spaces ^^= curry(InstructionNode.typeCast)
-     ** OperandNode.parser <~~ Lexer.token("to").amid(spaces)
+     ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** TypeNode.parser
 
     private static let storeParser: Parser<InstructionNode> =
         Lexer.token("store") <~~ spaces ^^= curry(InstructionNode.store)
-     ** OperandNode.parser <~~ Lexer.token("to").amid(spaces)
-     ** OperandNode.parser
+     ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
+     ** OperandNode.parser.!
 
     static let parser: Parser<InstructionNode> = unaryParser
                                                | binaryParser
@@ -122,7 +123,7 @@ extension InstructionNode : Parsible {
 
 extension InstructionDeclarationNode : Parsible {
     static let parser: Parser<InstructionDeclarationNode> =
-        Lexer.tab ~~> (identifier <~~ Lexer.character("=").amid(spaces.?)).?
+        spaces.? ~~> (Lexer.character("%") ~~> identifier <~~ Lexer.character("=").amid(spaces.?)).?
      ^^ curry(InstructionDeclarationNode.init)
      ** InstructionNode.parser
 }
@@ -130,11 +131,10 @@ extension InstructionDeclarationNode : Parsible {
 extension BasicBlockNode : Parsible {
     static let parser: Parser<BasicBlockNode> =
         identifier ^^ curry(BasicBlockNode.init)
-     ** (Lexer.token("gradient").amid(spaces.?).between("(", ")") ^^= true)
-        .withDefault(false)
-    <~~ spaces.? <~~ Lexer.character(":").amid(spaces.?) <~~ linebreaks
-     ** InstructionNode.parser.many(separatedBy: linebreaks)
-                              .amid(linebreaks.?)
+     ** (Lexer.token("gradient").amid(spaces.?).between("(", ")") ^^= true).withDefault(false)
+    <~~ Lexer.character(":").amid(spaces.?).! <~~ linebreaks.!
+     ** InstructionDeclarationNode.parser
+                                  .many(separatedBy: linebreaks).amid(linebreaks.?)
 }
 
 extension DeclarationNode.Role : Parsible {
@@ -155,10 +155,9 @@ extension Initializer : Parsible {
 
 extension DeclarationNode : Parsible {
     static let parser: Parser<DeclarationNode> =
-        Lexer.token("declare") ~~> Role.parser.amid(spaces).! ^^ curry(DeclarationNode.init)
-     ** identifier.!
-     ** VariableNode.parser
-     ** Initializer.parser
+        Lexer.token("declare") ~~> Role.parser.amid(spaces.!) ^^ curry(DeclarationNode.init)
+     ** OperandNode.parser.!
+     ** (Lexer.character("=").amid(spaces.?) ~~> Initializer.parser.!).?
 }
 
 extension TopLevelItemNode : Parsible {
@@ -170,5 +169,8 @@ extension TopLevelItemNode : Parsible {
 
 extension ModuleNode : Parsible {
     static let parser: Parser<ModuleNode> =
-        TopLevelItemNode.parser.many(separatedBy: linebreaks).amid(linebreaks.?) ^^^ ModuleNode.init
+        TopLevelItemNode.parser
+                        .many(separatedBy: linebreaks)
+                        .amid(linebreaks.?)
+            ^^^ ModuleNode.init
 }
