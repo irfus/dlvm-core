@@ -13,7 +13,7 @@ import func Funky.flip
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_.]*")
 fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! }
-fileprivate let lineComments = ("//" ~~> Lexer.string(until: "\n") <~~ Lexer.newLine)+
+fileprivate let lineComments = ("//" ~~> Lexer.string(until: "\n").maybeEmpty() <~~ Lexer.newLine)+
 fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
 fileprivate let comma = Lexer.character(",").amid(spaces.?)
 fileprivate let newLines = Lexer.newLine+
@@ -43,6 +43,11 @@ extension ImmediateNode : Parsible {
       | Lexer.signedInteger ^^ { Int($0)! } ^^^ ImmediateNode.int
       | ( Lexer.token("false") ^^= false
         | Lexer.token("true")  ^^= true  ) ^^^ ImmediateNode.bool
+}
+
+extension ImmediateValueNode : Parsible {
+    static let parser: Parser<ImmediateValueNode> =
+        TypeNode.parser ~~ ImmediateNode.parser ^^ ImmediateValueNode.init
 }
 
 extension VariableNode : Parsible {
@@ -117,7 +122,7 @@ extension InstructionNode : Parsible {
 
 extension InstructionDeclarationNode : Parsible {
     static let parser: Parser<InstructionDeclarationNode> =
-        identifier <~~ Lexer.character("=").amid(spaces.?)
+        Lexer.tab ~~> (identifier <~~ Lexer.character("=").amid(spaces.?)).?
      ^^ curry(InstructionDeclarationNode.init)
      ** InstructionNode.parser
 }
@@ -130,4 +135,40 @@ extension BasicBlockNode : Parsible {
     <~~ spaces.? <~~ Lexer.character(":").amid(spaces.?) <~~ linebreaks
      ** InstructionNode.parser.many(separatedBy: linebreaks)
                               .amid(linebreaks.?)
+}
+
+extension DeclarationNode.Role : Parsible {
+    static let parser: Parser<DeclarationNode.Role> =
+        Lexer.token("input") ^^= .input
+      | Lexer.token("parameter") ^^= .parameter
+      | Lexer.token("output") ^^= .output
+}
+
+extension Initializer : Parsible {
+    static let parser: Parser<Initializer> =
+        ImmediateValueNode.parser ^^^ Initializer.immediate
+      | Lexer.token("repeating") ~~> spaces ~~> ImmediateValueNode.parser ^^^ Initializer.repeating
+      | Lexer.token("random") ~~> Lexer.token("from").amid(spaces) ~~>
+        ImmediateValueNode.parser ^^ curry(Initializer.random)
+        ** (Lexer.token("to").amid(spaces) ~~> ImmediateValueNode.parser)
+}
+
+extension DeclarationNode : Parsible {
+    static let parser: Parser<DeclarationNode> =
+        Lexer.token("declare") ~~> Role.parser.amid(spaces).! ^^ curry(DeclarationNode.init)
+     ** identifier.!
+     ** VariableNode.parser
+     ** Initializer.parser
+}
+
+extension TopLevelItemNode : Parsible {
+    static let parser: Parser<TopLevelItemNode> =
+        Lexer.token("module") ~~> spaces ~~> identifier.! ^^^ TopLevelItemNode.moduleName
+      | DeclarationNode.parser ^^^ TopLevelItemNode.declaration
+      | BasicBlockNode.parser ^^^ TopLevelItemNode.basicBlock
+}
+
+extension ModuleNode : Parsible {
+    static let parser: Parser<ModuleNode> =
+        TopLevelItemNode.parser.many(separatedBy: linebreaks).amid(linebreaks.?) ^^^ ModuleNode.init
 }
