@@ -13,8 +13,10 @@ import func Funky.flip
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
 fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! } .. "a number"
-fileprivate let lineComments = ("//" ~~> Lexer.string(until: "\n").maybeEmpty() <~~ Lexer.newLine)+
+fileprivate let lineComments = ("//" ~~> Lexer.string(until: ["\n", "\r"]).maybeEmpty() <~~
+                                (newLines | Lexer.end))+
 fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
+fileprivate let comma = Lexer.character(",").amid(spaces.?)
 fileprivate let newLines = Lexer.newLine+
 fileprivate let linebreaks = (newLines | lineComments).amid(spaces.?)+ .. "a linebreak"
 
@@ -104,7 +106,7 @@ extension Expression : Parsible {
 
     private static let randomParser: Parser<Expression> =
         "random" ~~> (Constant.parser.! <~~
-            Lexer.character(",").amid(spaces.?).! ~~ Constant.parser.!)
+            comma.! ~~ Constant.parser.!)
             .amid(spaces.?)
             .between(Lexer.character("("), Lexer.character(")").!)
      ^^ Expression.random
@@ -112,7 +114,7 @@ extension Expression : Parsible {
     private static let callParser: Parser<Expression> =
         identifier ~~
         parser.nonbacktracking()
-              .many(separatedBy: Lexer.character(",").amid(spaces.?))
+              .many(separatedBy: comma)
               .amid(spaces.?)
               .between(Lexer.token("("), Lexer.token(")").!)
      ^^ Expression.call
@@ -122,7 +124,7 @@ extension Expression : Parsible {
 
     private static let concatParser: Parser<Expression> =
         parser.nonbacktracking()
-              .many(separatedBy: Lexer.character(",").amid(spaces.?))
+              .many(separatedBy: comma)
               .between("[", "]")
      ~~ ("@" ~~> number.!).withDefault(0)
      ^^ Expression.concat
