@@ -130,7 +130,7 @@ extension BasicBlock : TextOutputStreamable {
         name.write(to: &target)
         target.write(":\n")
         for inst in elements {
-            target.write("\t")
+            target.write("    ")
             if let defInst = inst as? DefiningInstruction {
                 target.write("%\(defInst.name) = ")
             }
