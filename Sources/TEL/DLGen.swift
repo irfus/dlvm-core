@@ -80,7 +80,7 @@ class CodeGenerator {
                 let type = program.dataType.makeTensorType(with: layer.shape)
                 let output = builder.declareOutput(name: layer.name, type: type)
                 environment[output.name] = output
-                builder.makeStore(source: value, destination: output)
+                builder.makeStore(value, to: output)
             }
             environment[layer.name] = value
         }
@@ -111,6 +111,9 @@ class CodeGenerator {
         case let .variable(variable):
             guard let op = environment[variable.name] else {
                 preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")
+            }
+            if let input = op as? DLVM.Input {
+                return builder.makeLoad(input)
             }
             return op
         case let .infixOp(op, .constant(c), rhs):

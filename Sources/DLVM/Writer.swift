@@ -149,6 +149,8 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("\(inst.function) \(inst.operand)")
             case let inst as StoreInstruction:
                 target.write("store \(inst.source) to \(inst.destination)")
+            case let inst as LoadInstruction:
+                target.write("load \(inst.source)")
             case let inst as ConcatenationInstruction:
                 target.write("concat ")
                 inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
