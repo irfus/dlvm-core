@@ -35,8 +35,7 @@ struct DeclarationNode : ASTNode {
         case input, output, parameter
     }
     let role: Role
-    let name: String
-    let variable: VariableNode
+    let operand: OperandNode
     let initializer: Initializer?
     let range: SourceRange
 }
@@ -66,7 +65,7 @@ enum Initializer : ASTNode {
 struct BasicBlockNode : ASTNode {
     let name: String
     let isGradient: Bool
-    let instructions: [InstructionNode]
+    let instructions: [InstructionDeclarationNode]
     let range: SourceRange
 }
 
