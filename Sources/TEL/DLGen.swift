@@ -51,13 +51,15 @@ class CodeGenerator {
             let initializer: TensorInitializer
             switch param.initializer {
             case let .constant(.int(i)):
-                initializer = .repeating(.int(i))
+                initializer = .repeating(ImmediateValue(type: program.dataType, immediate: .int(i)))
             case let .constant(.float(f)):
-                initializer = .repeating(.float(f))
+                initializer = .repeating(ImmediateValue(type: program.dataType, immediate: .float(f)))
             case let .random(.int(i1), .int(i2)):
-                initializer = .random(from: .int(i1), to: .int(i2))
+                initializer = .random(from: ImmediateValue(type: program.dataType, immediate: .int(i1)),
+                                      to: ImmediateValue(type: program.dataType, immediate: .int(i2)))
             case let .random(.float(f1), .float(f2)):
-                initializer = .random(from: .float(f1), to: .float(f2))
+                initializer = .random(from: ImmediateValue(type: program.dataType, immediate: .float(f1)),
+                                      to: ImmediateValue(type: program.dataType, immediate: .float(f2)))
             default:
                 preconditionFailure("This should not have passed Sema")
             }
