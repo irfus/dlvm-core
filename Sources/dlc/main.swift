@@ -5,10 +5,10 @@ do {
         print("No file given")
         exit(0)
     }
-    let telSource = try String(contentsOfFile: file, encoding: .utf8)
+    let irSource = try String(contentsOfFile: file, encoding: .utf8)
     print("Source file:", file)
-    let ast = try ModuleNode.parser.parse(telSource)
-    print("Parse\n", ast)
+    let ast = try ModuleNode.parser.parse(irSource)
+    print(ast.range)
 }
 catch {
     print(error)

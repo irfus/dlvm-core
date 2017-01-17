@@ -80,21 +80,11 @@ extension TensorType : TextOutputStreamable {
     }
 }
 
-extension ElementwiseFunction : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case .relu: target.write("relu")
-        case .tanh: target.write("tanh")
-        case .sigmoid: target.write("sigmoid")
-        case .log: target.write("log")
-        }
-    }
-}
-
 extension AggregateFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .softmax: target.write("softmax")
+        case .logSoftmax: target.write("logsoftmax")
         }
     }
 }
@@ -108,6 +98,9 @@ extension ArithmeticOperator : TextOutputStreamable {
         case .divide: target.write("div")
         case .min: target.write("min")
         case .max: target.write("max")
+        case .truncateDivide: target.write("truncdiv")
+        case .floorDivide: target.write("floordiv")
+        case .mod: target.write("mod")
         }
     }
 }
@@ -125,6 +118,14 @@ extension ComparisonPredicate : TextOutputStreamable {
     }
 }
 
+extension CrossReducingFunction : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case .crossEntropy: target.write("crossent")
+        }
+    }
+}
+
 extension BasicBlock : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         name.write(to: &target)
@@ -135,8 +136,6 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("%\(defInst.name) = ")
             }
             switch inst {
-            case let inst as NegationInstruction:
-                target.write("neg \(inst.operand)")
             case let inst as TensorProductInstruction:
                 target.write("tmul \(inst.leftOperand), \(inst.rightOperand)")
             case let inst as ArithmeticInstruction:
@@ -155,6 +154,10 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("concat ")
                 inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
                 target.write(" along \(inst.axis)")
+            case let inst as SummationInstruction:
+                target.write("sum \(inst.operand)")
+            case let inst as CrossReducingInstruction:
+                target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ShapeCastInstruction:
                 target.write("shapecast \(inst.operand) to \(inst.targetShape)")
             case let inst as TypeCastInstruction:

@@ -95,12 +95,6 @@ extension IRBuilder {
     }
     
     @discardableResult
-    open func makeNegation(_ operand: Value, name: String? = nil) -> DefiningInstruction {
-        let inst = NegationInstruction(name: name ?? makeName(), operand: operand)
-        return build(inst)
-    }
-    
-    @discardableResult
     open func makeComparison(_ `operator`: ComparisonPredicate,
                              _ lhs: Value, _ rhs: Value,
                              name: String? = nil) -> DefiningInstruction {

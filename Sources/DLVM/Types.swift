@@ -46,6 +46,12 @@ extension ScalarType {
     }
 }
 
+extension DataType {
+    public var scalarType: ScalarType {
+        return ScalarType(base: base, size: size)
+    }
+}
+
 public struct TensorType : DataType, Equatable {
     public var base: TypeBase
     public var size: Int
@@ -53,9 +59,5 @@ public struct TensorType : DataType, Equatable {
 
     public static func ==(lhs: TensorType, rhs: TensorType) -> Bool {
         return lhs.base == rhs.base && lhs.size == rhs.size
-    }
-
-    public var scalarType: ScalarType {
-        return ScalarType(base: base, size: size)
     }
 }

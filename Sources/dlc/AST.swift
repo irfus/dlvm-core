@@ -72,7 +72,6 @@ struct InstructionDeclarationNode : ASTNode {
 }
 
 enum InstructionNode : ASTNode {
-    case neg(OperandNode, SourceRange)
     case tmul(OperandNode, OperandNode, SourceRange)
     case add(OperandNode, OperandNode, SourceRange)
     case sub(OperandNode, OperandNode, SourceRange)
@@ -80,11 +79,13 @@ enum InstructionNode : ASTNode {
     case div(OperandNode, OperandNode, SourceRange)
     case min(OperandNode, OperandNode, SourceRange)
     case max(OperandNode, OperandNode, SourceRange)
+    case crossent(OperandNode, OperandNode, SourceRange)
     case sigmoid(OperandNode, SourceRange)
     case tanh(OperandNode, SourceRange)
     case relu(OperandNode, SourceRange)
     case log(OperandNode, SourceRange)
     case softmax(OperandNode, SourceRange)
+    case logsoftmax(OperandNode, SourceRange)
     case concat([OperandNode], Int?, SourceRange)
     case shapeCast(OperandNode, ShapeNode, SourceRange)
     case typeCast(OperandNode, TypeNode, SourceRange)
@@ -93,13 +94,13 @@ enum InstructionNode : ASTNode {
 
     var range: SourceRange {
         switch self {
-        case let .neg(_, sr),
-             let .tmul(_, _, sr),
+        case let .tmul(_, _, sr),
              let .add(_, _, sr), let .sub(_, _, sr),
              let .mul(_, _, sr), let .div(_, _, sr),
              let .min(_, _, sr), let .max(_, _, sr),
-             let .softmax(_, sr),
+             let .softmax(_, sr), let .logsoftmax(_, sr),
              let .sigmoid(_, sr), let .relu(_, sr), let .tanh(_, sr), let .log(_, sr),
+             let .crossent(_, _, sr),
              let .concat(_, _, sr),
              let .shapeCast(_, _, sr),
              let .typeCast(_, _, sr),
