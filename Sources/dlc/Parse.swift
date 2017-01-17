@@ -85,18 +85,19 @@ extension InstructionNode : Parsible {
       | Lexer.token("relu")    ^^= InstructionNode.relu
       | Lexer.token("log")     ^^= InstructionNode.log
       | Lexer.token("softmax") ^^= InstructionNode.softmax
-      | Lexer.token("neg")     ^^= InstructionNode.neg
+      | Lexer.token("logsoftmax") ^^= InstructionNode.logsoftmax
       | Lexer.token("load")    ^^= InstructionNode.load
       ) <~~ spaces
 
     private static let binaryOpParser: Parser<(OperandNode, OperandNode, SourceRange) -> InstructionNode> =
-      ( Lexer.token("add")  ^^= InstructionNode.add
-      | Lexer.token("sub")  ^^= InstructionNode.sub
-      | Lexer.token("mul")  ^^= InstructionNode.mul
-      | Lexer.token("div")  ^^= InstructionNode.div
-      | Lexer.token("min")  ^^= InstructionNode.min
-      | Lexer.token("max")  ^^= InstructionNode.max
-      | Lexer.token("tmul") ^^= InstructionNode.tmul
+      ( Lexer.token("add")      ^^= InstructionNode.add
+      | Lexer.token("sub")      ^^= InstructionNode.sub
+      | Lexer.token("mul")      ^^= InstructionNode.mul
+      | Lexer.token("div")      ^^= InstructionNode.div
+      | Lexer.token("min")      ^^= InstructionNode.min
+      | Lexer.token("max")      ^^= InstructionNode.max
+      | Lexer.token("tmul")     ^^= InstructionNode.tmul
+      | Lexer.token("crossent") ^^= InstructionNode.crossent
       ) <~~ spaces
 
     private static let unaryParser: Parser<InstructionNode> =

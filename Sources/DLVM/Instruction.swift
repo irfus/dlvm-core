@@ -14,14 +14,22 @@ public enum ComparisonPredicate {
 
 public enum ArithmeticOperator {
     case add, subtract, multiply, divide, min, max
+    case truncateDivide, floorDivide, mod
 }
 
 public enum ElementwiseFunction {
-    case sigmoid, relu, tanh, log
+    case sigmoid, relu, tanh
+    case log, exp, neg, sign, square, sqrt, round, rsqrt, ceil, floor
+    case tan, cos, sin, acos, asin, atan
+    case lgamma, digamma, erf, erfc, rint
+}
+
+public enum CrossReducingFunction {
+    case crossEntropy
 }
 
 public enum AggregateFunction {
-    case softmax
+    case softmax, logSoftmax
 }
 
 public class Instruction : IRObject {
@@ -37,15 +45,6 @@ public class DefiningInstruction : Instruction, NamedValue {
     fileprivate init(name: String, type: DataType) {
         self.name = name
         self.type = type
-    }
-}
-
-public final class NegationInstruction : DefiningInstruction {
-    public var operand: Value
-
-    public init(name: String, operand: Value) {
-        self.operand = operand
-        super.init(name: name, type: operand.type)
     }
 }
 
@@ -116,6 +115,15 @@ public final class ConcatenationInstruction : DefiningInstruction {
     }
 }
 
+public final class SummationInstruction : DefiningInstruction {
+    public var operand: Value
+
+    public init(name: String, operand: Value) {
+        self.operand = operand
+        super.init(name: name, type: operand.type.scalarType)
+    }
+}
+
 public final class ElementwiseCallInstruction : DefiningInstruction {
     public var function: ElementwiseFunction
     public var operand: Value
@@ -124,6 +132,19 @@ public final class ElementwiseCallInstruction : DefiningInstruction {
         self.function = function
         self.operand = operand
         super.init(name: name, type: operand.type)
+    }
+}
+
+public final class CrossReducingInstruction : DefiningInstruction {
+    public var function: CrossReducingFunction
+    public var firstOperand: Value
+    public var secondOperand: Value
+
+    public init(name: String, function: CrossReducingFunction, firstOperand: Value, secondOperand: Value) {
+        self.function = function
+        self.firstOperand = firstOperand
+        self.secondOperand = secondOperand
+        super.init(name: name, type: firstOperand.type.scalarType)
     }
 }
 
