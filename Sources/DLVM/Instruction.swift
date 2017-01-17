@@ -14,7 +14,7 @@ public enum ComparisonPredicate {
 
 public enum ArithmeticOperator {
     case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, mod
+    case truncateDivide, floorDivide, mod, pow
 }
 
 public enum ElementwiseFunction {
@@ -24,8 +24,16 @@ public enum ElementwiseFunction {
     case lgamma, digamma, erf, erfc, rint
 }
 
-public enum CrossReducingFunction {
+public enum ReductionFunction {
+    case sum, product, min, max, logicalAnd, logicalOr, mean
+}
+
+public enum BinaryReductionFunction {
     case crossEntropy
+}
+
+public enum ScanFunction {
+    case scanSum, scanProduct
 }
 
 public enum AggregateFunction {
@@ -48,47 +56,109 @@ public class DefiningInstruction : Instruction, NamedValue {
     }
 }
 
-public final class ArithmeticInstruction : DefiningInstruction {
-    public var `operator`: ArithmeticOperator
-    public var leftOperand, rightOperand: Value
+public class UnaryInstruction : DefiningInstruction {
+    public var operand: Value
 
-    public init(name: String, operator: ArithmeticOperator,
-                leftOperand: Value, rightOperand: Value) {
-        self.operator = `operator`
-        self.leftOperand = leftOperand
-        self.rightOperand = rightOperand
-        super.init(name: name, type: leftOperand.type)
+    fileprivate init(name: String, type: DataType, operand: Value) {
+        self.operand = operand
+        super.init(name: name, type: type)
     }
 }
 
-public class ComparisonInstruction : DefiningInstruction {
+public class BinaryInstruction : DefiningInstruction {
+    public var firstOperand, secondOperand: Value
+
+    fileprivate init(name: String, type: DataType, firstOperand: Value, secondOperand: Value) {
+        self.firstOperand = firstOperand
+        self.secondOperand = secondOperand
+        super.init(name: name, type: type)
+    }
+}
+
+public class UnaryCallInstruction<Function> : UnaryInstruction {
+    public var function: Function
+
+    public init(name: String, type: DataType, function: Function, operand: Value) {
+        self.function = function
+        super.init(name: name, type: type, operand: operand)
+    }
+}
+
+public class BinaryCallInstruction<Function> : BinaryInstruction {
+    public var function: Function
+
+    public init(name: String, type: DataType, function: Function,
+                firstOperand: Value, secondOperand: Value) {
+        self.function = function
+        super.init(name: name, type: type,
+                   firstOperand: firstOperand, secondOperand: secondOperand)
+    }
+}
+
+public class ReductionInstruction : UnaryCallInstruction<ReductionFunction> {
+    public init(name: String, function: ReductionFunction, operand: Value) {
+        super.init(name: name, type: operand.type.scalarType,
+                   function: function, operand: operand)
+    }
+}
+
+public class HomomorphicUnaryInstruction<Function> : UnaryCallInstruction<Function> {
+    public init(name: String, function: Function, operand: Value) {
+        super.init(name: name, type: operand.type, function: function, operand: operand)
+    }
+}
+
+public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction<Function> {
+    public init(name: String, function: Function, firstOperand: Value, secondOperand: Value) {
+        super.init(name: name, type: firstOperand.type, function: function,
+                   firstOperand: firstOperand, secondOperand: secondOperand)
+    }
+}
+
+public typealias ElementwiseTransformationInstruction = HomomorphicUnaryInstruction<ElementwiseFunction>
+public typealias AggregateTransformationInstruction = HomomorphicUnaryInstruction<AggregateFunction>
+public typealias BinaryReductionInstruction = HomomorphicBinaryInstruction<BinaryReductionFunction>
+public typealias ScanInstruction = HomomorphicUnaryInstruction<ScanFunction>
+public typealias ArithmeticInstruction = HomomorphicBinaryInstruction<ArithmeticOperator>
+
+public class ComparisonInstruction : BinaryInstruction {
     public var predicate: ComparisonPredicate
-    public var leftOperand, rightOperand: Value
 
     public init(name: String, predicate: ComparisonPredicate,
-                leftOperand: Value, rightOperand: Value) {
+                firstOperand: Value, secondOperand: Value) {
         self.predicate = predicate
-        self.leftOperand = leftOperand
-        self.rightOperand = rightOperand
-        super.init(name: name, type: ScalarType.bool)
+        super.init(name: name, type: ScalarType.bool,
+                   firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
 
-public final class TensorProductInstruction : DefiningInstruction {
-    public var leftOperand, rightOperand: Value
-
-    public init(name: String, leftOperand: Value, rightOperand: Value) {
-        self.leftOperand = leftOperand
-        self.rightOperand = rightOperand
+public final class TensorProductInstruction : BinaryInstruction {
+    public init(name: String, firstOperand: Value, secondOperand: Value) {
         let newType: DataType
-        if let lhsType = leftOperand.type as? TensorType,
-           let rhsType = rightOperand.type as? TensorType {
+        if let lhsType = firstOperand.type as? TensorType,
+           let rhsType = secondOperand.type as? TensorType {
             let newShape = (lhsType.shape ⊗ rhsType.shape) ?? lhsType.shape
             newType = TensorType(base: lhsType.base, size: lhsType.size, shape: newShape)
         } else {
-            newType = leftOperand.type
+            newType = firstOperand.type
         }
-        super.init(name: name, type: newType)
+        super.init(name: name, type: newType,
+                   firstOperand: firstOperand, secondOperand: secondOperand)
+    }
+}
+
+public final class MatrixProductInstruction : BinaryInstruction {
+    public init(name: String, firstOperand: Value, secondOperand: Value) {
+        let newType: DataType
+        if let lhsType = firstOperand.type as? TensorType,
+           let rhsType = secondOperand.type as? TensorType {
+            let newShape = (lhsType.shape ⊗ rhsType.shape) ?? lhsType.shape
+            newType = TensorType(base: lhsType.base, size: lhsType.size, shape: newShape)
+        } else {
+            newType = firstOperand.type
+        }
+        super.init(name: name, type: newType,
+                   firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
 
@@ -112,50 +182,6 @@ public final class ConcatenationInstruction : DefiningInstruction {
             TensorType(base: types[0].base, size: types[0].size, shape: shape)
         }
         super.init(name: name, type: newType ?? operands[0].type)
-    }
-}
-
-public final class SummationInstruction : DefiningInstruction {
-    public var operand: Value
-
-    public init(name: String, operand: Value) {
-        self.operand = operand
-        super.init(name: name, type: operand.type.scalarType)
-    }
-}
-
-public final class ElementwiseCallInstruction : DefiningInstruction {
-    public var function: ElementwiseFunction
-    public var operand: Value
-
-    public init(name: String, function: ElementwiseFunction, operand: Value) {
-        self.function = function
-        self.operand = operand
-        super.init(name: name, type: operand.type)
-    }
-}
-
-public final class CrossReducingInstruction : DefiningInstruction {
-    public var function: CrossReducingFunction
-    public var firstOperand: Value
-    public var secondOperand: Value
-
-    public init(name: String, function: CrossReducingFunction, firstOperand: Value, secondOperand: Value) {
-        self.function = function
-        self.firstOperand = firstOperand
-        self.secondOperand = secondOperand
-        super.init(name: name, type: firstOperand.type.scalarType)
-    }
-}
-
-public final class AggregateCallInstruction : DefiningInstruction {
-    public var function: AggregateFunction
-    public var operand: Value
-
-    public init(name: String, function: AggregateFunction, operand: Value) {
-        self.function = function
-        self.operand = operand
-        super.init(name: name, type: operand.type)
     }
 }
 

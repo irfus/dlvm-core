@@ -101,6 +101,7 @@ extension ArithmeticOperator : TextOutputStreamable {
         case .truncateDivide: target.write("truncdiv")
         case .floorDivide: target.write("floordiv")
         case .mod: target.write("mod")
+        case .pow: target.write("pow")
         }
     }
 }
@@ -118,7 +119,7 @@ extension ComparisonPredicate : TextOutputStreamable {
     }
 }
 
-extension CrossReducingFunction : TextOutputStreamable {
+extension BinaryReductionFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .crossEntropy: target.write("crossent")
@@ -137,14 +138,14 @@ extension BasicBlock : TextOutputStreamable {
             }
             switch inst {
             case let inst as TensorProductInstruction:
-                target.write("tmul \(inst.leftOperand), \(inst.rightOperand)")
+                target.write("tmul \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ArithmeticInstruction:
-                target.write("\(inst.operator) \(inst.leftOperand), \(inst.rightOperand)")
+                target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ComparisonInstruction:
-                target.write("cmp \(inst.predicate) \(inst.leftOperand), \(inst.rightOperand)")
-            case let inst as ElementwiseCallInstruction:
+                target.write("cmp \(inst.predicate) \(inst.firstOperand), \(inst.secondOperand)")
+            case let inst as ElementwiseTransformationInstruction:
                 target.write("\(inst.function) \(inst.operand)")
-            case let inst as AggregateCallInstruction:
+            case let inst as AggregateTransformationInstruction:
                 target.write("\(inst.function) \(inst.operand)")
             case let inst as StoreInstruction:
                 target.write("store \(inst.source) to \(inst.destination)")
@@ -154,10 +155,14 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("concat ")
                 inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
                 target.write(" along \(inst.axis)")
-            case let inst as SummationInstruction:
-                target.write("sum \(inst.operand)")
-            case let inst as CrossReducingInstruction:
+            case let inst as ReductionInstruction:
+                target.write("\(inst.function) \(inst.operand)")
+            case let inst as BinaryReductionInstruction:
                 target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
+            case let inst as ScanInstruction:
+                target.write("\(inst.function) \(inst.operand)")
+            case let inst as ReductionInstruction:
+                target.write("\(inst.function) \(inst.operand)")
             case let inst as ShapeCastInstruction:
                 target.write("shapecast \(inst.operand) to \(inst.targetShape)")
             case let inst as TypeCastInstruction:
