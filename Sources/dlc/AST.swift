@@ -7,6 +7,13 @@
 //
 
 import struct Parsey.SourceRange
+import enum DLVM.ElementwiseFunction
+import enum DLVM.ComparisonPredicate
+import enum DLVM.AggregateFunction
+import enum DLVM.ArithmeticOperator
+import enum DLVM.ReductionFunction
+import enum DLVM.ScanFunction
+import enum DLVM.BinaryReductionFunction
 
 protocol ASTNode {
     var range: SourceRange { get }
@@ -72,21 +79,16 @@ struct InstructionDeclarationNode : ASTNode {
 }
 
 enum InstructionNode : ASTNode {
-    case tmul(OperandNode, OperandNode, SourceRange)
-    case add(OperandNode, OperandNode, SourceRange)
-    case sub(OperandNode, OperandNode, SourceRange)
-    case mul(OperandNode, OperandNode, SourceRange)
-    case div(OperandNode, OperandNode, SourceRange)
-    case min(OperandNode, OperandNode, SourceRange)
-    case max(OperandNode, OperandNode, SourceRange)
-    case crossent(OperandNode, OperandNode, SourceRange)
-    case sigmoid(OperandNode, SourceRange)
-    case tanh(OperandNode, SourceRange)
-    case relu(OperandNode, SourceRange)
-    case log(OperandNode, SourceRange)
-    case softmax(OperandNode, SourceRange)
-    case logsoftmax(OperandNode, SourceRange)
-    case concat([OperandNode], Int?, SourceRange)
+    case matrixMultiply(OperandNode, OperandNode, SourceRange)
+    case tensorMultiply(OperandNode, OperandNode, SourceRange)
+    case arithmetic(ArithmeticOperator, OperandNode, OperandNode, SourceRange)
+    case binaryReduction(BinaryReductionFunction, OperandNode, OperandNode, SourceRange)
+    case reduce(ReductionFunction, OperandNode, SourceRange)
+    case elementwise(ElementwiseFunction, OperandNode, SourceRange)
+    case aggregate(AggregateFunction, OperandNode, SourceRange)
+    case comparison(ComparisonPredicate, OperandNode, OperandNode, SourceRange)
+    case scan(ScanFunction, OperandNode, SourceRange)
+    case concatenate([OperandNode], Int?, SourceRange)
     case shapeCast(OperandNode, ShapeNode, SourceRange)
     case typeCast(OperandNode, TypeNode, SourceRange)
     case load(OperandNode, SourceRange)
@@ -94,14 +96,16 @@ enum InstructionNode : ASTNode {
 
     var range: SourceRange {
         switch self {
-        case let .tmul(_, _, sr),
-             let .add(_, _, sr), let .sub(_, _, sr),
-             let .mul(_, _, sr), let .div(_, _, sr),
-             let .min(_, _, sr), let .max(_, _, sr),
-             let .softmax(_, sr), let .logsoftmax(_, sr),
-             let .sigmoid(_, sr), let .relu(_, sr), let .tanh(_, sr), let .log(_, sr),
-             let .crossent(_, _, sr),
-             let .concat(_, _, sr),
+        case let .matrixMultiply(_, _, sr),
+             let .tensorMultiply(_, _, sr),
+             let .arithmetic(_, _, _, sr),
+             let .binaryReduction(_, _, _, sr),
+             let .reduce(_, _, sr),
+             let .elementwise(_, _, sr),
+             let .aggregate(_, _, sr),
+             let .comparison(_, _, _, sr),
+             let .scan(_, _, sr),
+             let .concatenate(_, _, sr),
              let .shapeCast(_, _, sr),
              let .typeCast(_, _, sr),
              let .load(_, sr),
