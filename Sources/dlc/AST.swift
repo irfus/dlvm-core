@@ -13,21 +13,10 @@ protocol ASTNode {
 }
 
 struct ModuleNode : ASTNode {
-    let items: [TopLevelItemNode]
+    let name: String
+    let declarations: [DeclarationNode]
+    let basicBlocks: [BasicBlockNode]
     let range: SourceRange
-}
-
-enum TopLevelItemNode : ASTNode {
-    case moduleName(String, SourceRange)
-    case declaration(DeclarationNode, SourceRange)
-    case basicBlock(BasicBlockNode, SourceRange)
-
-    var range: SourceRange {
-        switch self {
-        case let .moduleName(_, sr), let .declaration(_, sr), let .basicBlock(_, sr):
-            return sr
-        }
-    }
 }
 
 struct DeclarationNode : ASTNode {

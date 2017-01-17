@@ -138,11 +138,11 @@ extension InstructionDeclarationNode : Parsible {
 
 extension BasicBlockNode : Parsible {
     static let parser: Parser<BasicBlockNode> =
-        identifier ^^ curry(BasicBlockNode.init)
+        identifier <~~ spaces.? ^^ curry(BasicBlockNode.init)
      ** (Lexer.token("gradient").amid(spaces.?).between("(", ")") ^^= true).withDefault(false)
     <~~ Lexer.character(":").amid(spaces.?).! <~~ linebreaks.!
-     ** InstructionDeclarationNode.parser.nonbacktracking()
-                                  .many(separatedBy: linebreaks).amid(linebreaks.?)
+     ** InstructionDeclarationNode.parser
+                                  .many(separatedBy: linebreaks)
      .. "a basic block"
 }
 
@@ -172,16 +172,10 @@ extension DeclarationNode : Parsible {
      .. "a declaration"
 }
 
-extension TopLevelItemNode : Parsible {
-    static let parser: Parser<TopLevelItemNode> =
-        Lexer.token("module") ~~> spaces ~~> identifier.! ^^^ TopLevelItemNode.moduleName
-      | DeclarationNode.parser ^^^ TopLevelItemNode.declaration
-      | BasicBlockNode.parser ^^^ TopLevelItemNode.basicBlock
-}
-
 extension ModuleNode : Parsible {
-    static let parser: Parser<ModuleNode> = TopLevelItemNode.parser
-                                                            .many(separatedBy: linebreaks)
-                                                            .amid(linebreaks.?)
-                                        ^^^ ModuleNode.init
+    static let parser: Parser<ModuleNode> =
+        linebreaks.? ~~> Lexer.token("module") ~~> spaces ~~> identifier.! ^^ curry(ModuleNode.init)
+     ** DeclarationNode.parser.manyOrNone(separatedBy: linebreaks).amid(linebreaks.?)
+     ** BasicBlockNode.parser.manyOrNone(separatedBy: linebreaks) <~~ linebreaks.?
+     .. "a basic block"
 }
