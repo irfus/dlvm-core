@@ -87,50 +87,57 @@ extension IRBuilder {
     @discardableResult
     open func makeArithmeticOperation(_ `operator`: ArithmeticOperator,
                                       _ lhs: Value, _ rhs: Value,
-                                      name: String? = nil) -> DefiningInstruction {
+                                      name: String? = nil) -> ArithmeticInstruction {
         let inst = ArithmeticInstruction(name: name ?? makeName(),
-                                         operator: `operator`,
-                                         leftOperand: lhs, rightOperand: rhs)
+                                         function: `operator`,
+                                         firstOperand: lhs, secondOperand: rhs)
         return build(inst)
     }
     
     @discardableResult
     open func makeComparison(_ `operator`: ComparisonPredicate,
                              _ lhs: Value, _ rhs: Value,
-                             name: String? = nil) -> DefiningInstruction {
+                             name: String? = nil) -> ComparisonInstruction {
         let inst = ComparisonInstruction(name: name ?? makeName(),
                                          predicate: `operator`,
-                                         leftOperand: lhs, rightOperand: rhs)
+                                         firstOperand: lhs, secondOperand: rhs)
         return build(inst)
     }
     
     @discardableResult
     open func makeTensorProduct(_ lhs: Value, _ rhs: Value,
-                                name: String? = nil) -> DefiningInstruction {
+                                name: String? = nil) -> TensorProductInstruction {
         let inst = TensorProductInstruction(name: name ?? makeName(),
-                                            leftOperand: lhs, rightOperand: rhs)
+                                            firstOperand: lhs, secondOperand: rhs)
         return build(inst)
     }
     
     @discardableResult
-    open func makeElementwiseCall(_ function: ElementwiseFunction,
-                                  _ operand: Value, name: String? = nil) -> DefiningInstruction {
-        let inst = ElementwiseCallInstruction(name: name ?? makeName(),
-                                              function: function, operand: operand)
+    open func makeElementwiseTransformation(_ function: ElementwiseFunction,
+                                            _ operand: Value, name: String? = nil) -> ElementwiseTransformationInstruction {
+        let inst = ElementwiseTransformationInstruction(name: name ?? makeName(),
+                                                        function: function, operand: operand)
         return build(inst)
     }
     
     @discardableResult
-    open func makeAggregateCall(_ function: AggregateFunction,
-                                _ operand: Value, name: String? = nil) -> DefiningInstruction {
-        let inst = AggregateCallInstruction(name: name ?? makeName(),
-                                            function: function, operand: operand)
+    open func makeAggregateTransformation(_ function: AggregateFunction,
+                                          _ operand: Value, name: String? = nil) -> AggregateTransformationInstruction {
+        let inst = AggregateTransformationInstruction(name: name ?? makeName(),
+                                                      function: function, operand: operand)
+        return build(inst)
+    }
+
+    @discardableResult
+    open func makeScan(_ function: ScanFunction, _ operand: Value, name: String? = nil) -> ScanInstruction {
+        let inst = ScanInstruction(name: name ?? makeName(),
+                                   function: function, operand: operand)
         return build(inst)
     }
     
     @discardableResult
     open func makeConcatenation(
-        _ operands: [Value], axis: Int, name: String? = nil) -> DefiningInstruction {
+        _ operands: [Value], axis: Int, name: String? = nil) -> ConcatenationInstruction {
         let inst = ConcatenationInstruction(name: name ?? makeName(),
                                             operands: operands, axis: axis)
         return build(inst)
@@ -138,7 +145,7 @@ extension IRBuilder {
     
     @discardableResult
     open func makeShapeCast(_ operand: Value, targetShape: TensorShape,
-                            name: String? = nil) -> DefiningInstruction {
+                            name: String? = nil) -> ShapeCastInstruction {
         let inst = ShapeCastInstruction(name: name ?? makeName(),
                                         operand: operand, targetShape: targetShape)
         return build(inst)
@@ -146,7 +153,7 @@ extension IRBuilder {
     
     @discardableResult
     open func makeTypeCast(_ operand: Value, targetBase: TypeBase, targetSize: Int,
-                           name: String? = nil) -> DefiningInstruction {
+                           name: String? = nil) -> TypeCastInstruction {
         let inst = TypeCastInstruction(name: name ?? makeName(),
                                        operand: operand,
                                        targetBase: targetBase, targetSize: targetSize)
@@ -154,19 +161,19 @@ extension IRBuilder {
     }
     
     @discardableResult
-    open func makeLoad(_ source: Input, name: String? = nil) -> DefiningInstruction {
+    open func makeLoad(_ source: Input, name: String? = nil) -> LoadInstruction {
         let inst = LoadInstruction(name: name ?? makeName(), source: source)
         return build(inst)
     }
     
     @discardableResult
-    open func makeStore(_ source: Value, to destination: Parameter) -> Instruction {
+    open func makeStore(_ source: Value, to destination: Parameter) -> StoreInstruction {
         let inst = StoreInstruction(source: source, destination: destination)
         return build(inst)
     }
     
     @discardableResult
-    open func makeStore(_ source: Value, to destination: Output) -> Instruction {
+    open func makeStore(_ source: Value, to destination: Output) -> StoreInstruction {
         let inst = StoreInstruction(source: source, destination: destination)
         return build(inst)
     }
