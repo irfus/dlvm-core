@@ -10,6 +10,12 @@ import Parsey
 import func Funky.curry
 import func Funky.flip
 
+// ((a, b, c, d, e) -> f) -> a -> b -> c -> d -> e -> f
+@inline(__always)
+public func curry<A, B, C, D, E, F, G>(_ f: @escaping (A, B, C, D, E, F) -> G) -> (A) -> (B) -> (C) -> (D) -> (E) -> (F) -> G {
+    return { w in { x in { y in { z in { a in { b in f(w, x, y, z, a, b) } } } } } }
+}
+
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_.]*")
 fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! } .. "a number"
@@ -167,7 +173,9 @@ extension Initializer : Parsible {
 extension DeclarationNode : Parsible {
     static let parser: Parser<DeclarationNode> =
         Lexer.token("declare") ~~> Role.parser.amid(spaces.!) ^^ curry(DeclarationNode.init)
-     ** OperandNode.parser.!
+     ** TypeNode.parser.! <~~ spaces
+     ** ShapeNode.parser.! <~~ spaces
+     ** (Lexer.character("@") ~~> identifier).! .. "an identifier"
      ** (Lexer.character("=").amid(spaces.?) ~~> Initializer.parser.!).?
      .. "a declaration"
 }
@@ -176,6 +184,6 @@ extension ModuleNode : Parsible {
     static let parser: Parser<ModuleNode> =
         linebreaks.? ~~> Lexer.token("module") ~~> spaces ~~> identifier.! ^^ curry(ModuleNode.init)
      ** DeclarationNode.parser.manyOrNone(separatedBy: linebreaks).amid(linebreaks.?)
-     ** BasicBlockNode.parser.manyOrNone(separatedBy: linebreaks) <~~ linebreaks.?
+     ** BasicBlockNode.parser.manyOrNone(separatedBy: linebreaks).ended(by: linebreaks.?)
      .. "a basic block"
 }

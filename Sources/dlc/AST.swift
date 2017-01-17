@@ -24,7 +24,9 @@ struct DeclarationNode : ASTNode {
         case input, output, parameter
     }
     let role: Role
-    let operand: OperandNode
+    let type: TypeNode
+    let shape: ShapeNode
+    let name: String
     let initializer: Initializer?
     let range: SourceRange
 }
