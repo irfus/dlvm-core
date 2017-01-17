@@ -97,6 +97,7 @@ enum InstructionNode : ASTNode {
     case concat([OperandNode], Int?, SourceRange)
     case shapeCast(OperandNode, ShapeNode, SourceRange)
     case typeCast(OperandNode, TypeNode, SourceRange)
+    case load(OperandNode, SourceRange)
     case store(OperandNode, OperandNode, SourceRange)
 
     var range: SourceRange {
@@ -111,6 +112,7 @@ enum InstructionNode : ASTNode {
              let .concat(_, _, sr),
              let .shapeCast(_, _, sr),
              let .typeCast(_, _, sr),
+             let .load(_, sr),
              let .store(_, _, sr):
             return sr
         }
