@@ -77,53 +77,68 @@ extension OperandNode : Parsible {
      .. "an operand"
 }
 
+import enum DLVM.ElementwiseFunction
+import enum DLVM.ComparisonPredicate
+import enum DLVM.AggregateFunction
+import enum DLVM.ArithmeticOperator
+import enum DLVM.ReductionFunction
+import enum DLVM.ScanFunction
+import enum DLVM.BinaryReductionFunction
+import protocol DLVM.LexicallyConvertible
+
+extension Parsible where Self : LexicallyConvertible {
+    static var parser: Parser<Self> {
+        return identifier.map(Self.lexicon)
+    }
+}
+
+extension ElementwiseFunction : Parsible {}
+extension ReductionFunction : Parsible {}
+extension ScanFunction : Parsible {}
+extension BinaryReductionFunction : Parsible {}
+extension AggregateFunction : Parsible {}
+extension ArithmeticOperator : Parsible {}
+extension ComparisonPredicate : Parsible {}
+
 extension InstructionNode : Parsible {
 
-    private static let unaryOpParser: Parser<(OperandNode, SourceRange) -> InstructionNode> =
-      ( Lexer.token("sigmoid") ^^= InstructionNode.sigmoid
-      | Lexer.token("tanh")    ^^= InstructionNode.tanh
-      | Lexer.token("relu")    ^^= InstructionNode.relu
-      | Lexer.token("log")     ^^= InstructionNode.log
-      | Lexer.token("softmax") ^^= InstructionNode.softmax
-      | Lexer.token("logsoftmax") ^^= InstructionNode.logsoftmax
-      | Lexer.token("load")    ^^= InstructionNode.load
-      ) <~~ spaces
-
-    private static let binaryOpParser: Parser<(OperandNode, OperandNode, SourceRange) -> InstructionNode> =
-      ( Lexer.token("add")      ^^= InstructionNode.add
-      | Lexer.token("sub")      ^^= InstructionNode.sub
-      | Lexer.token("mul")      ^^= InstructionNode.mul
-      | Lexer.token("div")      ^^= InstructionNode.div
-      | Lexer.token("min")      ^^= InstructionNode.min
-      | Lexer.token("max")      ^^= InstructionNode.max
-      | Lexer.token("tmul")     ^^= InstructionNode.tmul
-      | Lexer.token("crossent") ^^= InstructionNode.crossent
-      ) <~~ spaces
-
     private static let unaryParser: Parser<InstructionNode> =
-        unaryOpParser ** OperandNode.parser.!
+      ( ElementwiseFunction.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
+      | AggregateFunction.parser <~~ spaces   ^^ curry(InstructionNode.aggregate)
+      | "reduce" ~~> spaces ~~> ReductionFunction.parser.! <~~ spaces
+                                              ^^ curry(InstructionNode.reduce)
+      | "scan" ~~> spaces ~~> ScanFunction.parser.! <~~ spaces
+                                              ^^ curry(InstructionNode.scan)
+      | "load" ~~> spaces                     ^^= curry(InstructionNode.load)
+      ) ** OperandNode.parser.!
 
     private static let binaryParser: Parser<InstructionNode> =
-        binaryOpParser ^^ curry
-     ** OperandNode.parser.! <~~ comma.! ** OperandNode.parser.!
+      ( BinaryReductionFunction.parser <~~ spaces
+                                              ^^ curry(InstructionNode.binaryReduction)
+      | ArithmeticOperator.parser <~~ spaces  ^^ curry(InstructionNode.arithmetic)
+      | "compare" ~~> spaces ~~> ComparisonPredicate.parser.! <~~ spaces
+                                              ^^ curry(InstructionNode.comparison)
+      | "mmul" ~~> spaces                     ^^= curry(InstructionNode.matrixMultiply)
+      | "tmul" ~~> spaces                     ^^= curry(InstructionNode.tensorMultiply)
+      ) ** OperandNode.parser.! <~~ comma.! ** OperandNode.parser.!
 
     private static let concatParser: Parser<InstructionNode> =
-        Lexer.token("concat") <~~ spaces ^^= curry(InstructionNode.concat)
+        "concat" ~~> spaces ^^= curry(InstructionNode.concatenate)
      ** OperandNode.parser.nonbacktracking().many(separatedBy: comma)
      ** (Lexer.token("along").amid(spaces) ~~> number).?
 
     private static let shapeCastParser: Parser<InstructionNode> =
-        Lexer.token("shapecast") <~~ spaces ^^= curry(InstructionNode.shapeCast)
+        "shapecast" ~~> spaces ^^= curry(InstructionNode.shapeCast)
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** ShapeNode.parser
 
     private static let typeCastParser: Parser<InstructionNode> =
-        Lexer.token("typecast") <~~ spaces ^^= curry(InstructionNode.typeCast)
+        "typecast" ~~> spaces ^^= curry(InstructionNode.typeCast)
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** TypeNode.parser
 
     private static let storeParser: Parser<InstructionNode> =
-        Lexer.token("store") <~~ spaces ^^= curry(InstructionNode.store)
+        "store" ~~> spaces ^^= curry(InstructionNode.store)
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** OperandNode.parser.!
 
@@ -148,16 +163,16 @@ extension BasicBlockNode : Parsible {
         identifier <~~ spaces.? ^^ curry(BasicBlockNode.init)
      ** (Lexer.token("gradient").amid(spaces.?).between("(", ")") ^^= true).withDefault(false)
     <~~ Lexer.character(":").amid(spaces.?).! <~~ linebreaks.!
-     ** InstructionDeclarationNode.parser
+     ** InstructionDeclarationNode.parser.!
                                   .many(separatedBy: linebreaks)
      .. "a basic block"
 }
 
 extension DeclarationNode.Role : Parsible {
     static let parser: Parser<DeclarationNode.Role> =
-        Lexer.token("input") ^^= .input
+        Lexer.token("input")     ^^= .input
       | Lexer.token("parameter") ^^= .parameter
-      | Lexer.token("output") ^^= .output
+      | Lexer.token("output")    ^^= .output
      .. "a global variable role (input, parameter, output)"
 }
 
