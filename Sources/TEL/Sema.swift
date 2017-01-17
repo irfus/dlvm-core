@@ -489,7 +489,7 @@ public class Program {
         case let .product(lhs, rhs):
             let lhsShape = try shape(of: lhs, in: &env)
             let rhsShape = try shape(of: rhs, in: &env)
-            guard let prodShape = lhsShape.product(with: rhsShape) else {
+            guard let prodShape = lhsShape.matrixMultiplied(by: rhsShape) else {
                 throw SemanticError.cannotFormProduct( lhs, lhsShape, rhs, rhsShape)
             }
             return prodShape

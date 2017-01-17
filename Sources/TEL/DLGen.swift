@@ -133,7 +133,7 @@ class CodeGenerator {
             return builder.makeElementwiseTransformation(.neg, exprOp)
         case let .product(lhs, rhs):
             let lhsOp = build(lhs), rhsOp = build(rhs)
-            return builder.makeTensorProduct(lhsOp, rhsOp, name: name)
+            return builder.makeMatrixMultiplication(lhsOp, rhsOp, name: name)
         case let .concat(exprs, dimension: dim):
             let exprOps = exprs.map { self.build($0) }
             return builder.makeConcatenation(exprOps, axis: dim, name: name)
