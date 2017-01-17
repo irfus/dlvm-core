@@ -6,38 +6,112 @@
 //
 //
 
-public enum ComparisonPredicate {
+public protocol LexicallyConvertible {
+    static var lexicon: [String : Self] { get }
+}
+
+public enum ComparisonPredicate : LexicallyConvertible {
     case lessThan, lessThanOrEqualTo
     case greaterThan, greaterThanOrEqualTo
     case equalTo, notEqualTo
+
+    public static let lexicon: [String : ComparisonPredicate] = [
+        "lt"  : .lessThan,
+        "leq" : .lessThanOrEqualTo,
+        "gt"  : .greaterThan,
+        "geq" : .greaterThanOrEqualTo,
+        "eq"  : .equalTo,
+        "neq" : .notEqualTo
+    ]
 }
 
-public enum ArithmeticOperator {
+public enum ArithmeticOperator : LexicallyConvertible {
     case add, subtract, multiply, divide, min, max
     case truncateDivide, floorDivide, mod, power
+
+    public static let lexicon: [String : ArithmeticOperator] = [
+        "add"      : .add,
+        "sub" : .subtract,
+        "mul" : .multiply,
+        "div"   : .divide,
+        "min"      : .min,
+        "max"      : .max,
+        "truncDiv" : .truncateDivide,
+        "floorDiv" : .floorDivide,
+        "mod"      : .mod,
+        "pow"      : .power
+    ]
 }
 
-public enum ElementwiseFunction {
+public enum ElementwiseFunction : LexicallyConvertible {
     case sigmoid, relu, tanh
     case log, exp, neg, sign, square, sqrt, round, rsqrt, ceil, floor
     case tan, cos, sin, acos, asin, atan
     case lgamma, digamma, erf, erfc, rint
+
+    public static let lexicon: [String : ElementwiseFunction] = [
+        "sigmoid" : .sigmoid,
+        "relu"    : .relu,
+        "tanh"    : .tanh,
+        "log"     : .log,
+        "exp"     : .exp,
+        "neg"     : .neg,
+        "sign"    : .sign,
+        "square"  : .square,
+        "sqrt"    : .sqrt,
+        "round"   : .round,
+        "rsqrt"   : .rsqrt,
+        "ceil"    : .ceil,
+        "floor"   : .floor,
+        "tan"     : .tan,
+        "cos"     : .cos,
+        "sin"     : .sin,
+        "acos"    : .acos,
+        "asin"    : .asin,
+        "atan"    : .atan,
+        "lgamma"  : .lgamma,
+        "digamma" : .digamma,
+        "erf"     : .erf,
+        "erfc"    : .erfc,
+        "rint"    : .rint
+    ]
 }
 
-public enum ReductionFunction {
-    case sum, product, min, max, logicalAnd, logicalOr, mean
+public enum ReductionFunction : LexicallyConvertible {
+    case add, multiply, min, max, and, or, mean
+
+    public static let lexicon: [String : ReductionFunction] = [
+        "add"  : .add, "mul"  : .multiply,
+        "min"  : .min, "max"  : .max,
+        "and"  : .and, "or"   : .or,
+        "mean" : .mean
+    ]
 }
 
-public enum BinaryReductionFunction {
+public enum BinaryReductionFunction : LexicallyConvertible {
     case crossEntropy
+
+    public static let lexicon: [String : BinaryReductionFunction] = [
+        "crossEnt" : .crossEntropy
+    ]
 }
 
-public enum ScanFunction {
-    case scanAdd, scanMultiply
+public enum ScanFunction : LexicallyConvertible {
+    case add, multiply
+
+    public static let lexicon: [String : ScanFunction] = [
+        "add" : .add, "multiply" : .multiply
+    ]
 }
 
-public enum AggregateFunction {
+
+public enum AggregateFunction : LexicallyConvertible {
     case softmax, logSoftmax
+
+    public static let lexicon: [String : AggregateFunction] = [
+        "softmax"    : .softmax,
+        "logSoftmax" : .logSoftmax
+    ]
 }
 
 public class Instruction : IRObject {

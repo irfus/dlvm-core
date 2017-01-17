@@ -106,11 +106,27 @@ extension ArithmeticOperator : TextOutputStreamable {
     }
 }
 
+extension ReductionFunction : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("reduce ")
+        switch self {
+        case .add: return target.write("add")
+        case .multiply: return target.write("mul")
+        case .min: return target.write("min")
+        case .max: return target.write("max")
+        case .mean: return target.write("mean")
+        case .and: return target.write("and")
+        case .or: return target.write("or")
+        }
+    }
+}
+
 extension ScanFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("scan ")
         switch self {
-        case .scanAdd: return target.write("scanAdd")
-        case .scanMultiply: return target.write("scanMultiply")
+        case .add: return target.write("add")
+        case .multiply: return target.write("mul")
         }
     }
 }
