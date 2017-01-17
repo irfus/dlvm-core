@@ -105,10 +105,18 @@ extension IRBuilder {
     }
     
     @discardableResult
-    open func makeTensorProduct(_ lhs: Value, _ rhs: Value,
-                                name: String? = nil) -> TensorProductInstruction {
-        let inst = TensorProductInstruction(name: name ?? makeName(),
-                                            firstOperand: lhs, secondOperand: rhs)
+    open func makeTensorMultiplication(_ lhs: Value, _ rhs: Value,
+                                       name: String? = nil) -> TensorMultiplicationInstruction {
+        let inst = TensorMultiplicationInstruction(name: name ?? makeName(),
+                                                   firstOperand: lhs, secondOperand: rhs)
+        return build(inst)
+    }
+    
+    @discardableResult
+    open func makeMatrixMultiplication(_ lhs: Value, _ rhs: Value,
+                                       name: String? = nil) -> MatrixMultiplicationInstruction {
+        let inst = MatrixMultiplicationInstruction(name: name ?? makeName(),
+                                                   firstOperand: lhs, secondOperand: rhs)
         return build(inst)
     }
     

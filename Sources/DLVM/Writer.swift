@@ -84,7 +84,7 @@ extension AggregateFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .softmax: target.write("softmax")
-        case .logSoftmax: target.write("logsoftmax")
+        case .logSoftmax: target.write("logSoftmax")
         }
     }
 }
@@ -98,10 +98,19 @@ extension ArithmeticOperator : TextOutputStreamable {
         case .divide: target.write("div")
         case .min: target.write("min")
         case .max: target.write("max")
-        case .truncateDivide: target.write("truncdiv")
-        case .floorDivide: target.write("floordiv")
+        case .truncateDivide: target.write("truncDiv")
+        case .floorDivide: target.write("floorDiv")
         case .mod: target.write("mod")
-        case .pow: target.write("pow")
+        case .power: target.write("pow")
+        }
+    }
+}
+
+extension ScanFunction : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case .scanAdd: return target.write("scanAdd")
+        case .scanMultiply: return target.write("scanMultiply")
         }
     }
 }
@@ -122,7 +131,7 @@ extension ComparisonPredicate : TextOutputStreamable {
 extension BinaryReductionFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case .crossEntropy: target.write("crossent")
+        case .crossEntropy: target.write("crossEnt")
         }
     }
 }
@@ -137,8 +146,10 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("%\(defInst.name) = ")
             }
             switch inst {
-            case let inst as TensorProductInstruction:
+            case let inst as TensorMultiplicationInstruction:
                 target.write("tmul \(inst.firstOperand), \(inst.secondOperand)")
+            case let inst as MatrixMultiplicationInstruction:
+                target.write("mmul \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ArithmeticInstruction:
                 target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ComparisonInstruction:
