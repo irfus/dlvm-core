@@ -14,7 +14,7 @@ public enum ComparisonPredicate {
 
 public enum ArithmeticOperator {
     case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, mod, pow
+    case truncateDivide, floorDivide, mod, power
 }
 
 public enum ElementwiseFunction {
@@ -33,7 +33,7 @@ public enum BinaryReductionFunction {
 }
 
 public enum ScanFunction {
-    case scanSum, scanProduct
+    case scanAdd, scanMultiply
 }
 
 public enum AggregateFunction {
@@ -132,7 +132,7 @@ public class ComparisonInstruction : BinaryInstruction {
     }
 }
 
-public final class TensorProductInstruction : BinaryInstruction {
+public final class TensorMultiplicationInstruction : BinaryInstruction {
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         let newType: DataType
         if let lhsType = firstOperand.type as? TensorType,
@@ -147,12 +147,12 @@ public final class TensorProductInstruction : BinaryInstruction {
     }
 }
 
-public final class MatrixProductInstruction : BinaryInstruction {
+public final class MatrixMultiplicationInstruction : BinaryInstruction {
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         let newType: DataType
         if let lhsType = firstOperand.type as? TensorType,
            let rhsType = secondOperand.type as? TensorType {
-            let newShape = (lhsType.shape ⊗ rhsType.shape) ?? lhsType.shape
+            let newShape = lhsType.shape.matrixMultiplied(by: rhsType.shape) ?? lhsType.shape
             newType = TensorType(base: lhsType.base, size: lhsType.size, shape: newShape)
         } else {
             newType = firstOperand.type

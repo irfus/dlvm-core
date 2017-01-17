@@ -124,17 +124,17 @@ public extension TensorShape {
         self[dim] += other[dim]
     }
 
-    public func product(with other: TensorShape) -> TensorShape? {
+    public func multiplied(by other: TensorShape) -> TensorShape? {
         guard last == other.first else { return nil }
         let newDim = dimensions.dropLast() + other.dimensions.dropFirst()
         return TensorShape(newDim)
     }
 
     public static func ⊗ (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
-        return lhs.product(with: rhs)
+        return lhs.multiplied(by: rhs)
     }
 
-    public func matrixProduct(with other: TensorShape) -> TensorShape? {
+    public func matrixMultiplied(by other: TensorShape) -> TensorShape? {
         /// Has to be a matrix at least
         guard rank >= 2, other.rank >= 2 else { return nil }
         /// Match inner dimensions for matrix multiplication
