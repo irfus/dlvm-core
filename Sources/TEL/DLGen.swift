@@ -93,21 +93,30 @@ class CodeGenerator {
     @discardableResult
     func build(_ expression: Expression, named name: String? = nil) -> Value {
         switch expression {
-        case let .call("sigmoid", args):
+        case let .call(funcName, args) where args.count == 1:
             let argOp = build(args[0])
-            return builder.makeElementwiseTransformation(.sigmoid, argOp, name: name)
-        case let .call("tanh", args):
-            let argOp = build(args[0])
-            return builder.makeElementwiseTransformation(.sigmoid, argOp, name: name)
-        case let .call("relu", args):
-            let argOp = build(args[0])
-            return builder.makeElementwiseTransformation(.sigmoid, argOp, name: name)
-        case let .call("log", args):
-            let argOp = build(args[0])
-            return builder.makeElementwiseTransformation(.sigmoid, argOp, name: name)
-        case let .call("softmax", args):
-            let argOp = build(args[0])
-            return builder.makeAggregateTransformation(.softmax, argOp, name: name)
+            if let function = ElementwiseFunction.lexicon[funcName] {
+                return builder.makeElementwiseTransformation(function, argOp, name: name)
+            }
+            if let function = AggregateFunction.lexicon[funcName] {
+                return builder.makeAggregateTransformation(function, argOp, name: name)
+            }
+            if let function = ScanFunction.lexicon[funcName] {
+                return builder.makeScan(function, argOp, name: name)
+            }
+            if let function = ReductionFunction.lexicon[funcName] {
+                return builder.makeReduction(function, argOp, name: name)
+            }
+            preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
+        case let .call(funcName, args) where args.count == 2:
+            let firstArgOp = build(args[0]), secondArgOp = build(args[1])
+            if let function = BinaryReductionFunction.lexicon[funcName] {
+                return builder.makeBinaryReduction(function, firstArgOp, secondArgOp, name: name)
+            }
+            if let function = ArithmeticOperator.lexicon[funcName] {
+                return builder.makeArithmeticOperation(function, firstArgOp, secondArgOp, name: name)
+            }
+            preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
         case let .variable(variable):
             guard let op = environment[variable.name] else {
                 preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")

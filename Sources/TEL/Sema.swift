@@ -10,6 +10,14 @@
 import struct DLVM.ScalarType
 import struct DLVM.TensorShape
 
+import enum DLVM.ElementwiseFunction
+import enum DLVM.ComparisonPredicate
+import enum DLVM.AggregateFunction
+import enum DLVM.ArithmeticOperator
+import enum DLVM.ReductionFunction
+import enum DLVM.ScanFunction
+import enum DLVM.BinaryReductionFunction
+
 public enum SemanticError : Error {
     case dataTypeRedeclared
     case dataTypeUnknown(String)
@@ -494,18 +502,36 @@ public class Program {
             }
             return prodShape
 
-        /// For now we assume only unary functions
-        case let .call("sigmoid", args) where args.count == 1,
-             let .call("tanh", args) where args.count == 1,
-             let .call("relu", args) where args.count == 1,
-             let .call("log", args) where args.count == 1,
-             let .call("softmax", args) where args.count == 1:
-            return try shape(of: args[0], in: &env)
-
-        case let .call(_, args) where args.count != 1:
+        /// For now we assume only unary and binary functions
+        case let .call(funcName, args) where args.count == 1:
+            let argShape = try shape(of: args[0], in: &env)
+            if ScanFunction.lexicon.keys.contains(funcName) ||
+                ElementwiseFunction.lexicon.keys.contains(funcName) ||
+                AggregateFunction.lexicon.keys.contains(funcName) {
+                return argShape
+            }
+            if ReductionFunction.lexicon.keys.contains(funcName) {
+                return [] // Rank 0, scalar
+            }
             throw SemanticError.argumentCountMismatch(expression,
                                                       count: args.count,
                                                       expected: 1)
+
+        case let .call(funcName, args) where args.count == 2:
+            let firstArgShape = try shape(of: args[0], in: &env)
+            let secondArgShape = try shape(of: args[1], in: &env)
+            guard firstArgShape == secondArgShape else {
+                throw SemanticError.operatorShapeMismatch(args[0], firstArgShape, args[1], secondArgShape)
+            }
+            if BinaryReductionFunction.lexicon.keys.contains(funcName) {
+                return []
+            }
+            if ArithmeticOperator.lexicon.keys.contains(funcName) {
+                return firstArgShape
+            }
+            throw SemanticError.argumentCountMismatch(expression,
+                                                      count: args.count,
+                                                      expected: 2)
 
         case let .call(funcName, _):
             throw SemanticError.functionUnknown(expression, funcName)
