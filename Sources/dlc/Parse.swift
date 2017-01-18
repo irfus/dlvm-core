@@ -105,21 +105,17 @@ extension InstructionNode : Parsible {
     private static let unaryParser: Parser<InstructionNode> =
       ( ElementwiseFunction.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
       | AggregateFunction.parser <~~ spaces   ^^ curry(InstructionNode.aggregate)
-      | "reduce" ~~> spaces ~~> ReductionFunction.parser.! <~~ spaces
-                                              ^^ curry(InstructionNode.reduce)
-      | "scan" ~~> spaces ~~> ScanFunction.parser.! <~~ spaces
-                                              ^^ curry(InstructionNode.scan)
+      | ReductionFunction.parser <~~ spaces   ^^ curry(InstructionNode.reduce)
+      | ScanFunction.parser <~~ spaces        ^^ curry(InstructionNode.scan)
       | "load" ~~> spaces                     ^^= curry(InstructionNode.load)
       ) ** OperandNode.parser.!
 
     private static let binaryParser: Parser<InstructionNode> =
-      ( BinaryReductionFunction.parser <~~ spaces
-                                              ^^ curry(InstructionNode.binaryReduction)
-      | ArithmeticOperator.parser <~~ spaces  ^^ curry(InstructionNode.arithmetic)
-      | "compare" ~~> spaces ~~> ComparisonPredicate.parser.! <~~ spaces
-                                              ^^ curry(InstructionNode.comparison)
-      | "mmul" ~~> spaces                     ^^= curry(InstructionNode.matrixMultiply)
-      | "tmul" ~~> spaces                     ^^= curry(InstructionNode.tensorMultiply)
+      ( BinaryReductionFunction.parser <~~ spaces ^^ curry(InstructionNode.binaryReduction)
+      | ArithmeticOperator.parser <~~ spaces      ^^ curry(InstructionNode.arithmetic)
+      | ComparisonPredicate.parser <~~ spaces     ^^ curry(InstructionNode.comparison)
+      | "mmul" ~~> spaces                         ^^= curry(InstructionNode.matrixMultiply)
+      | "tmul" ~~> spaces                         ^^= curry(InstructionNode.tensorMultiply)
       ) ** OperandNode.parser.! <~~ comma.! ** OperandNode.parser.!
 
     private static let concatParser: Parser<InstructionNode> =

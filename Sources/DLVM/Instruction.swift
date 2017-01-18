@@ -31,9 +31,9 @@ public enum ArithmeticOperator : LexicallyConvertible {
 
     public static let lexicon: [String : ArithmeticOperator] = [
         "add"      : .add,
-        "sub" : .subtract,
-        "mul" : .multiply,
-        "div"   : .divide,
+        "sub"      : .subtract,
+        "mul"      : .multiply,
+        "div"      : .divide,
         "min"      : .min,
         "max"      : .max,
         "truncDiv" : .truncateDivide,
@@ -81,10 +81,10 @@ public enum ReductionFunction : LexicallyConvertible {
     case add, multiply, min, max, and, or, mean
 
     public static let lexicon: [String : ReductionFunction] = [
-        "add"  : .add, "mul"  : .multiply,
-        "min"  : .min, "max"  : .max,
-        "and"  : .and, "or"   : .or,
-        "mean" : .mean
+        "reduceAdd"  : .add, "reduceMul"  : .multiply,
+        "reduceMin"  : .min, "reduceMax"  : .max,
+        "reduceAnd"  : .and, "reduceOr"   : .or,
+        "reduceMean" : .mean
     ]
 }
 
@@ -100,7 +100,7 @@ public enum ScanFunction : LexicallyConvertible {
     case add, multiply
 
     public static let lexicon: [String : ScanFunction] = [
-        "add" : .add, "multiply" : .multiply
+        "scanAdd" : .add, "scanMul" : .multiply
     ]
 }
 
@@ -201,7 +201,10 @@ public class ComparisonInstruction : BinaryInstruction {
     public init(name: String, predicate: ComparisonPredicate,
                 firstOperand: Value, secondOperand: Value) {
         self.predicate = predicate
-        super.init(name: name, type: ScalarType.bool,
+        var newType = firstOperand.type
+        newType.base = .bool
+        newType.size = 1
+        super.init(name: name, type: newType,
                    firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
