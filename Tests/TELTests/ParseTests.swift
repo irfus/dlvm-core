@@ -14,7 +14,7 @@ class ParseTests : XCTestCase {
 
     func testParseExpression() {
         do {
-            _ = try Expression.parser.parse("[v0, W     v]")
+            _ = try Expression.parser.parse("[v0, W •    v]")
             _ = try Expression.parser.parse("[v0, -v0+v1*v4]")
             _ = try Expression.parser.parse("[v0, -(v0+v1)*v4]")
             _ = try Expression.parser.parse("0")
@@ -28,8 +28,8 @@ class ParseTests : XCTestCase {
     func testParseDeclaration() {
         do {
             _ = try Declaration.parser.parse("i: in[2x1]")
-            _ = try Declaration.parser.parse("h: hidden[2x1] = tanh(W x + b)")
-            _ = try Declaration.parser.parse("recurrent t {\n h: hidden[2x1] = tanh(W x + b) \n}")
+            _ = try Declaration.parser.parse("h: hidden[2x1] = tanh(W . x + b)")
+            _ = try Declaration.parser.parse("recurrent t {\n h: hidden[2x1] = tanh(W . x + b) \n}")
         }
         catch {
             XCTFail("\(error)")
@@ -38,10 +38,10 @@ class ParseTests : XCTestCase {
 
     func testParseMacro() {
         do {
-            _ = try Attribute.parser.parse("#type float8")
-            _ = try Attribute.parser.parse("#type float16")
-            _ = try Attribute.parser.parse("#type int32")
-            _ = try Attribute.parser.parse("#type int64")
+            _ = try Attribute.parser.parse("type float8")
+            _ = try Attribute.parser.parse("type float16")
+            _ = try Attribute.parser.parse("type int32")
+            _ = try Attribute.parser.parse("type int64")
         }
         catch {
             XCTFail("\(error)")
