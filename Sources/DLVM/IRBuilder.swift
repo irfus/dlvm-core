@@ -193,13 +193,7 @@ extension IRBuilder {
     }
     
     @discardableResult
-    open func makeStore(_ source: Value, to destination: Parameter) -> StoreInstruction {
-        let inst = StoreInstruction(source: source, destination: destination)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeStore(_ source: Value, to destination: Output) -> StoreInstruction {
+    open func makeStore(_ source: Value, to destination: GlobalValue) -> StoreInstruction {
         let inst = StoreInstruction(source: source, destination: destination)
         return build(inst)
     }

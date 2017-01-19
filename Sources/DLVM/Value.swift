@@ -32,8 +32,7 @@ public protocol NamedValue : class, Value {
     var name: String { get set }
 }
 
-public protocol GlobalValue : NamedValue, IRObject {
-    typealias Parent = Module
+public protocol GlobalValue : NamedValue {
 }
 
 public final class Input : GlobalValue {
