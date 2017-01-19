@@ -23,7 +23,11 @@ open class Module {
     open lazy var entryBlock: BasicBlock? = self.basicBlocks.first
     
     open var basicBlocks: [BasicBlock] {
-        return basicBlockSet.array as! [BasicBlock]
+        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+            return basicBlockSet.array as! [BasicBlock]
+        #else
+            return basicBlockSet.map { $0 as! BasicBlock }
+        #endif
     }
     
     public init(name: String) {
