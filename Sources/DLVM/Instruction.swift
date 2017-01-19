@@ -235,9 +235,9 @@ public final class LoadInstruction : DefiningInstruction {
 
 public final class StoreInstruction : Instruction {
     public var source: Value
-    public var destination: Value
+    public var destination: GlobalValue
 
-    public init(source: Value, destination: Value) {
+    public init(source: Value, destination: GlobalValue) {
         self.source = source
         self.destination = destination
     }
