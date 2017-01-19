@@ -42,8 +42,7 @@ class CodeGenerator {
     func makeModule() -> Module {
         /// Declare input
         for input in program.inputs {
-            let type = program.dataType.makeTensorType(with: input.shape)
-            let value = builder.declareInput(name: input.name, type: type)
+            let value = builder.declareInput(name: input.name, type: program.dataType, shape: input.shape)
             environment[value.name] = value
         }
         /// Define globals
@@ -63,9 +62,8 @@ class CodeGenerator {
             default:
                 preconditionFailure("This should not have passed Sema")
             }
-            let type = program.dataType.makeTensorType(with: param.shape)
-            let value = builder.declareParameter(name: param.name,
-                                                 type: type, initializer: initializer)
+            let value = builder.declareParameter(name: param.name, type: program.dataType,
+                                                 shape: param.shape, initializer: initializer)
             environment[value.name] = value
         }
         
@@ -77,8 +75,8 @@ class CodeGenerator {
         for layer in program.layers {
             let value = build(layer.expression, named: layer.name)
             if layer.isOutput {
-                let type = program.dataType.makeTensorType(with: layer.shape)
-                let output = builder.declareOutput(name: layer.name, type: type)
+                let output = builder.declareOutput(name: layer.name, type: program.dataType,
+                                                   shape: layer.shape)
                 environment[output.name] = output
                 builder.makeStore(value, to: output)
             }

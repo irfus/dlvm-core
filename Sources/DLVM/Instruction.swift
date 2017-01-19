@@ -55,69 +55,74 @@ public class Instruction : IRObject {
 public class DefiningInstruction : Instruction, NamedValue {
     public var name: String
     public var type: DataType
+    public var shape: TensorShape
 
-    fileprivate init(name: String, type: DataType) {
+    fileprivate init(name: String, type: DataType, shape: TensorShape) {
         self.name = name
         self.type = type
+        self.shape = shape
     }
 }
 
 public class UnaryInstruction : DefiningInstruction {
     public var operand: Value
 
-    fileprivate init(name: String, type: DataType, operand: Value) {
+    fileprivate init(name: String, type: DataType, shape: TensorShape, operand: Value) {
         self.operand = operand
-        super.init(name: name, type: type)
+        super.init(name: name, type: type, shape: shape)
     }
 }
 
 public class BinaryInstruction : DefiningInstruction {
     public var firstOperand, secondOperand: Value
 
-    fileprivate init(name: String, type: DataType, firstOperand: Value, secondOperand: Value) {
+    fileprivate init(name: String, type: DataType, shape: TensorShape,
+                     firstOperand: Value, secondOperand: Value) {
         self.firstOperand = firstOperand
         self.secondOperand = secondOperand
-        super.init(name: name, type: type)
+        super.init(name: name, type: type, shape: shape)
     }
 }
 
 public class UnaryCallInstruction<Function> : UnaryInstruction {
     public var function: Function
 
-    public init(name: String, type: DataType, function: Function, operand: Value) {
+    public init(name: String, type: DataType, shape: TensorShape,
+                function: Function, operand: Value) {
         self.function = function
-        super.init(name: name, type: type, operand: operand)
+        super.init(name: name, type: type, shape: shape, operand: operand)
     }
 }
 
 public class BinaryCallInstruction<Function> : BinaryInstruction {
     public var function: Function
 
-    public init(name: String, type: DataType, function: Function,
-                firstOperand: Value, secondOperand: Value) {
+    public init(name: String, type: DataType, shape: TensorShape,
+                function: Function, firstOperand: Value, secondOperand: Value) {
         self.function = function
-        super.init(name: name, type: type,
+        super.init(name: name, type: type, shape: shape,
                    firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
 
 public class ReductionInstruction : UnaryCallInstruction<ReductionFunction> {
     public init(name: String, function: ReductionFunction, operand: Value) {
-        super.init(name: name, type: operand.type.scalarType,
+        super.init(name: name, type: operand.type, shape: .scalar,
                    function: function, operand: operand)
     }
 }
 
 public class HomomorphicUnaryInstruction<Function> : UnaryCallInstruction<Function> {
     public init(name: String, function: Function, operand: Value) {
-        super.init(name: name, type: operand.type, function: function, operand: operand)
+        super.init(name: name, type: operand.type, shape: operand.shape,
+                   function: function, operand: operand)
     }
 }
 
 public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction<Function> {
     public init(name: String, function: Function, firstOperand: Value, secondOperand: Value) {
-        super.init(name: name, type: firstOperand.type, function: function,
-                   firstOperand: firstOperand, secondOperand: secondOperand)
+        super.init(name: name, type: firstOperand.type, shape: firstOperand.shape,
+                   function: function, firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
 
@@ -136,37 +141,23 @@ public class ComparisonInstruction : BinaryInstruction {
         var newType = firstOperand.type
         newType.base = .bool
         newType.size = 1
-        super.init(name: name, type: newType,
+        super.init(name: name, type: newType, shape: firstOperand.shape,
                    firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
 
 public final class TensorMultiplicationInstruction : BinaryInstruction {
     public init(name: String, firstOperand: Value, secondOperand: Value) {
-        let newType: DataType
-        if let lhsType = firstOperand.type as? TensorType,
-           let rhsType = secondOperand.type as? TensorType {
-            let newShape = (lhsType.shape ⊗ rhsType.shape) ?? lhsType.shape
-            newType = TensorType(base: lhsType.base, size: lhsType.size, shape: newShape)
-        } else {
-            newType = firstOperand.type
-        }
-        super.init(name: name, type: newType,
+        let newShape = (firstOperand.shape ⊗ secondOperand.shape) ?? firstOperand.shape
+        super.init(name: name, type: firstOperand.type, shape: newShape,
                    firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
 
 public final class MatrixMultiplicationInstruction : BinaryInstruction {
     public init(name: String, firstOperand: Value, secondOperand: Value) {
-        let newType: DataType
-        if let lhsType = firstOperand.type as? TensorType,
-           let rhsType = secondOperand.type as? TensorType {
-            let newShape = lhsType.shape.matrixMultiplied(by: rhsType.shape) ?? lhsType.shape
-            newType = TensorType(base: lhsType.base, size: lhsType.size, shape: newShape)
-        } else {
-            newType = firstOperand.type
-        }
-        super.init(name: name, type: newType,
+        let newShape = firstOperand.shape.matrixMultiplied(by: secondOperand.shape) ?? firstOperand.shape
+        super.init(name: name, type: firstOperand.type, shape: newShape,
                    firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
@@ -179,18 +170,11 @@ public final class ConcatenationInstruction : DefiningInstruction {
         precondition(!operands.isEmpty)
         self.operands = Array(operands)
         self.axis = axis
-        guard let types = operands.map({$0.type}) as? [TensorType] else {
-            super.init(name: name, type: operands[0].type)
-            return
-        }
-        let firstShape = types[0].shape
-        let newShape = types.dropFirst().reduce(firstShape, { acc, x in
+        let firstShape = operands[0].shape
+        let newShape = operands.dropFirst().reduce(firstShape, { acc, x in
             acc?.concatenating(with: x.shape, alongDimension: axis)
-        })
-        let newType = newShape.flatMap { shape in
-            TensorType(base: types[0].base, size: types[0].size, shape: shape)
-        }
-        super.init(name: name, type: newType ?? operands[0].type)
+        }) ?? firstShape
+        super.init(name: name, type: operands[0].type, shape: newShape)
     }
 }
 
@@ -201,26 +185,18 @@ public final class ShapeCastInstruction : DefiningInstruction {
     public init(name: String, operand: Value, targetShape: TensorShape) {
         self.operand = operand
         self.targetShape = targetShape
-        let newType = TensorType(base: operand.type.base,
-                                 size: operand.type.size,
-                                 shape: targetShape)
-        super.init(name: name, type: newType)
+        super.init(name: name, type: operand.type, shape: targetShape)
     }
 }
 
 public final class TypeCastInstruction : DefiningInstruction {
     public var operand: Value
-    public var targetBase: TypeBase
-    public var targetSize: Int
-    
-    public init(name: String, operand: Value, targetBase: TypeBase, targetSize: Int) {
+    public var targetType: DataType
+
+    public init(name: String, operand: Value, targetType: DataType) {
         self.operand = operand
-        self.targetBase = targetBase
-        self.targetSize = targetSize
-        var newType = operand.type
-        newType.base = targetBase
-        newType.size = targetSize
-        super.init(name: name, type: newType)
+        self.targetType = targetType
+        super.init(name: name, type: targetType, shape: operand.shape)
     }
 }
 
@@ -229,7 +205,7 @@ public final class LoadInstruction : DefiningInstruction {
 
     public init(name: String, source: Value) {
         self.source = source
-        super.init(name: name, type: source.type)
+        super.init(name: name, type: source.type, shape: source.shape)
     }
 }
 

@@ -7,9 +7,8 @@
 //  This file contains type checker and semantic analyzer
 //
 
-import struct DLVM.ScalarType
+import struct DLVM.DataType
 import struct DLVM.TensorShape
-
 import enum DLVM.ElementwiseFunction
 import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregateFunction
@@ -29,7 +28,7 @@ public enum SemanticError : Error {
     case variableUndefined(Variable)
     case randomBoundsTypeMismatch(Expression)
     case notAnInitializer(Expression)
-    case constantTypeMismatch(Expression, expected: ScalarType)
+    case constantTypeMismatch(Expression, expected: DataType)
     case cannotInferShape(Expression)
     case cannotConcatenate(Expression, TensorShape, TensorShape)
     case cannotFormProduct(Expression, TensorShape, Expression, TensorShape)
@@ -146,7 +145,7 @@ struct TypeEnvironment {
     private(set) var layers: [Layer] = []
     
     /// Default data type: float32
-    var dataType: ScalarType = .float(32) {
+    var dataType: DataType = .float(32) {
         didSet {
             isCustomDataType = true
         }
@@ -214,7 +213,7 @@ struct TypeEnvironment {
     }
 }
 
-extension ScalarType {
+extension DataType {
     init?(name: String) {
         switch name {
         case "int8": self = .int(8)
@@ -237,7 +236,7 @@ public class Program {
     public var moduleName: String
     
     /// Default type: float32
-    public internal(set) var dataType: ScalarType = .float(32)
+    public internal(set) var dataType: DataType = .float(32)
     
     public internal(set) var inputs: [Input] = []
     public internal(set) var layers: [Layer] = []
@@ -295,7 +294,7 @@ public class Program {
             guard !env.isCustomDataType else {
                 throw SemanticError.dataTypeRedeclared
             }
-            guard let type = ScalarType(name: typeName) else {
+            guard let type = DataType(name: typeName) else {
                 throw SemanticError.dataTypeUnknown(typeName)
             }
             env.dataType = type

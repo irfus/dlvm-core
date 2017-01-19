@@ -4,19 +4,19 @@
 
 extension NamedValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) %\(name)")
+        target.write("\(type) \(shape) %\(name)")
     }
 }
 
 extension GlobalValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) @\(name)")
+        target.write("\(type) \(shape) @\(name)")
     }
 }
 
 extension ImmediateValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) \(immediate)")
+        target.write("\(type) \(shape) \(immediate)")
     }
 }
 
@@ -50,11 +50,15 @@ extension TensorInitializer : TextOutputStreamable {
 
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("[\(dimensions.map{String($0)}.joined(separator: "x"))]")
+        if isScalar {
+            UnicodeScalar(8)?.write(to: &target) // backspace
+        } else {
+            target.write("[\(dimensions.map{String($0)}.joined(separator: "x"))]")
+        }
     }
 }
 
-extension TypeBase : TextOutputStreamable {
+extension DataType.Base : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .float: target.write("f")
@@ -64,19 +68,10 @@ extension TypeBase : TextOutputStreamable {
     }
 }
 
-extension ScalarType : TextOutputStreamable {
+extension DataType : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         base.write(to: &target)
         size.description.write(to: &target)
-    }
-}
-
-extension TensorType : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        base.write(to: &target)
-        size.description.write(to: &target)
-        target.write(" ")
-        shape.write(to: &target)
     }
 }
 
@@ -193,7 +188,7 @@ extension BasicBlock : TextOutputStreamable {
             case let inst as ShapeCastInstruction:
                 target.write("shapecast \(inst.operand) to \(inst.targetShape)")
             case let inst as TypeCastInstruction:
-                target.write("typecast \(inst.operand) to \(inst.targetBase)\(inst.targetSize)")
+                target.write("typecast \(inst.operand) to \(inst.targetType)")
             default:
                 preconditionFailure("Unsupported instruction class \(type(of: inst))")
                 break
