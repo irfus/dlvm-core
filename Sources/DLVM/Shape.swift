@@ -52,6 +52,25 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 
 }
 
+extension TensorShape {
+
+    public static let scalar: TensorShape = []
+
+    public var isScalar: Bool {
+        return rank == 0
+    }
+
+    public var isVector: Bool {
+        return rank == 1
+    }
+
+    public var isMatrix: Bool {
+        return rank == 2
+    }
+
+}
+
+
 extension TensorShape : RandomAccessCollection {
     
     public func index(after i: Int) -> Int {

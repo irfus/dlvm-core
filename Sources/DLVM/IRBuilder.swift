@@ -54,23 +54,24 @@ extension IRBuilder {
     }
     
     @discardableResult
-    open func declareInput(name: String, type: DataType) -> Input {
-        let input = Input(name: name, type: type)
+    open func declareInput(name: String, type: DataType, shape: TensorShape) -> Input {
+        let input = Input(name: name, type: type, shape: shape)
         module.add(input)
         return input
     }
     
     @discardableResult
-    open func declareOutput(name: String, type: DataType) -> Output {
-        let output = Output(name: name, type: type)
+    open func declareOutput(name: String, type: DataType, shape: TensorShape) -> Output {
+        let output = Output(name: name, type: type, shape: shape)
         module.add(output)
         return output
     }
     
     @discardableResult
-    open func declareParameter(name: String, type: DataType,
+    open func declareParameter(name: String, type: DataType, shape: TensorShape,
                                initializer: Initializer) -> Parameter {
-        let parameter = Parameter(name: name, type: type, initializer: initializer)
+        let parameter = Parameter(name: name, type: type, shape: shape,
+                                  initializer: initializer)
         parameter.name = name
         module.add(parameter)
         return parameter
@@ -178,11 +179,10 @@ extension IRBuilder {
     }
     
     @discardableResult
-    open func makeTypeCast(_ operand: Value, targetBase: TypeBase, targetSize: Int,
+    open func makeTypeCast(_ operand: Value, targetType: DataType,
                            name: String? = nil) -> TypeCastInstruction {
-        let inst = TypeCastInstruction(name: name ?? makeName(),
-                                       operand: operand,
-                                       targetBase: targetBase, targetSize: targetSize)
+        let inst = TypeCastInstruction(name: name ?? makeName(), operand: operand,
+                                       targetType: targetType)
         return build(inst)
     }
     
