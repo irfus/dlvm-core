@@ -26,7 +26,11 @@ open class BasicBlock : IRCollection, IRObject, Differentiable {
     }
 
     open var instructions: [Instruction] {
-        return instructionSet.array as! [Instruction]
+        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+            return instructionSet.array as! [Instruction]
+        #else
+            return instructionSet.map { $0 as! Instruction }
+        #endif
     }
 
     public init(name: String) {

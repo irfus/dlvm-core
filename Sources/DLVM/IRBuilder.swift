@@ -122,7 +122,8 @@ extension IRBuilder {
     
     @discardableResult
     open func makeElementwiseTransformation(_ function: ElementwiseFunction,
-                                            _ operand: Value, name: String? = nil) -> ElementwiseTransformationInstruction {
+                                            _ operand: Value,
+                                            name: String? = nil) -> ElementwiseTransformationInstruction {
         let inst = ElementwiseTransformationInstruction(name: name ?? makeName(),
                                                         function: function, operand: operand)
         return build(inst)
@@ -130,34 +131,39 @@ extension IRBuilder {
     
     @discardableResult
     open func makeAggregateTransformation(_ function: AggregateFunction,
-                                          _ operand: Value, name: String? = nil) -> AggregateTransformationInstruction {
+                                          _ operand: Value,
+                                          name: String? = nil) -> AggregateTransformationInstruction {
         let inst = AggregateTransformationInstruction(name: name ?? makeName(),
                                                       function: function, operand: operand)
         return build(inst)
     }
 
     @discardableResult
-    open func makeScan(_ function: ScanFunction, _ operand: Value, name: String? = nil) -> ScanInstruction {
+    open func makeScan(_ function: ScanFunction, _ operand: Value,
+                       name: String? = nil) -> ScanInstruction {
         let inst = ScanInstruction(name: name ?? makeName(), function: function, operand: operand)
         return build(inst)
     }
 
     @discardableResult
-    open func makeReduction(_ function: ReductionFunction, _ operand: Value, name: String? = nil) -> ReductionInstruction {
+    open func makeReduction(_ function: ReductionFunction, _ operand: Value,
+                            name: String? = nil) -> ReductionInstruction {
         let inst = ReductionInstruction(name: name ?? makeName(), function: function, operand: operand)
         return build(inst)
     }
 
     @discardableResult
     open func makeBinaryReduction(_ function: BinaryReductionFunction,
-                                  _ firstOperand: Value, _ secondOperand: Value, name: String? = nil) -> BinaryReductionInstruction {
+                                  _ firstOperand: Value, _ secondOperand: Value,
+                                  name: String? = nil) -> BinaryReductionInstruction {
         let inst = BinaryReductionInstruction(name: name ?? makeName(), function: function,
                                               firstOperand: firstOperand, secondOperand: secondOperand)
         return build(inst)
     }
     
     @discardableResult
-    open func makeConcatenation(_ operands: [Value], axis: Int, name: String? = nil) -> ConcatenationInstruction {
+    open func makeConcatenation(_ operands: [Value], axis: Int,
+                                name: String? = nil) -> ConcatenationInstruction {
         let inst = ConcatenationInstruction(name: name ?? makeName(),
                                             operands: operands, axis: axis)
         return build(inst)
