@@ -10,9 +10,9 @@ import Parsey
 import func Funky.curry
 import func Funky.flip
 
-// ((a, b, c, d, e) -> f) -> a -> b -> c -> d -> e -> f
 @inline(__always)
-public func curry<A, B, C, D, E, F, G>(_ f: @escaping (A, B, C, D, E, F) -> G) -> (A) -> (B) -> (C) -> (D) -> (E) -> (F) -> G {
+fileprivate func curry<A, B, C, D, E, F, G>(_ f: @escaping (A, B, C, D, E, F) -> G)
+        -> (A) -> (B) -> (C) -> (D) -> (E) -> (F) -> G {
     return { w in { x in { y in { z in { a in { b in f(w, x, y, z, a, b) } } } } } }
 }
 
@@ -78,11 +78,11 @@ extension OperandNode : Parsible {
 }
 
 import enum DLVM.ElementwiseFunction
+import enum DLVM.LogicalPredicate
 import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregateFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.ScanFunction
 import enum DLVM.BinaryReductionFunction
 import protocol DLVM.LexicallyConvertible
 
@@ -93,20 +93,34 @@ extension Parsible where Self : LexicallyConvertible {
 }
 
 extension ElementwiseFunction : Parsible {}
-extension ReductionFunction : Parsible {}
-extension ScanFunction : Parsible {}
 extension BinaryReductionFunction : Parsible {}
-extension AggregateFunction : Parsible {}
 extension ArithmeticOperator : Parsible {}
 extension ComparisonPredicate : Parsible {}
+extension LogicalPredicate : Parsible {}
+
+extension ReductionFunction : Parsible {
+    static var parser: Parser<ReductionFunction> =
+        LogicalPredicate.parser    ^^ ReductionFunction.logical
+      | ComparisonPredicate.parser ^^ ReductionFunction.comparison
+      | ArithmeticOperator.parser  ^^ ReductionFunction.arithmetic
+     .. "reduction function"
+}
+
+extension AggregateFunction : Parsible {
+    static var parser: Parser<AggregateFunction> =
+        Lexer.token("softmax")    ^^= AggregateFunction.softmax
+      | Lexer.token("logSoftmax") ^^= AggregateFunction.logSoftmax
+      | Lexer.token("scan") ~~> spaces ~~> ReductionFunction.parser.!
+                                  ^^ AggregateFunction.scan
+}
 
 extension InstructionNode : Parsible {
 
     private static let unaryParser: Parser<InstructionNode> =
       ( ElementwiseFunction.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
       | AggregateFunction.parser <~~ spaces   ^^ curry(InstructionNode.aggregate)
-      | ReductionFunction.parser <~~ spaces   ^^ curry(InstructionNode.reduce)
-      | ScanFunction.parser <~~ spaces        ^^ curry(InstructionNode.scan)
+      | "reduce" ~~> spaces ~~> ReductionFunction.parser.! <~~ spaces
+                                              ^^ curry(InstructionNode.reduce)
       | "load" ~~> spaces                     ^^= curry(InstructionNode.load)
       ) ** OperandNode.parser.!
 

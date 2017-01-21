@@ -96,15 +96,6 @@ class CodeGenerator {
             if let function = ElementwiseFunction.lexicon[funcName] {
                 return builder.makeElementwiseTransformation(function, argOp, name: name)
             }
-            if let function = AggregateFunction.lexicon[funcName] {
-                return builder.makeAggregateTransformation(function, argOp, name: name)
-            }
-            if let function = ScanFunction.lexicon[funcName] {
-                return builder.makeScan(function, argOp, name: name)
-            }
-            if let function = ReductionFunction.lexicon[funcName] {
-                return builder.makeReduction(function, argOp, name: name)
-            }
             preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
         case let .call(funcName, args) where args.count == 2:
             let firstArgOp = build(args[0]), secondArgOp = build(args[1])

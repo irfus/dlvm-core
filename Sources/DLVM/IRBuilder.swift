@@ -140,13 +140,6 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func makeScan(_ function: ScanFunction, _ operand: Value,
-                       name: String? = nil) -> ScanInstruction {
-        let inst = ScanInstruction(name: name ?? makeName(), function: function, operand: operand)
-        return build(inst)
-    }
-
-    @discardableResult
     open func makeReduction(_ function: ReductionFunction, _ operand: Value,
                             name: String? = nil) -> ReductionInstruction {
         let inst = ReductionInstruction(name: name ?? makeName(), function: function, operand: operand)

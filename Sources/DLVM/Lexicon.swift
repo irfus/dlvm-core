@@ -31,7 +31,8 @@ extension ArithmeticOperator : LexicallyConvertible {
         "truncDiv" : .truncateDivide,
         "floorDiv" : .floorDivide,
         "mod"      : .mod,
-        "pow"      : .power
+        "pow"      : .power,
+        "mean"     : .mean
     ]
 }
 
@@ -64,30 +65,16 @@ extension ElementwiseFunction : LexicallyConvertible {
     ]
 }
 
-extension ReductionFunction : LexicallyConvertible {
-    public static let lexicon: [String : ReductionFunction] = [
-        "reduceAdd"  : .add,  "reduceMul" : .multiply,
-        "reduceMin"  : .min,  "reduceMax" : .max,
-        "reduceAnd"  : .and,  "reduceOr"  : .or,
-        "reduceMean" : .mean
+extension LogicalPredicate : LexicallyConvertible {
+    public static var lexicon: [String : LogicalPredicate] = [
+        "and" : .and,
+        "or"  : .or,
+        "xor" : .xor
     ]
 }
 
 extension BinaryReductionFunction : LexicallyConvertible {
     public static let lexicon: [String : BinaryReductionFunction] = [
         "crossEnt" : .crossEntropy
-    ]
-}
-
-extension ScanFunction : LexicallyConvertible {
-    public static let lexicon: [String : ScanFunction] = [
-        "scanAdd" : .add, "scanMul" : .multiply
-    ]
-}
-
-extension AggregateFunction : LexicallyConvertible {
-    public static let lexicon: [String : AggregateFunction] = [
-        "softmax"    : .softmax,
-        "logSoftmax" : .logSoftmax
     ]
 }

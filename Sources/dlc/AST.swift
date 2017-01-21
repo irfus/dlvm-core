@@ -12,7 +12,6 @@ import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregateFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.ScanFunction
 import enum DLVM.BinaryReductionFunction
 
 protocol ASTNode {
@@ -87,7 +86,6 @@ enum InstructionNode : ASTNode {
     case elementwise(ElementwiseFunction, OperandNode, SourceRange)
     case aggregate(AggregateFunction, OperandNode, SourceRange)
     case comparison(ComparisonPredicate, OperandNode, OperandNode, SourceRange)
-    case scan(ScanFunction, OperandNode, SourceRange)
     case concatenate([OperandNode], Int?, SourceRange)
     case shapeCast(OperandNode, ShapeNode, SourceRange)
     case typeCast(OperandNode, TypeNode, SourceRange)
@@ -104,7 +102,6 @@ enum InstructionNode : ASTNode {
              let .elementwise(_, _, sr),
              let .aggregate(_, _, sr),
              let .comparison(_, _, _, sr),
-             let .scan(_, _, sr),
              let .concatenate(_, _, sr),
              let .shapeCast(_, _, sr),
              let .typeCast(_, _, sr),
