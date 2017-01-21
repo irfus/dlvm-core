@@ -14,7 +14,6 @@ import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregateFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.ScanFunction
 import enum DLVM.BinaryReductionFunction
 
 public enum SemanticError : Error {
@@ -504,13 +503,8 @@ public class Program {
         /// For now we assume only unary and binary functions
         case let .call(funcName, args) where args.count == 1:
             let argShape = try shape(of: args[0], in: &env)
-            if ScanFunction.lexicon.keys.contains(funcName) ||
-                ElementwiseFunction.lexicon.keys.contains(funcName) ||
-                AggregateFunction.lexicon.keys.contains(funcName) {
+            if ElementwiseFunction.lexicon.keys.contains(funcName) {
                 return argShape
-            }
-            if ReductionFunction.lexicon.keys.contains(funcName) {
-                return [] // Rank 0, scalar
             }
             throw SemanticError.argumentCountMismatch(expression,
                                                       count: args.count,

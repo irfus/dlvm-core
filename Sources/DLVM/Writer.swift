@@ -80,6 +80,7 @@ extension AggregateFunction : TextOutputStreamable {
         switch self {
         case .softmax: target.write("softmax")
         case .logSoftmax: target.write("logSoftmax")
+        case let .scan(fun): target.write("scan \(fun)")
         }
     }
 }
@@ -97,31 +98,17 @@ extension ArithmeticOperator : TextOutputStreamable {
         case .floorDivide: target.write("floorDiv")
         case .mod: target.write("mod")
         case .power: target.write("pow")
+        case .mean: target.write("mean")
         }
     }
 }
 
 extension ReductionFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("reduce")
         switch self {
-        case .add: return target.write("Add")
-        case .multiply: return target.write("Mul")
-        case .min: return target.write("Min")
-        case .max: return target.write("Max")
-        case .mean: return target.write("Mean")
-        case .and: return target.write("And")
-        case .or: return target.write("Or")
-        }
-    }
-}
-
-extension ScanFunction : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("scan")
-        switch self {
-        case .add: return target.write("Add")
-        case .multiply: return target.write("Mul")
+        case let .logical(fun): target.write("\(fun)")
+        case let .comparison(fun): target.write("\(fun)")
+        case let .arithmetic(fun): target.write("\(fun)")
         }
     }
 }
@@ -178,11 +165,9 @@ extension BasicBlock : TextOutputStreamable {
                 inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
                 target.write(" along \(inst.axis)")
             case let inst as ReductionInstruction:
-                target.write("\(inst.function) \(inst.operand)")
+                target.write("reduce \(inst.function) \(inst.operand)")
             case let inst as BinaryReductionInstruction:
                 target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as ScanInstruction:
-                target.write("\(inst.function) \(inst.operand)")
             case let inst as ReductionInstruction:
                 target.write("\(inst.function) \(inst.operand)")
             case let inst as ShapeCastInstruction:

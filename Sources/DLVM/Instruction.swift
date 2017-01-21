@@ -10,6 +10,10 @@ public protocol LexicallyConvertible {
     static var lexicon: [String : Self] { get }
 }
 
+public enum LogicalPredicate {
+    case and, or, xor
+}
+
 public enum ComparisonPredicate {
     case lessThan, lessThanOrEqualTo
     case greaterThan, greaterThanOrEqualTo
@@ -18,7 +22,7 @@ public enum ComparisonPredicate {
 
 public enum ArithmeticOperator {
     case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, mod, power
+    case truncateDivide, floorDivide, mod, power, mean
 }
 
 public enum ElementwiseFunction {
@@ -29,21 +33,19 @@ public enum ElementwiseFunction {
 
 }
 
-public enum ReductionFunction {
-    case add, multiply, min, max, and, or, mean
-}
-
 public enum BinaryReductionFunction {
     case crossEntropy
 }
 
-public enum ScanFunction {
-    case add, multiply
+public enum ReductionFunction {
+    case logical(LogicalPredicate)
+    case comparison(ComparisonPredicate)
+    case arithmetic(ArithmeticOperator)
 }
-
 
 public enum AggregateFunction {
     case softmax, logSoftmax
+    case scan(ReductionFunction)
 }
 
 public class Instruction : IRObject {
@@ -127,9 +129,7 @@ public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction<Func
 }
 
 public typealias ElementwiseTransformationInstruction = HomomorphicUnaryInstruction<ElementwiseFunction>
-public typealias AggregateTransformationInstruction = HomomorphicUnaryInstruction<AggregateFunction>
 public typealias BinaryReductionInstruction = HomomorphicBinaryInstruction<BinaryReductionFunction>
-public typealias ScanInstruction = HomomorphicUnaryInstruction<ScanFunction>
 public typealias ArithmeticInstruction = HomomorphicBinaryInstruction<ArithmeticOperator>
 
 public class ComparisonInstruction : BinaryInstruction {
@@ -143,6 +143,18 @@ public class ComparisonInstruction : BinaryInstruction {
         newType.size = 1
         super.init(name: name, type: newType, shape: firstOperand.shape,
                    firstOperand: firstOperand, secondOperand: secondOperand)
+    }
+}
+
+public final class AggregateTransformationInstruction : HomomorphicUnaryInstruction<AggregateFunction> {
+    public override init(name: String, function: AggregateFunction, operand: Value) {
+        super.init(name: name, function: function, operand: operand)
+        /// For scanning with logical and comparison operators,
+        /// the result type is boolean
+        switch function {
+        case .scan(.logical(_)), .scan(.comparison(_)): type = .bool
+        default: break
+        }
     }
 }
 
