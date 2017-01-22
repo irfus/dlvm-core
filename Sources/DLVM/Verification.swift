@@ -12,41 +12,44 @@ public enum VerificationError : Error {
     case typeMismatch(Value, Value)
 }
 
-class VerificationEnvironment {
-    var temporaries: [String : NamedValue] = [:]
-    var globals: [String : GlobalValue] = [:]
+open class VerificationEnvironment {
+    private var temporaries: [String : NamedValue] = [:]
+    private var globals: [String : GlobalValue] = [:]
+    private var basicBlocks: [String : BasicBlock] = [:]
 
-    func insertGlobal(_ value: GlobalValue) {
+    public init() {}
+
+    open func insertGlobal(_ value: GlobalValue) {
         globals[value.name] = value
     }
 
-    func insertTemporary(_ value: NamedValue) {
+    open func insertTemporary(_ value: NamedValue) {
         temporaries[value.name] = value
     }
 
-    func global(named name: String) -> GlobalValue? {
+    open func global(named name: String) -> GlobalValue? {
         return globals[name]
     }
 
-    func temporary(named name: String) -> NamedValue? {
+    open func temporary(named name: String) -> NamedValue? {
         return temporaries[name]
     }
 
-    func containsGlobal(named name: String) -> Bool {
+    open func containsGlobal(named name: String) -> Bool {
         return globals.keys.contains(name)
     }
 
-    func containsTemporary(named name: String) -> Bool {
+    open func containsTemporary(named name: String) -> Bool {
         return temporaries.keys.contains(name)
     }
 }
 
-protocol Verifiable {
+public protocol Verifiable {
     func verify(in environment: VerificationEnvironment) throws
 }
 
 extension Input : Verifiable {
-    func verify(in environment: VerificationEnvironment) throws {
+    public func verify(in environment: VerificationEnvironment) throws {
         guard !environment.containsGlobal(named: name) else {
             throw VerificationError.nameRedeclared(name)
         }
@@ -55,7 +58,7 @@ extension Input : Verifiable {
 }
 
 extension Output : Verifiable {
-    func verify(in environment: VerificationEnvironment) throws {
+    public func verify(in environment: VerificationEnvironment) throws {
         guard !environment.containsGlobal(named: name) else {
             throw VerificationError.nameRedeclared(name)
         }
@@ -64,7 +67,7 @@ extension Output : Verifiable {
 }
 
 extension Parameter : Verifiable {
-    func verify(in environment: VerificationEnvironment) throws {
+    public func verify(in environment: VerificationEnvironment) throws {
         guard !environment.containsGlobal(named: name) else {
             throw VerificationError.nameRedeclared(name)
         }
@@ -73,12 +76,12 @@ extension Parameter : Verifiable {
 }
 
 extension Module : Verifiable {
-    
+
     open func verify() throws {
         return try verify(in: VerificationEnvironment())
     }
     
-    func verify(in environment: VerificationEnvironment) throws {
+    public func verify(in environment: VerificationEnvironment) throws {
         for input in inputs {
             try input.verify(in: environment)
         }

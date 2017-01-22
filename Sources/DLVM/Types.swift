@@ -13,6 +13,11 @@ public struct DataType : Equatable {
 
     public var base: Base
     public var size: Int
+
+    public init(base: Base, size: Int) {
+        self.base = base
+        self.size = size
+    }
     
     public static var bool: DataType {
         return self.init(base: .bool, size: 1)
