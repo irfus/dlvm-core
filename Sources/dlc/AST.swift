@@ -33,7 +33,7 @@ struct DeclarationNode : ASTNode {
     let type: TypeNode
     let shape: ShapeNode
     let name: String
-    let initializer: Initializer?
+    let initializer: InitializerNode?
     let range: SourceRange
 }
 
@@ -46,7 +46,7 @@ struct ImmediateValueNode : ASTNode {
     }
 }
 
-enum Initializer : ASTNode {
+enum InitializerNode : ASTNode {
     case immediate(ImmediateValueNode, SourceRange)
     case random(ImmediateValueNode, ImmediateValueNode, SourceRange)
     case repeating(ImmediateValueNode, SourceRange)

@@ -186,12 +186,12 @@ extension DeclarationNode.Role : Parsible {
      .. "a global variable role (input, parameter, output)"
 }
 
-extension Initializer : Parsible {
-    static let parser: Parser<Initializer> =
-        ImmediateValueNode.parser ^^^ Initializer.immediate
-      | Lexer.token("repeating") ~~> spaces ~~> ImmediateValueNode.parser.! ^^^ Initializer.repeating
+extension InitializerNode : Parsible {
+    static let parser: Parser<InitializerNode> =
+        ImmediateValueNode.parser ^^^ InitializerNode.immediate
+      | Lexer.token("repeating") ~~> spaces ~~> ImmediateValueNode.parser.! ^^^ InitializerNode.repeating
       | Lexer.token("random") ~~> Lexer.token("from").amid(spaces) ~~>
-        ImmediateValueNode.parser.! ^^ curry(Initializer.random)
+        ImmediateValueNode.parser.! ^^ curry(InitializerNode.random)
         ** (Lexer.token("to").amid(spaces) ~~> ImmediateValueNode.parser.!)
      .. "an initializer"
 }
@@ -202,7 +202,7 @@ extension DeclarationNode : Parsible {
      ** TypeNode.parser.! <~~ spaces
      ** ShapeNode.parser.! <~~ spaces
      ** (Lexer.character("@") ~~> identifier).! .. "an identifier"
-     ** (Lexer.character("=").amid(spaces.?) ~~> Initializer.parser.!).?
+     ** (Lexer.character("=").amid(spaces.?) ~~> InitializerNode.parser.!).?
      .. "a declaration"
 }
 
