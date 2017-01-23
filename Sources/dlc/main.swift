@@ -9,6 +9,8 @@ do {
     print("Source file:", file)
     let ast = try ModuleNode.parser.parse(irSource)
     print(ast.range)
+    let module = try ast.makeModule()
+    print(module)
 }
 catch {
     print(error)

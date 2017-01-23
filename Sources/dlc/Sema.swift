@@ -50,6 +50,9 @@ extension BasicBlockNode {
         let bb = BasicBlock(name: name)
         for instNode in instructions {
             let inst = try instNode.makeInstruction(in: env)
+            if let temp = inst as? NamedValue {
+                env.insertTemporary(temp)
+            }
             bb.append(inst)
         }
         return bb
@@ -78,34 +81,27 @@ extension DeclarationNode {
                 guard immType == declType else {
                     throw SemanticError.initializerTypeMismatch(initializer, type)
                 }
-                return Parameter(name: name, type: declType,
-                                 shape: shape.makeShape(),
-                                 initializer: immInit.immediate.makeImmediate())
             case let .random(lo, hi, _):
                 let loType = lo.type.makeType(), hiType = hi.type.makeType()
                 guard loType == declType, hiType == declType else {
                     throw SemanticError.initializerTypeMismatch(initializer, type)
                 }
-                return Parameter(name: name, type: declType,
-                                 shape: shape.makeShape(),
-                                 initializer: initializer.makeInitializer())
 
             case let .repeating(immInit, _):
                 let immType = immInit.type.makeType()
                 guard immType == declType else {
                     throw SemanticError.initializerTypeMismatch(initializer, type)
                 }
-                return Parameter(name: name, type: declType,
-                                 shape: shape.makeShape(),
-                                 initializer: initializer.makeInitializer())
             }
+            return Parameter(name: name, type: declType,
+                             shape: shape.makeShape(),
+                             initializer: initializer.makeInitializer())
 
         case .input:
-            // TODO
-            fatalError("Unimplemented")
+            return Input(name: name, type: type.makeType(), shape: shape.makeShape())
 
         case .output:
-            fatalError("Unimplemented")
+            return Output(name: name, type: type.makeType(), shape: shape.makeShape())
 
         }
     }
@@ -201,7 +197,7 @@ extension InstructionDeclarationNode {
     func makeInstruction(in env: VerificationEnvironment) throws -> Instruction {
         /// Named instruction
         if let name = name {
-            guard env.containsTemporary(named: name) else {
+            guard !env.containsTemporary(named: name) else {
                 throw SemanticError.redeclaredTemporary(self)
             }
             switch instruction {
