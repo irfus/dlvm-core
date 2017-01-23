@@ -1,8 +1,8 @@
 // A simple recurrent neural network described in TEL
-#name rnn
+module rnn
 
 // Universal data type for data flow
-#type float16
+type float16
 
 // Parameter declarations
 W1: param[4x4] = random(0.0, 1.0)
@@ -17,9 +17,9 @@ recurrent t {
     // Input layer
     i: in[2x1]
     // Hidden layers
-    h1: hidden[4x1] = sigmoid(W1 [i[t-1], h2[t-1]] + b1)
-    h2: hidden[2x1] = tanh(W2 (1 - h1[t]) + b2)
+    h1: hidden[4x1] = sigmoid(W1 . [i[t-1], h2[t-1]] + b1)
+    h2: hidden[2x1] = tanh(W2 . (1 - h1[t]) + b2)
 }
 
 // Output layer
-o: out[2x1] = softmax((h2 : [1x2]) W3 + b3) : [2x1] // reshape
+o: out[2x1] = softmax((h2 as [1x2]) . W3 + b3) as [2x1] // reshape
