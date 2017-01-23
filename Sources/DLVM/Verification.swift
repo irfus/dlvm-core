@@ -27,6 +27,10 @@ open class VerificationEnvironment {
         temporaries[value.name] = value
     }
 
+    open func insertBasicBlock(_ basicBlock: BasicBlock) {
+        basicBlocks[basicBlock.name] = basicBlock
+    }
+
     open func global(named name: String) -> GlobalValue? {
         return globals[name]
     }
@@ -35,12 +39,20 @@ open class VerificationEnvironment {
         return temporaries[name]
     }
 
+    open func basicBlock(named name: String) -> BasicBlock? {
+        return basicBlocks[name]
+    }
+
     open func containsGlobal(named name: String) -> Bool {
         return globals.keys.contains(name)
     }
 
     open func containsTemporary(named name: String) -> Bool {
         return temporaries.keys.contains(name)
+    }
+
+    open func containsBasicBlock(named name: String) -> Bool {
+        return basicBlocks.keys.contains(name)
     }
 }
 

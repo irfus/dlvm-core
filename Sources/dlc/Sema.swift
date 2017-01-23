@@ -11,6 +11,7 @@ import DLVM
 enum SemanticError : Error {
     case redeclaredTemporary(InstructionDeclarationNode)
     case redeclaredGlobal(DeclarationNode)
+    case redeclaredBasicBlock(BasicBlockNode)
     case extraneousInitializer(DeclarationNode, InitializerNode)
     case missingInitializer(DeclarationNode)
     case undeclaredVariable(VariableNode)
@@ -30,12 +31,28 @@ extension ModuleNode {
         for decl in declarations {
             let value = try decl.makeDeclaration(in: env)
             env.insertGlobal(value)
+            module.add(value)
         }
 
-        for bb in basicBlocks {
-            
+        for bbNode in basicBlocks {
+            let bb = try bbNode.makeBasicBlock(in: env)
+            module.append(bb)
         }
         return module
+    }
+}
+
+extension BasicBlockNode {
+    func makeBasicBlock(in env: VerificationEnvironment) throws -> BasicBlock {
+        guard !env.containsBasicBlock(named: name) else {
+            throw SemanticError.redeclaredBasicBlock(self)
+        }
+        let bb = BasicBlock(name: name)
+        for instNode in instructions {
+            let inst = try instNode.makeInstruction(in: env)
+            bb.append(inst)
+        }
+        return bb
     }
 }
 
@@ -184,6 +201,9 @@ extension InstructionDeclarationNode {
     func makeInstruction(in env: VerificationEnvironment) throws -> Instruction {
         /// Named instruction
         if let name = name {
+            guard env.containsTemporary(named: name) else {
+                throw SemanticError.redeclaredTemporary(self)
+            }
             switch instruction {
             case let .aggregate(fun, op, _):
                 return AggregateTransformationInstruction(name: name,
