@@ -76,7 +76,7 @@ extension Module {
         return basicBlockTable[name]
     }
     
-    open func add<T: GlobalValue>(_ value: T) {
+    open func add(_ value: GlobalValue) {
         switch value {
         case let input as Input:
             inputTable[input.name] = input
