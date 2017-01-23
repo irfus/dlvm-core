@@ -18,6 +18,7 @@ enum SemanticError : Error {
     case typeMismatch(OperandNode, DataType)
     case shapeMismatch(OperandNode, TensorShape)
     case storeDestinationNotGlobal(OperandNode)
+    case loadSourceNotGlobal(OperandNode)
     case extraneousName(InstructionDeclarationNode)
     case missingName(InstructionDeclarationNode)
     case initializerTypeMismatch(InitializerNode, TypeNode)
@@ -235,7 +236,10 @@ extension InstructionDeclarationNode {
                                                             operand: val)
 
             case let .load(op, _):
-                return LoadInstruction(name: name, source: try op.makeValue(in: env))
+                guard let val = try op.makeValue(in: env) as? GlobalValue else {
+                    throw SemanticError.loadSourceNotGlobal(op)
+                }
+                return LoadInstruction(name: name, source: val)
 
             case let .matrixMultiply(lhs, rhs, _):
                 return MatrixMultiplicationInstruction(name: name,

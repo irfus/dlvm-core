@@ -213,9 +213,9 @@ public final class TypeCastInstruction : DefiningInstruction {
 }
 
 public final class LoadInstruction : DefiningInstruction {
-    public var source: Value
+    public var source: GlobalValue
 
-    public init(name: String, source: Value) {
+    public init(name: String, source: GlobalValue) {
         self.source = source
         super.init(name: name, type: source.type, shape: source.shape)
     }
