@@ -173,9 +173,9 @@ extension BasicBlockNode : Parsible {
         identifier <~~ spaces.? ^^ curry(BasicBlockNode.init)
      ** (Lexer.token("gradient").amid(spaces.?).between("(", ")") ^^= true).withDefault(false)
     <~~ Lexer.character(":").amid(spaces.?).! <~~ linebreaks.!
-     ** InstructionDeclarationNode.parser.!
-                                  .many(separatedBy: linebreaks)
-     .. "a basic block"
+     ** InstructionDeclarationNode.parser
+                                  .manyOrNone(separatedBy: linebreaks)
+     .. "an instruction or a basic block"
 }
 
 extension DeclarationNode.Role : Parsible {
@@ -211,5 +211,4 @@ extension ModuleNode : Parsible {
         linebreaks.? ~~> Lexer.token("module") ~~> spaces ~~> identifier.! ^^ curry(ModuleNode.init)
      ** DeclarationNode.parser.manyOrNone(separatedBy: linebreaks).amid(linebreaks.?)
      ** BasicBlockNode.parser.manyOrNone(separatedBy: linebreaks).ended(by: linebreaks.?)
-     .. "a basic block"
 }
