@@ -94,6 +94,16 @@ extension IRBuilder {
                                          firstOperand: lhs, secondOperand: rhs)
         return build(inst)
     }
+
+    @discardableResult
+    open func makeLogicOperation(_ `operator`: LogicOperator,
+                                 _ lhs: Value, _ rhs: Value,
+                                 name: String? = nil) -> LogicInstruction {
+        let inst = LogicInstruction(name: name ?? makeName(),
+                                    function: `operator`,
+                                    firstOperand: lhs, secondOperand: rhs)
+        return build(inst)
+    }
     
     @discardableResult
     open func makeComparison(_ `operator`: ComparisonPredicate,

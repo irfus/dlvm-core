@@ -65,8 +65,8 @@ extension ElementwiseFunction : LexicallyConvertible {
     ]
 }
 
-extension LogicPredicate: LexicallyConvertible {
-    public static var lexicon: [String : LogicPredicate] = [
+extension LogicOperator: LexicallyConvertible {
+    public static var lexicon: [String : LogicOperator] = [
         "and" : .and,
         "or"  : .or,
         "xor" : .xor

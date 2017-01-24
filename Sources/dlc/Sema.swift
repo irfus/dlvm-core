@@ -213,6 +213,12 @@ extension InstructionDeclarationNode {
                                              firstOperand: try lhs.makeValue(in: env),
                                              secondOperand: try rhs.makeValue(in: env))
 
+            case let .logic(fun, lhs, rhs, _):
+                return LogicInstruction(name: name,
+                                        function: fun,
+                                        firstOperand: try lhs.makeValue(in: env),
+                                        secondOperand: try rhs.makeValue(in: env))
+
             case let .binaryReduction(fun, lhs, rhs, _):
                 return BinaryReductionInstruction(name: name,
                                                   function: fun,

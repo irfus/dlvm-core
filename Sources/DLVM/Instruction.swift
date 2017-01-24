@@ -10,7 +10,7 @@ public protocol LexicallyConvertible {
     static var lexicon: [String : Self] { get }
 }
 
-public enum LogicPredicate {
+public enum LogicOperator {
     case and, or, xor
 }
 
@@ -38,7 +38,7 @@ public enum BinaryIntegrationFunction {
 }
 
 public enum ReductionFunction {
-    case logical(LogicPredicate)
+    case logical(LogicOperator)
     case arithmetic(ArithmeticOperator)
 }
 
@@ -129,7 +129,7 @@ public typealias ElementwiseInstruction = HomomorphicUnaryInstruction<Elementwis
 public typealias AggregationInstruction = HomomorphicUnaryInstruction<AggregationFunction>
 public typealias BinaryReductionInstruction = HomomorphicBinaryInstruction<BinaryIntegrationFunction>
 public typealias ArithmeticInstruction = HomomorphicBinaryInstruction<ArithmeticOperator>
-public typealias LogicInstruction = HomomorphicBinaryInstruction<LogicPredicate>
+public typealias LogicInstruction = HomomorphicBinaryInstruction<LogicOperator>
 
 /// Reduction instruction
 /// - Note: We are assuming that reduction instruction takes any tensor and apply

@@ -159,6 +159,8 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("mmul \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ArithmeticInstruction:
                 target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
+            case let inst as LogicInstruction:
+                target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ComparisonInstruction:
                 target.write("cmp \(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ElementwiseInstruction:
@@ -177,8 +179,6 @@ extension BasicBlock : TextOutputStreamable {
                 target.write("reduce \(inst.function) \(inst.operand)")
             case let inst as BinaryReductionInstruction:
                 target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as ReductionInstruction:
-                target.write("\(inst.function) \(inst.operand)")
             case let inst as ShapeCastInstruction:
                 target.write("shapecast \(inst.operand) to \(inst.targetShape)")
             case let inst as TypeCastInstruction:
