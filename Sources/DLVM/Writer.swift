@@ -4,19 +4,31 @@
 
 extension NamedValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) \(shape) %\(name)")
+        if shape.isScalar {
+            target.write("\(type) %\(name)")
+        } else {
+            target.write("\(type) \(shape) %\(name)")
+        }
     }
 }
 
 extension GlobalValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) \(shape) @\(name)")
+        if shape.isScalar {
+            target.write("\(type) @\(name)")
+        } else {
+            target.write("\(type) \(shape) @\(name)")
+        }
     }
 }
 
 extension ImmediateValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) \(shape) \(immediate)")
+        if shape.isScalar {
+            target.write("\(type) \(immediate)")
+        } else {
+            target.write("\(type) \(shape) \(immediate)")
+        }
     }
 }
 
@@ -50,9 +62,7 @@ extension TensorInitializer : TextOutputStreamable {
 
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if isScalar {
-            UnicodeScalar(8)?.write(to: &target) // backspace
-        } else {
+        if !isScalar {
             target.write("[\(dimensions.map{String($0)}.joined(separator: "x"))]")
         }
     }
