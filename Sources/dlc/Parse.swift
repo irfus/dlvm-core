@@ -78,7 +78,7 @@ extension OperandNode : Parsible {
 }
 
 import enum DLVM.ElementwiseFunction
-import enum DLVM.LogicPredicate
+import enum DLVM.LogicOperator
 import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
@@ -96,11 +96,11 @@ extension ElementwiseFunction : Parsible {}
 extension BinaryIntegrationFunction: Parsible {}
 extension ArithmeticOperator : Parsible {}
 extension ComparisonPredicate : Parsible {}
-extension LogicPredicate: Parsible {}
+extension LogicOperator: Parsible {}
 
 extension ReductionFunction : Parsible {
     static var parser: Parser<ReductionFunction> =
-        LogicPredicate.parser    ^^ ReductionFunction.logical
+        LogicOperator.parser    ^^ ReductionFunction.logical
       | ArithmeticOperator.parser  ^^ ReductionFunction.arithmetic
      .. "reduction function"
 }
@@ -126,6 +126,7 @@ extension InstructionNode : Parsible {
     private static let binaryParser: Parser<InstructionNode> =
       ( BinaryIntegrationFunction.parser <~~ spaces ^^ curry(InstructionNode.binaryReduction)
       | ArithmeticOperator.parser <~~ spaces      ^^ curry(InstructionNode.arithmetic)
+      | LogicOperator.parser <~~ spaces           ^^ curry(InstructionNode.logic)
       | ComparisonPredicate.parser <~~ spaces     ^^ curry(InstructionNode.comparison)
       | "mmul" ~~> spaces                         ^^= curry(InstructionNode.matrixMultiply)
       | "tmul" ~~> spaces                         ^^= curry(InstructionNode.tensorMultiply)

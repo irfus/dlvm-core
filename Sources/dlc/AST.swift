@@ -11,6 +11,7 @@ import enum DLVM.ElementwiseFunction
 import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
+import enum DLVM.LogicOperator
 import enum DLVM.ReductionFunction
 import enum DLVM.BinaryIntegrationFunction
 
@@ -81,6 +82,7 @@ enum InstructionNode : ASTNode {
     case matrixMultiply(OperandNode, OperandNode, SourceRange)
     case tensorMultiply(OperandNode, OperandNode, SourceRange)
     case arithmetic(ArithmeticOperator, OperandNode, OperandNode, SourceRange)
+    case logic(LogicOperator, OperandNode, OperandNode, SourceRange)
     case binaryReduction(BinaryIntegrationFunction, OperandNode, OperandNode, SourceRange)
     case reduce(ReductionFunction, OperandNode, SourceRange)
     case elementwise(ElementwiseFunction, OperandNode, SourceRange)
