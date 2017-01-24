@@ -78,12 +78,12 @@ extension OperandNode : Parsible {
 }
 
 import enum DLVM.ElementwiseFunction
-import enum DLVM.LogicalPredicate
+import enum DLVM.LogicPredicate
 import enum DLVM.ComparisonPredicate
-import enum DLVM.AggregateFunction
+import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.BinaryReductionFunction
+import enum DLVM.BinaryIntegrationFunction
 import protocol DLVM.LexicallyConvertible
 
 extension Parsible where Self : LexicallyConvertible {
@@ -93,39 +93,38 @@ extension Parsible where Self : LexicallyConvertible {
 }
 
 extension ElementwiseFunction : Parsible {}
-extension BinaryReductionFunction : Parsible {}
+extension BinaryIntegrationFunction: Parsible {}
 extension ArithmeticOperator : Parsible {}
 extension ComparisonPredicate : Parsible {}
-extension LogicalPredicate : Parsible {}
+extension LogicPredicate: Parsible {}
 
 extension ReductionFunction : Parsible {
     static var parser: Parser<ReductionFunction> =
-        LogicalPredicate.parser    ^^ ReductionFunction.logical
-      | ComparisonPredicate.parser ^^ ReductionFunction.comparison
+        LogicPredicate.parser    ^^ ReductionFunction.logical
       | ArithmeticOperator.parser  ^^ ReductionFunction.arithmetic
      .. "reduction function"
 }
 
-extension AggregateFunction : Parsible {
-    static var parser: Parser<AggregateFunction> =
-        Lexer.token("softmax")    ^^= AggregateFunction.softmax
-      | Lexer.token("logSoftmax") ^^= AggregateFunction.logSoftmax
+extension AggregationFunction: Parsible {
+    static var parser: Parser<AggregationFunction> =
+        Lexer.token("softmax")    ^^= AggregationFunction.softmax
+      | Lexer.token("logSoftmax") ^^= AggregationFunction.logSoftmax
       | Lexer.token("scan") ~~> spaces ~~> ReductionFunction.parser.!
-                                  ^^ AggregateFunction.scan
+                                  ^^ AggregationFunction.scan
 }
 
 extension InstructionNode : Parsible {
 
     private static let unaryParser: Parser<InstructionNode> =
       ( ElementwiseFunction.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
-      | AggregateFunction.parser <~~ spaces   ^^ curry(InstructionNode.aggregate)
+      | AggregationFunction.parser <~~ spaces   ^^ curry(InstructionNode.aggregate)
       | "reduce" ~~> spaces ~~> ReductionFunction.parser.! <~~ spaces
                                               ^^ curry(InstructionNode.reduce)
       | "load" ~~> spaces                     ^^= curry(InstructionNode.load)
       ) ** OperandNode.parser.!
 
     private static let binaryParser: Parser<InstructionNode> =
-      ( BinaryReductionFunction.parser <~~ spaces ^^ curry(InstructionNode.binaryReduction)
+      ( BinaryIntegrationFunction.parser <~~ spaces ^^ curry(InstructionNode.binaryReduction)
       | ArithmeticOperator.parser <~~ spaces      ^^ curry(InstructionNode.arithmetic)
       | ComparisonPredicate.parser <~~ spaces     ^^ curry(InstructionNode.comparison)
       | "mmul" ~~> spaces                         ^^= curry(InstructionNode.matrixMultiply)

@@ -75,7 +75,7 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension AggregateFunction : TextOutputStreamable {
+extension AggregationFunction: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .softmax: target.write("softmax")
@@ -107,7 +107,6 @@ extension ReductionFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .logical(fun): target.write("\(fun)")
-        case let .comparison(fun): target.write("\(fun)")
         case let .arithmetic(fun): target.write("\(fun)")
         }
     }
@@ -126,7 +125,7 @@ extension ComparisonPredicate : TextOutputStreamable {
     }
 }
 
-extension BinaryReductionFunction : TextOutputStreamable {
+extension BinaryIntegrationFunction: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .crossEntropy: target.write("crossEnt")
@@ -151,10 +150,10 @@ extension BasicBlock : TextOutputStreamable {
             case let inst as ArithmeticInstruction:
                 target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
             case let inst as ComparisonInstruction:
-                target.write("cmp \(inst.predicate) \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as ElementwiseTransformationInstruction:
+                target.write("cmp \(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
+            case let inst as ElementwiseInstruction:
                 target.write("\(inst.function) \(inst.operand)")
-            case let inst as AggregateTransformationInstruction:
+            case let inst as AggregationInstruction:
                 target.write("\(inst.function) \(inst.operand)")
             case let inst as StoreInstruction:
                 target.write("store \(inst.source) to \(inst.destination)")

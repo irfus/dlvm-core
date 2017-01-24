@@ -11,10 +11,10 @@ import struct DLVM.DataType
 import struct DLVM.TensorShape
 import enum DLVM.ElementwiseFunction
 import enum DLVM.ComparisonPredicate
-import enum DLVM.AggregateFunction
+import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.BinaryReductionFunction
+import enum DLVM.BinaryIntegrationFunction
 
 public enum SemanticError : Error {
     case dataTypeRedeclared
@@ -516,7 +516,7 @@ public class Program {
             guard firstArgShape == secondArgShape else {
                 throw SemanticError.operatorShapeMismatch(args[0], firstArgShape, args[1], secondArgShape)
             }
-            if BinaryReductionFunction.lexicon.keys.contains(funcName) {
+            if BinaryIntegrationFunction.lexicon.keys.contains(funcName) {
                 return []
             }
             if ArithmeticOperator.lexicon.keys.contains(funcName) {

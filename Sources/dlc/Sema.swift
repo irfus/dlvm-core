@@ -203,9 +203,9 @@ extension InstructionDeclarationNode {
             }
             switch instruction {
             case let .aggregate(fun, op, _):
-                return AggregateTransformationInstruction(name: name,
-                                                          function: fun,
-                                                          operand: try op.makeValue(in: env))
+                return AggregationInstruction(name: name,
+                                              function: fun,
+                                              operand: try op.makeValue(in: env))
 
             case let .arithmetic(fun, lhs, rhs, _):
                 return ArithmeticInstruction(name: name,
@@ -221,7 +221,7 @@ extension InstructionDeclarationNode {
 
             case let .comparison(fun, lhs, rhs, _):
                 return ComparisonInstruction(name: name,
-                                             predicate: fun,
+                                             function: fun,
                                              firstOperand: try lhs.makeValue(in: env),
                                              secondOperand: try rhs.makeValue(in: env))
 
@@ -231,9 +231,7 @@ extension InstructionDeclarationNode {
 
             case let .elementwise(fun, op, _):
                 let val = try op.makeValue(in: env)
-                return ElementwiseTransformationInstruction(name: name,
-                                                            function: fun,
-                                                            operand: val)
+                return ElementwiseInstruction(name: name, function: fun, operand: val)
 
             case let .load(op, _):
                 guard let val = try op.makeValue(in: env) as? GlobalValue else {

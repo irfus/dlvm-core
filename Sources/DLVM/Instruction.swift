@@ -10,7 +10,7 @@ public protocol LexicallyConvertible {
     static var lexicon: [String : Self] { get }
 }
 
-public enum LogicalPredicate {
+public enum LogicPredicate {
     case and, or, xor
 }
 
@@ -33,17 +33,16 @@ public enum ElementwiseFunction {
 
 }
 
-public enum BinaryReductionFunction {
+public enum BinaryIntegrationFunction {
     case crossEntropy
 }
 
 public enum ReductionFunction {
-    case logical(LogicalPredicate)
-    case comparison(ComparisonPredicate)
+    case logical(LogicPredicate)
     case arithmetic(ArithmeticOperator)
 }
 
-public enum AggregateFunction {
+public enum AggregationFunction {
     case softmax, logSoftmax
     case scan(ReductionFunction)
 }
@@ -66,6 +65,7 @@ public class DefiningInstruction : Instruction, NamedValue {
     }
 }
 
+/// Abstract class for unary instruction
 public class UnaryInstruction : DefiningInstruction {
     public var operand: Value
 
@@ -75,6 +75,7 @@ public class UnaryInstruction : DefiningInstruction {
     }
 }
 
+/// Abstract class for binary instruction
 public class BinaryInstruction : DefiningInstruction {
     public var firstOperand, secondOperand: Value
 
@@ -86,31 +87,26 @@ public class BinaryInstruction : DefiningInstruction {
     }
 }
 
+/// Abstract class for unary function calls
 public class UnaryCallInstruction<Function> : UnaryInstruction {
     public var function: Function
 
-    public init(name: String, type: DataType, shape: TensorShape,
+    fileprivate init(name: String, type: DataType, shape: TensorShape,
                 function: Function, operand: Value) {
         self.function = function
         super.init(name: name, type: type, shape: shape, operand: operand)
     }
 }
 
+/// Abstract class for binary function calls
 public class BinaryCallInstruction<Function> : BinaryInstruction {
     public var function: Function
 
-    public init(name: String, type: DataType, shape: TensorShape,
+    fileprivate init(name: String, type: DataType, shape: TensorShape,
                 function: Function, firstOperand: Value, secondOperand: Value) {
         self.function = function
         super.init(name: name, type: type, shape: shape,
                    firstOperand: firstOperand, secondOperand: secondOperand)
-    }
-}
-
-public class ReductionInstruction : UnaryCallInstruction<ReductionFunction> {
-    public init(name: String, function: ReductionFunction, operand: Value) {
-        super.init(name: name, type: operand.type, shape: .scalar,
-                   function: function, operand: operand)
     }
 }
 
@@ -128,36 +124,38 @@ public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction<Func
     }
 }
 
-public typealias ElementwiseTransformationInstruction = HomomorphicUnaryInstruction<ElementwiseFunction>
-public typealias BinaryReductionInstruction = HomomorphicBinaryInstruction<BinaryReductionFunction>
+/// Shape-preserving, type-preserving (homomorphic) transformation instructions
+public typealias ElementwiseInstruction = HomomorphicUnaryInstruction<ElementwiseFunction>
+public typealias AggregationInstruction = HomomorphicUnaryInstruction<AggregationFunction>
+public typealias BinaryReductionInstruction = HomomorphicBinaryInstruction<BinaryIntegrationFunction>
 public typealias ArithmeticInstruction = HomomorphicBinaryInstruction<ArithmeticOperator>
+public typealias LogicInstruction = HomomorphicBinaryInstruction<LogicPredicate>
 
-public class ComparisonInstruction : BinaryInstruction {
-    public var predicate: ComparisonPredicate
+/// Reduction instruction
+/// - Note: We are assuming that reduction instruction takes any tensor and apply
+/// the reduction function between elements contiguously in memory.
+/// At the end of the day we will want shape-based reduction, e.g. reducing a
+/// dimension from the shape. But this is not a priority.
+/// Q: Why do we still want this feature? A: TensorFlow has it.
+public class ReductionInstruction : UnaryCallInstruction<ReductionFunction> {
+    public init(name: String, function: ReductionFunction, operand: Value) {
+        super.init(name: name, type: operand.type, shape: .scalar,
+                function: function, operand: operand)
+    }
+}
 
-    public init(name: String, predicate: ComparisonPredicate,
+/// Comparison instruction
+/// - shape: [A] -> [A]
+/// - type: _ -> Bool
+public final class ComparisonInstruction : BinaryCallInstruction<ComparisonPredicate> {
+    public init(name: String, function: ComparisonPredicate,
                 firstOperand: Value, secondOperand: Value) {
-        self.predicate = predicate
-        var newType = firstOperand.type
-        newType.base = .bool
-        newType.size = 1
-        super.init(name: name, type: newType, shape: firstOperand.shape,
-                   firstOperand: firstOperand, secondOperand: secondOperand)
+        super.init(name: name, type: .bool, shape: firstOperand.shape,
+                   function: function, firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
 
-public final class AggregateTransformationInstruction : HomomorphicUnaryInstruction<AggregateFunction> {
-    public override init(name: String, function: AggregateFunction, operand: Value) {
-        super.init(name: name, function: function, operand: operand)
-        /// For scanning with logical and comparison operators,
-        /// the result type is boolean
-        switch function {
-        case .scan(.logical(_)), .scan(.comparison(_)): type = .bool
-        default: break
-        }
-    }
-}
-
+/// Generic tensor multiplication instruction (GETT operation)
 public final class TensorMultiplicationInstruction : BinaryInstruction {
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         let newShape = (firstOperand.shape ⊗ secondOperand.shape) ?? firstOperand.shape
@@ -166,6 +164,8 @@ public final class TensorMultiplicationInstruction : BinaryInstruction {
     }
 }
 
+/// Matrix multiplication instruction (GEMM operation)
+/// - Note: This only applies to the two inner dimensions
 public final class MatrixMultiplicationInstruction : BinaryInstruction {
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         let newShape = firstOperand.shape.matrixMultiplied(by: secondOperand.shape) ?? firstOperand.shape
@@ -174,6 +174,8 @@ public final class MatrixMultiplicationInstruction : BinaryInstruction {
     }
 }
 
+/// Concatenation instruction
+/// Concatenates multiple tensors along an axis dimension
 public final class ConcatenationInstruction : DefiningInstruction {
     public var operands: [Value]
     public var axis: Int
@@ -190,6 +192,12 @@ public final class ConcatenationInstruction : DefiningInstruction {
     }
 }
 
+/// Shape-cast instruction
+/// Casts the shape of a tensor to another
+/// - Precondition: Target shape must be of the same contiguous size
+/// - Note: We will want to be able to shape-cast between different contiguous
+/// sizes (Q: Reason? A: TensorFlow does.). This should be done after we
+/// introduce **slicing**-related instructions.
 public final class ShapeCastInstruction : DefiningInstruction {
     public var operand: Value
     public var targetShape: TensorShape
@@ -201,6 +209,10 @@ public final class ShapeCastInstruction : DefiningInstruction {
     }
 }
 
+/// Type-cast instruction
+/// Casts the element type of a tensor to another
+/// - Precondition: The current type must be castable to the target shape
+/// - Note: Nope, this is not bitcast
 public final class TypeCastInstruction : DefiningInstruction {
     public var operand: Value
     public var targetType: DataType
@@ -212,6 +224,9 @@ public final class TypeCastInstruction : DefiningInstruction {
     }
 }
 
+/// Load instruction
+/// - Note: Not to be confused with *load* in LLVM. It "loads" or "consumes"
+/// an input from the training/inference batch, in terms of neural networks.
 public final class LoadInstruction : DefiningInstruction {
     public var source: GlobalValue
 
@@ -221,6 +236,11 @@ public final class LoadInstruction : DefiningInstruction {
     }
 }
 
+/// Store instruction
+/// - Note: Not to be confused with *store* in LLVM. It actually outputs
+/// the computed tensor as an output of the neural network. Maybe we
+/// want to changed the name to something like "export", but "store" is a
+/// nice counterpart of "load".
 public final class StoreInstruction : Instruction {
     public var source: Value
     public var destination: GlobalValue
