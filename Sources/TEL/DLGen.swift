@@ -99,7 +99,7 @@ class CodeGenerator {
             preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
         case let .call(funcName, args) where args.count == 2:
             let firstArgOp = build(args[0]), secondArgOp = build(args[1])
-            if let function = BinaryReductionFunction.lexicon[funcName] {
+            if let function = BinaryIntegrationFunction.lexicon[funcName] {
                 return builder.makeBinaryReduction(function, firstArgOp, secondArgOp, name: name)
             }
             if let function = ArithmeticOperator.lexicon[funcName] {

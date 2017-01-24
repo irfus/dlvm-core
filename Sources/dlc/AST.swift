@@ -9,10 +9,10 @@
 import struct Parsey.SourceRange
 import enum DLVM.ElementwiseFunction
 import enum DLVM.ComparisonPredicate
-import enum DLVM.AggregateFunction
+import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.BinaryReductionFunction
+import enum DLVM.BinaryIntegrationFunction
 
 protocol ASTNode {
     var range: SourceRange { get }
@@ -81,10 +81,10 @@ enum InstructionNode : ASTNode {
     case matrixMultiply(OperandNode, OperandNode, SourceRange)
     case tensorMultiply(OperandNode, OperandNode, SourceRange)
     case arithmetic(ArithmeticOperator, OperandNode, OperandNode, SourceRange)
-    case binaryReduction(BinaryReductionFunction, OperandNode, OperandNode, SourceRange)
+    case binaryReduction(BinaryIntegrationFunction, OperandNode, OperandNode, SourceRange)
     case reduce(ReductionFunction, OperandNode, SourceRange)
     case elementwise(ElementwiseFunction, OperandNode, SourceRange)
-    case aggregate(AggregateFunction, OperandNode, SourceRange)
+    case aggregate(AggregationFunction, OperandNode, SourceRange)
     case comparison(ComparisonPredicate, OperandNode, OperandNode, SourceRange)
     case concatenate([OperandNode], Int?, SourceRange)
     case shapeCast(OperandNode, ShapeNode, SourceRange)

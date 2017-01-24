@@ -65,16 +65,16 @@ extension ElementwiseFunction : LexicallyConvertible {
     ]
 }
 
-extension LogicalPredicate : LexicallyConvertible {
-    public static var lexicon: [String : LogicalPredicate] = [
+extension LogicPredicate: LexicallyConvertible {
+    public static var lexicon: [String : LogicPredicate] = [
         "and" : .and,
         "or"  : .or,
         "xor" : .xor
     ]
 }
 
-extension BinaryReductionFunction : LexicallyConvertible {
-    public static let lexicon: [String : BinaryReductionFunction] = [
+extension BinaryIntegrationFunction: LexicallyConvertible {
+    public static let lexicon: [String : BinaryIntegrationFunction] = [
         "crossEnt" : .crossEntropy
     ]
 }

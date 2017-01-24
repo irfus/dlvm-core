@@ -100,7 +100,7 @@ extension IRBuilder {
                              _ lhs: Value, _ rhs: Value,
                              name: String? = nil) -> ComparisonInstruction {
         let inst = ComparisonInstruction(name: name ?? makeName(),
-                                         predicate: `operator`,
+                                         function: `operator`,
                                          firstOperand: lhs, secondOperand: rhs)
         return build(inst)
     }
@@ -124,18 +124,18 @@ extension IRBuilder {
     @discardableResult
     open func makeElementwiseTransformation(_ function: ElementwiseFunction,
                                             _ operand: Value,
-                                            name: String? = nil) -> ElementwiseTransformationInstruction {
-        let inst = ElementwiseTransformationInstruction(name: name ?? makeName(),
-                                                        function: function, operand: operand)
+                                            name: String? = nil) -> ElementwiseInstruction {
+        let inst = ElementwiseInstruction(name: name ?? makeName(),
+                                          function: function, operand: operand)
         return build(inst)
     }
     
     @discardableResult
-    open func makeAggregateTransformation(_ function: AggregateFunction,
-                                          _ operand: Value,
-                                          name: String? = nil) -> AggregateTransformationInstruction {
-        let inst = AggregateTransformationInstruction(name: name ?? makeName(),
-                                                      function: function, operand: operand)
+    open func makeAggregation(_ function: AggregationFunction,
+                              _ operand: Value,
+                              name: String? = nil) -> AggregationInstruction {
+        let inst = AggregationInstruction(name: name ?? makeName(),
+                                          function: function, operand: operand)
         return build(inst)
     }
 
@@ -147,7 +147,7 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func makeBinaryReduction(_ function: BinaryReductionFunction,
+    open func makeBinaryReduction(_ function: BinaryIntegrationFunction,
                                   _ firstOperand: Value, _ secondOperand: Value,
                                   name: String? = nil) -> BinaryReductionInstruction {
         let inst = BinaryReductionInstruction(name: name ?? makeName(), function: function,
