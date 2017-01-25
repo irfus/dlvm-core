@@ -171,11 +171,18 @@ extension InstructionDeclarationNode : Parsible {
 extension BasicBlockNode : Parsible {
     static let parser: Parser<BasicBlockNode> =
         identifier <~~ spaces.? ^^ curry(BasicBlockNode.init)
-     ** (Lexer.token("gradient").amid(spaces.?).between("(", ")") ^^= true).withDefault(false)
-    <~~ Lexer.character(":").amid(spaces.?).! <~~ linebreaks.!
-     ** InstructionDeclarationNode.parser
-                                  .manyOrNone(separatedBy: linebreaks)
-     .. "an instruction or a basic block"
+    <~~ Lexer.character("{").amid(spaces.?).! <~~ linebreaks.!
+     ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
+     ** (linebreaks ~~> BasicBlockSubsectionNode.parser).*
+    <~~ linebreaks <~~ Lexer.character("}").!
+     .. "a basic block"
+}
+
+extension BasicBlockSubsectionNode : Parsible {
+    static let parser: Parser<BasicBlockSubsectionNode> =
+        (identifier.! .. "subsection name").amid("::").amid(spaces.?) <~~ linebreaks.!
+     ^^ curry(BasicBlockSubsectionNode.init)
+     ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
 }
 
 extension DeclarationNode.Role : Parsible {

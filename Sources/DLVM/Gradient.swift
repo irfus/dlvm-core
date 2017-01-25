@@ -6,11 +6,6 @@
 //
 //
 
-public protocol Differentiable {
-    associatedtype Gradient
-    var gradient: Gradient { get }
-}
-
 open class GradientPass : BasicBlockPass {
 
     open var basicBlock: BasicBlock

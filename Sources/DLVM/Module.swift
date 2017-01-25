@@ -61,7 +61,7 @@ extension Module {
         basicBlockTable[basicBlock.name] = basicBlock
         basicBlock.parent = self
     }
-    
+
     open func index(of basicBlock: BasicBlock) -> Int? {
         return basicBlocks.index(of: basicBlock)
     }
@@ -87,6 +87,10 @@ extension Module {
         default:
             preconditionFailure("Unsupported global value")
         }
+    }
+
+    open func contains(_ basicBlock: BasicBlock) -> Bool {
+        return basicBlockSet.contains(basicBlock)
     }
     
 }

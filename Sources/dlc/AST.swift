@@ -62,7 +62,13 @@ enum InitializerNode : ASTNode {
 
 struct BasicBlockNode : ASTNode {
     let name: String
-    let isGradient: Bool
+    let instructions: [InstructionDeclarationNode]
+    let subsections: [BasicBlockSubsectionNode]
+    let range: SourceRange
+}
+
+struct BasicBlockSubsectionNode : ASTNode {
+    let name: String
     let instructions: [InstructionDeclarationNode]
     let range: SourceRange
 }
@@ -99,6 +105,7 @@ enum InstructionNode : ASTNode {
         case let .matrixMultiply(_, _, sr),
              let .tensorMultiply(_, _, sr),
              let .arithmetic(_, _, _, sr),
+             let .logic(_, _, _, sr),
              let .binaryReduction(_, _, _, sr),
              let .reduce(_, _, sr),
              let .elementwise(_, _, sr),
