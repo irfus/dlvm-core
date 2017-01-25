@@ -4,31 +4,25 @@
 
 extension NamedValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if shape.isScalar {
-            target.write("\(type) %\(name)")
-        } else {
-            target.write("\(type) \(shape) %\(name)")
-        }
+        type.write(to: &target)
+        target.write(shape.isScalar ? " %" : " \(shape) %")
+        name.write(to: &target)
     }
 }
 
 extension GlobalValue {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if shape.isScalar {
-            target.write("\(type) @\(name)")
-        } else {
-            target.write("\(type) \(shape) @\(name)")
-        }
+        type.write(to: &target)
+        target.write(shape.isScalar ? " @" : " \(shape) @")
+        name.write(to: &target)
     }
 }
 
 extension ImmediateValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if shape.isScalar {
-            target.write("\(type) \(immediate)")
-        } else {
-            target.write("\(type) \(shape) \(immediate)")
-        }
+        type.write(to: &target)
+        target.write(shape.isScalar ? " " : " \(shape) ")
+        immediate.write(to: &target)
     }
 }
 
@@ -146,48 +140,62 @@ extension BinaryIntegrationFunction: TextOutputStreamable {
 extension BasicBlock : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         name.write(to: &target)
-        target.write(":\n")
+        target.write(" {\n")
         for inst in elements {
-            target.write("    ")
-            if let defInst = inst as? DefiningInstruction {
-                target.write("%\(defInst.name) = ")
-            }
-            switch inst {
-            case let inst as TensorMultiplicationInstruction:
-                target.write("tmul \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as MatrixMultiplicationInstruction:
-                target.write("mmul \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as ArithmeticInstruction:
-                target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as LogicInstruction:
-                target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as ComparisonInstruction:
-                target.write("cmp \(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as ElementwiseInstruction:
-                target.write("\(inst.function) \(inst.operand)")
-            case let inst as AggregationInstruction:
-                target.write("\(inst.function) \(inst.operand)")
-            case let inst as StoreInstruction:
-                target.write("store \(inst.source) to \(inst.destination)")
-            case let inst as LoadInstruction:
-                target.write("load \(inst.source)")
-            case let inst as ConcatenationInstruction:
-                target.write("concat ")
-                inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
-                target.write(" along \(inst.axis)")
-            case let inst as ReductionInstruction:
-                target.write("reduce \(inst.function) \(inst.operand)")
-            case let inst as BinaryReductionInstruction:
-                target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-            case let inst as ShapeCastInstruction:
-                target.write("shapecast \(inst.operand) to \(inst.targetShape)")
-            case let inst as TypeCastInstruction:
-                target.write("typecast \(inst.operand) to \(inst.targetType)")
-            default:
-                preconditionFailure("Unsupported instruction class \(type(of: inst))")
-                break
-            }
+            inst.writeDefinition(to: &target)
             target.write("\n")
+        }
+        if hasGradient {
+            target.write("\n::gradients::\n")
+            for inst in gradients {
+                inst.writeDefinition(to: &target)
+                target.write("\n")
+            }
+        }
+        target.write("}")
+    }
+}
+
+extension Instruction {
+    public func writeDefinition<Target : TextOutputStream>(to target: inout Target) {
+        target.write("    ")
+        if let defInst = self as? DefiningInstruction {
+            target.write("%\(defInst.name) = ")
+        }
+        switch self {
+        case let inst as TensorMultiplicationInstruction:
+            target.write("tmul \(inst.firstOperand), \(inst.secondOperand)")
+        case let inst as MatrixMultiplicationInstruction:
+            target.write("mmul \(inst.firstOperand), \(inst.secondOperand)")
+        case let inst as ArithmeticInstruction:
+            target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
+        case let inst as LogicInstruction:
+            target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
+        case let inst as ComparisonInstruction:
+            target.write("cmp \(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
+        case let inst as ElementwiseInstruction:
+            target.write("\(inst.function) \(inst.operand)")
+        case let inst as AggregationInstruction:
+            target.write("\(inst.function) \(inst.operand)")
+        case let inst as StoreInstruction:
+            target.write("store \(inst.source) to \(inst.destination)")
+        case let inst as LoadInstruction:
+            target.write("load \(inst.source)")
+        case let inst as ConcatenationInstruction:
+            target.write("concat ")
+            inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
+            target.write(" along \(inst.axis)")
+        case let inst as ReductionInstruction:
+            target.write("reduce \(inst.function) \(inst.operand)")
+        case let inst as BinaryReductionInstruction:
+            target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
+        case let inst as ShapeCastInstruction:
+            target.write("shapecast \(inst.operand) to \(inst.targetShape)")
+        case let inst as TypeCastInstruction:
+            target.write("typecast \(inst.operand) to \(inst.targetType)")
+        default:
+            preconditionFailure("Unsupported instruction class \(type(of: self))")
+            break
         }
     }
 }

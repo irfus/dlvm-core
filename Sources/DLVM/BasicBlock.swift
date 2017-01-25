@@ -8,18 +8,16 @@
 
 import Foundation
 
-open class BasicBlock : IRCollection, IRObject, Differentiable {
+open class BasicBlock : IRCollection, IRObject {
 
     public typealias Element = Instruction
 
     open var name: String
     open weak var parent: Module?
 
-    open var gradient: BasicBlock?
-
-    /// Take advantange of great data structures from Foundation
     let instructionSet = NSMutableOrderedSet()
-    
+    var gradientSet = NSMutableOrderedSet()
+
     /// Same as instructions
     open var elements: [Instruction] {
         return instructions
@@ -30,6 +28,14 @@ open class BasicBlock : IRCollection, IRObject, Differentiable {
             return instructionSet.array as! [Instruction]
         #else
             return instructionSet.map { $0 as! Instruction }
+        #endif
+    }
+
+    open var gradients: [Instruction] {
+        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+            return gradientSet.array as! [Instruction]
+        #else
+            return gradientSet.map { $0 as! Instruction }
         #endif
     }
 
@@ -47,7 +53,7 @@ open class BasicBlock : IRCollection, IRObject, Differentiable {
 // MARK: - IRCollection
 extension BasicBlock {
 
-    public func contains(_ element: Instruction) -> Bool {
+    open func contains(_ element: Instruction) -> Bool {
         return instructionSet.contains(element)
     }
 
@@ -70,6 +76,32 @@ extension BasicBlock {
                      "Instruction is not in the basic block")
         instructionSet.remove(instruction)
         instruction.parent = nil
+    }
+
+}
+
+// MARK: - Gradient section
+extension BasicBlock {
+
+    open var hasGradient: Bool {
+        return gradientSet.count != 0
+    }
+
+    open func containsGradient(_ instruction: Instruction) -> Bool {
+        return gradientSet.contains(instruction)
+    }
+
+    open func appendGradient(_ instruction: Instruction) {
+        gradientSet.add(instruction)
+    }
+
+    open func index(ofGradient instruction: Instruction) -> Int? {
+        return gradientSet.index(of: instruction)
+    }
+
+    open func removeGradient(_ instruction: Instruction) {
+        precondition(gradientSet.contains(instruction),
+                     "Instruction is not in the gradient section of the basic block")
     }
 
 }

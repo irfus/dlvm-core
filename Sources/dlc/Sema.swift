@@ -22,6 +22,7 @@ enum SemanticError : Error {
     case extraneousName(InstructionDeclarationNode)
     case missingName(InstructionDeclarationNode)
     case initializerTypeMismatch(InitializerNode, TypeNode)
+    case unsupportedSubsection(BasicBlockSubsectionNode)
 }
 
 extension ModuleNode {
@@ -55,6 +56,19 @@ extension BasicBlockNode {
                 env.insertTemporary(temp)
             }
             bb.append(inst)
+        }
+        for subSec in subsections {
+            /// Only support 'gradients' for now
+            guard subSec.name == "gradients" else {
+                throw SemanticError.unsupportedSubsection(subSec)
+            }
+            for instNode in subSec.instructions {
+                let inst = try instNode.makeInstruction(in: env)
+                if let temp = inst as? NamedValue {
+                    env.insertTemporary(temp)
+                }
+                bb.appendGradient(inst)
+            }
         }
         return bb
     }
@@ -149,7 +163,7 @@ extension InitializerNode {
             return TensorInitializer.random(from: lo.makeImmediateValue(),
                                             to: hi.makeImmediateValue())
         case let .repeating(immVal, _):
-            return immVal.immediate.makeImmediate()
+            return TensorInitializer.repeating(immVal.makeImmediateValue())
         }
     }
 }
