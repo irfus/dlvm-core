@@ -132,7 +132,7 @@ struct RecurrenceContext {
 }
 
 /// Environment for semantics analysis
-struct TypeEnvironment {
+struct SemaEnvironment {
 
     public var moduleName: String?
 
@@ -243,7 +243,7 @@ public class Program {
 
     public init(parse: ProgramTree) throws {
         /// Create a type environment for semantic analysis
-        var env = TypeEnvironment()
+        var env = SemaEnvironment()
         /// Type-check
         try Program.check(parse, in: &env)
         /// Check existence of proper declarations
@@ -263,7 +263,7 @@ public class Program {
         self.moduleName = moduleName
     }
 
-    static func check(_ parse: ProgramTree, in env: inout TypeEnvironment) throws {
+    static func check(_ parse: ProgramTree, in env: inout SemaEnvironment) throws {
         for stmt in parse.statements {
             try Program.check(stmt, in: &env)
         }
@@ -271,7 +271,7 @@ public class Program {
 
     /// Check statement
     /// - Throws: SemanticError
-    static func check(_ statement: Statement, in env: inout TypeEnvironment) throws {
+    static func check(_ statement: Statement, in env: inout SemaEnvironment) throws {
         switch statement {
         /// Type macro
         case let .attribute(macro):
@@ -284,7 +284,7 @@ public class Program {
 
     /// Check macro
     /// - Throws: SemanticError
-    static func check(_ macro: Attribute, in env: inout TypeEnvironment) throws {
+    static func check(_ macro: Attribute, in env: inout SemaEnvironment) throws {
         guard env.isEmpty else {
             throw SemanticError.attributeNotOnTop(macro)
         }
@@ -307,7 +307,7 @@ public class Program {
     
     /// Check declaration
     /// - Throws: SemanticError
-    static func check(_ declaration: Declaration, in env: inout TypeEnvironment) throws {
+    static func check(_ declaration: Declaration, in env: inout SemaEnvironment) throws {
         switch declaration {
             
         /// ## Grand sanity check begin ##
@@ -429,7 +429,7 @@ public class Program {
     /// Check expression
     /// - Throws: SemanticError
     static func check(_ expression: Expression, variable: Variable,
-                      expectedShape: TensorShape, in env: inout TypeEnvironment) throws {
+                      expectedShape: TensorShape, in env: inout SemaEnvironment) throws {
         let shape = try Program.shape(of: expression, in: &env)
         guard shape == expectedShape else {
             throw SemanticError.shapeMismatch(expression, shape,
@@ -441,7 +441,7 @@ public class Program {
     /// Infer type of expression
     /// - Throws: SemanticError
     static func shape(of expression: Expression,
-                      in env: inout TypeEnvironment) throws -> TensorShape {
+                      in env: inout SemaEnvironment) throws -> TensorShape {
         switch expression {
 
         case let .variable(v):
