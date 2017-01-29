@@ -1,0 +1,26 @@
+#+TITLE: Deep Learning Virtual Machine
+#+AUTHOR: Richard Wei
+
+* Introduction
+  We propose a programming model and a compiler infrastructure for deep learning
+  architectures, a.k.a. various kinds of neural networks. Our compiler
+  infrastructure, which we name Deep Learning Virtual Machine (DLVM), contains a
+  high-level intermediate representation (IR) of data flow, a set of IR
+  transformations such as the backpropagation algorithm and stochastic
+  optimizations, and a back-end compiler based on HPVM and LLVM, a portable
+  abstraction for heterogeneous parallel systems and a compiler infrastructure,
+  respectively. DLVM, along with the capabilities of HPVM and LLVM, provide
+  source- and target-independence, optimizations, and static code generation to
+  neural network programs.
+
+* TODO Previous Work
+
+  Neural network toolkits are an essential part of deep learning applications.
+  Most commonly, such toolkits are implemented as an interpreter of mathematical
+  expressions composed of vector and matrix operations. Such operations are
+  often executed in the form of parallel GPU compute kernels to achieve high
+  performance. To use these implementations, users are expected to define a data
+  flow graph using expressions in a host language, most commonly Python and
+  Lua, 
+
+

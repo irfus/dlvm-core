@@ -63,3 +63,6 @@ xcuserdata/
 
 ## File-based project format:
 *.iws
+
+# LaTeX/Org stuff
+Documentation/**/auto/
