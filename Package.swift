@@ -7,8 +7,6 @@ let package = Package(
         Target(name: "DLVM"),
         /// DLVM compiler driver
         Target(name: "dlc", dependencies: ["DLVM"]),
-        /// DLVM bitcode disassembler
-        Target(name: "dlvm-dis", dependencies: ["DLVM"]),
         /// TEL compiler library (libTEL)
         Target(name: "TEL", dependencies: ["DLVM"]),
         /// TEL compiler driver
