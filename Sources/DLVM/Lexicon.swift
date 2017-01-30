@@ -30,7 +30,7 @@ extension ArithmeticOperator : LexicallyConvertible {
         "max"      : .max,
         "truncDiv" : .truncateDivide,
         "floorDiv" : .floorDivide,
-        "mod"      : .mod,
+        "mod"      : .modulo,
         "pow"      : .power,
         "mean"     : .mean
     ]

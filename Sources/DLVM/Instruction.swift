@@ -22,7 +22,7 @@ public enum ComparisonPredicate {
 
 public enum ArithmeticOperator {
     case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, mod, power, mean
+    case truncateDivide, floorDivide, modulo, power, mean
 }
 
 public enum ElementwiseFunction {
