@@ -53,37 +53,37 @@ extension SemanticError : CustomStringConvertible {
         case .moduleNameMissing:
             return "Network name is undefined. Would you like to add a '@name ...'?"
         case let .initializerMissing(variable):
-            return "Variable \(variable) needs an initializer"
+            return "Variable \(variable) : \(variable.range) needs an initializer"
         case let .initializerUnexpected(variable):
-            return "Variable \(variable) should not have an initializer"
+            return "Variable \(variable) : \(variable.range) should not have an initializer"
         case let .variableRedeclared(variable):
-            return "Variable \(variable) is redeclared"
+            return "Variable \(variable) : \(variable.range) is redeclared"
         case let .variableUndefined(variable):
-            return "Variable \(variable) is undefined"
+            return "Variable \(variable) : \(variable.range) is undefined"
         case let .randomBoundsTypeMismatch(expr):
             return "Operands of the random expression do not have the same type \(expr)"
         case let .notAnInitializer(expr):
-            return "Expression \(expr) is not an initializer expression"
+            return "Expression \(expr) : \(expr.range) is not an initializer expression"
         case let .constantTypeMismatch(expr, expected: type):
-            return "The type of the constant \(expr) does not match the data type of the network (\(type))"
+            return "The type of the constant \(expr) : \(expr.range) does not match the data type of the network (\(type))"
         case let .cannotInferShape(expr):
-            return "Cannot infer the shape of expresison \(expr)"
+            return "Cannot infer the shape of expresison \(expr) : \(expr.range)"
         case let .cannotConcatenate(expr, shape1, shape2):
-            return "Cannot perform concatenation \(expr) on shapes \(shape1) and \(shape2)"
+            return "Cannot perform concatenation \(expr) : \(expr.range) on shapes \(shape1) and \(shape2)"
         case let .cannotFormProduct(lhsExpr, lhsShape, rhsExpr, rhsShape):
-            return "Cannot form product between \(lhsExpr) of shape \(lhsShape) and \(rhsExpr) of shape \(rhsShape)"
+            return "Cannot form product between \(lhsExpr) : \(lhsExpr.range) of shape \(lhsShape) and \(rhsExpr) : \(rhsExpr.range) of shape \(rhsShape)"
         case let .operatorShapeMismatch(lhs, lShape, rhs, rShape):
-            return "The shape of the left-hand side \(lhs) (\(lShape)) does not match the shape of right-hand side \(rhs) (\(rShape))"
+            return "The shape of the left-hand side \(lhs) (\(lShape)) : \(lhs.range) does not match the shape of right-hand side \(rhs) (\(rShape)) : \(rhs.range)"
         case let .cannotReshape(expr, shape, targetShape):
-            return "Experssion \(expr) of shape \(shape) cannot be reshaped to \(targetShape) due to mismatch in contiguous memory size"
+            return "Experssion \(expr) : \(expr.range) of shape \(shape) cannot be reshaped to \(targetShape) due to mismatch in contiguous memory size"
         case let .shapeMismatch(expr, shape, expected: expectedShape, in: variable):
-            return "Expression \(expr) of shape \(shape) does not match the expected shape \(expectedShape) of variable \(variable)"
+            return "Expression \(expr) : \(expr.range) of shape \(shape) does not match the expected shape \(expectedShape) of variable \(variable) : \(variable.range)"
         case let .attributeNotOnTop(attr):
             return "Attribute \(attr) is not placed on the top of declarations"
         case let .functionTypeError(expr, error):
-            return "In function call \(expr): \(error)"
+            return "In function call \(expr) at \(expr.range): \(error)"
         case let .functionUnknown(expr, funcName):
-            return "Unknown function name '\(funcName)' is found in expression \(expr)"
+            return "Unknown function name '\(funcName)' is found in expression \(expr) : \(expr.range)"
         case .inputMissing:
             return "I can't find any input layer"
         case .outputMissing:
@@ -274,10 +274,10 @@ public class Program {
     static func check(_ statement: Statement, in env: inout SemaEnvironment) throws {
         switch statement {
         /// Type macro
-        case let .attribute(macro):
+        case let .attribute(macro, _):
             try check(macro, in: &env)
         /// Declaration
-        case let .declaration(decl):
+        case let .declaration(decl, _):
             try check(decl, in: &env)
         }
     }
@@ -289,7 +289,7 @@ public class Program {
             throw SemanticError.attributeNotOnTop(macro)
         }
         switch macro {
-        case let .type(typeName):
+        case let .type(typeName, _):
             guard !env.isCustomDataType else {
                 throw SemanticError.dataTypeRedeclared
             }
@@ -297,7 +297,7 @@ public class Program {
                 throw SemanticError.dataTypeUnknown(typeName)
             }
             env.dataType = type
-        case let .name(name):
+        case let .name(name, _):
             guard env.moduleName == nil else {
                 throw SemanticError.moduleNameRedeclared
             }
@@ -313,31 +313,31 @@ public class Program {
         /// ## Grand sanity check begin ##
         
         /// Check for redeclaration
-        case let .assignment(variable, _, _, _)
+        case let .assignment(variable, _, _, _, _)
             where env.contains(variable.name):
             throw SemanticError.variableRedeclared(variable)
             
         /// If declaration is input layer with an init expr assigned
         /// to it, erorr
-        case let .assignment(variable, .input, _, _?):
+        case let .assignment(variable, .input, _, _?, _):
             throw SemanticError.initializerUnexpected(variable)
 
         /// No init expr for a non-input node, error
-        case let .assignment(variable, .output, _, nil),
-             let .assignment(variable, .hidden, _, nil),
-             let .assignment(variable, .parameter, _, nil):
+        case let .assignment(variable, .output, _, nil, _),
+             let .assignment(variable, .hidden, _, nil, _),
+             let .assignment(variable, .parameter, _, nil, _):
             throw SemanticError.initializerMissing(variable)
 
         /// ## Grand environment filling begin ##
             
         /// Input
-        case let .assignment(variable, .input, shapeComponents, nil):
+        case let .assignment(variable, .input, shapeComponents, nil, _):
             let shape = TensorShape(shapeComponents)
             let input = Input(name: variable.name, shape: shape)
             env.insert(input)
 
         /// Parameter
-        case let .assignment(variable, .parameter, shapeComponents, expr?):
+        case let .assignment(variable, .parameter, shapeComponents, expr?, _):
             let shape = TensorShape(shapeComponents)
 
             let initializer: Parameter.Initializer
@@ -346,28 +346,28 @@ public class Program {
             switch expr {
 
             /// Constant type mismatch
-            case .constant(.int(_)) where env.dataType.base != .int,
-                 .constant(.float(_)) where env.dataType.base != .float:
+            case .constant(.int(_, _), _) where env.dataType.base != .int,
+                 .constant(.float(_, _), _) where env.dataType.base != .float:
                 throw SemanticError.constantTypeMismatch(expr, expected: env.dataType)
 
             /// Int constant
-            case let .constant(.int(i)):
+            case let .constant(.int(i, _), _):
                 initializer = .constant(.int(i))
 
             /// Float constant
-            case let .constant(.float(f)):
+            case let .constant(.float(f, _), _):
                 initializer = .constant(.float(f))
 
             /// Random int initializer
-            case let .random(.int(lo), .int(hi)):
+            case let .random(.int(lo, _), .int(hi, _), _):
                 initializer = .random(.int(lo), .int(hi))
 
             /// Random float initializer
-            case let .random(.float(lo), .float(hi)):
+            case let .random(.float(lo, _), .float(hi, _), _):
                 initializer = .random(.float(lo), .float(hi))
 
             /// Non-matching types of random bounds
-            case .random(_, _):
+            case .random(_, _, _):
                 throw SemanticError.randomBoundsTypeMismatch(expr)
 
             default:
@@ -381,7 +381,7 @@ public class Program {
 
         /// ## Grand deep check begin ##
 
-        case let .assignment(variable, .hidden, shapeComponents, expr?):
+        case let .assignment(variable, .hidden, shapeComponents, expr?, _):
             let shape = TensorShape(shapeComponents)
             try check(expr, variable: variable, expectedShape: shape, in: &env)
             let layer = Layer(name: variable.name,
@@ -390,7 +390,7 @@ public class Program {
                               isOutput: false)
             env.insert(layer)
 
-        case let .assignment(variable, .output, shapeComponents, expr?):
+        case let .assignment(variable, .output, shapeComponents, expr?, _):
             let shape = TensorShape(shapeComponents)
             try check(expr, variable: variable, expectedShape: shape, in: &env)
             let output = Layer(name: variable.name,
@@ -399,7 +399,7 @@ public class Program {
                                isOutput: true)
             env.insert(output)
 
-        case let .recurrence(timeStep, decls):
+        case let .recurrence(timeStep, decls, _):
             /// Recurrent time step ('t', for example) is bound only within the
             /// recurrence. Unlike time step, declarations in a recurrence are
             /// **globally bound**.
@@ -409,7 +409,7 @@ public class Program {
             /// Create a recurrent context containing a time step and a symbol
             /// table of shapes
             var contextShapes: [String : TensorShape] = [:]
-            for case let .assignment(variable, _, shapeComponents, _) in decls {
+            for case let .assignment(variable, _, shapeComponents, _, _) in decls {
                 guard !env.contains(variable.name) else {
                     throw SemanticError.variableRedeclared(variable)
                 }
@@ -444,22 +444,22 @@ public class Program {
                       in env: inout SemaEnvironment) throws -> TensorShape {
         switch expression {
 
-        case let .variable(v):
+        case let .variable(v, _):
             guard let shape = env[v.name] else {
                 throw SemanticError.variableUndefined(v)
             }
             return shape
 
-        case let .infixOp(_, sideExpr, .constant(const)),
-             let .infixOp(_, .constant(const), sideExpr):
+        case let .infixOp(_, sideExpr, .constant(const, _), _),
+             let .infixOp(_, .constant(const, _), sideExpr, _):
             let sideShape = try shape(of: sideExpr, in: &env)
             /// If a float constant is used under an int context, error
-            if case .float(_) = const, env.dataType.base == .int {
+            if case .float(_, _) = const, env.dataType.base == .int {
                 throw SemanticError.cannotInferShape(expression)
             }
             return sideShape
 
-        case let .infixOp(_, lhs, rhs):
+        case let .infixOp(_, lhs, rhs, _):
             let leftShape = try shape(of: lhs, in: &env)
             let rightShape = try shape(of: rhs, in: &env)
             guard leftShape == rightShape else {
@@ -467,10 +467,10 @@ public class Program {
             }
             return leftShape
 
-        case let .negate(e):
+        case let .negate(e, _):
             return try shape(of: e, in: &env)
 
-        case let .concat(exprs, dimension: dim):
+        case let .concat(exprs, dimension: dim, _):
             precondition(!exprs.isEmpty) // Not possible
             let firstShape = try shape(of: exprs[0], in: &env)
             return try exprs.dropFirst().reduce(firstShape) { acc, expr in
@@ -482,7 +482,7 @@ public class Program {
                 return newShape
             }
 
-        case let .reshape(expr, shape: dims):
+        case let .reshape(expr, shape: dims, _):
             let exprShape = try shape(of: expr, in: &env)
             let exprSize = exprShape.contiguousSize
             let targetShape = TensorShape(dims)
@@ -492,7 +492,7 @@ public class Program {
             }
             return TensorShape(dims)
 
-        case let .product(lhs, rhs):
+        case let .product(lhs, rhs, _):
             let lhsShape = try shape(of: lhs, in: &env)
             let rhsShape = try shape(of: rhs, in: &env)
             guard let prodShape = lhsShape.matrixMultiplied(by: rhsShape) else {
@@ -501,7 +501,7 @@ public class Program {
             return prodShape
 
         /// For now we assume only unary and binary functions
-        case let .call(funcName, args):
+        case let .call(funcName, args, _):
             let argShapes = try args.map { try shape(of: $0, in: &env) }
             guard let function = builtinFunctionTable[funcName] else {
                 throw SemanticError.functionUnknown(expression, funcName)
