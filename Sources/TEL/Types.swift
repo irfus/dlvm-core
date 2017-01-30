@@ -8,9 +8,23 @@
 
 import struct DLVM.TensorShape
 
-public enum TypeError : Error {
-    case noArguments
-    case argumentCountMismatch(actual: Int, expected: Int)
+public enum FunctionTypeError : Error {
+    case argumentCountMismatch(expected: Int, actual: Int)
+    case shapeMismatch(TensorShape, TensorShape)
+}
+
+extension FunctionTypeError : CustomStringConvertible {
+    public var description: String {
+        switch self {
+
+        case let .shapeMismatch(lhs, rhs):
+            return "Expected two arguments of the same shape, but \(lhs) ≠ \(rhs)"
+
+        case let .argumentCountMismatch(expected: expected, actual: actual):
+            return "Expected \(expected) arguments, but \(actual) are provided"
+
+        }
+    }
 }
 
 /// - Note: This is not a formal type system. Type computation is purely defined
@@ -18,30 +32,51 @@ public enum TypeError : Error {
 /// previous commits but they are obviously extra work since we are not going
 /// to allow function declarations in TEL.
 
-public class FunctionType {
-    public var argumentCount: Int
+public enum FunctionType {
+    case homomorphicUnary, homomorphicBinary, binaryReduction
+    case matrixMultiplication, tensorMultiplication
+    case logicalBinary, comparison
+}
 
-    public init(argumentCount: Int) {
-        self.argumentCount = argumentCount
-    }
-
-    internal func result(forArguments args: [TensorShape]) throws -> TensorShape {
+internal extension FunctionType {
+    func checkSanity(forArguments args: [TensorShape]) throws {
         guard args.count == argumentCount else {
-            throw TypeError.argumentCountMismatch(actual: args.count, expected: argumentCount)
+            throw FunctionTypeError.argumentCountMismatch(expected: argumentCount, actual: args.count)
         }
-        guard let firstArg = args.first else {
-            throw TypeError.noArguments
-        }
-        return firstArg
     }
 }
 
-public struct Function {
-    public var name: String
-    public var type: FunctionType
+public extension FunctionType {
+    public var argumentCount: Int {
+        switch self {
+        case .homomorphicUnary: return 1
+        case .homomorphicBinary: return 2
+        case .binaryReduction: return 2
+        case .matrixMultiplication: return 2
+        case .tensorMultiplication: return 2
+        case .logicalBinary: return 2
+        case .comparison: return 2
+        }
+    }
 
-    public init(name: String, type: FunctionType) {
-        self.name = name
-        self.type = type
+    public func result(forArguments args: [TensorShape]) throws -> TensorShape {
+        try checkSanity(forArguments: args)
+        switch self {
+        case .homomorphicUnary: return args[0]
+        case .homomorphicBinary: return args[0]
+        case .binaryReduction: return .scalar
+        case .logicalBinary: return args[0]
+        case .comparison: return args[0]
+        case .matrixMultiplication:
+            guard let resultShape = args[0].matrixMultiplied(by: args[1]) else {
+                throw FunctionTypeError.shapeMismatch(args[0], args[1])
+            }
+            return resultShape
+        case .tensorMultiplication:
+            guard let resultShape = args[0].multiplied(by: args[1]) else {
+                throw FunctionTypeError.shapeMismatch(args[0], args[1])
+            }
+            return resultShape
+        }
     }
 }
