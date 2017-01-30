@@ -59,7 +59,7 @@ public extension FunctionType {
         }
     }
 
-    public func result(forArguments args: [TensorShape]) throws -> TensorShape {
+    public func resultShape(forArguments args: [TensorShape]) throws -> TensorShape {
         try checkSanity(forArguments: args)
         switch self {
         case .homomorphicUnary: return args[0]

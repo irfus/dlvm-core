@@ -35,7 +35,7 @@ public enum SemanticError : Error {
     case cannotReshape(Expression, TensorShape, TensorShape)
     case shapeMismatch(Expression, TensorShape, expected: TensorShape, in: Variable)
     case attributeNotOnTop(Attribute)
-    case argumentCountMismatch(Expression, count: Int, expected: Int)
+    case functionTypeError(Expression, FunctionTypeError)
     case functionUnknown(Expression, String)
     case inputMissing
     case outputMissing
@@ -80,8 +80,8 @@ extension SemanticError : CustomStringConvertible {
             return "Expression \(expr) of shape \(shape) does not match the expected shape \(expectedShape) of variable \(variable)"
         case let .attributeNotOnTop(attr):
             return "Attribute \(attr) is not placed on the top of declarations"
-        case let .argumentCountMismatch(expr, count: count, expected: expectedCount):
-            return "Function call \(expr) has \(count) arguments, but \(expectedCount) are expected"
+        case let .functionTypeError(expr, error):
+            return "In function call \(expr): \(error)"
         case let .functionUnknown(expr, funcName):
             return "Unknown function name '\(funcName)' is found in expression \(expr)"
         case .inputMissing:
@@ -501,34 +501,17 @@ public class Program {
             return prodShape
 
         /// For now we assume only unary and binary functions
-        case let .call(funcName, args) where args.count == 1:
-            let argShape = try shape(of: args[0], in: &env)
-            if ElementwiseFunction.lexicon.keys.contains(funcName) {
-                return argShape
+        case let .call(funcName, args):
+            let argShapes = try args.map { try shape(of: $0, in: &env) }
+            guard let function = builtinFunctionTable[funcName] else {
+                throw SemanticError.functionUnknown(expression, funcName)
             }
-            throw SemanticError.argumentCountMismatch(expression,
-                                                      count: args.count,
-                                                      expected: 1)
+            do {
+                return try function.type.resultShape(forArguments: argShapes)
+            } catch let error as FunctionTypeError {
+                throw SemanticError.functionTypeError(expression, error)
+            }
 
-        case let .call(funcName, args) where args.count == 2:
-            let firstArgShape = try shape(of: args[0], in: &env)
-            let secondArgShape = try shape(of: args[1], in: &env)
-            guard firstArgShape == secondArgShape else {
-                throw SemanticError.operatorShapeMismatch(args[0], firstArgShape, args[1], secondArgShape)
-            }
-            if BinaryIntegrationFunction.lexicon.keys.contains(funcName) {
-                return []
-            }
-            if ArithmeticOperator.lexicon.keys.contains(funcName) {
-                return firstArgShape
-            }
-            throw SemanticError.argumentCountMismatch(expression,
-                                                      count: args.count,
-                                                      expected: 2)
-
-        case let .call(funcName, _):
-            throw SemanticError.functionUnknown(expression, funcName)
-            
         default:
             throw SemanticError.cannotInferShape(expression)
             

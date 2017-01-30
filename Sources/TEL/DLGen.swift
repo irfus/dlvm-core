@@ -91,21 +91,12 @@ class CodeGenerator {
     @discardableResult
     func build(_ expression: Expression, named name: String? = nil) -> Value {
         switch expression {
-        case let .call(funcName, args) where args.count == 1:
-            let argOp = build(args[0])
-            if let function = ElementwiseFunction.lexicon[funcName] {
-                return builder.makeElementwiseTransformation(function, argOp, name: name)
+        case let .call(funcName, args):
+            guard let function = builtinFunctionTable[funcName] else {
+                preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
             }
-            preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
-        case let .call(funcName, args) where args.count == 2:
-            let firstArgOp = build(args[0]), secondArgOp = build(args[1])
-            if let function = BinaryIntegrationFunction.lexicon[funcName] {
-                return builder.makeBinaryReduction(function, firstArgOp, secondArgOp, name: name)
-            }
-            if let function = ArithmeticOperator.lexicon[funcName] {
-                return builder.makeArithmeticOperation(function, firstArgOp, secondArgOp, name: name)
-            }
-            preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
+            let argOps = args.map { [unowned self] in self.build($0) }
+            return function.makeInstruction(withArguments: argOps, using: builder, name: name)
         case let .variable(variable):
             guard let op = environment[variable.name] else {
                 preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")
@@ -133,7 +124,7 @@ class CodeGenerator {
             let lhsOp = build(lhs), rhsOp = build(rhs)
             return builder.makeMatrixMultiplication(lhsOp, rhsOp, name: name)
         case let .concat(exprs, dimension: dim):
-            let exprOps = exprs.map { self.build($0) }
+            let exprOps = exprs.map { [unowned self] in self.build($0) }
             return builder.makeConcatenation(exprOps, axis: dim, name: name)
         case let .reshape(expr, shape: dims):
             let exprOp = build(expr)
