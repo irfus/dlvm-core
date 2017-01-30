@@ -91,13 +91,13 @@ class CodeGenerator {
     @discardableResult
     func build(_ expression: Expression, named name: String? = nil) -> Value {
         switch expression {
-        case let .call(funcName, args):
+        case let .call(funcName, args, _):
             guard let function = builtinFunctionTable[funcName] else {
                 preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
             }
             let argOps = args.map { [unowned self] in self.build($0) }
             return function.makeInstruction(withArguments: argOps, using: builder, name: name)
-        case let .variable(variable):
+        case let .variable(variable, _):
             guard let op = environment[variable.name] else {
                 preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")
             }
@@ -105,28 +105,28 @@ class CodeGenerator {
                 return builder.makeLoad(input)
             }
             return op
-        case let .infixOp(op, .constant(c), rhs):
+        case let .infixOp(op, .constant(c, _), rhs, _):
             let lhsOp = c.operand(for: program.dataType), rhsOp = build(rhs)
             return builder.makeArithmeticOperation(op.instructionOperator,
                                                    lhsOp, rhsOp, name: name)
-        case let .infixOp(op, lhs, .constant(c)):
+        case let .infixOp(op, lhs, .constant(c, _), _):
             let lhsOp = build(lhs), rhsOp = c.operand(for: program.dataType)
             return builder.makeArithmeticOperation(op.instructionOperator,
                                                    lhsOp, rhsOp, name: name)
-        case let .infixOp(op, lhs, rhs):
+        case let .infixOp(op, lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
             return builder.makeArithmeticOperation(op.instructionOperator,
                                                    lhsOp, rhsOp, name: name)
-        case let .negate(expr):
+        case let .negate(expr, _):
             let exprOp = build(expr)
             return builder.makeElementwiseTransformation(.neg, exprOp)
-        case let .product(lhs, rhs):
+        case let .product(lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
             return builder.makeMatrixMultiplication(lhsOp, rhsOp, name: name)
-        case let .concat(exprs, dimension: dim):
+        case let .concat(exprs, dimension: dim, _):
             let exprOps = exprs.map { [unowned self] in self.build($0) }
             return builder.makeConcatenation(exprOps, axis: dim, name: name)
-        case let .reshape(expr, shape: dims):
+        case let .reshape(expr, shape: dims, _):
             let exprOp = build(expr)
             let targetShape = TensorShape(dims)
             return builder.makeShapeCast(exprOp, targetShape: targetShape, name: name)
@@ -140,10 +140,10 @@ class CodeGenerator {
 fileprivate extension Constant {
     func operand(for dataType: DataType) -> ImmediateValue {
         switch self {
-        case let .int(i) where dataType.base == .float:
+        case let .int(i, _) where dataType.base == .float:
             return ImmediateValue(type: dataType, immediate: .float(Double(i)))
-        case let .int(i): return ImmediateValue(type: dataType, immediate: .int(i))
-        case let .float(f): return ImmediateValue(type: dataType, immediate: .float(f))
+        case let .int(i, _): return ImmediateValue(type: dataType, immediate: .int(i))
+        case let .float(f, _): return ImmediateValue(type: dataType, immediate: .float(f))
         }
     }
 }

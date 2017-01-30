@@ -33,18 +33,18 @@ extension Variable : Parsible {
         identifier ^^ curry(Variable.recurrent)
      ** ("[" ~~> identifier.!)
      ** ("-" ~~> number ^^ {-$0}).withDefault(0) <~~ "]"
-      | identifier ^^ Variable.simple
+      | identifier ^^^ Variable.simple
 }
 
 extension Attribute: Parsible {
 
     public static let typeParser: Parser<Attribute> =
         "type" ~~> (spaces ~~> identifier.! .. "a data type")
-     ^^ Attribute.type
+     ^^^ Attribute.type
 
     public static let nameParser: Parser<Attribute> =
         "module" ~~> (spaces ~~> identifier.! .. "a name")
-     ^^ Attribute.name
+     ^^^ Attribute.name
 
     public static let parser: Parser<Attribute> =
         typeParser | nameParser
@@ -87,8 +87,8 @@ extension Declaration : Parsible {
 
 extension Constant : Parsible {
     public static let parser: Parser<Constant> =
-        Lexer.signedDecimal ^^ { .float(Double($0)!) }
-      | Lexer.signedInteger ^^ { .int(Int($0)!) }
+        Lexer.signedDecimal ^^^ { .float(Double($0)!, $1) }
+      | Lexer.signedInteger ^^^ { .int(Int($0)!, $1) }
 }
 
 // MARK: - Parser
@@ -99,35 +99,33 @@ extension Expression : Parsible {
     ///
 
     private static let constantParser: Parser<Expression> =
-        Constant.parser ^^ Expression.constant
+        Constant.parser ^^^ Expression.constant
 
     private static let variableParser: Parser<Expression> =
-        Variable.parser ^^ Expression.variable
+        Variable.parser ^^^ Expression.variable
 
     private static let randomParser: Parser<Expression> =
-        "random" ~~> (Constant.parser.! <~~
-            comma.! ~~ Constant.parser.!)
-            .amid(spaces.?)
-            .between(Lexer.character("("), Lexer.character(")").!)
-     ^^ Expression.random
+        Lexer.token("random") ~~> Lexer.character("(").amid(spaces.?)
+     ^^= curry(Expression.random)
+     ** Constant.parser.! <~~ comma.!
+     ** Constant.parser.! <~~ (Lexer.character(")").!).amid(spaces.?)
 
     private static let callParser: Parser<Expression> =
-        identifier ~~
-        parser.nonbacktracking()
+        identifier ^^ curry(Expression.call)
+     ** parser.nonbacktracking()
               .many(separatedBy: comma)
               .amid(spaces.?)
-              .between(Lexer.token("("), Lexer.token(")").!)
-     ^^ Expression.call
+              .between(Lexer.character("("), Lexer.character(")").!)
 
     private static let negateParser: Parser<Expression> =
-        "-" ~~> parser ^^ Expression.negate
+        "-" ~~> parser ^^^ Expression.negate
 
     private static let concatParser: Parser<Expression> =
         parser.nonbacktracking()
               .many(separatedBy: comma)
               .between("[", "]")
-     ~~ ("@" ~~> number.!).withDefault(0)
-     ^^ Expression.concat
+     ^^ curry(Expression.concat)
+     ** ("@" ~~> number.!).withDefault(0)
 
     private static let parenthesizedParser: Parser<Expression> =
         "(" ~~> parser.amid(spaces.?) <~~ ")"
@@ -146,14 +144,15 @@ extension Expression : Parsible {
     /// Operators begin
     ///
 
-    private static let shapeParser: Parser<(Expression) -> Expression> =
+    private static let shapeParser: Parser<(Expression, SourceRange) -> Expression> =
         spaces ~~> Lexer.token("as") ~~>
         (spaces.! .. "a space followed by a shape") ~~>
         number.nonbacktracking()
               .many(separatedBy: Lexer.character("x"))
               .between(Lexer.character("[").!, Lexer.character("]").! .. "]")
            .. "a shape, e.g. [2x4], [1x2x3]"
-     ^^ flip(curry(Expression.reshape))
+     ^^ { target in { Expression.reshape($0, shape: target, $1) } }
+
 
     private static let reshapeParser: Parser<Expression> =
         termParser.suffixed(by: shapeParser)
@@ -169,14 +168,14 @@ extension Expression : Parsible {
     /// - Priority: medium
     private static let mulParser: Parser<Expression> =
         productParser.infixedLeft(by: Lexer.character("*").amid(spaces.?)
-            ^^= { Expression.infixOp(.mul, $0, $1) })
+            ^^= { Expression.infixOp(.mul, $0, $1, $2) })
 
     /// Tensor element-wise addition/subtraction: x + b, x - b
     /// - Priority: low
     private static let addParser: Parser<Expression> =
         mulParser.infixedLeft(by:
-            ( Lexer.character("+") ^^= { Expression.infixOp(.add, $0, $1) }
-            | Lexer.character("-") ^^= { Expression.infixOp(.sub, $0, $1) } )
+            ( Lexer.character("+") ^^= { Expression.infixOp(.add, $0, $1, $2) }
+            | Lexer.character("-") ^^= { Expression.infixOp(.sub, $0, $1, $2) } )
         .amid(spaces.?))
 
     /// Parser head - add operator
@@ -187,8 +186,8 @@ extension Expression : Parsible {
 
 extension Statement : Parsible {
     public static let parser: Parser<Statement> =
-        Attribute.parser         ^^ Statement.attribute
-      | Declaration.parser   ^^ Statement.declaration
+        Attribute.parser   ^^^ Statement.attribute
+      | Declaration.parser ^^^ Statement.declaration
      .. "a statement"
 }
 
@@ -196,5 +195,5 @@ extension ProgramTree : Parsible {
     public static let parser: Parser<ProgramTree> =
         Statement.parser.manyOrNone(separatedBy: linebreaks)
                         .amid(linebreaks.?)
-     ^^ ProgramTree.init
+     ^^^ ProgramTree.init
 }
