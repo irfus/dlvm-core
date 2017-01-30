@@ -100,7 +100,7 @@ extension ArithmeticOperator : TextOutputStreamable {
         case .max: target.write("max")
         case .truncateDivide: target.write("truncDiv")
         case .floorDivide: target.write("floorDiv")
-        case .mod: target.write("mod")
+        case .modulo: target.write("mod")
         case .power: target.write("pow")
         case .mean: target.write("mean")
         }
