@@ -25,13 +25,6 @@ public struct TensorShape : ExpressibleByArrayLiteral {
         self.dimensions = Array(dimensions)
     }
 
-    /// Initialize with sizes of dimensions. The rank of the tensor
-    /// is the length of the parameter list.
-    /// - parameter dimensions: sizes of dimensions
-    public init(_ dimensions: Int...) {
-        self.init(dimensions)
-    }
-
     /// Initialize with an array literal, representing the sizes of
     /// dimensions. The rank of the tensor is the length of the parameter
     /// list.
@@ -55,6 +48,14 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 extension TensorShape {
 
     public static let scalar: TensorShape = []
+
+    public func vector(ofSize size: Int) -> TensorShape {
+        return [size]
+    }
+
+    public func matrix(rowCount: Int, columnCount: Int) -> TensorShape {
+        return [rowCount, columnCount]
+    }
 
     public var isScalar: Bool {
         return rank == 0
