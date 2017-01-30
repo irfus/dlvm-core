@@ -49,16 +49,14 @@ public enum AggregationFunction {
 
 public class Instruction : IRObject {
     public weak var parent: BasicBlock?
-    fileprivate init() {}
 }
 
-/// Instruction base class
 public class DefiningInstruction : Instruction, NamedValue {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
 
-    fileprivate init(name: String, type: DataType, shape: TensorShape) {
+    public init(name: String, type: DataType, shape: TensorShape) {
         self.name = name
         self.type = type
         self.shape = shape
@@ -66,47 +64,46 @@ public class DefiningInstruction : Instruction, NamedValue {
 }
 
 /// Abstract class for unary instruction
-public class UnaryInstruction : DefiningInstruction {
-    public var operand: Value
-
-    fileprivate init(name: String, type: DataType, shape: TensorShape, operand: Value) {
-        self.operand = operand
-        super.init(name: name, type: type, shape: shape)
-    }
+public protocol UnaryOperator : class {
+    var operand: Value { get set }
 }
 
 /// Abstract class for binary instruction
-public class BinaryInstruction : DefiningInstruction {
-    public var firstOperand, secondOperand: Value
+public protocol BinaryOperator : class {
+    var firstOperand: Value { get set }
+    var secondOperand: Value { get set }
+}
 
-    fileprivate init(name: String, type: DataType, shape: TensorShape,
-                     firstOperand: Value, secondOperand: Value) {
-        self.firstOperand = firstOperand
-        self.secondOperand = secondOperand
+public class FunctionCallInstruction<Function> : DefiningInstruction {
+    public var function: Function
+
+    fileprivate init(name: String, type: DataType, shape: TensorShape, function: Function) {
+        self.function = function
         super.init(name: name, type: type, shape: shape)
     }
 }
 
 /// Abstract class for unary function calls
-public class UnaryCallInstruction<Function> : UnaryInstruction {
-    public var function: Function
+public class UnaryCallInstruction<Function> : FunctionCallInstruction<Function>, UnaryOperator {
+    public var operand: Value
 
     fileprivate init(name: String, type: DataType, shape: TensorShape,
-                function: Function, operand: Value) {
-        self.function = function
-        super.init(name: name, type: type, shape: shape, operand: operand)
+                     function: Function, operand: Value) {
+        self.operand = operand
+        super.init(name: name, type: type, shape: shape, function: function)
     }
 }
 
 /// Abstract class for binary function calls
-public class BinaryCallInstruction<Function> : BinaryInstruction {
-    public var function: Function
+public class BinaryCallInstruction<Function> : FunctionCallInstruction<Function>, BinaryOperator {
+    public var firstOperand: Value
+    public var secondOperand: Value
 
     fileprivate init(name: String, type: DataType, shape: TensorShape,
-                function: Function, firstOperand: Value, secondOperand: Value) {
-        self.function = function
-        super.init(name: name, type: type, shape: shape,
-                   firstOperand: firstOperand, secondOperand: secondOperand)
+                     function: Function, firstOperand: Value, secondOperand: Value) {
+        self.firstOperand = firstOperand
+        self.secondOperand = secondOperand
+        super.init(name: name, type: type, shape: shape, function: function)
     }
 }
 
@@ -156,21 +153,27 @@ public final class ComparisonInstruction : BinaryCallInstruction<ComparisonPredi
 }
 
 /// Generic tensor multiplication instruction (GETT operation)
-public final class TensorMultiplicationInstruction : BinaryInstruction {
+public final class TensorMultiplicationInstruction : DefiningInstruction, BinaryOperator {
+    public var firstOperand: Value
+    public var secondOperand: Value
     public init(name: String, firstOperand: Value, secondOperand: Value) {
+        self.firstOperand = firstOperand
+        self.secondOperand = secondOperand
         let newShape = (firstOperand.shape ⊗ secondOperand.shape) ?? firstOperand.shape
-        super.init(name: name, type: firstOperand.type, shape: newShape,
-                   firstOperand: firstOperand, secondOperand: secondOperand)
+        super.init(name: name, type: firstOperand.type, shape: newShape)
     }
 }
 
 /// Matrix multiplication instruction (GEMM operation)
 /// - Note: This only applies to the two inner dimensions
-public final class MatrixMultiplicationInstruction : BinaryInstruction {
+public final class MatrixMultiplicationInstruction : DefiningInstruction, BinaryOperator {
+    public var firstOperand: Value
+    public var secondOperand: Value
     public init(name: String, firstOperand: Value, secondOperand: Value) {
+        self.firstOperand = firstOperand
+        self.secondOperand = secondOperand
         let newShape = firstOperand.shape.matrixMultiplied(by: secondOperand.shape) ?? firstOperand.shape
-        super.init(name: name, type: firstOperand.type, shape: newShape,
-                   firstOperand: firstOperand, secondOperand: secondOperand)
+        super.init(name: name, type: firstOperand.type, shape: newShape)
     }
 }
 
