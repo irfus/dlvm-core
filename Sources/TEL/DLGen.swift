@@ -130,6 +130,10 @@ class CodeGenerator {
             let exprOp = build(expr)
             let targetShape = TensorShape(dims)
             return builder.makeShapeCast(exprOp, targetShape: targetShape, name: name)
+        case let .transpose(expr, _):
+            let exprOp = build(expr)
+            guard let targetShape = exprOp.shape.transpose else { fallthrough }
+            return builder.makeShapeCast(exprOp, targetShape: targetShape, name: name)
         default:
             preconditionFailure("Unsupported expression \(expression). This shouldn't have passed Sema.")
         }

@@ -165,4 +165,12 @@ public extension TensorShape {
         return newShape
     }
 
+    /// Matrix/vector transpose
+    public var transpose: TensorShape? {
+        guard rank <= 2 else { return nil }
+        if rank == 2 { return [self[1], self[0]] }
+        else if rank == 1 { return [self[1], 1] }
+        return self
+    }
+
 }
