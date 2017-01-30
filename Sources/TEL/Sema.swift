@@ -33,6 +33,7 @@ public enum SemanticError : Error {
     case cannotFormProduct(Expression, TensorShape, Expression, TensorShape)
     case operatorShapeMismatch(Expression, TensorShape, Expression, TensorShape)
     case cannotReshape(Expression, TensorShape, TensorShape)
+    case cannotTranspose(Expression, TensorShape)
     case shapeMismatch(Expression, TensorShape, expected: TensorShape, in: Variable)
     case attributeNotOnTop(Attribute)
     case functionTypeError(Expression, FunctionTypeError)
@@ -76,6 +77,8 @@ extension SemanticError : CustomStringConvertible {
             return "The shape of the left-hand side \(lhs) (\(lShape)) : \(lhs.range) does not match the shape of right-hand side \(rhs) (\(rShape)) : \(rhs.range)"
         case let .cannotReshape(expr, shape, targetShape):
             return "Experssion \(expr) : \(expr.range) of shape \(shape) cannot be reshaped to \(targetShape) due to mismatch in contiguous memory size"
+        case let .cannotTranspose(expr, shape):
+            return "Expression \(expr) : \(expr.range) of shape \(shape) cannot be transposed"
         case let .shapeMismatch(expr, shape, expected: expectedShape, in: variable):
             return "Expression \(expr) : \(expr.range) of shape \(shape) does not match the expected shape \(expectedShape) of variable \(variable) : \(variable.range)"
         case let .attributeNotOnTop(attr):
@@ -511,6 +514,13 @@ public class Program {
             } catch let error as FunctionTypeError {
                 throw SemanticError.functionTypeError(expression, error)
             }
+
+        case let .transpose(expr, _):
+            let exprShape = try shape(of: expr, in: &env)
+            guard let transpose = exprShape.transpose else {
+                throw SemanticError.cannotTranspose(expr, exprShape)
+            }
+            return transpose
 
         default:
             throw SemanticError.cannotInferShape(expression)

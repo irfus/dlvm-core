@@ -81,6 +81,8 @@ public indirect enum Expression : ASTNode {
     case concat([Expression], dimension: Int, SourceRange)
     /// Reshape
     case reshape(Expression, shape: [Int], SourceRange)
+    /// Transpose
+    case transpose(Expression, SourceRange)
 
     public var range: SourceRange {
         switch self {
@@ -91,8 +93,9 @@ public indirect enum Expression : ASTNode {
                  .negate(_, let sr),
                  .infixOp(_, _, _, let sr),
                  .product(_, _, let sr),
-                 .concat(_, dimension: _, let sr),
-                 .reshape(_, shape: _, let sr):
+                 .concat(_, _, let sr),
+                 .reshape(_, _, let sr),
+                 .transpose(_, let sr):
             return sr
         }
     }
@@ -179,6 +182,8 @@ extension Expression : CustomStringConvertible {
             return "(concat \(dim) \(exprs.map{$0.description}.joined(separator: " ")))"
         case let .reshape(expr, shape: shape, _):
             return "(reshape \(expr) [\(shape.map{$0.description}.joined(separator: "x"))])"
+        case let .transpose(expr, _):
+            return "(transpose \(expr))"
         }
     }
 }

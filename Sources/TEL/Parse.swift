@@ -144,7 +144,13 @@ extension Expression : Parsible {
     /// Operators begin
     ///
 
-    private static let shapeParser: Parser<(Expression, SourceRange) -> Expression> =
+    private static let transposeOperatorParser: Parser<(Expression, SourceRange) -> Expression> =
+        Lexer.token("^T") ^^= Expression.transpose
+
+    private static let transposeParser: Parser<Expression> =
+        termParser.suffixed(by: transposeOperatorParser)
+
+    private static let reshapeOperatorParser: Parser<(Expression, SourceRange) -> Expression> =
         spaces ~~> Lexer.token("as") ~~>
         (spaces.! .. "a space followed by a shape") ~~>
         number.nonbacktracking()
@@ -155,7 +161,7 @@ extension Expression : Parsible {
 
 
     private static let reshapeParser: Parser<Expression> =
-        termParser.suffixed(by: shapeParser)
+        transposeParser.suffixed(by: reshapeOperatorParser)
     
     /// Tensor product: W . x | W • x
     /// - Priority: high
@@ -167,8 +173,10 @@ extension Expression : Parsible {
     /// Tensor element-wise multiplication: x * y
     /// - Priority: medium
     private static let mulParser: Parser<Expression> =
-        productParser.infixedLeft(by: Lexer.character("*").amid(spaces.?)
-            ^^= { Expression.infixOp(.mul, $0, $1, $2) })
+        productParser.infixedLeft(by:
+            ( Lexer.character("*") ^^= { Expression.infixOp(.mul, $0, $1, $2) }
+            | Lexer.character("/") ^^= { Expression.infixOp(.div, $0, $1, $2) } )
+        .amid(spaces.?))
 
     /// Tensor element-wise addition/subtraction: x + b, x - b
     /// - Priority: low
