@@ -17,12 +17,10 @@ enum SemanticError : Error {
     case undeclaredVariable(VariableNode)
     case typeMismatch(OperandNode, DataType)
     case shapeMismatch(OperandNode, TensorShape)
-    case storeDestinationNotGlobal(OperandNode)
-    case loadSourceNotGlobal(OperandNode)
+    case notGlobal(OperandNode)
     case extraneousName(InstructionDeclarationNode)
     case missingName(InstructionDeclarationNode)
     case initializerTypeMismatch(InitializerNode, TypeNode)
-    case unsupportedSubsection(BasicBlockSubsectionNode)
 }
 
 extension ModuleNode {
@@ -50,25 +48,13 @@ extension BasicBlockNode {
             throw SemanticError.redeclaredBasicBlock(self)
         }
         let bb = BasicBlock(name: name)
+        env.insertBasicBlock(bb)
         for instNode in instructions {
             let inst = try instNode.makeInstruction(in: env)
             if let temp = inst as? NamedValue {
                 env.insertTemporary(temp)
             }
             bb.append(inst)
-        }
-        for subSec in subsections {
-            /// Only support 'gradients' for now
-            guard subSec.name == "gradients" else {
-                throw SemanticError.unsupportedSubsection(subSec)
-            }
-            for instNode in subSec.instructions {
-                let inst = try instNode.makeInstruction(in: env)
-                if let temp = inst as? NamedValue {
-                    env.insertTemporary(temp)
-                }
-                bb.appendGradient(inst)
-            }
         }
         return bb
     }
@@ -208,6 +194,20 @@ extension OperandNode {
     }
 }
 
+extension LoopConditionNode {
+    func makeLoopCondition(in env: VerificationEnvironment) throws -> LoopInstruction.Condition {
+        switch self {
+        case let .times(op, _):
+            let val = try op.makeValue(in: env)
+            return .times(val)
+        case let .untilEqual(lhs, rhs, _):
+            let lVal = try lhs.makeValue(in: env)
+            let rVal = try rhs.makeValue(in: env)
+            return .untilEqual(lVal, rVal)
+        }
+    }
+}
+
 extension InstructionDeclarationNode {
     func makeInstruction(in env: VerificationEnvironment) throws -> Instruction {
         /// Named instruction
@@ -255,7 +255,7 @@ extension InstructionDeclarationNode {
 
             case let .load(op, _):
                 guard let val = try op.makeValue(in: env) as? GlobalValue else {
-                    throw SemanticError.loadSourceNotGlobal(op)
+                    throw SemanticError.notGlobal(op)
                 }
                 return LoadInstruction(name: name, source: val)
 
@@ -294,9 +294,13 @@ extension InstructionDeclarationNode {
             case let .store(src, dest, _):
                 let srcVal = try src.makeValue(in: env)
                 guard let destVal = try dest.makeValue(in: env) as? GlobalValue else {
-                    throw SemanticError.storeDestinationNotGlobal(dest)
+                    throw SemanticError.notGlobal(dest)
                 }
                 return StoreInstruction(source: srcVal, destination: destVal)
+            case let .loop(bb, cond, _):
+                let condVal = try cond.makeLoopCondition(in: env)
+                let bbVal = try bb.makeBasicBlock(in: env)
+                return LoopInstruction(condition: condVal, body: bbVal)
             default:
                 throw SemanticError.missingName(self)
             }
