@@ -27,26 +27,49 @@
   devices, and interprets the expression by launching compute kernels per
   operation. 
 
-  In these toolkits, the backpropagation algorithm is implemented using
-  symbolic or more commonly reverse-mode automatic differentiation. In automatic
-  differentiation, each operator knows how to differentiate itself. Along with
-  remembered outputs from the forward pass, the backward pass automatically.
+** TODO TensorFlow
 
-** TensorFlow
-
-   
-   
-** Torch
+** TODO Torch
   
 * Problems
 
-** Targeting multiple architectures
+** Targeting multiple architecture
 
-** Programming model
+   Currently, NVIDIA CUDA is the dominant architecture that toolkit developers
+   adopt for deep neural networks. In these toolkits, there are two major kinds
+   of implementations of parallelism: cuDNN/cuBLAS library calls and compiled
+   CUDA kernels. Because compute kernels are often implemented per operator, per
+   architecture, they are often not portable. Thus, each operator must be
+   re-implemented for every other architecture. We believe that HPVM, a
+   target-independent heterogeneous parallel instruction set architecture,
+   solves exactly this problem.
+
+# Save this for TEL
+# ** Programming model
    
-** Kernel optimizations
+** TODO Kernel optimizations
+
+   In current implementations, compute kernels are often implemented and
+   launched per operator.
 
 ** Tuning for multiple devices
 
-* 
+   In current implementations, execution across multiple heterogeneous parallel
+   devices are almost completely hand-tuned. We strongly feel that this should
+   be done by a good developer tool, not the developer.
 
+* TODO Proposed Solution
+
+** TODO High-level instruction set
+
+
+** TODO Intermediate representation
+
+
+** TODO Optimizations
+
+
+** TODO Backpropagation and stochastic optimizations
+
+
+** TODO Compilation
