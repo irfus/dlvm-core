@@ -7,7 +7,7 @@ declare parameter f32 [784x10] @W = repeating f32 0.0
 
 declare output f32 [1x10] @y
 
-entry {
+!entry {
     %v0 = load f32 [1x784] @x
     %v1 = mmul f32 [1x784] %v0, f32 [784x10] @W
     %y = add f32 [1x10] %v1, f32 [1x10] @b
