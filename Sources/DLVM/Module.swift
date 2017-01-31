@@ -59,7 +59,6 @@ extension Module {
     open func append(_ basicBlock: BasicBlock) {
         basicBlockSet.add(basicBlock)
         basicBlockTable[basicBlock.name] = basicBlock
-        basicBlock.parent = self
     }
 
     open func index(of basicBlock: BasicBlock) -> Int? {
@@ -69,7 +68,6 @@ extension Module {
     open func remove(_ basicBlock: BasicBlock) {
         basicBlockSet.remove(basicBlock)
         basicBlockTable.removeValue(forKey: basicBlock.name)
-        basicBlock.parent = nil
     }
     
     open func basicBlock(named name: String) -> BasicBlock? {
