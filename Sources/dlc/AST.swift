@@ -63,13 +63,6 @@ enum InitializerNode : ASTNode {
 struct BasicBlockNode : ASTNode {
     let name: String
     let instructions: [InstructionDeclarationNode]
-    let subsections: [BasicBlockSubsectionNode]
-    let range: SourceRange
-}
-
-struct BasicBlockSubsectionNode : ASTNode {
-    let name: String
-    let instructions: [InstructionDeclarationNode]
     let range: SourceRange
 }
 
@@ -82,6 +75,18 @@ struct InstructionDeclarationNode : ASTNode {
     let name: String?
     let instruction: InstructionNode
     let range: SourceRange
+}
+
+enum LoopConditionNode : ASTNode {
+    case times(OperandNode, SourceRange)
+    case untilEqual(OperandNode, OperandNode, SourceRange)
+
+    var range: SourceRange {
+        switch self {
+        case .times(_, let sr), .untilEqual(_, _, let sr):
+            return sr
+        }
+    }
 }
 
 enum InstructionNode : ASTNode {
@@ -99,6 +104,7 @@ enum InstructionNode : ASTNode {
     case typeCast(OperandNode, TypeNode, SourceRange)
     case load(OperandNode, SourceRange)
     case store(OperandNode, OperandNode, SourceRange)
+    case loop(BasicBlockNode, LoopConditionNode, SourceRange)
 
     var range: SourceRange {
         switch self {
@@ -115,7 +121,8 @@ enum InstructionNode : ASTNode {
              let .shapeCast(_, _, sr),
              let .typeCast(_, _, sr),
              let .load(_, sr),
-             let .store(_, _, sr):
+             let .store(_, _, sr),
+             let .loop(_, _, sr):
             return sr
         }
     }

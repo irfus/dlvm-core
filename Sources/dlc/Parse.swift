@@ -21,7 +21,7 @@ fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_.]*")
 fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! } .. "a number"
 fileprivate let lineComments = ("//" ~~> Lexer.string(until: ["\n", "\r"]).maybeEmpty() <~~
                                 (newLines | Lexer.end))+
-fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
+fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+ .. "a whitespace"
 fileprivate let comma = Lexer.character(",").amid(spaces.?) .. "a comma"
 fileprivate let newLines = Lexer.newLine+
 fileprivate let linebreaks = (newLines | lineComments).amid(spaces.?)+ .. "a linebreak"
@@ -71,9 +71,9 @@ extension VariableNode : Parsible {
 
 extension OperandNode : Parsible {
     static let parser: Parser<OperandNode> =
-        TypeNode.parser <~~ spaces ^^ curry(OperandNode.init)
-     ** (ShapeNode.parser <~~ spaces).?
-     ** VariableNode.parser
+        TypeNode.parser ^^ curry(OperandNode.init)
+     ** (spaces ~~> ShapeNode.parser).?
+     ** (spaces.! ~~> VariableNode.parser.!)
      .. "an operand"
 }
 
@@ -99,25 +99,40 @@ extension ComparisonPredicate : Parsible {}
 extension LogicOperator: Parsible {}
 
 extension ReductionFunction : Parsible {
-    static var parser: Parser<ReductionFunction> =
-        LogicOperator.parser    ^^ ReductionFunction.logical
+    static let parser: Parser<ReductionFunction> =
+        LogicOperator.parser       ^^ ReductionFunction.logical
       | ArithmeticOperator.parser  ^^ ReductionFunction.arithmetic
      .. "reduction function"
 }
 
-extension AggregationFunction: Parsible {
-    static var parser: Parser<AggregationFunction> =
-        Lexer.token("softmax")    ^^= AggregationFunction.softmax
-      | Lexer.token("logSoftmax") ^^= AggregationFunction.logSoftmax
-      | Lexer.token("scan") ~~> spaces ~~> ReductionFunction.parser.!
-                                  ^^ AggregationFunction.scan
+extension AggregationFunction : Parsible {
+    static let parser: Parser<AggregationFunction> =
+        identifier.map(AggregationFunction.lexicon)
+      | Lexer.token("scan") ~~> spaces ~~> ReductionFunction.parser.! ^^ AggregationFunction.scan
+}
+
+extension LoopConditionNode : Parsible {
+
+    private static let forTimesParser: Parser<LoopConditionNode> =
+        OperandNode.parser.nonbacktracking().amid(spaces)
+                          .between(Lexer.token("for"), Lexer.token("times").!)
+    ^^^ LoopConditionNode.times
+
+    private static let untilEqualParser: Parser<LoopConditionNode> =
+        "until" ~~> OperandNode.parser.nonbacktracking().amid(spaces)
+     ^^ curry(LoopConditionNode.untilEqual)
+     ** (Lexer.token("equals") ~~> spaces ~~> OperandNode.parser.!)
+
+    static let parser: Parser<LoopConditionNode> = forTimesParser
+                                                 | untilEqualParser
+                                                .. "a loop condition"
 }
 
 extension InstructionNode : Parsible {
 
     private static let unaryParser: Parser<InstructionNode> =
       ( ElementwiseFunction.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
-      | AggregationFunction.parser <~~ spaces   ^^ curry(InstructionNode.aggregate)
+      | AggregationFunction.parser <~~ spaces ^^ curry(InstructionNode.aggregate)
       | "reduce" ~~> spaces ~~> ReductionFunction.parser.! <~~ spaces
                                               ^^ curry(InstructionNode.reduce)
       | "load" ~~> spaces                     ^^= curry(InstructionNode.load)
@@ -125,11 +140,11 @@ extension InstructionNode : Parsible {
 
     private static let binaryParser: Parser<InstructionNode> =
       ( BinaryIntegrationFunction.parser <~~ spaces ^^ curry(InstructionNode.binaryReduction)
-      | ArithmeticOperator.parser <~~ spaces      ^^ curry(InstructionNode.arithmetic)
-      | LogicOperator.parser <~~ spaces           ^^ curry(InstructionNode.logic)
-      | ComparisonPredicate.parser <~~ spaces     ^^ curry(InstructionNode.comparison)
-      | "mmul" ~~> spaces                         ^^= curry(InstructionNode.matrixMultiply)
-      | "tmul" ~~> spaces                         ^^= curry(InstructionNode.tensorMultiply)
+      | ArithmeticOperator.parser <~~ spaces        ^^ curry(InstructionNode.arithmetic)
+      | LogicOperator.parser <~~ spaces             ^^ curry(InstructionNode.logic)
+      | ComparisonPredicate.parser <~~ spaces       ^^ curry(InstructionNode.comparison)
+      | "mmul" ~~> spaces                           ^^= curry(InstructionNode.matrixMultiply)
+      | "tmul" ~~> spaces                           ^^= curry(InstructionNode.tensorMultiply)
       ) ** OperandNode.parser.! <~~ comma.! ** OperandNode.parser.!
 
     private static let concatParser: Parser<InstructionNode> =
@@ -140,17 +155,22 @@ extension InstructionNode : Parsible {
     private static let shapeCastParser: Parser<InstructionNode> =
         "shapecast" ~~> spaces ^^= curry(InstructionNode.shapeCast)
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
-     ** ShapeNode.parser
+     ** ShapeNode.parser.!
 
     private static let typeCastParser: Parser<InstructionNode> =
         "typecast" ~~> spaces ^^= curry(InstructionNode.typeCast)
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
-     ** TypeNode.parser
+     ** TypeNode.parser.!
 
     private static let storeParser: Parser<InstructionNode> =
         "store" ~~> spaces ^^= curry(InstructionNode.store)
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** OperandNode.parser.!
+
+    private static let loopParser: Parser<InstructionNode> =
+        "loop" ~~> spaces ^^= curry(InstructionNode.loop)
+     ** BasicBlockNode.parser.! <~~ spaces.!
+     ** LoopConditionNode.parser.!
 
     static let parser: Parser<InstructionNode> = unaryParser
                                                | binaryParser
@@ -158,6 +178,7 @@ extension InstructionNode : Parsible {
                                                | shapeCastParser
                                                | typeCastParser
                                                | storeParser
+                                               | loopParser
                                               .. "an instruction"
 }
 
@@ -170,19 +191,11 @@ extension InstructionDeclarationNode : Parsible {
 
 extension BasicBlockNode : Parsible {
     static let parser: Parser<BasicBlockNode> =
-        identifier <~~ spaces.? ^^ curry(BasicBlockNode.init)
+        Lexer.character("!") ~~> identifier <~~ spaces.? ^^ curry(BasicBlockNode.init)
     <~~ Lexer.character("{").amid(spaces.?).! <~~ linebreaks.!
      ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
-     ** (linebreaks ~~> BasicBlockSubsectionNode.parser).*
     <~~ linebreaks <~~ Lexer.character("}").!
      .. "a basic block"
-}
-
-extension BasicBlockSubsectionNode : Parsible {
-    static let parser: Parser<BasicBlockSubsectionNode> =
-        (identifier.! .. "subsection name").amid("::").amid(spaces.?) <~~ linebreaks.!
-     ^^ curry(BasicBlockSubsectionNode.init)
-     ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
 }
 
 extension DeclarationNode.Role : Parsible {
