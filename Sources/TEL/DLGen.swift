@@ -68,7 +68,7 @@ class CodeGenerator {
         }
         
         /// Entry block
-        let initBB = builder.makeBasicBlock(named: "entry")
+        let initBB = builder.makeGlobalBasicBlock(named: "entry")
         builder.module.entryBlock = initBB
         
         /// Generate hidden layers
