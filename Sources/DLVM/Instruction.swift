@@ -116,7 +116,10 @@ public class HomomorphicUnaryInstruction<Function> : UnaryCallInstruction<Functi
 
 public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction<Function> {
     public init(name: String, function: Function, firstOperand: Value, secondOperand: Value) {
-        super.init(name: name, type: firstOperand.type, shape: firstOperand.shape,
+        /// Broadcasting
+        let newShape = firstOperand.shape.rank > secondOperand.shape.rank
+                     ? firstOperand.shape : secondOperand.shape
+        super.init(name: name, type: firstOperand.type, shape: newShape,
                    function: function, firstOperand: firstOperand, secondOperand: secondOperand)
     }
 }
