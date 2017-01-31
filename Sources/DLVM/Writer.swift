@@ -84,6 +84,8 @@ extension AggregationFunction: TextOutputStreamable {
         switch self {
         case .softmax: target.write("softmax")
         case .logSoftmax: target.write("logSoftmax")
+        case .argmax: target.write("argmax")
+        case .argmin: target.write("argmin")
         case let .scan(fun): target.write("scan \(fun)")
         }
     }
@@ -138,27 +140,40 @@ extension BinaryIntegrationFunction: TextOutputStreamable {
 }
 
 extension BasicBlock : TextOutputStreamable {
+
+    fileprivate func makeIndentation() -> String {
+        return String(repeating: "    ", count: depth)
+    }
+
     public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("!")
         name.write(to: &target)
         target.write(" {\n")
         for inst in elements {
+            /// Write indentation
+            makeIndentation().write(to: &target)
+            target.write("    ")
             inst.writeDefinition(to: &target)
             target.write("\n")
         }
-        if hasGradient {
-            target.write("\n::gradients::\n")
-            for inst in gradients {
-                inst.writeDefinition(to: &target)
-                target.write("\n")
-            }
-        }
+        makeIndentation().write(to: &target)
         target.write("}")
+    }
+}
+
+extension LoopInstruction.Condition : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .times(val):
+            target.write("for \(val) times")
+        case let .untilEqual(lhs, rhs):
+            target.write("until \(lhs) equals \(rhs)")
+        }
     }
 }
 
 extension Instruction {
     public func writeDefinition<Target : TextOutputStream>(to target: inout Target) {
-        target.write("    ")
         if let defInst = self as? DefiningInstruction {
             target.write("%\(defInst.name) = ")
         }
@@ -193,6 +208,8 @@ extension Instruction {
             target.write("shapecast \(inst.operand) to \(inst.targetShape)")
         case let inst as TypeCastInstruction:
             target.write("typecast \(inst.operand) to \(inst.targetType)")
+        case let inst as LoopInstruction:
+            target.write("loop \(inst.body) \(inst.condition)")
         default:
             preconditionFailure("Unsupported instruction class \(type(of: self))")
             break

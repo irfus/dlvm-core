@@ -43,7 +43,7 @@ public enum ReductionFunction {
 }
 
 public enum AggregationFunction {
-    case softmax, logSoftmax
+    case softmax, logSoftmax, argmax, argmin
     case scan(ReductionFunction)
 }
 
@@ -251,5 +251,24 @@ public final class StoreInstruction : Instruction {
     public init(source: Value, destination: GlobalValue) {
         self.source = source
         self.destination = destination
+    }
+}
+
+
+/// Loop instruction
+public final class LoopInstruction : Instruction {
+    public enum Condition {
+        case times(Value)
+        case untilEqual(Value, Value)
+    }
+    
+    public var condition: Condition
+    public var body: BasicBlock
+
+    public init(condition: Condition, body: BasicBlock) {
+        self.condition = condition
+        self.body = body
+        super.init()
+        body.parent = parent
     }
 }

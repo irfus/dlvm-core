@@ -8,6 +8,14 @@
 
 import Foundation
 
+extension AggregationFunction : LexicallyConvertible {
+    public static var lexicon: [String : AggregationFunction] = [
+        "softmax"    : .softmax,
+        "logSoftmax" : .logSoftmax,
+        "argmax"     : .argmax,
+        "argmin"     : .argmin
+    ]
+}
 
 extension ComparisonPredicate : LexicallyConvertible {
     public static let lexicon: [String : ComparisonPredicate] = [

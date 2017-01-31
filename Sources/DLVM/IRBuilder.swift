@@ -200,5 +200,11 @@ extension IRBuilder {
         let inst = StoreInstruction(source: source, destination: destination)
         return build(inst)
     }
+
+    @discardableResult
+    open func makeLoop(_ body: BasicBlock, condition: LoopInstruction.Condition) -> LoopInstruction {
+        let inst = LoopInstruction(condition: condition, body: body)
+        return build(inst)
+    }
     
 }
