@@ -148,6 +148,9 @@ extension BasicBlock : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("!")
         name.write(to: &target)
+        if let extensionType = extensionType {
+            target.write(".\(extensionType)")
+        }
         target.write(" {\n")
         for inst in elements {
             /// Write indentation
@@ -242,6 +245,10 @@ extension Module : TextOutputStreamable {
         target.write("\n")
         for bb in basicBlocks {
             bb.write(to: &target)
+            /// Write out all the extensions
+            for ext in bb.extensions.values {
+                ext.write(to: &target)
+            }
             target.write("\n")
         }
     }
