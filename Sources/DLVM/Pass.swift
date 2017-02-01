@@ -6,17 +6,18 @@
 //
 //
 
-public protocol Pass {
+public protocol PassResultProtocol {
     var changed: Bool { get }
-    mutating func run()
 }
 
-public protocol ModulePass : Pass {
-    var module: Module { get }
-    init(module: Module)
+public struct PassResult : PassResultProtocol {
+    public var changed: Bool
 }
 
-public protocol BasicBlockPass : Pass {
-    var basicBlock: BasicBlock { get }
-    init(basicBlock: BasicBlock)
+public protocol Pass {
+    associatedtype Result : PassResultProtocol
+    associatedtype Body : AnyObject
+    var body: Body { get }
+    func run() -> Result
+    init(body: BasicBlock)
 }

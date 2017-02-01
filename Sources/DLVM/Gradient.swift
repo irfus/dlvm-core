@@ -6,41 +6,15 @@
 //
 //
 
-open class GradientPass : BasicBlockPass {
+open class GradientPass : Pass {
+    open var body: BasicBlock
 
-    open var basicBlock: BasicBlock
-    open lazy var gradientBlock: BasicBlock = BasicBlock(name: self.basicBlock.name)
-    open var changed: Bool = false
-
-    public required init(basicBlock: BasicBlock) {
-        self.basicBlock = basicBlock
+    public required init(body: BasicBlock) {
+        self.body = body
     }
 
-    open func run() {
-        for inst in basicBlock.instructions {
-//            switch inst {
-//            case let inst as NegationInstruction:
-//                
-//            case let inst as TensorProductInstruction:
-//                
-//            case let inst as ArithmeticInstruction:
-//                
-//            case let inst as ComparisonInstruction:
-//                
-//            case let inst as ElementwiseCallInstruction:
-//                
-//            case let inst as AggregateCallInstruction:
-//                
-//            case let inst as StoreInstruction:
-//                
-//            case let inst as ConcatenationInstruction:
-//
-//            case let inst as ShapeCastInstruction:
-//                
-//            case let inst as TypeCastInstruction:
-//                
-//            }
-        }
+    open func run() -> PassResult {
+        let result = PassResult(changed: false)
+        return result
     }
-    
 }
