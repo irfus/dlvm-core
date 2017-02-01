@@ -190,12 +190,24 @@ extension InstructionDeclarationNode : Parsible {
 }
 
 extension BasicBlockNode : Parsible {
-    static let parser: Parser<BasicBlockNode> =
-        Lexer.character("!") ~~> identifier <~~ spaces.? ^^ curry(BasicBlockNode.init)
+    static let nonExtensionParser: Parser<BasicBlockNode> =
+        Lexer.character("!") ~~> identifier.! <~~ spaces.? ^^ curry(BasicBlockNode.init)
+    <~~ Lexer.character("{").amid(spaces.?).! <~~ linebreaks.!
+     ** .return(nil)
+     ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
+    <~~ linebreaks <~~ Lexer.character("}").!
+
+    static let extensionParser: Parser<BasicBlockNode> =
+        "extension" ~~> spaces ~~>
+        Lexer.character("!") ~~> identifier.! <~~ spaces ^^ curry(BasicBlockNode.init)
+     ** (Lexer.token("for").! ~~> spaces.! ~~> identifier.!) <~~ spaces
     <~~ Lexer.character("{").amid(spaces.?).! <~~ linebreaks.!
      ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
     <~~ linebreaks <~~ Lexer.character("}").!
-     .. "a basic block"
+
+    static let parser: Parser<BasicBlockNode> = nonExtensionParser
+                                              | extensionParser
+                                             .. "a basic block"
 }
 
 extension DeclarationNode.Role : Parsible {

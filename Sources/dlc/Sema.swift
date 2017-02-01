@@ -15,12 +15,14 @@ enum SemanticError : Error {
     case extraneousInitializer(DeclarationNode, InitializerNode)
     case missingInitializer(DeclarationNode)
     case undeclaredVariable(VariableNode)
+    case undeclaredBasicBlock(BasicBlockNode)
     case typeMismatch(OperandNode, DataType)
     case shapeMismatch(OperandNode, TensorShape)
     case notGlobal(OperandNode)
     case extraneousName(InstructionDeclarationNode)
     case missingName(InstructionDeclarationNode)
     case initializerTypeMismatch(InitializerNode, TypeNode)
+    case unsupportedExtensionType(BasicBlockNode)
 }
 
 extension ModuleNode {
@@ -36,7 +38,9 @@ extension ModuleNode {
 
         for bbNode in basicBlocks {
             let bb = try bbNode.makeBasicBlock(in: env)
-            module.append(bb)
+            if !bb.isExtension {
+                module.append(bb)
+            }
         }
         return module
     }
@@ -44,11 +48,25 @@ extension ModuleNode {
 
 extension BasicBlockNode {
     func makeBasicBlock(in env: VerificationEnvironment) throws -> BasicBlock {
-        guard !env.containsBasicBlock(named: name) else {
-            throw SemanticError.redeclaredBasicBlock(self)
+        let bb: BasicBlock
+        /// Extension
+        if let extensionType = extensionType {
+            guard let mainBB = env.basicBlock(named: name) else {
+                throw SemanticError.undeclaredBasicBlock(self)
+            }
+            guard let extType = BasicBlock.ExtensionType.lexicon[extensionType] else {
+                throw SemanticError.unsupportedExtensionType(self)
+            }
+            bb = mainBB.makeExtension(ofType: extType)
         }
-        let bb = BasicBlock(name: name)
-        env.insertBasicBlock(bb)
+        /// Non-extension
+        else {
+            guard !env.containsBasicBlock(named: name) else {
+                throw SemanticError.redeclaredBasicBlock(self)
+            }
+            bb = BasicBlock(name: name)
+            env.insertBasicBlock(bb)
+        }
         for instNode in instructions {
             let inst = try instNode.makeInstruction(in: env)
             if let temp = inst as? NamedValue {
@@ -166,7 +184,8 @@ extension OperandNode {
             guard type == global.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape == global.shape else {
+            guard shape.canBroadcast(to: global.shape)
+               || global.shape.canBroadcast(to: shape) else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return global
@@ -186,7 +205,8 @@ extension OperandNode {
             guard type == temporary.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape == temporary.shape else {
+            guard shape.canBroadcast(to: temporary.shape)
+               || temporary.shape.canBroadcast(to: shape) else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return temporary
