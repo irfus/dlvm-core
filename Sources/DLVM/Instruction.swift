@@ -230,9 +230,9 @@ public final class TypeCastInstruction : DefiningInstruction {
 /// - Note: Not to be confused with *load* in LLVM. It "loads" or "consumes"
 /// an input from the training/inference batch, in terms of neural networks.
 public final class LoadInstruction : DefiningInstruction {
-    public var source: GlobalValue
+    public var source: Value
 
-    public init(name: String, source: GlobalValue) {
+    public init(name: String, source: Value) {
         self.source = source
         super.init(name: name, type: source.type, shape: source.shape)
     }
@@ -245,9 +245,9 @@ public final class LoadInstruction : DefiningInstruction {
 /// nice counterpart of "load".
 public final class StoreInstruction : Instruction {
     public var source: Value
-    public var destination: GlobalValue
+    public var destination: Value
 
-    public init(source: Value, destination: GlobalValue) {
+    public init(source: Value, destination: Value) {
         self.source = source
         self.destination = destination
     }
