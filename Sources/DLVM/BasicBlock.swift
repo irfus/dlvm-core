@@ -140,8 +140,14 @@ extension BasicBlock {
 // MARK: - Basic block extensions
 extension BasicBlock {
 
+    open func makeExtension(ofType type: ExtensionType) -> BasicBlock {
+        let bb = BasicBlock(name: name)
+        self[.backpropagation] = bb
+        return bb
+    }
+
     /// Set/get an extension
-    public subscript(extensionType: ExtensionType) -> BasicBlock? {
+    open subscript(extensionType: ExtensionType) -> BasicBlock? {
         get {
             return extensions[extensionType]
         }

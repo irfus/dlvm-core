@@ -6,10 +6,6 @@
 //
 //
 
-public protocol LexicallyConvertible {
-    static var lexicon: [String : Self] { get }
-}
-
 public enum LogicOperator {
     case and, or, xor
 }

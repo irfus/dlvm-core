@@ -109,6 +109,11 @@ extension IRBuilder {
         module.append(block)
         return block
     }
+
+    @discardableResult
+    open func makeExtension(ofType type: BasicBlock.ExtensionType, for basicBlock: BasicBlock) -> BasicBlock {
+        return basicBlock.makeExtension(ofType: type)
+    }
     
     @discardableResult
     open func makeArithmeticOperation(_ `operator`: ArithmeticOperator,
