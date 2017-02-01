@@ -62,6 +62,7 @@ enum InitializerNode : ASTNode {
 
 struct BasicBlockNode : ASTNode {
     let name: String
+    let extensionType: String?
     let instructions: [InstructionDeclarationNode]
     let range: SourceRange
 }
