@@ -173,4 +173,8 @@ public extension TensorShape {
         return self
     }
 
+    public func canBroadcast(to other: TensorShape) -> Bool {
+        return rank <= other.rank && other.suffix(rank).elementsEqual(self)
+    }
+
 }

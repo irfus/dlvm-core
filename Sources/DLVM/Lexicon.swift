@@ -8,6 +8,16 @@
 
 import Foundation
 
+public protocol LexicallyConvertible {
+    static var lexicon: [String : Self] { get }
+}
+
+extension BasicBlock.ExtensionType : LexicallyConvertible {
+    public static var lexicon: [String : BasicBlock.ExtensionType] = [
+        "backpropagation" : .backpropagation
+    ]
+}
+
 extension AggregationFunction : LexicallyConvertible {
     public static var lexicon: [String : AggregationFunction] = [
         "softmax"    : .softmax,
