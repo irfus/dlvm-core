@@ -31,7 +31,7 @@ public protocol IRCollection : class, RandomAccessCollection, HashableByReferenc
 
 public protocol IRObject : class, HashableByReference {
     associatedtype Parent : AnyObject
-    weak var parent: Parent? { get set }
+    weak var parent: Parent? { get }
 }
 
 // MARK: - RandomAccessCollection

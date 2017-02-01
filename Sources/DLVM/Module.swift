@@ -13,10 +13,13 @@ open class Module {
     public typealias Element = BasicBlock
     
     open var name: String
-    
+
+    /// Global values
     var inputTable: [String : Input] = [:]
     var parameterTable: [String : Parameter] = [:]
     var outputTable: [String : Output] = [:]
+
+    /// Basic blocks
     let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
     
@@ -73,15 +76,39 @@ extension Module {
     open func basicBlock(named name: String) -> BasicBlock? {
         return basicBlockTable[name]
     }
-    
-    open func add(_ value: GlobalValue) {
+
+}
+
+// MARK: - Global values
+extension Module {
+
+    open func add<T: GlobalValue>(_ value: T) {
         switch value {
         case let input as Input:
             inputTable[input.name] = input
+            input.parent = self
         case let parameter as Parameter:
             parameterTable[parameter.name] = parameter
+            parameter.parent = self
         case let output as Output:
             outputTable[output.name] = output
+            output.parent = self
+        default:
+            preconditionFailure("Unsupported global value")
+        }
+    }
+
+    open func remove<T: GlobalValue>(_ value: T) {
+        switch value {
+        case let input as Input:
+            inputTable[value.name] = nil
+            input.parent = nil
+        case let parameter as Parameter:
+            parameterTable[parameter.name] = parameter
+            parameter.parent = nil
+        case let output as Output:
+            outputTable[output.name] = output
+            output.parent = nil
         default:
             preconditionFailure("Unsupported global value")
         }
@@ -90,7 +117,7 @@ extension Module {
     open func contains(_ basicBlock: BasicBlock) -> Bool {
         return basicBlockSet.contains(basicBlock)
     }
-    
+
 }
 
 // MARK: - Input
@@ -103,10 +130,6 @@ extension Module {
     
     open func input(named name: String) -> Input? {
         return inputTable[name]
-    }
-    
-    open func remove(_ input: Input) {
-        inputTable.removeValue(forKey: input.name)
     }
     
     @discardableResult
@@ -130,10 +153,6 @@ extension Module {
         return outputTable[name]
     }
     
-    open func remove(_ output: Output) {
-        outputTable.removeValue(forKey: output.name)
-    }
-    
     @discardableResult
     open func removeOutput(named name: String) -> Output? {
         let output = outputTable[name]
@@ -153,10 +172,6 @@ extension Module {
     
     open func parameter(named name: String) -> Parameter? {
         return parameterTable[name]
-    }
-
-    open func remove(_ parameter: Parameter) {
-        parameterTable.removeValue(forKey: parameter.name)
     }
     
     @discardableResult

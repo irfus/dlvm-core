@@ -33,7 +33,7 @@ public protocol NamedValue : class, Value {
     var name: String { get set }
 }
 
-public protocol GlobalValue : NamedValue {
+public protocol GlobalValue : NamedValue, IRObject {
 }
 
 public final class Input : GlobalValue {
@@ -41,7 +41,7 @@ public final class Input : GlobalValue {
     public var type: DataType
     public var shape: TensorShape
     public var isRecurrent: Bool = false
-    public weak var parent: Module?
+    public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {
         self.name = name
@@ -55,7 +55,7 @@ public final class Parameter : GlobalValue {
     public var type: DataType
     public var shape: TensorShape
     public var initializer: Initializer
-    public weak var parent: Module?
+    public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType,
                 shape: TensorShape, initializer: Initializer) {
@@ -71,7 +71,7 @@ public final class Output : GlobalValue {
     public var type: DataType
     public var shape: TensorShape
     public var isRecurrent: Bool = false
-    public weak var parent: Module?
+    public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {
         self.name = name
