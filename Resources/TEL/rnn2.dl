@@ -10,9 +10,9 @@ declare parameter f32 [8x1] @b2 = repeating f32 0.0
 declare parameter f32 [4x1] @b1 = repeating f32 0.0
 declare parameter f32 [8x8] @W2 = random from f32 0.0 to f32 1.0
 
-declare output f32 [1x8] @o
+declare output f32 [8x1] @o
 
-declare input f32 [1x8] @eos
+declare input f32 [8x1] @eos
 
 !entry {
     %v0 = load f32 [4x1] @i1
@@ -22,14 +22,21 @@ declare input f32 [1x8] @eos
     %v3 = load f32 [4x1] @i2
     %v4 = concat f32 [4x1] %h1, f32 [4x1] %v3 along 0
     %v5 = sub f32 1.0, f32 [8x1] %v4
-    %v6 = mmul f32 [8x8] @W2, f32 %v5
-    %v7 = add f32 [8x8] %v6, f32 [8x1] @b2
-    %h2 = tanh f32 [8x8] %v7
+    %v6 = mmul f32 [8x8] @W2, f32 [8x1] %v5
+    %v7 = add f32 [8x1] %v6, f32 [8x1] @b2
+    %h2 = tanh f32 [8x1] %v7
     loop !decoder {
-        %v8 = mmul f32 [8x8] @W3, f32 [8x8] %h2
-        %v9 = add f32 [8x8] %v8, f32 [8x1] @b3
-        %v10 = softmax f32 [8x8] %v9
-        %o = argmax f32 [8x8] %v10
-        store f32 [8x8] %o to f32 [1x8] @o
-    } until f32 [1x8] @eos equals f32 [1x8] @o
+        %v8 = mmul f32 [8x8] @W3, f32 [8x1] %h2
+        %v9 = add f32 [8x1] %v8, f32 [8x1] @b3
+        %v10 = softmax f32 [8x1] %v9
+        %o = argmax f32 [8x1] %v10
+        store f32 [8x1] %o to f32 [8x1] @o
+    } until f32 [8x1] @eos equals f32 [8x1] @o
+}
+
+extension !entry for backpropagation {
+    %v12 = add f32 [8x1] %v8, f32 [8x1] @b3
+    %v13 = softmax f32 [8x1] %v9
+    %v14 = argmax f32 [8x1] %v10
+    store f32 [8x1] %o to f32 [8x1] @o
 }
