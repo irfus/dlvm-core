@@ -7,105 +7,39 @@
 //
 
 public enum VerificationError : Error {
-    case nameRedeclared(String)
-    case noOutput
+    case globalValueRedeclared(Value)
     case typeMismatch(Value, Value)
 }
 
-open class VerificationEnvironment {
-    private var temporaries: [String : NamedValue] = [:]
-    private var globals: [String : GlobalValue] = [:]
-    private var basicBlocks: [String : BasicBlock] = [:]
-
-    public init() {}
-
-    open func insertGlobal(_ value: GlobalValue) {
-        globals[value.name] = value
-    }
-
-    open func insertTemporary(_ value: NamedValue) {
-        temporaries[value.name] = value
-    }
-
-    open func insertBasicBlock(_ basicBlock: BasicBlock) {
-        basicBlocks[basicBlock.name] = basicBlock
-    }
-
-    open func global(named name: String) -> GlobalValue? {
-        return globals[name]
-    }
-
-    open func temporary(named name: String) -> NamedValue? {
-        return temporaries[name]
-    }
-
-    open func basicBlock(named name: String) -> BasicBlock? {
-        return basicBlocks[name]
-    }
-
-    open func containsGlobal(named name: String) -> Bool {
-        return globals.keys.contains(name)
-    }
-
-    open func containsTemporary(named name: String) -> Bool {
-        return temporaries.keys.contains(name)
-    }
-
-    open func containsBasicBlock(named name: String) -> Bool {
-        return basicBlocks.keys.contains(name)
-    }
-}
-
-public protocol Verifiable {
-    func verify(in environment: VerificationEnvironment) throws
-}
-
-extension Input : Verifiable {
-    public func verify(in environment: VerificationEnvironment) throws {
-        guard !environment.containsGlobal(named: name) else {
-            throw VerificationError.nameRedeclared(name)
-        }
-        environment.insertGlobal(self)
-    }
-}
-
-extension Output : Verifiable {
-    public func verify(in environment: VerificationEnvironment) throws {
-        guard !environment.containsGlobal(named: name) else {
-            throw VerificationError.nameRedeclared(name)
-        }
-        environment.insertGlobal(self)
-    }
-}
-
-extension Parameter : Verifiable {
-    public func verify(in environment: VerificationEnvironment) throws {
-        guard !environment.containsGlobal(named: name) else {
-            throw VerificationError.nameRedeclared(name)
-        }
-        environment.insertGlobal(self)
-    }
-}
-
-extension Module : Verifiable {
+extension Module {
 
     open func verify() throws {
-        return try verify(in: VerificationEnvironment())
+        /// Check for redeclared global values
+        var globalValueNames: Set<String> = []
+        func checkForRedeclaration<T: GlobalValue, S: Sequence>(in values: S) throws
+            where S.Iterator.Element == T {
+            for value in values {
+                guard !globalValueNames.contains(value.name) else {
+                    throw VerificationError.globalValueRedeclared(value)
+                }
+            }
+        }
+        try checkForRedeclaration(in: inputs)
+        try checkForRedeclaration(in: parameters)
+        try checkForRedeclaration(in: outputs)
+
+        /// Check basic blocks
+        for bb in basicBlocks {
+            try bb.verify(in: self)
+        }
     }
     
-    public func verify(in environment: VerificationEnvironment) throws {
-        for input in inputs {
-            try input.verify(in: environment)
-        }
-        for parameter in parameters {
-            try parameter.verify(in: environment)
-        }
-        guard outputs.isEmpty else {
-            throw VerificationError.noOutput
-        }
-        for output in outputs {
-            try output.verify(in: environment)
-        }
+}
+
+extension BasicBlock {
+
+    open func verify(in module: Module) throws {
+        
     }
     
 }
