@@ -185,8 +185,8 @@ extension BasicBlock {
         if let instruction = instruction as? DefiningInstruction {
             instructionTable[instruction.name] = instruction
         }
-        if let inst = instruction as? LoopInstruction {
-            addChild(inst.body)
+        if let instruction = instruction as? NestingInstruction {
+            addChild(instruction.body)
         }
     }
 
@@ -203,6 +203,12 @@ extension BasicBlock {
                      "Instruction is not in the basic block")
         instructionSet.remove(instruction)
         instruction.parent = nil
+        if let instruction = instruction as? DefiningInstruction {
+            instructionTable.removeValue(forKey: instruction.name)
+        }
+        if let instruction = instruction as? NestingInstruction {
+            removeChild(instruction.body)
+        }
     }
 
     /// Returns the instruction having the specified name 
@@ -272,5 +278,5 @@ extension BasicBlock {
             newValue.extensionType = extensionType
         }
     }
-    
+
 }
