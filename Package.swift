@@ -13,6 +13,6 @@ let package = Package(
         Target(name: "telc", dependencies: ["DLVM", "TEL"])
     ],
     dependencies: [
-    	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 6)
+    	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 7)
     ]
 )

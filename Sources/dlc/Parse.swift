@@ -18,7 +18,7 @@ fileprivate func curry<A, B, C, D, E, F, G>(_ f: @escaping (A, B, C, D, E, F) ->
 
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_.]*")
-fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! } .. "a number"
+fileprivate let number = Lexer.unsignedInteger.flatMap{Int($0)} .. "a number"
 fileprivate let lineComments = ("//" ~~> Lexer.string(until: ["\n", "\r"]).maybeEmpty() <~~
                                 (newLines | Lexer.end))+
 fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+ .. "a whitespace"
@@ -48,8 +48,8 @@ extension ShapeNode : Parsible {
 
 extension ImmediateNode : Parsible {
     static let parser: Parser<ImmediateNode> =
-        Lexer.signedDecimal ^^ { Double($0)! } ^^^ ImmediateNode.float
-      | Lexer.signedInteger ^^ { Int($0)! } ^^^ ImmediateNode.int
+        Lexer.signedDecimal.flatMap{Double($0)} ^^^ ImmediateNode.float
+      | Lexer.signedInteger.flatMap{Int($0)} ^^^ ImmediateNode.int
       | ( Lexer.token("false") ^^= false
         | Lexer.token("true")  ^^= true  ) ^^^ ImmediateNode.bool
      .. "an immediate value"

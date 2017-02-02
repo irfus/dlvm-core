@@ -12,7 +12,7 @@ import func Funky.flip
 
 /// Local primitive parsers
 fileprivate let identifier = Lexer.regex("[a-zA-Z_][a-zA-Z0-9_]*")
-fileprivate let number = Lexer.unsignedInteger ^^ { Int($0)! } .. "a number"
+fileprivate let number = Lexer.unsignedInteger.flatMap{Int($0)} .. "a number"
 fileprivate let lineComments = ("//" ~~> Lexer.string(until: ["\n", "\r"]).maybeEmpty() <~~
                                 (newLines | Lexer.end))+
 fileprivate let spaces = (Lexer.whitespace | Lexer.tab)+
@@ -87,8 +87,8 @@ extension Declaration : Parsible {
 
 extension Constant : Parsible {
     public static let parser: Parser<Constant> =
-        Lexer.signedDecimal ^^^ { .float(Double($0)!, $1) }
-      | Lexer.signedInteger ^^^ { .int(Int($0)!, $1) }
+        Lexer.signedDecimal.flatMap{Double($0)} ^^^ { .float($0, $1) }
+      | Lexer.signedInteger.flatMap{Int($0)} ^^^ { .int($0, $1) }
 }
 
 // MARK: - Parser
