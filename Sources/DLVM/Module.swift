@@ -19,10 +19,10 @@ open class Module {
     var parameterTable: [String : Parameter] = [:]
     var outputTable: [String : Output] = [:]
 
-    /// Basic blocks
+    /// Global basic blocks
     let basicBlockSet = NSMutableOrderedSet()
     var basicBlockTable: [String : BasicBlock] = [:]
-    
+
     open lazy var entryBlock: BasicBlock? = self.basicBlocks.first
     
     open var basicBlocks: [BasicBlock] {
@@ -77,12 +77,20 @@ extension Module {
         return basicBlockTable[name]
     }
 
+    open func containsBasicBlock(named name: String) -> Bool {
+        return basicBlockTable.keys.contains(name)
+    }
+
+    open func contains(_ basicBlock: BasicBlock) -> Bool {
+        return basicBlockSet.contains(basicBlock)
+    }
+
 }
 
 // MARK: - Global values
 extension Module {
 
-    open func add<T: GlobalValue>(_ value: T) {
+    open func add(_ value: GlobalValue) {
         switch value {
         case let input as Input:
             inputTable[input.name] = input
@@ -98,7 +106,7 @@ extension Module {
         }
     }
 
-    open func remove<T: GlobalValue>(_ value: T) {
+    open func remove(_ value: GlobalValue) {
         switch value {
         case let input as Input:
             inputTable[value.name] = nil
@@ -114,8 +122,14 @@ extension Module {
         }
     }
 
-    open func contains(_ basicBlock: BasicBlock) -> Bool {
-        return basicBlockSet.contains(basicBlock)
+    open func globalValue(named name: String) -> Value? {
+        return inputTable[name] ?? parameterTable[name] ?? outputTable[name]
+    }
+
+    open func containsGlobalValue(named name: String) -> Bool {
+        return inputTable.keys.contains(name)
+            || parameterTable.keys.contains(name)
+            || outputTable.keys.contains(name)
     }
 
 }
@@ -138,6 +152,10 @@ extension Module {
         inputTable.removeValue(forKey: name)
         return input
     }
+
+    open func containsInput(named name: String) -> Bool {
+        return inputTable.keys.contains(name)
+    }
     
 }
 
@@ -159,6 +177,10 @@ extension Module {
         outputTable.removeValue(forKey: name)
         return output
     }
+
+    open func containsOutput(named name: String) -> Bool {
+        return outputTable.keys.contains(name)
+    }
     
 }
 
@@ -179,6 +201,10 @@ extension Module {
         let parameter = parameterTable[name]
         parameterTable.removeValue(forKey: name)
         return parameter
+    }
+
+    open func containsParameter(named name: String) -> Bool {
+        return parameterTable.keys.contains(name)
     }
     
 }
