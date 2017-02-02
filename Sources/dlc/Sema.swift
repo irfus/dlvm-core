@@ -70,23 +70,14 @@ extension BasicBlockNode {
         case let (env?, extType?) where extType != env.extensionType:
             throw SemanticError.extensionTypeMismatchWithParent(self)
 
-        /// Nested extension
-        case let (env?, extType?):
-            guard let mainBB = env.mainBlock?.descendant(named: name) else {
-                throw SemanticError.cannotFindMainBlock(self)
-            }
-            guard !mainBB.hasExtension(ofType: extType) else {
-                throw SemanticError.redeclaredExtension(self)
-            }
-            bb = mainBB.makeExtension(ofType: extType)
+        /// Non-extension cannot be duplicate
+        case (nil, nil) where module.containsBasicBlock(named: name):
+            throw SemanticError.redeclaredBasicBlock(self)
 
-        /// Nested non-extension
-        case let (env?, nil):
-            guard !module.containsBasicBlock(named: name),
-                  !env.hasDescendant(named: name) else {
-                throw SemanticError.redeclaredBasicBlock(self)
-            }
-            bb = env.makeChild(named: name)
+        /// Nested non-extension's name must not be duplicate
+        case let (env?, nil) where module.containsBasicBlock(named: name)
+                                || env.hasDescendant(named: name):
+            throw SemanticError.redeclaredBasicBlock(self)
 
         /// Global extension
         case let (nil, extType?):
@@ -100,12 +91,23 @@ extension BasicBlockNode {
             }
             bb = mainBB.makeExtension(ofType: extType)
 
+        /// Nested extension
+        case let (env?, extType?):
+            guard let mainBB = env.mainBlock?.descendant(named: name) else {
+                throw SemanticError.cannotFindMainBlock(self)
+            }
+            guard !mainBB.hasExtension(ofType: extType) else {
+                throw SemanticError.redeclaredExtension(self)
+            }
+            bb = mainBB.makeExtension(ofType: extType)
+
         /// Global non-extension
         case (nil, nil):
-            guard !module.containsBasicBlock(named: name) else {
-                throw SemanticError.redeclaredBasicBlock(self)
-            }
             bb = BasicBlock(name: name)
+
+        /// Nested non-extension
+        case let (env?, nil):
+            bb = env.makeChild(named: name)
         }
         
         for instNode in instructions {
