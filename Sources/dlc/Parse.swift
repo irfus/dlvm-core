@@ -232,7 +232,7 @@ extension DeclarationNode : Parsible {
     static let parser: Parser<DeclarationNode> =
         Lexer.token("declare") ~~> Role.parser.amid(spaces.!) ^^ curry(DeclarationNode.init)
      ** TypeNode.parser.! <~~ spaces
-     ** ShapeNode.parser.! <~~ spaces
+     ** (ShapeNode.parser <~~ spaces).?
      ** (Lexer.character("@") ~~> identifier).! .. "an identifier"
      ** (Lexer.character("=").amid(spaces.?) ~~> InitializerNode.parser.!).?
      .. "a declaration"

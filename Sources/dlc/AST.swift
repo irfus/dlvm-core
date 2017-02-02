@@ -32,7 +32,7 @@ struct DeclarationNode : ASTNode {
     }
     let role: Role
     let type: TypeNode
-    let shape: ShapeNode
+    let shape: ShapeNode?
     let name: String
     let initializer: InitializerNode?
     let range: SourceRange
@@ -62,7 +62,7 @@ enum InitializerNode : ASTNode {
 
 struct BasicBlockNode : ASTNode {
     let name: String
-    let extensionType: String?
+    let extensionTypeName: String?
     let instructions: [InstructionDeclarationNode]
     let range: SourceRange
 }
