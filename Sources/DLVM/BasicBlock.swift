@@ -16,7 +16,7 @@ open class BasicBlock : IRCollection, IRObject {
     open var name: String
 
     /// Parent module
-    open private(set) weak var module: Module?
+    open internal(set) weak var module: Module?
 
     ///
     /// ## Instructions

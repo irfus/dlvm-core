@@ -35,13 +35,13 @@ extension ModuleNode {
 
         for decl in declarations {
             let value = try decl.makeDeclaration(in: module)
-            module.add(value)
+            module.insert(value)
         }
 
         for bbNode in basicBlocks {
             let bb = try bbNode.makeBasicBlock(in: nil, module: module)
             if !bb.isExtension {
-                module.append(bb)
+                module.insert(bb)
             }
         }
         return module
