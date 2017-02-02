@@ -146,14 +146,20 @@ extension BasicBlock {
         return childTable.keys.contains(name)
     }
 
-    /// Exhaustively search for child
+    /// All descendants, exhaustively, post-order
+    /// - Complexity: O(n^2)
+    open var descendants: [BasicBlock] {
+        return children.flatMap { $0.descendants + [$0] }
+    }
+
+    /// Exhaustively search for and return descendant
     /// - Complexity: O(n^2)
     open func descendant(named name: String) -> BasicBlock? {
         return child(named: name)
             ?? children.lazy.flatMap{$0.descendant(named: name)}.first
     }
 
-    /// Exhaustively search for child
+    /// Exhaustively search for and return descendant
     /// - Complexity: O(n^2)
     open func hasDescendant(named name: String) -> Bool {
         return containsChild(named: name)
