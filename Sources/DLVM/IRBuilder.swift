@@ -73,21 +73,21 @@ extension IRBuilder {
     
     @discardableResult
     open func declare<T : GlobalValue>(_ globalValue: T) -> T {
-        module.add(globalValue)
+        module.insert(globalValue)
         return globalValue
     }
     
     @discardableResult
     open func declareInput(name: String, type: DataType, shape: TensorShape) -> Input {
         let input = Input(name: name, type: type, shape: shape)
-        module.add(input)
+        module.insert(input)
         return input
     }
     
     @discardableResult
     open func declareOutput(name: String, type: DataType, shape: TensorShape) -> Output {
         let output = Output(name: name, type: type, shape: shape)
-        module.add(output)
+        module.insert(output)
         return output
     }
     
@@ -97,7 +97,7 @@ extension IRBuilder {
         let parameter = Parameter(name: name, type: type, shape: shape,
                                   initializer: initializer)
         parameter.name = name
-        module.add(parameter)
+        module.insert(parameter)
         return parameter
     }
 
@@ -106,7 +106,7 @@ extension IRBuilder {
         let block = BasicBlock(name: disambiguatedName(for: name))
         clearContextBlocks()
         pushContextBlock(block)
-        module.append(block)
+        module.insert(block)
         return block
     }
 

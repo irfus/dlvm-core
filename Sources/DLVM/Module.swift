@@ -15,13 +15,13 @@ open class Module {
     open var name: String
 
     /// Global values
-    var inputTable: [String : Input] = [:]
-    var parameterTable: [String : Parameter] = [:]
-    var outputTable: [String : Output] = [:]
+    fileprivate var inputTable: [String : Input] = [:]
+    fileprivate var parameterTable: [String : Parameter] = [:]
+    fileprivate var outputTable: [String : Output] = [:]
 
     /// Global basic blocks
-    let basicBlockSet = NSMutableOrderedSet()
-    var basicBlockTable: [String : BasicBlock] = [:]
+    fileprivate let basicBlockSet = NSMutableOrderedSet()
+    fileprivate var basicBlockTable: [String : BasicBlock] = [:]
 
     open lazy var entryBlock: BasicBlock? = self.basicBlocks.first
     
@@ -59,9 +59,13 @@ open class Module {
 // MARK: - Basic block
 extension Module {
     
-    open func append(_ basicBlock: BasicBlock) {
+    open func insert(_ basicBlock: BasicBlock) {
+        if let existingBlock = self.basicBlock(named: basicBlock.name) {
+            remove(existingBlock)
+        }
         basicBlockSet.add(basicBlock)
         basicBlockTable[basicBlock.name] = basicBlock
+        basicBlock.module = self
     }
 
     open func index(of basicBlock: BasicBlock) -> Int? {
@@ -71,6 +75,7 @@ extension Module {
     open func remove(_ basicBlock: BasicBlock) {
         basicBlockSet.remove(basicBlock)
         basicBlockTable.removeValue(forKey: basicBlock.name)
+        basicBlock.module = self
     }
     
     open func basicBlock(named name: String) -> BasicBlock? {
@@ -90,7 +95,7 @@ extension Module {
 // MARK: - Global values
 extension Module {
 
-    open func add(_ value: GlobalValue) {
+    open func insert(_ value: GlobalValue) {
         switch value {
         case let input as Input:
             inputTable[input.name] = input
