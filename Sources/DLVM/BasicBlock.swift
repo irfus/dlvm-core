@@ -10,37 +10,22 @@ import Foundation
 
 open class BasicBlock : IRCollection, IRObject {
 
-    /// Extension type of the basic block
-    public enum ExtensionType {
-        case backpropagation
-    }
-
     public typealias Element = Instruction
 
     /// Name of the basic block
     open var name: String
 
-    /// Parent basic block in the hierarchy
-    open weak var parent: BasicBlock?
+    /// Parent module
+    open private(set) weak var module: Module?
+
+    ///
+    /// ## Instructions
+    ///
 
     /// Set of ordered instructions
     fileprivate let instructionSet = NSMutableOrderedSet()
     /// Table of defining(named) instructions for name lookup
     fileprivate var instructionTable: [String : DefiningInstruction] = [:]
-
-    /// Extension type
-    open fileprivate(set) var extensionType: ExtensionType?
-
-    /// Main basic block representing the corresponding forward pass
-    open weak fileprivate(set) var mainBlock: BasicBlock?
-
-    /// Whether this basic block is an extension of another
-    open var isExtension: Bool {
-        return extensionType != nil
-    }
-
-    /// Basic block extensions
-    internal var extensions: [ExtensionType : BasicBlock] = [:]
 
     /// Instruction list
     /// - Note: this is an API getter that returns a facade object
@@ -52,8 +37,61 @@ open class BasicBlock : IRCollection, IRObject {
             return instructionSet.map { $0 as! Instruction }
         #endif
     }
+
+    ///
+    /// ## Basic block hierarchy
+    ///
+
+    /// Parent basic block in the hierarchy
+    open fileprivate(set) weak var parent: BasicBlock? {
+        didSet {
+            module = parent?.module
+        }
+    }
+
+    /// Child basic blocks in the hierarchy
+    fileprivate var childSet = NSMutableOrderedSet()
+    /// Table of child basic blocks for name lookup
+    fileprivate var childTable: [String : BasicBlock] = [:]
+
+    /// Child basic block list
+    /// - Note: this is an API getter that returns a facade object
+    /// from instructionSet
+    open var children: [BasicBlock] {
+        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+            return childSet.array as! [BasicBlock]
+        #else
+            return childSet.map { $0 as! BasicBlock }
+        #endif
+    }
+
+    ///
+    /// ## Extensions
+    ///
+
+    /// Extension type of the basic block
+    public enum ExtensionType {
+        case backpropagation
+    }
+
+    /// Extension type
+    open fileprivate(set) var extensionType: ExtensionType?
+    /// Basic block extensions
+    open fileprivate(set) var extensions: [ExtensionType : BasicBlock] = [:]
+
+    /// Main basic block representing the corresponding forward pass
+    open weak fileprivate(set) var mainBlock: BasicBlock? {
+        didSet {
+            module = mainBlock?.module
+        }
+    }
+
+    /// Whether this basic block is an extension of another
+    open var isExtension: Bool {
+        return extensionType != nil
+    }
     
-    public init(name: String) {
+    public required init(name: String) {
         self.name = name
     }
 
@@ -73,6 +111,57 @@ open class BasicBlock : IRCollection, IRObject {
 
 }
 
+// MARK: - Child basic blocks
+// - Note: Child basic blocks are fully managed by BasicBlock class
+extension BasicBlock {
+
+    open func makeChild(named name: String) -> Self {
+        let block = type(of: self).init(name: name)
+        addChild(block)
+        return block
+    }
+
+    fileprivate func addChild(_ child: BasicBlock) {
+        child.parent = self
+        childSet.add(child)
+        childTable[child.name] = child
+    }
+
+    @discardableResult
+    fileprivate func removeChild(_ child: BasicBlock) {
+        precondition(hasChild(child), "This basic block is not a child")
+        childSet.remove(child)
+        childTable.removeValue(forKey: child.name)
+    }
+
+    open func hasChild(_ child: BasicBlock) -> Bool {
+        return childSet.contains(child)
+    }
+
+    open func child(named name: String) -> BasicBlock? {
+        return childTable[name]
+    }
+
+    open func containsChild(named name: String) -> Bool {
+        return childTable.keys.contains(name)
+    }
+
+    /// Exhaustively search for child
+    /// - Complexity: O(n^2)
+    open func descendant(named name: String) -> BasicBlock? {
+        return child(named: name)
+            ?? children.lazy.flatMap{$0.descendant(named: name)}.first
+    }
+
+    /// Exhaustively search for child
+    /// - Complexity: O(n^2)
+    open func hasDescendant(named name: String) -> Bool {
+        return containsChild(named: name)
+            || children.lazy.contains(where: {$0.hasDescendant(named: name)})
+    }
+
+}
+
 // MARK: - IRCollection
 extension BasicBlock {
 
@@ -85,12 +174,19 @@ extension BasicBlock {
         return instructionSet.contains(element)
     }
 
+    open func containsInstruction(named name: String) -> Bool {
+        return instructionTable.keys.contains(name)
+    }
+
     /// Append the instruction to the basic block
     open func append(_ instruction: Instruction) {
         instructionSet.add(instruction)
         instruction.parent = self
+        if let instruction = instruction as? DefiningInstruction {
+            instructionTable[instruction.name] = instruction
+        }
         if let inst = instruction as? LoopInstruction {
-            inst.body.parent = self
+            addChild(inst.body)
         }
     }
 
@@ -103,7 +199,7 @@ extension BasicBlock {
     ///
     /// - Precondition: instruction is in the basic block
     open func remove(_ instruction: Instruction) {
-        precondition(instructionSet.contains(instruction),
+        precondition(contains(instruction),
                      "Instruction is not in the basic block")
         instructionSet.remove(instruction)
         instruction.parent = nil
@@ -124,17 +220,30 @@ extension BasicBlock {
         return parent?.depth.advanced(by: 1) ?? 0
     }
 
+    open var root: BasicBlock {
+        return parent?.root ?? self
+    }
+
     /// Returns the instruction having the specified name
     /// in the current scope (including self, forwardBlock?, and parent?)
     /// - Complexity: O(depth)
-    internal func contextualInstruction(named name: String) -> DefiningInstruction? {
-        return instructionTable[name]
+    open func contextualInstruction(named name: String) -> DefiningInstruction? {
+        return instruction(named: name)
             /// Search forward basic block
             ?? mainBlock?.contextualInstruction(named: name)
             /// Search parent
             ?? parent?.contextualInstruction(named: name)
     }
-    
+
+    open func contextualValue(named name: String) -> Value? {
+        return module?.globalValue(named: name) ?? contextualInstruction(named: name)
+    }
+
+    /// Search the module for and returns the global value having the specified name
+    open func globalValue(named name: String) -> Value? {
+        return module?.globalValue(named: name)
+    }
+
 }
 
 // MARK: - Basic block extensions
@@ -142,8 +251,12 @@ extension BasicBlock {
 
     open func makeExtension(ofType type: ExtensionType) -> BasicBlock {
         let bb = BasicBlock(name: name)
-        self[.backpropagation] = bb
+        self[type] = bb
         return bb
+    }
+
+    open func hasExtension(ofType type: ExtensionType) -> Bool {
+        return extensions.keys.contains(type)
     }
 
     /// Set/get an extension
