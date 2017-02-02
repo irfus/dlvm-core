@@ -47,6 +47,14 @@ public class Instruction : IRObject {
     public weak var parent: BasicBlock?
 }
 
+public class NestingInstruction : Instruction {
+    public var body: BasicBlock
+
+    public init(body: BasicBlock) {
+        self.body = body
+    }
+}
+
 public class DefiningInstruction : Instruction, NamedValue {
     public var name: String
     public var type: DataType
@@ -255,19 +263,16 @@ public final class StoreInstruction : Instruction {
 
 
 /// Loop instruction
-public final class LoopInstruction : Instruction {
+public final class LoopInstruction : NestingInstruction {
     public enum Condition {
         case times(Value)
         case untilEqual(Value, Value)
     }
     
     public var condition: Condition
-    public var body: BasicBlock
 
     public init(condition: Condition, body: BasicBlock) {
         self.condition = condition
-        self.body = body
-        super.init()
-        body.parent = parent
+        super.init(body: body)
     }
 }
