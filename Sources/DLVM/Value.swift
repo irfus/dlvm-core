@@ -33,7 +33,14 @@ public protocol NamedValue : class, Value {
     var name: String { get set }
 }
 
-public protocol GlobalValue : NamedValue, IRObject {
+public protocol GlobalValue : NamedValue {
+    weak var parent: Module? { get }
+}
+
+extension Value {
+    public var isGlobal: Bool {
+        return self is GlobalValue
+    }
 }
 
 public final class Input : GlobalValue {
