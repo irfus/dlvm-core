@@ -57,7 +57,6 @@ extension ArithmeticOperator : LexicallyConvertible {
 extension ElementwiseFunction : LexicallyConvertible {
     public static let lexicon: [String : ElementwiseFunction] = [
         "sigmoid" : .sigmoid,
-        "relu"    : .relu,
         "tanh"    : .tanh,
         "log"     : .log,
         "exp"     : .exp,

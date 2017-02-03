@@ -22,7 +22,7 @@ public enum ArithmeticOperator {
 }
 
 public enum ElementwiseFunction {
-    case sigmoid, relu, tanh
+    case sigmoid, tanh
     case log, exp, neg, sign, square, sqrt, round, rsqrt, ceil, floor
     case tan, cos, sin, acos, asin, atan
     case lgamma, digamma, erf, erfc, rint
