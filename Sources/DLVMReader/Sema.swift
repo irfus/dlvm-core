@@ -8,7 +8,7 @@
 
 import DLVM
 
-enum SemanticError : Error {
+public enum SemanticError : Error {
     case redeclaredTemporary(InstructionDeclarationNode)
     case redeclaredGlobal(DeclarationNode)
     case redeclaredBasicBlock(BasicBlockNode)
@@ -30,7 +30,7 @@ enum SemanticError : Error {
 }
 
 extension ModuleNode {
-    func makeModule() throws -> Module {
+    public func makeModule() throws -> Module {
         let module = Module(name: name)
 
         for decl in declarations {
@@ -49,7 +49,7 @@ extension ModuleNode {
 }
 
 extension BasicBlockNode {
-    func makeBasicBlock(in env: BasicBlock?, module: Module) throws -> BasicBlock {
+    public func makeBasicBlock(in env: BasicBlock?, module: Module) throws -> BasicBlock {
         let bb: BasicBlock
         let extType = try extensionTypeName.map { (extTypeName) throws -> BasicBlock.ExtensionType in
             guard let extType = BasicBlock.ExtensionType.lexicon[extTypeName] else {
@@ -119,7 +119,7 @@ extension BasicBlockNode {
 }
 
 extension DeclarationNode {
-    func makeDeclaration(in env: Module) throws -> GlobalValue {
+    public func makeDeclaration(in env: Module) throws -> GlobalValue {
         guard !env.containsGlobalValue(named: name) else {
             throw SemanticError.redeclaredGlobal(self)
         }
@@ -166,7 +166,7 @@ extension DeclarationNode {
 }
 
 extension TypeNode {
-    func makeType() -> DataType {
+    public func makeType() -> DataType {
         switch self {
         case .bool: return .bool
         case let .int(size, _): return .int(size)
@@ -176,13 +176,13 @@ extension TypeNode {
 }
 
 extension ShapeNode {
-    func makeShape() -> TensorShape {
+    public func makeShape() -> TensorShape {
         return TensorShape(dimensions)
     }
 }
 
 extension ImmediateNode {
-    func makeImmediate() -> Immediate {
+    public func makeImmediate() -> Immediate {
         switch self {
         case let .bool(b, _): return .bool(b)
         case let .int(i, _):  return .int(i)
@@ -192,13 +192,13 @@ extension ImmediateNode {
 }
 
 extension ImmediateValueNode {
-    func makeImmediateValue() -> ImmediateValue {
+    public func makeImmediateValue() -> ImmediateValue {
         return ImmediateValue(type: type.makeType(), immediate: immediate.makeImmediate())
     }
 }
 
 extension InitializerNode {
-    func makeInitializer() -> Initializer {
+    public func makeInitializer() -> Initializer {
         switch self {
         case let .immediate(immVal, _):
             return immVal.immediate.makeImmediate()
@@ -212,7 +212,7 @@ extension InitializerNode {
 }
 
 extension OperandNode {
-    func makeValue(in env: BasicBlock, module: Module) throws -> Value {
+    public func makeValue(in env: BasicBlock, module: Module) throws -> Value {
         let type = self.type.makeType()
         let shape = self.shape?.makeShape() ?? .scalar
         switch variable {
@@ -254,7 +254,7 @@ extension OperandNode {
 }
 
 extension LoopConditionNode {
-    func makeLoopCondition(in env: BasicBlock, module: Module) throws -> LoopInstruction.Condition {
+    public func makeLoopCondition(in env: BasicBlock, module: Module) throws -> LoopInstruction.Condition {
         switch self {
         case let .times(op, _):
             let val = try op.makeValue(in: env, module: module)
@@ -268,7 +268,7 @@ extension LoopConditionNode {
 }
 
 extension InstructionDeclarationNode {
-    func makeInstruction(in env: BasicBlock, module: Module) throws -> Instruction {
+    public func makeInstruction(in env: BasicBlock, module: Module) throws -> Instruction {
         /// Named instruction
         if let name = name {
             guard !env.containsInstruction(named: name) else {

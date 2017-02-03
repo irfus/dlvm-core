@@ -15,44 +15,44 @@ import enum DLVM.LogicOperator
 import enum DLVM.ReductionFunction
 import enum DLVM.BinaryIntegrationFunction
 
-protocol ASTNode {
+public protocol ASTNode {
     var range: SourceRange { get }
 }
 
-struct ModuleNode : ASTNode {
-    let name: String
-    let declarations: [DeclarationNode]
-    let basicBlocks: [BasicBlockNode]
-    let range: SourceRange
+public struct ModuleNode : ASTNode {
+    public let name: String
+    public let declarations: [DeclarationNode]
+    public let basicBlocks: [BasicBlockNode]
+    public let range: SourceRange
 }
 
-struct DeclarationNode : ASTNode {
-    enum Role {
+public struct DeclarationNode : ASTNode {
+    public enum Role {
         case input, output, parameter
     }
-    let role: Role
-    let type: TypeNode
-    let shape: ShapeNode?
-    let name: String
-    let initializer: InitializerNode?
-    let range: SourceRange
+    public let role: Role
+    public let type: TypeNode
+    public let shape: ShapeNode?
+    public let name: String
+    public let initializer: InitializerNode?
+    public let range: SourceRange
 }
 
-struct ImmediateValueNode : ASTNode {
-    let type: TypeNode
-    let immediate: ImmediateNode
+public struct ImmediateValueNode : ASTNode {
+    public let type: TypeNode
+    public let immediate: ImmediateNode
 
-    var range: SourceRange {
+    public var range: SourceRange {
         return type.range.lowerBound..<immediate.range.upperBound
     }
 }
 
-enum InitializerNode : ASTNode {
+public enum InitializerNode : ASTNode {
     case immediate(ImmediateValueNode, SourceRange)
     case random(ImmediateValueNode, ImmediateValueNode, SourceRange)
     case repeating(ImmediateValueNode, SourceRange)
 
-    var range: SourceRange {
+    public var range: SourceRange {
         switch self {
         case let .immediate(_, sr), let .random(_, _, sr), let .repeating(_, sr):
             return sr
@@ -60,29 +60,29 @@ enum InitializerNode : ASTNode {
     }
 }
 
-struct BasicBlockNode : ASTNode {
-    let name: String
-    let extensionTypeName: String?
-    let instructions: [InstructionDeclarationNode]
-    let range: SourceRange
+public struct BasicBlockNode : ASTNode {
+    public let name: String
+    public let extensionTypeName: String?
+    public let instructions: [InstructionDeclarationNode]
+    public let range: SourceRange
 }
 
-struct ShapeNode : ASTNode {
-    let dimensions: [Int]
-    let range: SourceRange
+public struct ShapeNode : ASTNode {
+    public let dimensions: [Int]
+    public let range: SourceRange
 }
 
-struct InstructionDeclarationNode : ASTNode {
-    let name: String?
-    let instruction: InstructionNode
-    let range: SourceRange
+public struct InstructionDeclarationNode : ASTNode {
+    public let name: String?
+    public let instruction: InstructionNode
+    public let range: SourceRange
 }
 
-enum LoopConditionNode : ASTNode {
+public enum LoopConditionNode : ASTNode {
     case times(OperandNode, SourceRange)
     case untilEqual(OperandNode, OperandNode, SourceRange)
 
-    var range: SourceRange {
+    public var range: SourceRange {
         switch self {
         case .times(_, let sr), .untilEqual(_, _, let sr):
             return sr
@@ -90,7 +90,7 @@ enum LoopConditionNode : ASTNode {
     }
 }
 
-enum InstructionNode : ASTNode {
+public enum InstructionNode : ASTNode {
     case matrixMultiply(OperandNode, OperandNode, SourceRange)
     case tensorMultiply(OperandNode, OperandNode, SourceRange)
     case arithmetic(ArithmeticOperator, OperandNode, OperandNode, SourceRange)
@@ -107,7 +107,7 @@ enum InstructionNode : ASTNode {
     case store(OperandNode, OperandNode, SourceRange)
     case loop(BasicBlockNode, LoopConditionNode, SourceRange)
 
-    var range: SourceRange {
+    public var range: SourceRange {
         switch self {
         case let .matrixMultiply(_, _, sr),
              let .tensorMultiply(_, _, sr),
@@ -129,10 +129,10 @@ enum InstructionNode : ASTNode {
     }
 }
 
-enum ImmediateNode : ASTNode {
+public enum ImmediateNode : ASTNode {
     case bool(Bool, SourceRange), int(Int, SourceRange), float(Double, SourceRange)
 
-    var range: SourceRange {
+    public var range: SourceRange {
         switch self {
         case .bool(_, let sr), .int(_, let sr), .float(_, let sr):
             return sr
@@ -140,22 +140,22 @@ enum ImmediateNode : ASTNode {
     }
 }
 
-struct OperandNode : ASTNode {
-    let type: TypeNode
-    let shape: ShapeNode?
-    let variable: VariableNode
+public struct OperandNode : ASTNode {
+    public let type: TypeNode
+    public let shape: ShapeNode?
+    public let variable: VariableNode
 
-    var range: SourceRange {
+    public var range: SourceRange {
         return type.range.lowerBound..<variable.range.upperBound
     }
 }
 
-enum VariableNode : ASTNode {
+public enum VariableNode : ASTNode {
     case immediate(ImmediateNode, SourceRange)
     case global(String, SourceRange)
     case temporary(String, SourceRange)
 
-    var range: SourceRange {
+    public var range: SourceRange {
         switch self {
         case let .immediate(_, sr), let .global(_, sr), let .temporary(_, sr):
             return sr
@@ -163,10 +163,10 @@ enum VariableNode : ASTNode {
     }
 }
 
-enum TypeNode : ASTNode {
+public enum TypeNode : ASTNode {
     case bool(Int, SourceRange), int(Int, SourceRange), float(Int, SourceRange)
 
-    var range: SourceRange {
+    public var range: SourceRange {
         switch self {
         case .bool(_, let sr), .int(_, let sr), .float(_, let sr):
             return sr
