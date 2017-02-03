@@ -79,7 +79,6 @@ public let builtinFunctions: [FunctionProtocol] = [
     /// Elementwise tranfer functions
     elementwise("sigmoid", function: .sigmoid),
     elementwise("log", function: .log),
-    elementwise("relu", function: .relu),
     elementwise("exp", function: .exp),
     elementwise("tan", function: .tan),
     elementwise("tanh", function: .tanh),
