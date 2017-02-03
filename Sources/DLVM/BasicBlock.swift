@@ -121,17 +121,30 @@ extension BasicBlock {
         return block
     }
 
-    fileprivate func addChild(_ child: BasicBlock) {
+    open func addChild(_ child: BasicBlock) {
+        guard !containsChild(child) else { return }
         child.parent = self
         childSet.add(child)
         childTable[child.name] = child
     }
 
-    @discardableResult
-    fileprivate func removeChild(_ child: BasicBlock) {
+    open func containsChild(_ child: BasicBlock) -> Bool {
+        return childSet.contains(child)
+    }
+
+    open func removeChild(_ child: BasicBlock) {
         precondition(hasChild(child), "This basic block is not a child")
         childSet.remove(child)
         childTable.removeValue(forKey: child.name)
+    }
+
+    @discardableResult
+    open func removeChild(named name: String) -> BasicBlock? {
+        guard let child = child(named: name) else {
+            return nil
+        }
+        removeChild(child)
+        return child
     }
 
     open func hasChild(_ child: BasicBlock) -> Bool {
