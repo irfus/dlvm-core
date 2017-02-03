@@ -14,7 +14,6 @@ public protocol FunctionProtocol {
 }
 
 public struct Function<IRFunction> : FunctionProtocol {
-    typealias Instruction = FunctionCallInstruction<IRFunction>
     public var name: String
     public var type: FunctionType
     public var irFunction: IRFunction

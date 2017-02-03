@@ -207,7 +207,7 @@ extension IRBuilder {
     open func makeShapeCast(_ operand: Value, targetShape: TensorShape,
                             name: String? = nil) -> ShapeCastInstruction {
         let inst = ShapeCastInstruction(name: name ?? makeVariableName(),
-                                        operand: operand, targetShape: targetShape)
+                                        operand: operand, target: targetShape)
         return build(inst)
     }
     
@@ -215,7 +215,7 @@ extension IRBuilder {
     open func makeTypeCast(_ operand: Value, targetType: DataType,
                            name: String? = nil) -> TypeCastInstruction {
         let inst = TypeCastInstruction(name: name ?? makeVariableName(), operand: operand,
-                                       targetType: targetType)
+                                       target: targetType)
         return build(inst)
     }
     

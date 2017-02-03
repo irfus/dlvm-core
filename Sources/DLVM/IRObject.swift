@@ -22,7 +22,7 @@ public extension HashableByReference {
 }
 
 public protocol IRCollection : class, RandomAccessCollection, HashableByReference {
-    associatedtype Element : AnyObject
+    associatedtype Element
     var elements: [Element] { get }
     func append(_: Element)
     func index(of: Element) -> Int?
