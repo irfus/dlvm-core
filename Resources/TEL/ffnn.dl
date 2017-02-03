@@ -22,7 +22,7 @@ declare output f32 [1x8] @o
     %v5 = sub f32 1.0, f32 [8x1] %v4
     %v6 = mmul f32 [8x8] @W2, f32 [8x1] %v5
     %v7 = add f32 [8x1] %v6, f32 [8x1] @b2
-    %h2 = tanh f32 [8x1] %v7
+    %h2 = max f32 0.0, f32 [8x1] %v7
     %v8 = mmul f32 [8x8] @W3, f32 [8x1] %h2
     %v9 = add f32 [8x1] %v8, f32 [8x1] @b3
     %v10 = softmax f32 [8x1] %v9
