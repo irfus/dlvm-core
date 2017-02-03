@@ -447,6 +447,9 @@ public class Program {
                       in env: inout SemaEnvironment) throws -> TensorShape {
         switch expression {
 
+        case .constant(_, _):
+            return .scalar
+
         case let .variable(v, _):
             guard let shape = env[v.name] else {
                 throw SemanticError.variableUndefined(v)

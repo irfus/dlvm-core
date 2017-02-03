@@ -59,14 +59,20 @@ public extension FunctionType {
         }
     }
 
+    private func broadcast(_ lhs: TensorShape, _ rhs: TensorShape) -> TensorShape? {
+        return lhs.broadcasted(to: rhs) ?? rhs.broadcasted(to: lhs)
+    }
+
     public func resultShape(forArguments args: [TensorShape]) throws -> TensorShape {
         try checkSanity(forArguments: args)
         switch self {
         case .homomorphicUnary: return args[0]
-        case .homomorphicBinary: return args[0]
+        case .homomorphicBinary, .comparison, .logicalBinary:
+            guard let broadcastedShape = broadcast(args[0], args[1]) else {
+                throw FunctionTypeError.shapeMismatch(args[0], args[1])
+            }
+            return broadcastedShape
         case .binaryReduction: return .scalar
-        case .logicalBinary: return args[0]
-        case .comparison: return args[0]
         case .matrixMultiplication:
             guard let resultShape = args[0].matrixMultiplied(by: args[1]) else {
                 throw FunctionTypeError.shapeMismatch(args[0], args[1])

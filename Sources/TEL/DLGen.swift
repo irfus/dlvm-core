@@ -91,6 +91,8 @@ class CodeGenerator {
     @discardableResult
     func build(_ expression: Expression, named name: String? = nil) -> Value {
         switch expression {
+        case let .constant(c, _):
+            return c.operand(for: program.dataType)
         case let .call(funcName, args, _):
             guard let function = builtinFunctionTable[funcName] else {
                 preconditionFailure("Unknown function name. This shouldn't have passed Sema.")

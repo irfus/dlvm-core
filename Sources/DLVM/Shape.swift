@@ -1,6 +1,5 @@
 //
-//  Shape.swift
-//  DLVM
+//  Shape.swift //  DLVM
 //
 //  Created by Richard Wei on 11/13/16.
 //
@@ -161,7 +160,7 @@ public extension TensorShape {
         guard dropFirst().first == other.first else { return nil }
         /// Multiply inner dimensions
         var newShape = self
-        newShape[0] = other[1]
+        newShape[1] = other[1]
         return newShape
     }
 
@@ -175,6 +174,10 @@ public extension TensorShape {
 
     public func canBroadcast(to other: TensorShape) -> Bool {
         return rank <= other.rank && other.suffix(rank).elementsEqual(self)
+    }
+
+    public func broadcasted(to other: TensorShape) -> TensorShape? {
+        return canBroadcast(to: other) ? other : nil
     }
 
 }
