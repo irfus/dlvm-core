@@ -10,7 +10,7 @@ import Foundation
 
 fileprivate protocol ObjectSetImplementation {
     associatedtype Element
-    associatedtype Set
+    associatedtype Set : AnyObject
     var set: Set { get set }
     var nameTable: [String : Element] { get set }
 }
@@ -156,9 +156,6 @@ extension OrderedNamedObjectSet : RandomAccessCollection, BidirectionalCollectio
     public subscript(i: Int) -> Element {
         get {
             return set[i] as! Element
-        }
-        set {
-            mutatingSet[i] = newValue
         }
     }
 
