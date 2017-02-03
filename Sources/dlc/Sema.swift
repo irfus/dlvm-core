@@ -331,7 +331,7 @@ extension InstructionDeclarationNode {
             case let .shapeCast(op, shape, _):
                 return ShapeCastInstruction(name: name,
                                             operand: try op.makeValue(in: env, module: module),
-                                            targetShape: shape.makeShape())
+                                            target: shape.makeShape())
 
             case let .tensorMultiply(lhs, rhs, _):
                 return TensorMultiplicationInstruction(name: name,
@@ -341,7 +341,7 @@ extension InstructionDeclarationNode {
             case let .typeCast(op, ty, _):
                 return TypeCastInstruction(name: name,
                                            operand: try op.makeValue(in: env, module: module),
-                                           targetType: ty.makeType())
+                                           target: ty.makeType())
 
             default:
                 throw SemanticError.extraneousName(self)

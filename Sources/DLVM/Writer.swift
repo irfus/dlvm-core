@@ -210,9 +210,9 @@ extension Instruction {
         case let inst as BinaryReductionInstruction:
             target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
         case let inst as ShapeCastInstruction:
-            target.write("shapecast \(inst.operand) to \(inst.targetShape)")
+            target.write("shapecast \(inst.operand) to \(inst.target)")
         case let inst as TypeCastInstruction:
-            target.write("typecast \(inst.operand) to \(inst.targetType)")
+            target.write("typecast \(inst.operand) to \(inst.target)")
         case let inst as LoopInstruction:
             target.write("loop \(inst.body) \(inst.condition)")
         default:
