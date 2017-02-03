@@ -158,10 +158,10 @@ public extension TensorShape {
         /// Has to be a matrix at least
         guard rank >= 2, other.rank >= 2 else { return nil }
         /// Match inner dimensions for matrix multiplication
-        guard last == other.dropLast().last else { return nil }
+        guard dropFirst().first == other.first else { return nil }
         /// Multiply inner dimensions
         var newShape = self
-        newShape[newShape.endIndex - 1] = other.last!
+        newShape[0] = other[1]
         return newShape
     }
 
