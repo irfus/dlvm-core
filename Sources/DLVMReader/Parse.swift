@@ -26,12 +26,12 @@ fileprivate let comma = Lexer.character(",").amid(spaces.?) .. "a comma"
 fileprivate let newLines = Lexer.newLine+
 fileprivate let linebreaks = (newLines | lineComments).amid(spaces.?)+ .. "a linebreak"
 
-protocol Parsible {
+public protocol Parsible {
     static var parser: Parser<Self> { get }
 }
 
 extension TypeNode : Parsible {
-    static let parser: Parser<TypeNode> =
+    public static let parser: Parser<TypeNode> =
         Lexer.character("f") ~~> number ^^^ TypeNode.float
       | Lexer.character("i") ~~> number ^^^ TypeNode.int
       | Lexer.character("b") ~~> number ^^^ TypeNode.bool
@@ -39,7 +39,7 @@ extension TypeNode : Parsible {
 }
 
 extension ShapeNode : Parsible {
-    static let parser: Parser<ShapeNode> =
+    public static let parser: Parser<ShapeNode> =
         number.nonbacktracking().many(separatedBy: "x")
               .between(Lexer.character("["), Lexer.character("]").! .. "]")
     ^^^ ShapeNode.init
@@ -47,7 +47,7 @@ extension ShapeNode : Parsible {
 }
 
 extension ImmediateNode : Parsible {
-    static let parser: Parser<ImmediateNode> =
+    public static let parser: Parser<ImmediateNode> =
         Lexer.signedDecimal.flatMap{Double($0)} ^^^ ImmediateNode.float
       | Lexer.signedInteger.flatMap{Int($0)} ^^^ ImmediateNode.int
       | ( Lexer.token("false") ^^= false
@@ -56,13 +56,13 @@ extension ImmediateNode : Parsible {
 }
 
 extension ImmediateValueNode : Parsible {
-    static let parser: Parser<ImmediateValueNode> =
+    public static let parser: Parser<ImmediateValueNode> =
         TypeNode.parser <~~ spaces ~~ ImmediateNode.parser.! ^^ ImmediateValueNode.init
      .. "an immediate value"
 }
 
 extension VariableNode : Parsible {
-    static let parser: Parser<VariableNode> =
+    public static let parser: Parser<VariableNode> =
         Lexer.character("@") ~~> identifier.! ^^^ VariableNode.global
       | Lexer.character("%") ~~> identifier.! ^^^ VariableNode.temporary
       | ImmediateNode.parser.! ^^^ VariableNode.immediate
@@ -70,7 +70,7 @@ extension VariableNode : Parsible {
 }
 
 extension OperandNode : Parsible {
-    static let parser: Parser<OperandNode> =
+    public static let parser: Parser<OperandNode> =
         TypeNode.parser ^^ curry(OperandNode.init)
      ** (spaces ~~> ShapeNode.parser).?
      ** (spaces.! ~~> VariableNode.parser.!)
@@ -87,7 +87,7 @@ import enum DLVM.BinaryIntegrationFunction
 import protocol DLVM.LexicallyConvertible
 
 extension Parsible where Self : LexicallyConvertible {
-    static var parser: Parser<Self> {
+    public static var parser: Parser<Self> {
         return identifier.map(Self.lexicon)
     }
 }
@@ -99,14 +99,14 @@ extension ComparisonPredicate : Parsible {}
 extension LogicOperator: Parsible {}
 
 extension ReductionFunction : Parsible {
-    static let parser: Parser<ReductionFunction> =
+    public static let parser: Parser<ReductionFunction> =
         LogicOperator.parser       ^^ ReductionFunction.logical
       | ArithmeticOperator.parser  ^^ ReductionFunction.arithmetic
      .. "reduction function"
 }
 
 extension AggregationFunction : Parsible {
-    static let parser: Parser<AggregationFunction> =
+    public static let parser: Parser<AggregationFunction> =
         identifier.map(AggregationFunction.lexicon)
       | Lexer.token("scan") ~~> spaces ~~> ReductionFunction.parser.! ^^ AggregationFunction.scan
 }
@@ -123,7 +123,7 @@ extension LoopConditionNode : Parsible {
      ^^ curry(LoopConditionNode.untilEqual)
      ** (Lexer.token("equals") ~~> spaces ~~> OperandNode.parser.!)
 
-    static let parser: Parser<LoopConditionNode> = forTimesParser
+    public static let parser: Parser<LoopConditionNode> = forTimesParser
                                                  | untilEqualParser
                                                 .. "a loop condition"
 }
@@ -172,7 +172,7 @@ extension InstructionNode : Parsible {
      ** BasicBlockNode.parser.! <~~ spaces.!
      ** LoopConditionNode.parser.!
 
-    static let parser: Parser<InstructionNode> = unaryParser
+    public static let parser: Parser<InstructionNode> = unaryParser
                                                | binaryParser
                                                | concatParser
                                                | shapeCastParser
@@ -183,21 +183,21 @@ extension InstructionNode : Parsible {
 }
 
 extension InstructionDeclarationNode : Parsible {
-    static let parser: Parser<InstructionDeclarationNode> =
+    public static let parser: Parser<InstructionDeclarationNode> =
         spaces.? ~~> (Lexer.character("%") ~~> identifier <~~ Lexer.character("=").amid(spaces.?)).?
      ^^ curry(InstructionDeclarationNode.init)
      ** InstructionNode.parser
 }
 
 extension BasicBlockNode : Parsible {
-    static let nonExtensionParser: Parser<BasicBlockNode> =
+    private static let nonExtensionParser: Parser<BasicBlockNode> =
         Lexer.character("!") ~~> identifier.! <~~ spaces.? ^^ curry(BasicBlockNode.init)
     <~~ Lexer.character("{").amid(spaces.?).! <~~ linebreaks.!
      ** .return(nil)
      ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
     <~~ linebreaks <~~ Lexer.character("}").!
 
-    static let extensionParser: Parser<BasicBlockNode> =
+    private static let extensionParser: Parser<BasicBlockNode> =
         "extension" ~~> spaces ~~>
         Lexer.character("!") ~~> identifier.! <~~ spaces ^^ curry(BasicBlockNode.init)
      ** (Lexer.token("for").! ~~> spaces.! ~~> identifier.!) <~~ spaces
@@ -205,13 +205,13 @@ extension BasicBlockNode : Parsible {
      ** InstructionDeclarationNode.parser.manyOrNone(separatedBy: linebreaks)
     <~~ linebreaks <~~ Lexer.character("}").!
 
-    static let parser: Parser<BasicBlockNode> = nonExtensionParser
+    public static let parser: Parser<BasicBlockNode> = nonExtensionParser
                                               | extensionParser
                                              .. "a basic block"
 }
 
 extension DeclarationNode.Role : Parsible {
-    static let parser: Parser<DeclarationNode.Role> =
+    public static let parser: Parser<DeclarationNode.Role> =
         Lexer.token("input")     ^^= .input
       | Lexer.token("parameter") ^^= .parameter
       | Lexer.token("output")    ^^= .output
@@ -219,7 +219,7 @@ extension DeclarationNode.Role : Parsible {
 }
 
 extension InitializerNode : Parsible {
-    static let parser: Parser<InitializerNode> =
+    public static let parser: Parser<InitializerNode> =
         ImmediateValueNode.parser ^^^ InitializerNode.immediate
       | Lexer.token("repeating") ~~> spaces ~~> ImmediateValueNode.parser.! ^^^ InitializerNode.repeating
       | Lexer.token("random") ~~> Lexer.token("from").amid(spaces) ~~>
@@ -229,7 +229,7 @@ extension InitializerNode : Parsible {
 }
 
 extension DeclarationNode : Parsible {
-    static let parser: Parser<DeclarationNode> =
+    public static let parser: Parser<DeclarationNode> =
         Lexer.token("declare") ~~> Role.parser.amid(spaces.!) ^^ curry(DeclarationNode.init)
      ** TypeNode.parser.! <~~ spaces
      ** (ShapeNode.parser <~~ spaces).?
@@ -239,7 +239,7 @@ extension DeclarationNode : Parsible {
 }
 
 extension ModuleNode : Parsible {
-    static let parser: Parser<ModuleNode> =
+    public static let parser: Parser<ModuleNode> =
         linebreaks.? ~~> Lexer.token("module") ~~> spaces ~~> identifier.! ^^ curry(ModuleNode.init)
      ** DeclarationNode.parser.manyOrNone(separatedBy: linebreaks).amid(linebreaks.?)
      ** BasicBlockNode.parser.manyOrNone(separatedBy: linebreaks).ended(by: linebreaks.?)

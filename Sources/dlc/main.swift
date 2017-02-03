@@ -1,4 +1,5 @@
 import Foundation
+import DLVMReader
 
 do {
     guard let file = CommandLine.arguments.dropFirst().first else {

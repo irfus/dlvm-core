@@ -5,8 +5,12 @@ let package = Package(
     targets: [
         /// Core DLVM library: IR, BPGen (libDLVM)
         Target(name: "DLVM"),
+        /// DLVM IR Reader
+        Target(name: "DLVMReader", dependencies: ["DLVM"]),
         /// DLVM compiler driver
-        Target(name: "dlc", dependencies: ["DLVM"]),
+        Target(name: "dlc", dependencies: ["DLVM", "DLVMReader"]),
+        /// DLVM interpreter
+        Target(name: "dli", dependencies: ["DLVM", "DLVMReader"]),
         /// TEL compiler library (libTEL)
         Target(name: "TEL", dependencies: ["DLVM"]),
         /// TEL compiler driver
