@@ -29,8 +29,12 @@ public extension Value {
     }
 }
 
-public protocol NamedValue : class, Value {
+public protocol Named {
     var name: String { get set }
+}
+
+public protocol NamedValue : class, Value, Named {
+    var users: NamedObjectSet<Instruction> { get }
 }
 
 public protocol GlobalValue : NamedValue {
@@ -48,6 +52,7 @@ public final class Input : GlobalValue {
     public var type: DataType
     public var shape: TensorShape
     public var isRecurrent: Bool = false
+    public var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {
@@ -62,6 +67,7 @@ public final class Parameter : GlobalValue {
     public var type: DataType
     public var shape: TensorShape
     public var initializer: Initializer
+    public var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType,
@@ -78,6 +84,7 @@ public final class Output : GlobalValue {
     public var type: DataType
     public var shape: TensorShape
     public var isRecurrent: Bool = false
+    public var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {

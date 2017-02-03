@@ -52,9 +52,6 @@ public protocol NestingInstruction : Instruction {
 }
 
 public protocol DefiningInstruction : Instruction, NamedValue {
-    var name: String { get set }
-    var type: DataType { get set }
-    var shape: TensorShape { get set }
 }
 
 public protocol Operator : class {
@@ -98,15 +95,14 @@ public typealias BinaryCallInstruction = FunctionCallInstruction & BinaryOperato
 public class HomomorphicUnaryInstruction<Function> : UnaryCallInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.operand.type
+    public lazy var shape: TensorShape = self.operand.shape
     public var function: Function
     public var operand: Value
+    public var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, function: Function, operand: Value) {
         self.name = name
-        self.type = operand.type
-        self.shape = operand.shape
         self.function = function
         self.operand = operand
     }
@@ -115,19 +111,19 @@ public class HomomorphicUnaryInstruction<Function> : UnaryCallInstruction {
 public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.firstOperand.type
+    public lazy var shape: TensorShape =
+        self.firstOperand.shape.rank > self.secondOperand.shape.rank
+      ? self.firstOperand.shape : self.secondOperand.shape
     public var function: Function
     public var firstOperand: Value
     public var secondOperand: Value
+    public var users: NamedObjectSet<Instruction> = []
     
     public init(name: String, function: Function, firstOperand: Value, secondOperand: Value) {
         self.name = name
         self.function = function
-        self.type = firstOperand.type
         /// Broadcasting
-        self.shape = firstOperand.shape.rank > secondOperand.shape.rank
-                   ? firstOperand.shape : secondOperand.shape
         self.firstOperand = firstOperand
         self.secondOperand = secondOperand
     }
@@ -149,15 +145,14 @@ public typealias LogicInstruction = HomomorphicBinaryInstruction<LogicOperator>
 public class ReductionInstruction : UnaryCallInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.operand.type
+    public var shape: TensorShape = .scalar
     public var function: ReductionFunction
     public var operand: Value
+    public var users: NamedObjectSet<Instruction> = []
     
     public init(name: String, function: ReductionFunction, operand: Value) {
         self.name = name
-        self.type = operand.type
-        self.shape = .scalar
         self.function = function
         self.operand = operand
     }
@@ -169,17 +164,16 @@ public class ReductionInstruction : UnaryCallInstruction {
 public final class ComparisonInstruction : BinaryCallInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public var type: DataType = .bool
+    public lazy var shape: TensorShape = self.firstOperand.shape
     public var function: ComparisonPredicate
     public var firstOperand: Value
     public var secondOperand: Value
+    public var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, function: ComparisonPredicate,
                 firstOperand: Value, secondOperand: Value) {
         self.name = name
-        self.type = .bool
-        self.shape = firstOperand.shape
         self.function = function
         self.firstOperand = firstOperand
         self.secondOperand = secondOperand
@@ -190,16 +184,15 @@ public final class ComparisonInstruction : BinaryCallInstruction {
 public final class TensorMultiplicationInstruction : DefiningInstruction, BinaryOperator {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.firstOperand.type
+    public lazy var shape: TensorShape =
+        (self.firstOperand.shape ⊗ self.secondOperand.shape) ?? self.firstOperand.shape
     public var firstOperand: Value
     public var secondOperand: Value
+    public var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         self.name = name
-        self.type = firstOperand.type
-        let newShape = (firstOperand.shape ⊗ secondOperand.shape) ?? firstOperand.shape
-        self.shape = newShape
         self.firstOperand = firstOperand
         self.secondOperand = secondOperand
     }
@@ -211,14 +204,18 @@ public final class MatrixMultiplicationInstruction : DefiningInstruction, Binary
     public var parent: BasicBlock?
     public var name: String
     public var type: DataType
-    public var shape: TensorShape
+    public lazy var shape: TensorShape = {
+        let newShape = self.firstOperand.shape.matrixMultiplied(by: self.secondOperand.shape)
+                    ?? self.firstOperand.shape
+        return newShape
+    }()
     public var firstOperand: Value
     public var secondOperand: Value
+    public var users: NamedObjectSet<Instruction> = []
+    
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         self.name = name
         self.type = firstOperand.type
-        let newShape = firstOperand.shape.matrixMultiplied(by: secondOperand.shape) ?? firstOperand.shape
-        self.shape = newShape
         self.firstOperand = firstOperand
         self.secondOperand = secondOperand
     }
@@ -229,21 +226,22 @@ public final class MatrixMultiplicationInstruction : DefiningInstruction, Binary
 public final class ConcatenationInstruction : DefiningInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.operands[0].type
+    public lazy var shape: TensorShape = {
+        let firstShape = self.operands[0].shape
+        let newShape = self.operands.dropFirst().reduce(firstShape, { acc, x in
+            acc?.concatenating(with: x.shape, alongDimension: self.axis)
+        }) ?? firstShape
+        return newShape
+    }()
     public var operands: [Value]
     public var axis: Int
+    public var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, operands: [Value], axis: Int) {
         precondition(!operands.isEmpty)
         self.name = name
-        self.type = operands[0].type
-        let firstShape = operands[0].shape
-        let newShape = operands.dropFirst().reduce(firstShape, { acc, x in
-            acc?.concatenating(with: x.shape, alongDimension: axis)
-        }) ?? firstShape
-        self.shape = newShape
-        self.operands = Array(operands)
+        self.operands = operands
         self.axis = axis
     }
 }
@@ -263,15 +261,14 @@ public protocol CastInstruction : DefiningInstruction, UnaryOperator {
 public final class ShapeCastInstruction : CastInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.operand.type
+    public lazy var shape: TensorShape = self.target
     public var operand: Value
     public var target: TensorShape
+    public var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, operand: Value, target: TensorShape) {
         self.name = name
-        self.type = operand.type
-        self.shape = target
         self.operand = operand
         self.target = target
     }
@@ -284,15 +281,14 @@ public final class ShapeCastInstruction : CastInstruction {
 public final class TypeCastInstruction : CastInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.target
+    public lazy var shape: TensorShape = self.operand.shape
     public var operand: Value
     public var target: DataType
+    public var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, operand: Value, target: DataType) {
         self.name = name
-        self.type = target
-        self.shape = operand.shape
         self.operand = operand
         self.target = target
     }
@@ -304,9 +300,10 @@ public final class TypeCastInstruction : CastInstruction {
 public final class LoadInstruction : DefiningInstruction {
     public var parent: BasicBlock?
     public var name: String
-    public var type: DataType
-    public var shape: TensorShape
+    public lazy var type: DataType = self.source.type
+    public lazy var shape: TensorShape = self.source.shape
     public var source: Value
+    public var users: NamedObjectSet<Instruction> = []
 
     public var operands: [Value] {
         return [source]
@@ -314,8 +311,6 @@ public final class LoadInstruction : DefiningInstruction {
 
     public init(name: String, source: Value) {
         self.name = name
-        self.type = source.type
-        self.shape = source.shape
         self.source = source
     }
 }
