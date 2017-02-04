@@ -31,20 +31,7 @@ public enum SemanticError : Error {
 
 extension ModuleNode {
     public func makeModule() throws -> Module {
-        let module = Module(name: name)
-
-        for decl in declarations {
-            let value = try decl.makeDeclaration(in: module)
-            module.insert(value)
-        }
-
-        for bbNode in basicBlocks {
-            let bb = try bbNode.makeBasicBlock(in: nil, module: module)
-            if !bb.isExtension {
-                module.insert(bb)
-            }
-        }
-        return module
+        return try Module(parse: self)
     }
 }
 
@@ -107,7 +94,7 @@ extension BasicBlockNode {
 
         /// Nested non-extension
         case let (env?, nil):
-            bb = env.makeChild(named: name)
+            bb = BasicBlock(name: name, parent: env)
         }
         
         for instNode in instructions {

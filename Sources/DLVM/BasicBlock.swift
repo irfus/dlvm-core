@@ -95,6 +95,11 @@ open class BasicBlock : IRCollection, IRObject {
         self.name = name
     }
 
+    public convenience init(name: String, parent: BasicBlock) {
+        self.init(name: name)
+        self.parent = parent
+    }
+
     public convenience init(name: String, instructions: [Instruction]) {
         self.init(name: name)
         self.instructionSet.addObjects(from: instructions)
@@ -115,20 +120,14 @@ open class BasicBlock : IRCollection, IRObject {
 // - Note: Child basic blocks are fully managed by BasicBlock class
 extension BasicBlock {
 
-    open func makeChild(named name: String) -> Self {
-        let block = type(of: self).init(name: name)
-        addChild(block)
-        return block
-    }
-
-    open func addChild(_ child: BasicBlock) {
+    fileprivate func addChild(_ child: BasicBlock) {
         guard !containsChild(child) else { return }
         child.parent = self
         childSet.add(child)
         childTable[child.name] = child
     }
 
-    open func containsChild(_ child: BasicBlock) -> Bool {
+    fileprivate func containsChild(_ child: BasicBlock) -> Bool {
         return childSet.contains(child)
     }
 
