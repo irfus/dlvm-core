@@ -101,7 +101,7 @@ open class BasicBlock : IRCollection, IRObject {
         updateInstructionTable()
     }
 
-    internal func updateInstructionTable() {
+    private func updateInstructionTable() {
         for inst in instructionSet {
             if let defInst = inst as? DefiningInstruction {
                 instructionTable[defInst.name] = defInst
@@ -298,4 +298,29 @@ extension BasicBlock {
         }
     }
 
+}
+
+// MARK: - Analysis information
+extension BasicBlock {
+
+    /// Update analysis information
+    func updateAnalysisInformation() {
+        /// Update users
+        updateUsers()
+        /// Exhaustively update children
+        for child in children {
+            child.updateAnalysisInformation()
+        }
+    }
+
+    /// Update user information
+    private func updateUsers() {
+        for inst in instructions {
+            if let user = inst as? ManagedUsee {
+                user.removeAllUsers()
+            }
+            inst.updateOperandUsers()
+        }
+    }
+    
 }

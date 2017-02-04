@@ -69,6 +69,11 @@ public struct NamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementati
         }
     }
 
+    public mutating func removeAll() {
+        mutatingSet.removeAllObjects()
+        nameTable.removeAll()
+    }
+
     public func value(named name: String) -> Element? {
         return nameTable[name]
     }
@@ -116,6 +121,11 @@ public struct OrderedNamedObjectSet<Element : Value> : ObjectSetProtocol, Object
         if let namedValue = value as? Named {
             nameTable[namedValue.name] = nil
         }
+    }
+
+    public mutating func removeAll() {
+        mutatingSet.removeAllObjects()
+        nameTable.removeAll()
     }
 
     public func value(named name: String) -> Element? {

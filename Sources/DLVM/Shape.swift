@@ -48,11 +48,11 @@ extension TensorShape {
 
     public static let scalar: TensorShape = []
 
-    public func vector(ofSize size: Int) -> TensorShape {
+    public static func vector(ofSize size: Int) -> TensorShape {
         return [size]
     }
 
-    public func matrix(rowCount: Int, columnCount: Int) -> TensorShape {
+    public static func matrix(rowCount: Int, columnCount: Int) -> TensorShape {
         return [rowCount, columnCount]
     }
 
@@ -69,7 +69,6 @@ extension TensorShape {
     }
 
 }
-
 
 extension TensorShape : RandomAccessCollection {
     
