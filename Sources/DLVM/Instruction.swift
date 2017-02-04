@@ -6,6 +6,10 @@
 //
 //
 
+///
+/// ## Functions
+///
+
 public enum LogicOperator {
     case and, or, xor
 }
@@ -26,7 +30,6 @@ public enum ElementwiseFunction {
     case log, exp, neg, sign, square, sqrt, round, rsqrt, ceil, floor
     case tan, cos, sin, acos, asin, atan
     case lgamma, digamma, erf, erfc, rint
-
 }
 
 public enum BinaryIntegrationFunction {
@@ -43,7 +46,11 @@ public enum AggregationFunction {
     case scan(ReductionFunction)
 }
 
-public protocol Instruction : class {
+///
+/// ## Instruction protocols
+///
+
+public protocol Instruction : class, SelfVerifiable {
     var operands: [Value] { get }
     weak var parent: BasicBlock? { get set }
 }
@@ -98,6 +105,10 @@ public typealias UnaryCallInstruction = FunctionCallInstruction & UnaryOperator
 
 /// Binary function calls
 public typealias BinaryCallInstruction = FunctionCallInstruction & BinaryOperator
+
+///
+/// ## Instructions
+///
 
 public class HomomorphicUnaryInstruction<Function> : UnaryCallInstruction {
     public var parent: BasicBlock?
@@ -341,7 +352,6 @@ public final class StoreInstruction : Instruction {
         self.destination = destination
     }
 }
-
 
 /// Loop instruction
 public final class LoopInstruction : NestingInstruction {
