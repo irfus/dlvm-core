@@ -2,7 +2,7 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-extension NamedValue {
+extension Value where Self : Named {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
         target.write(shape.isScalar ? " %" : " \(shape) %")

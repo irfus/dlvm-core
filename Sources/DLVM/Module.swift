@@ -213,3 +213,17 @@ extension Module {
     }
     
 }
+
+// MARK: - Analysis information
+extension Module {
+
+    open func updateAnalysisInformation() {
+        inputs.forEach { $0.removeAllUsers() }
+        parameters.forEach { $0.removeAllUsers() }
+        outputs.forEach { $0.removeAllUsers() }
+        for bb in basicBlocks {
+            bb.updateAnalysisInformation()
+        }
+    }
+    
+}

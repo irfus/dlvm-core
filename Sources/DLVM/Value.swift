@@ -29,30 +29,55 @@ public extension Value {
     }
 }
 
+public protocol Usee : class {
+    var users: NamedObjectSet<Instruction> { get }
+}
+
+public typealias User = Instruction
+
+internal protocol ManagedUsee : Usee {
+    var users: NamedObjectSet<Instruction> { get set }
+    func addUser(_ user: Instruction)
+    func removeUser(_ user: Instruction)
+    func removeAllUsers()
+}
+
 public protocol Named {
     var name: String { get set }
 }
 
-public protocol NamedValue : class, Value, Named {
-    var users: NamedObjectSet<Instruction> { get }
-}
+public typealias NamedValue = Value & Named & Usee
 
 public protocol GlobalValue : NamedValue {
     weak var parent: Module? { get }
 }
 
-extension Value {
+public extension Value {
     public var isGlobal: Bool {
         return self is GlobalValue
     }
 }
 
-public final class Input : GlobalValue {
+internal extension Value where Self : ManagedUsee {
+    func addUser(_ user: Instruction) {
+        users.insert(user)
+    }
+
+    func removeUser(_ user: Instruction) {
+        users.remove(user)
+    }
+
+    func removeAllUsers() {
+        users.removeAll()
+    }
+}
+
+public final class Input : GlobalValue, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
     public var isRecurrent: Bool = false
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {
@@ -62,12 +87,12 @@ public final class Input : GlobalValue {
     }
 }
 
-public final class Parameter : GlobalValue {
+public final class Parameter : GlobalValue, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
     public var initializer: Initializer
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType,
@@ -79,12 +104,12 @@ public final class Parameter : GlobalValue {
     }
 }
 
-public final class Output : GlobalValue {
+public final class Output : GlobalValue, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
     public var isRecurrent: Bool = false
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var parent: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {

@@ -43,7 +43,8 @@ public enum AggregationFunction {
     case scan(ReductionFunction)
 }
 
-public protocol Instruction : class, Operator {
+public protocol Instruction : class {
+    var operands: [Value] { get }
     weak var parent: BasicBlock? { get set }
 }
 
@@ -54,12 +55,18 @@ public protocol NestingInstruction : Instruction {
 public protocol DefiningInstruction : Instruction, NamedValue {
 }
 
-public protocol Operator : class {
-    var operands: [Value] { get }
+extension Instruction {
+    func updateOperandUsers() {
+        for operand in operands {
+            if let usee = operand as? ManagedUsee {
+                usee.addUser(self)
+            }
+        }
+    }
 }
 
 /// Abstract class for unary instruction
-public protocol UnaryOperator : Operator {
+public protocol UnaryOperator {
     var operand: Value { get set }
 }
 
@@ -70,7 +77,7 @@ public extension UnaryOperator {
 }
 
 /// Abstract class for binary instruction
-public protocol BinaryOperator : Operator {
+public protocol BinaryOperator {
     var firstOperand: Value { get set }
     var secondOperand: Value { get set }
 }
@@ -99,7 +106,7 @@ public class HomomorphicUnaryInstruction<Function> : UnaryCallInstruction {
     public lazy var shape: TensorShape = self.operand.shape
     public var function: Function
     public var operand: Value
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, function: Function, operand: Value) {
         self.name = name
@@ -118,8 +125,8 @@ public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction {
     public var function: Function
     public var firstOperand: Value
     public var secondOperand: Value
-    public var users: NamedObjectSet<Instruction> = []
-    
+    public internal(set) var users: NamedObjectSet<Instruction> = []
+
     public init(name: String, function: Function, firstOperand: Value, secondOperand: Value) {
         self.name = name
         self.function = function
@@ -149,7 +156,7 @@ public class ReductionInstruction : UnaryCallInstruction {
     public var shape: TensorShape = .scalar
     public var function: ReductionFunction
     public var operand: Value
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
     
     public init(name: String, function: ReductionFunction, operand: Value) {
         self.name = name
@@ -169,7 +176,7 @@ public final class ComparisonInstruction : BinaryCallInstruction {
     public var function: ComparisonPredicate
     public var firstOperand: Value
     public var secondOperand: Value
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, function: ComparisonPredicate,
                 firstOperand: Value, secondOperand: Value) {
@@ -189,7 +196,7 @@ public final class TensorMultiplicationInstruction : DefiningInstruction, Binary
         (self.firstOperand.shape ⊗ self.secondOperand.shape) ?? self.firstOperand.shape
     public var firstOperand: Value
     public var secondOperand: Value
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         self.name = name
@@ -211,7 +218,7 @@ public final class MatrixMultiplicationInstruction : DefiningInstruction, Binary
     }()
     public var firstOperand: Value
     public var secondOperand: Value
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
     
     public init(name: String, firstOperand: Value, secondOperand: Value) {
         self.name = name
@@ -236,7 +243,7 @@ public final class ConcatenationInstruction : DefiningInstruction {
     }()
     public var operands: [Value]
     public var axis: Int
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, operands: [Value], axis: Int) {
         precondition(!operands.isEmpty)
@@ -265,7 +272,7 @@ public final class ShapeCastInstruction : CastInstruction {
     public lazy var shape: TensorShape = self.target
     public var operand: Value
     public var target: TensorShape
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, operand: Value, target: TensorShape) {
         self.name = name
@@ -285,7 +292,7 @@ public final class TypeCastInstruction : CastInstruction {
     public lazy var shape: TensorShape = self.operand.shape
     public var operand: Value
     public var target: DataType
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public init(name: String, operand: Value, target: DataType) {
         self.name = name
@@ -303,7 +310,7 @@ public final class LoadInstruction : DefiningInstruction {
     public lazy var type: DataType = self.source.type
     public lazy var shape: TensorShape = self.source.shape
     public var source: Value
-    public var users: NamedObjectSet<Instruction> = []
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public var operands: [Value] {
         return [source]
