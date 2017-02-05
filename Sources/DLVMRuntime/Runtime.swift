@@ -6,6 +6,12 @@
 //
 //
 
+import DLVM
+
 public class Runtime {
-    
+
+    fileprivate var activeModules: NamedObjectSet<Module> = []
+
+    public init() {}
+
 }
