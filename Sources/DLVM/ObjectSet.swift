@@ -27,7 +27,7 @@ public protocol ObjectSetProtocol {
 fileprivate extension ObjectSetImplementation where Set : NSMutableCopying {
     var mutatingSet: Set {
         mutating get {
-            if isKnownUniquelyReferenced(&set) {
+            if !isKnownUniquelyReferenced(&set) {
                 set = set.mutableCopy() as! Set
             }
             return set
