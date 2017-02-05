@@ -223,7 +223,7 @@ public final class MatrixMultiplicationInstruction : DefiningInstruction, Binary
     public var name: String
     public var type: DataType
     public lazy var shape: TensorShape = {
-        let newShape = self.firstOperand.shape.matrixMultiplied(by: self.secondOperand.shape)
+        let newShape = self.firstOperand.shape.matrixMultiplied(with: self.secondOperand.shape)
                     ?? self.firstOperand.shape
         return newShape
     }()

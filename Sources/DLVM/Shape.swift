@@ -157,17 +157,25 @@ public extension TensorShape {
         self[dim] += other[dim]
     }
 
-    public func multiplied(by other: TensorShape) -> TensorShape? {
+    public func canConcatenate(with other: TensorShape) -> Bool {
+        return concatenating(with: other) != nil
+    }
+
+    public func multiplied(with other: TensorShape) -> TensorShape? {
         guard last == other.first else { return nil }
         let newDim = dimensions.dropLast() + other.dimensions.dropFirst()
         return TensorShape(newDim)
     }
 
     public static func ⊗ (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
-        return lhs.multiplied(by: rhs)
+        return lhs.multiplied(with: rhs)
     }
 
-    public func matrixMultiplied(by other: TensorShape) -> TensorShape? {
+    public func canMultiply(with other: TensorShape) -> Bool {
+        return multiplied(with: other) != nil
+    }
+
+    public func matrixMultiplied(with other: TensorShape) -> TensorShape? {
         /// Has to be a matrix at least
         guard rank >= 2, other.rank >= 2 else { return nil }
         /// Match inner dimensions for matrix multiplication
@@ -176,6 +184,10 @@ public extension TensorShape {
         var newShape = self
         newShape[1] = other[1]
         return newShape
+    }
+
+    public func canMatrixMultiply(with other: TensorShape) -> Bool {
+        return matrixMultiplied(with: other) != nil
     }
 
     /// Matrix/vector transpose

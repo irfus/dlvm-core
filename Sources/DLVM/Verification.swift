@@ -14,16 +14,20 @@ public enum VerificationError : Error {
     case redeclaredInstruction(DefiningInstruction)
     case blockMissingModule(BasicBlock)
     case blockModuleMismatch(BasicBlock, Module)
+    case blockParentMismatch(BasicBlock, parent: BasicBlock)
     case instructionMissingParent(Instruction)
-    case instructionParentMismatch(Instruction)
-    case shapeMismatch(Value, Value, Instruction)
-    case typeMismatch(Value, Value, Instruction)
+    case instructionParentMismatch(Instruction, parent: BasicBlock)
+    case shapeMismatch(ValueRepresentation, ValueRepresentation, Instruction)
+    case typeMismatch(ValueRepresentation, ValueRepresentation, Instruction)
     case unexpectedShape(DefiningInstruction, TensorShape)
     case unexpectedType(DefiningInstruction, DataType)
     case logicOperandNotLogic(DefiningInstruction)
-    case loadSourceNotGlobal(LoadInstruction)
-    case storeDestinationNotGlobal(StoreInstruction)
-    case operandCannotBeGlobal(NamedValue)
+    case cannotShapeCast(ShapeCastInstruction)
+    case cannotTensorMultiply(TensorMultiplicationInstruction)
+    case cannotMatrixMultiply(MatrixMultiplicationInstruction)
+    case cannotConcatenate(Value, ConcatenationInstruction)
+    case concatenationOperandsEmpty(ConcatenationInstruction)
+    case conditionTimesNotScalar(LoopInstruction)
 }
 
 public protocol SelfVerifiable {
@@ -77,13 +81,19 @@ extension BasicBlock : SelfVerifiable {
             guard !bbNames.contains(subBlock.name) else {
                 throw VerificationError.basicBlockRedeclared(subBlock)
             }
+            guard subBlock.parent === self else {
+                throw VerificationError.blockParentMismatch(subBlock, parent: self)
+            }
             bbNames.insert(subBlock.name)
         }
 
         /// Check instructions
         var instNames: Set<String> = []
         for inst in instructions {
-            _ = try inst.parent()
+            let parent = try inst.parent()
+            guard parent === self else {
+                throw VerificationError.instructionParentMismatch(inst, parent: self)
+            }
             if let defInst = inst as? DefiningInstruction {
                 guard !instNames.contains(defInst.name) else {
                     throw VerificationError.redeclaredInstruction(defInst)
@@ -113,7 +123,7 @@ fileprivate extension Instruction {
         return bb
     }
 
-    func broadcastedShape(_ lhs: Value, _ rhs: Value) throws -> TensorShape {
+    func broadcastedShape(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws -> TensorShape {
         guard let shape = lhs.shape.broadcasted(to: rhs.shape)
                        ?? rhs.shape.broadcasted(to: lhs.shape) else {
             throw VerificationError.shapeMismatch(lhs, rhs, self)
@@ -121,17 +131,34 @@ fileprivate extension Instruction {
         return shape
     }
 
-    func homogeneousType(_ lhs: Value, _ rhs: Value) throws -> DataType {
+    func homomorphicShape(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws -> TensorShape {
+        guard lhs.shape == rhs.shape else {
+            throw VerificationError.shapeMismatch(lhs, rhs, self)
+        }
+        return lhs.shape
+    }
+
+    func homogeneousType(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws -> DataType {
         guard lhs.type == rhs.type else {
             throw VerificationError.typeMismatch(lhs, rhs, self)
         }
         return lhs.type
     }
+
+    func verifyHomomorphic(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws {
+        _ = try homogeneousType(lhs, rhs)
+        _ = try broadcastedShape(lhs, rhs)
+    }
+
+    func verifyHomomorphicBroadcasted(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws {
+        _ = try homogeneousType(lhs, rhs)
+        _ = try broadcastedShape(lhs, rhs)
+    }
 }
 
 // MARK: - Verification helpers
 fileprivate extension DefiningInstruction {
-    func verify(type: DataType, shape: TensorShape) throws {
+    func verifyDeclaration(type: DataType, shape: TensorShape) throws {
         guard self.type == type else {
             throw VerificationError.unexpectedType(self, type)
         }
@@ -140,31 +167,26 @@ fileprivate extension DefiningInstruction {
         }
     }
 
-    func verifyHomomorphic(_ lhs: Value, _ rhs: Value) throws {
+    func verifyHomomorphicBroadcasted(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws {
         let type = try homogeneousType(lhs, rhs)
         let shape = try broadcastedShape(lhs, rhs)
-        try verify(type: type, shape: shape)
+        try verifyDeclaration(type: type, shape: shape)
     }
 
-    func verifyHomomorphic(_ value: Value) throws {
-        try verify(type: value.type, shape: value.shape)
-    }
-}
-
-public extension Instruction {
-    public func verify() throws {
+    func verifyHomomorphic(_ value: ValueRepresentation) throws {
+        try verifyDeclaration(type: value.type, shape: value.shape)
     }
 }
 
 public extension ReductionInstruction {
     public func verify() throws {
-        try verify(type: operand.type, shape: .scalar)
+        try verifyDeclaration(type: operand.type, shape: .scalar)
     }
 }
 
 public extension HomomorphicBinaryInstruction {
     public func verify() throws {
-        try verifyHomomorphic(firstOperand, secondOperand)
+        try verifyHomomorphicBroadcasted(firstOperand, secondOperand)
         if function is LogicInstruction, type != .bool {
             throw VerificationError.logicOperandNotLogic(self)
         }
@@ -181,21 +203,102 @@ public extension ComparisonInstruction {
     public func verify() throws {
         _ = try homogeneousType(firstOperand, secondOperand)
         let shape = try broadcastedShape(firstOperand, secondOperand)
-        try verify(type: .bool, shape: shape)
+        try verifyDeclaration(type: .bool, shape: shape)
     }
 }
 
 public extension LoadInstruction {
     public func verify() throws {
-        try verify(type: source.type, shape: source.shape)
+        try verifyDeclaration(type: source.type, shape: source.shape)
     }
 }
 
 public extension StoreInstruction {
     public func verify() throws {
-        /// TODO
-        guard destination.isGlobal else {
-            throw VerificationError.storeDestinationNotGlobal(self)
+        try verifyHomomorphic(source, destination)
+    }
+}
+
+public extension ExportInstruction {
+    public func verify() throws {
+        try verifyHomomorphic(source, destination)
+    }
+}
+
+public extension TypeCastInstruction {
+    public func verify() throws {
+        /// TODO: Check for data type conformance
+        try verifyDeclaration(type: target, shape: operand.shape)
+    }
+}
+
+public extension ShapeCastInstruction {
+    public func verify() throws {
+        guard operand.shape.canBroadcast(to: target)
+           || operand.shape.contiguousSize == target.contiguousSize else {
+            throw VerificationError.cannotShapeCast(self)
         }
+        try verifyDeclaration(type: operand.type, shape: target)
+    }
+}
+
+public extension TensorMultiplicationInstruction {
+    public func verify() throws {
+        let type = try homogeneousType(firstOperand, secondOperand)
+        guard let product = firstOperand.shape.multiplied(with: secondOperand.shape)
+                         ?? secondOperand.shape.multiplied(with: firstOperand.shape) else {
+            throw VerificationError.cannotTensorMultiply(self)
+        }
+        try verifyDeclaration(type: type, shape: product)
+    }
+}
+
+public extension MatrixMultiplicationInstruction {
+    public func verify() throws {
+        let type = try homogeneousType(firstOperand, secondOperand)
+        guard let product = firstOperand.shape.matrixMultiplied(with: secondOperand.shape)
+                         ?? secondOperand.shape.matrixMultiplied(with: firstOperand.shape) else {
+            throw VerificationError.cannotMatrixMultiply(self)
+        }
+        try verifyDeclaration(type: type, shape: product)
+    }
+}
+
+public extension ConcatenationInstruction {
+    public func verify() throws {
+        guard let firstOp = operands.first else {
+            throw VerificationError.concatenationOperandsEmpty(self)
+        }
+        let (type, shape) = try operands.dropFirst()
+                                        .reduce((firstOp.type, firstOp.shape),
+                                        { acc, next in
+            let type = try homogeneousType(operands[0], next)
+            guard let shape = acc.1.concatenating(with: next.shape, alongDimension: axis) else {
+                throw VerificationError.cannotConcatenate(next, self)
+            }
+            return (type, shape)
+        })
+        try verifyDeclaration(type: type, shape: shape)
+    }
+}
+
+extension LoopInstruction.Condition {
+    fileprivate func verify(in inst: LoopInstruction) throws {
+        switch self {
+        case let .times(v):
+            guard v.shape == .scalar else {
+                throw VerificationError.conditionTimesNotScalar(inst)
+            }
+        case let .untilEqual(v1, v2):
+            try inst.verifyHomomorphicBroadcasted(v1, v2)
+        }
+    }
+}
+
+public extension LoopInstruction {
+    public func verify() throws {
+        /// TODO: Check for dominance
+        try condition.verify(in: self)
+        try body.verify()
     }
 }
