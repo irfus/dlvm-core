@@ -50,7 +50,7 @@ public protocol Named {
 }
 
 public protocol Global : Named, TextOutputStreamable {
-    weak var parent: Module? { get }
+    weak var module: Module? { get }
 }
 
 public typealias NamedValue = Value & Named & Usee
@@ -59,7 +59,7 @@ public protocol GlobalValue : NamedValue, Global {
 }
 
 public protocol GlobalPlaceholder : Named, Usee, Global, ValueRepresentation {
-    weak var parent: Module? { get }
+    weak var module: Module? { get }
     var type: DataType { get set }
     var shape: TensorShape { get set }
 }
@@ -90,7 +90,7 @@ public final class Input : GlobalPlaceholder, ManagedUsee {
     public var shape: TensorShape
     public var isRecurrent: Bool = false
     public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var parent: Module?
+    public internal(set) weak var module: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {
         self.name = name
@@ -105,7 +105,7 @@ public final class Constant : GlobalValue, ManagedUsee {
     public var shape: TensorShape
     public var defaultInitializer: Initializer
     public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var parent: Module?
+    public internal(set) weak var module: Module?
 
     public init(name: String, type: DataType, shape: TensorShape,
                 defaultInitializer: Initializer) {
@@ -122,7 +122,7 @@ public final class Parameter : GlobalValue, ManagedUsee {
     public var shape: TensorShape
     public var initializer: Initializer
     public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var parent: Module?
+    public internal(set) weak var module: Module?
 
     public init(name: String, type: DataType,
                 shape: TensorShape, initializer: Initializer) {
@@ -139,7 +139,7 @@ public final class Output : GlobalPlaceholder, ManagedUsee {
     public var shape: TensorShape
     public var isRecurrent: Bool = false
     public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var parent: Module?
+    public internal(set) weak var module: Module?
 
     public init(name: String, type: DataType, shape: TensorShape) {
         self.name = name

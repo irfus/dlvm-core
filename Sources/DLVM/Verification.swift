@@ -98,7 +98,7 @@ extension BasicBlock : SelfVerifiable {
 
 fileprivate extension Global {
     func parent() throws -> Module {
-        guard let module = parent else {
+        guard let module = module else {
             throw VerificationError.globalMissingParent(self)
         }
         return module
