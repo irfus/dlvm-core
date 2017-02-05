@@ -9,7 +9,7 @@
 import Foundation
 
 /// Module representing a neural network
-open class Module {
+open class Module : Named {
     public typealias Element = BasicBlock
     
     open var name: String
@@ -24,7 +24,9 @@ open class Module {
     fileprivate let basicBlockSet = NSMutableOrderedSet()
     fileprivate var basicBlockTable: [String : BasicBlock] = [:]
 
-    open lazy var entryBlock: BasicBlock? = self.basicBlocks.first
+    open var entryBlock: BasicBlock? {
+        return basicBlock(named: "entry")
+    }
     
     open var basicBlocks: [BasicBlock] {
         #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
@@ -98,42 +100,42 @@ extension Module {
 
     open func insert(_ input: Input) {
         inputTable[input.name] = input
-        input.parent = self
+        input.module = self
     }
 
     open func insert(_ parameter: Parameter) {
         parameterTable[parameter.name] = parameter
-        parameter.parent = self
+        parameter.module = self
     }
 
     open func insert(_ output: Output) {
         outputTable[output.name] = output
-        output.parent = self
+        output.module = self
     }
 
     open func insert(_ constant: Constant) {
         constantTable[constant.name] = constant
-        constant.parent = self
+        constant.module = self
     }
 
     open func remove(_ input: Input) {
         inputTable[input.name] = nil
-        input.parent = nil
+        input.module = nil
     }
 
     open func remove(_ parameter: Parameter) {
         parameterTable[parameter.name] = nil
-        parameter.parent = nil
+        parameter.module = nil
     }
 
     open func remove(_ output: Output) {
         outputTable[output.name] = nil
-        output.parent = nil
+        output.module = nil
     }
 
     open func remove(_ constant: Constant) {
         constantTable[constant.name] = nil
-        constant.parent = nil
+        constant.module = nil
     }
 
     open func globalValue(named name: String) -> GlobalValue? {

@@ -6,7 +6,8 @@
 //
 //
 
-open class GradientPass : Pass {
+open class GradientPass : ExtensionGenerationPass {
+    public static let extensionType: BasicBlock.ExtensionType = .backpropagation
     open var body: BasicBlock
 
     public required init(body: BasicBlock) {

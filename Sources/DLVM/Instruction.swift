@@ -333,6 +333,7 @@ public final class LoadInstruction : DefiningInstruction {
     }
 }
 
+/// Export instruction
 public final class ExportInstruction : Instruction {
     public var parent: BasicBlock?
     public var source: Value
@@ -349,10 +350,6 @@ public final class ExportInstruction : Instruction {
 }
 
 /// Store instruction
-/// - Note: Not to be confused with *store* in LLVM. It actually outputs
-/// the computed tensor as an output of the neural network. Maybe we
-/// want to changed the name to something like "export", but "store" is a
-/// nice counterpart of "load".
 public final class StoreInstruction : Instruction {
     public var parent: BasicBlock?
     public var source: Value
