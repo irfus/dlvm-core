@@ -7,8 +7,8 @@
 //
 
 public enum VerificationError : Error {
-    case globalValueMissingParent(GlobalValue)
-    case globalValueRedeclared(Value)
+    case globalMissingParent(Global)
+    case globalRedeclared(Global)
     case basicBlockRedeclared(BasicBlock)
     case extensionTypeMismatch(BasicBlock, parent: BasicBlock)
     case redeclaredInstruction(DefiningInstruction)
@@ -35,12 +35,12 @@ extension Module : SelfVerifiable {
     open func verify() throws {
         /// Check for redeclared global values
         var globalValueNames: Set<String> = []
-        func checkForRedeclaration<T: GlobalValue, S: Sequence>(in values: S) throws
+        func checkForRedeclaration<T: Global, S: Sequence>(in values: S) throws
             where S.Iterator.Element == T {
             for value in values {
                 _ = try value.parent()
                 guard !globalValueNames.contains(value.name) else {
-                    throw VerificationError.globalValueRedeclared(value)
+                    throw VerificationError.globalRedeclared(value)
                 }
             }
         }
@@ -96,10 +96,10 @@ extension BasicBlock : SelfVerifiable {
 
 }
 
-fileprivate extension GlobalValue {
+fileprivate extension Global {
     func parent() throws -> Module {
         guard let module = parent else {
-            throw VerificationError.globalValueMissingParent(self)
+            throw VerificationError.globalMissingParent(self)
         }
         return module
     }
@@ -187,10 +187,7 @@ public extension ComparisonInstruction {
 
 public extension LoadInstruction {
     public func verify() throws {
-        guard source.isGlobal else {
-            throw VerificationError.loadSourceNotGlobal(self)
-        }
-        try verifyHomomorphic(source)
+        try verify(type: source.type, shape: source.shape)
     }
 }
 

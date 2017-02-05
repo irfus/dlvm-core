@@ -63,7 +63,10 @@ extension ImmediateValueNode : Parsible {
 
 extension VariableNode : Parsible {
     public static let parser: Parser<VariableNode> =
-        Lexer.character("@") ~~> identifier.! ^^^ VariableNode.global
+        Lexer.character("@") ~~> identifier.! ^^^ VariableNode.input
+      | Lexer.character("'") ~~> identifier.! ^^^ VariableNode.constant
+      | Lexer.character("$") ~~> identifier.! ^^^ VariableNode.parameter
+      | Lexer.character("&") ~~> identifier.! ^^^ VariableNode.output
       | Lexer.character("%") ~~> identifier.! ^^^ VariableNode.temporary
       | ImmediateNode.parser.! ^^^ VariableNode.immediate
      .. "a variable"
@@ -162,6 +165,11 @@ extension InstructionNode : Parsible {
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** TypeNode.parser.!
 
+    private static let exportParser: Parser<InstructionNode> =
+        "export" ~~> spaces ^^= curry(InstructionNode.export)
+     ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
+     ** OperandNode.parser.!
+
     private static let storeParser: Parser<InstructionNode> =
         "store" ~~> spaces ^^= curry(InstructionNode.store)
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
@@ -173,13 +181,14 @@ extension InstructionNode : Parsible {
      ** LoopConditionNode.parser.!
 
     public static let parser: Parser<InstructionNode> = unaryParser
-                                               | binaryParser
-                                               | concatParser
-                                               | shapeCastParser
-                                               | typeCastParser
-                                               | storeParser
-                                               | loopParser
-                                              .. "an instruction"
+                                                      | binaryParser
+                                                      | concatParser
+                                                      | shapeCastParser
+                                                      | typeCastParser
+                                                      | exportParser
+                                                      | storeParser
+                                                      | loopParser
+                                                     .. "an instruction"
 }
 
 extension InstructionDeclarationNode : Parsible {
@@ -213,9 +222,10 @@ extension BasicBlockNode : Parsible {
 extension DeclarationNode.Role : Parsible {
     public static let parser: Parser<DeclarationNode.Role> =
         Lexer.token("input")     ^^= .input
+      | Lexer.token("constant")  ^^= .constant
       | Lexer.token("parameter") ^^= .parameter
       | Lexer.token("output")    ^^= .output
-     .. "a global variable role (input, parameter, output)"
+     .. "a global variable role (input, constant, parameter, output)"
 }
 
 extension InitializerNode : Parsible {
@@ -233,7 +243,7 @@ extension DeclarationNode : Parsible {
         Lexer.token("declare") ~~> Role.parser.amid(spaces.!) ^^ curry(DeclarationNode.init)
      ** TypeNode.parser.! <~~ spaces
      ** (ShapeNode.parser <~~ spaces).?
-     ** (Lexer.character("@") ~~> identifier).! .. "an identifier"
+     ** identifier.! .. "an identifier"
      ** (Lexer.character("=").amid(spaces.?) ~~> InitializerNode.parser.!).?
      .. "a declaration"
 }

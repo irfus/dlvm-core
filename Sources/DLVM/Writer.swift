@@ -2,7 +2,7 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-extension Value where Self : Named {
+extension DefiningInstruction where Self : Named {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
         target.write(shape.isScalar ? " %" : " \(shape) %")
@@ -10,10 +10,34 @@ extension Value where Self : Named {
     }
 }
 
-extension GlobalValue {
+extension Parameter {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        type.write(to: &target)
+        target.write(shape.isScalar ? " $" : " \(shape) $")
+        name.write(to: &target)
+    }
+}
+
+extension Input {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
         target.write(shape.isScalar ? " @" : " \(shape) @")
+        name.write(to: &target)
+    }
+}
+
+extension Output {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        type.write(to: &target)
+        target.write(shape.isScalar ? " &" : " \(shape) &")
+        name.write(to: &target)
+    }
+}
+
+extension Constant {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        type.write(to: &target)
+        target.write(shape.isScalar ? " '" : " \(shape) '")
         name.write(to: &target)
     }
 }
@@ -199,6 +223,8 @@ extension Instruction {
             target.write("\(inst.function) \(inst.operand)")
         case let inst as StoreInstruction:
             target.write("store \(inst.source) to \(inst.destination)")
+        case let inst as ExportInstruction:
+            target.write("export \(inst.source) to \(inst.destination)")
         case let inst as LoadInstruction:
             target.write("load \(inst.source)")
         case let inst as ConcatenationInstruction:
@@ -223,27 +249,45 @@ extension Instruction {
 }
 
 extension Module : TextOutputStreamable {
+
+    private func writeOperandNotationDescription<Target : TextOutputStream>(to target: inout Target) {
+        target.write("// Operand notations:\n")
+        target.write("//   @ ---- input\n")
+        target.write("//   ' ---- constant\n")
+        target.write("//   $ ---- parameter\n")
+        target.write("//   & ---- output\n")
+        target.write("//   % ---- temporary\n")
+    }
+    
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n\n")
-        for input in inputs {
-            target.write("declare input ")
-            input.write(to: &target)
+        /// Need add an empty line between different kinds of globals
+        /// We check for non-emptiness, which looks crappy but works :)
+        if !inputs.isEmpty {
+            for input in inputs {
+                target.write("declare input \(input.type) \(input.shape) \(input.name)\n")
+            }
             target.write("\n")
         }
-        target.write("\n")
-        for parameter in parameters {
-            target.write("declare parameter ")
-            parameter.write(to: &target)
-            target.write(" = ")
-            parameter.initializer.write(to: &target)
+        if !constants.isEmpty {
+            for constant in constants {
+                target.write("declare constant \(constant.type) \(constant.shape) \(constant.name) = \(constant.defaultInitializer)\n")
+            }
             target.write("\n")
         }
-        target.write("\n")
-        for output in outputs {
-            target.write("declare output ")
-            output.write(to: &target)
+        if !parameters.isEmpty {
+            for parameter in parameters {
+                target.write("declare parameter \(parameter.type) \(parameter.shape) \(parameter.name) = \(parameter.initializer)\n")
+            }
             target.write("\n")
         }
+        if !outputs.isEmpty {
+            for output in outputs {
+                target.write("declare output \(output.type) \(output.shape) \(output.name)\n")
+            }
+            target.write("\n")
+        }
+        writeOperandNotationDescription(to: &target)
         target.write("\n")
         for bb in basicBlocks {
             bb.write(to: &target)

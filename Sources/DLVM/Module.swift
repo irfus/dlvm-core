@@ -14,10 +14,11 @@ open class Module {
     
     open var name: String
 
-    /// Global values
+    /// Globals
     fileprivate var inputTable: [String : Input] = [:]
     fileprivate var parameterTable: [String : Parameter] = [:]
     fileprivate var outputTable: [String : Output] = [:]
+    fileprivate var constantTable: [String : Constant] = [:]
 
     /// Global basic blocks
     fileprivate let basicBlockSet = NSMutableOrderedSet()
@@ -95,45 +96,57 @@ extension Module {
 // MARK: - Global values
 extension Module {
 
-    open func insert(_ value: GlobalValue) {
-        switch value {
-        case let input as Input:
-            inputTable[input.name] = input
-            input.parent = self
-        case let parameter as Parameter:
-            parameterTable[parameter.name] = parameter
-            parameter.parent = self
-        case let output as Output:
-            outputTable[output.name] = output
-            output.parent = self
-        default:
-            preconditionFailure("Unsupported global value")
-        }
+    open func insert(_ input: Input) {
+        inputTable[input.name] = input
+        input.parent = self
     }
 
-    open func remove(_ value: GlobalValue) {
-        switch value {
-        case let input as Input:
-            inputTable[value.name] = nil
-            input.parent = nil
-        case let parameter as Parameter:
-            parameterTable[parameter.name] = parameter
-            parameter.parent = nil
-        case let output as Output:
-            outputTable[output.name] = output
-            output.parent = nil
-        default:
-            preconditionFailure("Unsupported global value")
-        }
+    open func insert(_ parameter: Parameter) {
+        parameterTable[parameter.name] = parameter
+        parameter.parent = self
     }
 
-    open func globalValue(named name: String) -> Value? {
-        return inputTable[name] ?? parameterTable[name] ?? outputTable[name]
+    open func insert(_ output: Output) {
+        outputTable[output.name] = output
+        output.parent = self
+    }
+
+    open func insert(_ constant: Constant) {
+        constantTable[constant.name] = constant
+        constant.parent = self
+    }
+
+    open func remove(_ input: Input) {
+        inputTable[input.name] = nil
+        input.parent = nil
+    }
+
+    open func remove(_ parameter: Parameter) {
+        parameterTable[parameter.name] = nil
+        parameter.parent = nil
+    }
+
+    open func remove(_ output: Output) {
+        outputTable[output.name] = nil
+        output.parent = nil
+    }
+
+    open func remove(_ constant: Constant) {
+        constantTable[constant.name] = nil
+        constant.parent = nil
+    }
+
+    open func globalValue(named name: String) -> GlobalValue? {
+        return parameterTable[name] ?? constantTable[name]
+    }
+
+    open func globalPlaceholder(named name: String) -> GlobalPlaceholder? {
+        return inputTable[name] ?? outputTable[name]
     }
 
     open func containsGlobalValue(named name: String) -> Bool {
-        return inputTable.keys.contains(name)
-            || parameterTable.keys.contains(name)
+        return parameterTable.keys.contains(name)
+            || constantTable.keys.contains(name)
             || outputTable.keys.contains(name)
     }
 
@@ -192,7 +205,6 @@ extension Module {
 // MARK: - Parameter
 extension Module {
     
-    /// Global inputs
     open var parameters: AnyCollection<Parameter> {
         return AnyCollection(parameterTable.values)
     }
@@ -210,6 +222,30 @@ extension Module {
 
     open func containsParameter(named name: String) -> Bool {
         return parameterTable.keys.contains(name)
+    }
+    
+}
+
+// MARK: - Constants
+extension Module {
+
+    open var constants: AnyCollection<Constant> {
+        return AnyCollection(constantTable.values)
+    }
+
+    open func constant(named name: String) -> Constant? {
+        return constantTable[name]
+    }
+
+    @discardableResult
+    open func removeConstant(named name: String) -> Constant? {
+        let constant = constantTable[name]
+        constantTable.removeValue(forKey: name)
+        return constant
+    }
+
+    open func containsConstant(named name: String) -> Bool {
+        return constantTable.keys.contains(name)
     }
     
 }

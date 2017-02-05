@@ -18,9 +18,9 @@ public extension Program {
 }
 
 struct CodeGenEnvironment {
-    var variables: [String : Value] = [:]
+    var variables: [String : DLVM.ValueRepresentation] = [:]
     
-    subscript(key: String) -> Value? {
+    subscript(key: String) -> DLVM.ValueRepresentation? {
         get {
             return variables[key]
         }
@@ -78,7 +78,7 @@ class CodeGenerator {
                 let output = builder.declareOutput(name: layer.name, type: program.dataType,
                                                    shape: layer.shape)
                 environment[output.name] = output
-                builder.makeStore(value, to: output)
+                builder.makeExport(value, to: output)
             }
             environment[layer.name] = value
         }
@@ -89,7 +89,7 @@ class CodeGenerator {
     
     /// TODO: support recurrence
     @discardableResult
-    func build(_ expression: Expression, named name: String? = nil) -> Value {
+    func build(_ expression: Expression, named name: String? = nil) -> DLVM.Value {
         switch expression {
         case let .constant(c, _):
             return c.operand(for: program.dataType)
@@ -106,7 +106,11 @@ class CodeGenerator {
             if let input = op as? DLVM.Input {
                 return builder.makeLoad(input)
             }
-            return op
+            if let val = op as? DLVM.Value {
+                return val
+            }
+            /// Can't be an output. This won't be reached
+            preconditionFailure("Unsupported expression \(expression)")
         case let .infixOp(op, .constant(c, _), rhs, _):
             let lhsOp = c.operand(for: program.dataType), rhsOp = build(rhs)
             return builder.makeArithmeticOperation(op.instructionOperator,

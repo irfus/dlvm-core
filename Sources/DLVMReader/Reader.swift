@@ -15,8 +15,7 @@ public extension Module {
         self.init(name: parse.name)
 
         for decl in parse.declarations {
-            let value = try decl.makeDeclaration(in: self)
-            insert(value)
+            try decl.addDeclaration(to: self)
         }
 
         for bbNode in parse.basicBlocks {
