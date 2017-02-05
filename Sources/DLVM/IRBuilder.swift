@@ -72,9 +72,21 @@ extension IRBuilder {
     }
     
     @discardableResult
-    open func declare<T : GlobalValue>(_ globalValue: T) -> T {
-        module.insert(globalValue)
-        return globalValue
+    open func declare(_ input: Input) -> Input {
+        module.insert(input)
+        return input
+    }
+
+    @discardableResult
+    open func declare(_ parameter: Parameter) -> Parameter {
+        module.insert(parameter)
+        return parameter
+    }
+
+    @discardableResult
+    open func declare(_ output: Output) -> Output {
+        module.insert(output)
+        return output
     }
     
     @discardableResult
@@ -96,9 +108,17 @@ extension IRBuilder {
                                initializer: Initializer) -> Parameter {
         let parameter = Parameter(name: name, type: type, shape: shape,
                                   initializer: initializer)
-        parameter.name = name
         module.insert(parameter)
         return parameter
+    }
+
+    @discardableResult
+    open func declareConstant(name: String, type: DataType, shape: TensorShape,
+                              defaultInitializer: Initializer) -> Constant {
+        let constant = Constant(name: name, type: type, shape: shape,
+                                defaultInitializer: defaultInitializer)
+        module.insert(constant)
+        return constant
     }
 
     @discardableResult
@@ -224,9 +244,15 @@ extension IRBuilder {
         let inst = LoadInstruction(name: name ?? makeVariableName(), source: source)
         return build(inst)
     }
+
+    @discardableResult
+    open func makeExport(_ source: Value, to destination: Output) -> ExportInstruction {
+        let inst = ExportInstruction(source: source, destination: destination)
+        return build(inst)
+    }
     
     @discardableResult
-    open func makeStore(_ source: Value, to destination: Value) -> StoreInstruction {
+    open func makeStore(_ source: Value, to destination: Parameter) -> StoreInstruction {
         let inst = StoreInstruction(source: source, destination: destination)
         return build(inst)
     }

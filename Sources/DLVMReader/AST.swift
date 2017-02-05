@@ -28,7 +28,7 @@ public struct ModuleNode : ASTNode {
 
 public struct DeclarationNode : ASTNode {
     public enum Role {
-        case input, output, parameter
+        case input, output, parameter, constant
     }
     public let role: Role
     public let type: TypeNode
@@ -104,6 +104,7 @@ public enum InstructionNode : ASTNode {
     case shapeCast(OperandNode, ShapeNode, SourceRange)
     case typeCast(OperandNode, TypeNode, SourceRange)
     case load(OperandNode, SourceRange)
+    case export(OperandNode, OperandNode, SourceRange)
     case store(OperandNode, OperandNode, SourceRange)
     case loop(BasicBlockNode, LoopConditionNode, SourceRange)
 
@@ -123,6 +124,7 @@ public enum InstructionNode : ASTNode {
              let .typeCast(_, _, sr),
              let .load(_, sr),
              let .store(_, _, sr),
+             let .export(_, _, sr),
              let .loop(_, _, sr):
             return sr
         }
@@ -152,12 +154,20 @@ public struct OperandNode : ASTNode {
 
 public enum VariableNode : ASTNode {
     case immediate(ImmediateNode, SourceRange)
-    case global(String, SourceRange)
+    case input(String, SourceRange)
+    case constant(String, SourceRange)
+    case output(String, SourceRange)
+    case parameter(String, SourceRange)
     case temporary(String, SourceRange)
 
     public var range: SourceRange {
         switch self {
-        case let .immediate(_, sr), let .global(_, sr), let .temporary(_, sr):
+        case let .immediate(_, sr),
+             let .input(_, sr),
+             let .constant(_, sr),
+             let .output(_, sr),
+             let .parameter(_, sr),
+             let .temporary(_, sr):
             return sr
         }
     }

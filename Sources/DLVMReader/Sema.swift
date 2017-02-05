@@ -19,6 +19,9 @@ public enum SemanticError : Error {
     case typeMismatch(OperandNode, DataType)
     case shapeMismatch(OperandNode, TensorShape)
     case notGlobal(OperandNode)
+    case notParameter(OperandNode)
+    case notInput(OperandNode)
+    case notOutput(OperandNode)
     case extraneousName(InstructionDeclarationNode)
     case missingName(InstructionDeclarationNode)
     case initializerTypeMismatch(InitializerNode, TypeNode)
@@ -27,6 +30,8 @@ public enum SemanticError : Error {
     case nonextensionInExtension(BasicBlockNode)
     case extensionTypeMismatchWithParent(BasicBlockNode)
     case redeclaredExtension(BasicBlockNode)
+    case notValue(OperandNode)
+    case notPlaceholder(OperandNode)
 }
 
 extension ModuleNode {
@@ -105,8 +110,38 @@ extension BasicBlockNode {
     }
 }
 
+extension InitializerNode {
+    public func makeInitializer(in decl: DeclarationNode) throws -> Initializer {
+        let declType = decl.type.makeType()
+        switch self {
+        case let .random(lo, hi, _):
+            let loType = lo.type.makeType(), hiType = hi.type.makeType()
+            guard loType == declType, hiType == declType else {
+                throw SemanticError.initializerTypeMismatch(self, decl.type)
+            }
+            return TensorInitializer.random(from: lo.makeImmediateValue(),
+                                            to: hi.makeImmediateValue())
+
+        case let .immediate(immInit, _):
+            let immType = immInit.type.makeType()
+            guard immType == declType else {
+                throw SemanticError.initializerTypeMismatch(self, decl.type)
+            }
+            return immInit.makeImmediateValue().immediate
+
+        case let .repeating(immInit, _):
+            let immType = immInit.type.makeType()
+            guard immType == declType else {
+                throw SemanticError.initializerTypeMismatch(self, decl.type)
+            }
+            return TensorInitializer.repeating(immInit.makeImmediateValue())
+        }
+    }
+}
+
 extension DeclarationNode {
-    public func makeDeclaration(in env: Module) throws -> GlobalValue {
+    @discardableResult
+    public func addDeclaration(to env: Module) throws -> ValueRepresentation {
         guard !env.containsGlobalValue(named: name) else {
             throw SemanticError.redeclaredGlobal(self)
         }
@@ -120,34 +155,31 @@ extension DeclarationNode {
             guard let initializer = initializer else {
                 throw SemanticError.missingInitializer(self)
             }
-            let declType = type.makeType()
-            switch initializer {
-            case let .immediate(immInit, _):
-                let immType = immInit.type.makeType()
-                guard immType == declType else {
-                    throw SemanticError.initializerTypeMismatch(initializer, type)
-                }
-            case let .random(lo, hi, _):
-                let loType = lo.type.makeType(), hiType = hi.type.makeType()
-                guard loType == declType, hiType == declType else {
-                    throw SemanticError.initializerTypeMismatch(initializer, type)
-                }
-
-            case let .repeating(immInit, _):
-                let immType = immInit.type.makeType()
-                guard immType == declType else {
-                    throw SemanticError.initializerTypeMismatch(initializer, type)
-                }
-            }
-            return Parameter(name: name, type: declType,
-                             shape: shape?.makeShape() ?? [],
-                             initializer: initializer.makeInitializer())
+            let param = Parameter(name: name, type: type.makeType(),
+                                  shape: shape?.makeShape() ?? .scalar,
+                                  initializer: try initializer.makeInitializer(in: self))
+            env.insert(param)
+            return param
 
         case .input:
-            return Input(name: name, type: type.makeType(), shape: shape?.makeShape() ?? [])
+            let input = Input(name: name, type: type.makeType(), shape: shape?.makeShape() ?? .scalar)
+            env.insert(input)
+            return input
 
         case .output:
-            return Output(name: name, type: type.makeType(), shape: shape?.makeShape() ?? [])
+            let output = Output(name: name, type: type.makeType(), shape: shape?.makeShape() ?? .scalar)
+            env.insert(output)
+            return output
+
+        case .constant:
+            guard let initializer = initializer else {
+                throw SemanticError.missingInitializer(self)
+            }
+            let constant = Constant(name: name, type: type.makeType(),
+                                    shape: shape?.makeShape() ?? .scalar,
+                                    defaultInitializer: try initializer.makeInitializer(in: self))
+            env.insert(constant)
+            return constant
         }
     }
 }
@@ -184,16 +216,24 @@ extension ImmediateValueNode {
     }
 }
 
-extension InitializerNode {
-    public func makeInitializer() -> Initializer {
+extension VariableNode {
+    public var isPlaceholder: Bool {
         switch self {
-        case let .immediate(immVal, _):
-            return immVal.immediate.makeImmediate()
-        case let .random(lo, hi, _):
-            return TensorInitializer.random(from: lo.makeImmediateValue(),
-                                            to: hi.makeImmediateValue())
-        case let .repeating(immVal, _):
-            return TensorInitializer.repeating(immVal.makeImmediateValue())
+        case .input, .output: return true
+        default: return false
+        }
+    }
+
+    public var name: String? {
+        switch self {
+        case .constant(let name, _),
+             .input(let name, _),
+             .output(let name, _),
+             .parameter(let name, _),
+             .temporary(let name, _):
+            return name
+        default:
+            return nil
         }
     }
 }
@@ -203,15 +243,14 @@ extension OperandNode {
         let type = self.type.makeType()
         let shape = self.shape?.makeShape() ?? .scalar
         switch variable {
-        case let .global(name, _):
+        case let .parameter(name, _), let .constant(name, _):
             guard let global = module.globalValue(named: name) else {
                 throw SemanticError.undeclaredVariable(variable)
             }
             guard type == global.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape.canBroadcast(to: global.shape)
-               || global.shape.canBroadcast(to: shape) else {
+            guard shape == global.shape else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return global
@@ -231,12 +270,32 @@ extension OperandNode {
             guard type == temporary.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape.canBroadcast(to: temporary.shape)
-               || temporary.shape.canBroadcast(to: shape) else {
+            guard shape == temporary.shape else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return temporary
+
+        default:
+            throw SemanticError.notValue(self)
         }
+    }
+
+    public func makePlaceholder(in env: BasicBlock, module: Module) throws -> GlobalPlaceholder {
+        let type = self.type.makeType()
+        let shape = self.shape?.makeShape() ?? .scalar
+        guard variable.isPlaceholder, let name = variable.name else {
+            throw SemanticError.notPlaceholder(self)
+        }
+        guard let placeholder = module.globalPlaceholder(named: name) else {
+            throw SemanticError.undeclaredVariable(variable)
+        }
+        guard type == placeholder.type else {
+            throw SemanticError.typeMismatch(self, type)
+        }
+        guard shape == placeholder.shape else {
+            throw SemanticError.shapeMismatch(self, shape)
+        }
+        return placeholder
     }
 }
 
@@ -300,8 +359,8 @@ extension InstructionDeclarationNode {
                 return ElementwiseInstruction(name: name, function: fun, operand: val)
 
             case let .load(op, _):
-                guard let val = try op.makeValue(in: env, module: module) as? GlobalValue else {
-                    throw SemanticError.notGlobal(op)
+                guard let val = try op.makePlaceholder(in: env, module: module) as? Input else {
+                    throw SemanticError.notInput(op)
                 }
                 return LoadInstruction(name: name, source: val)
 
@@ -339,10 +398,18 @@ extension InstructionDeclarationNode {
             switch instruction {
             case let .store(src, dest, _):
                 let srcVal = try src.makeValue(in: env, module: module)
-                guard let destVal = try dest.makeValue(in: env, module: module) as? GlobalValue else {
-                    throw SemanticError.notGlobal(dest)
+                guard let destVal = try dest.makeValue(in: env, module: module) as? Parameter else {
+                    throw SemanticError.notParameter(dest)
                 }
                 return StoreInstruction(source: srcVal, destination: destVal)
+
+            case let .export(src, dest, _):
+                let srcVal = try src.makeValue(in: env, module: module)
+                guard let destVal = try dest.makePlaceholder(in: env, module: module) as? Output else {
+                    throw SemanticError.notOutput(dest)
+                }
+                return ExportInstruction(source: srcVal, destination: destVal)
+
             case let .loop(bb, cond, _):
                 let condVal = try cond.makeLoopCondition(in: env, module: module)
                 let bbVal = try bb.makeBasicBlock(in: env, module: module)

@@ -320,16 +320,31 @@ public final class LoadInstruction : DefiningInstruction {
     public var name: String
     public lazy var type: DataType = self.source.type
     public lazy var shape: TensorShape = self.source.shape
-    public var source: Value
+    public var source: Input
     public internal(set) var users: NamedObjectSet<Instruction> = []
+
+    public var operands: [Value] {
+        return []
+    }
+
+    public init(name: String, source: Input) {
+        self.name = name
+        self.source = source
+    }
+}
+
+public final class ExportInstruction : Instruction {
+    public var parent: BasicBlock?
+    public var source: Value
+    public var destination: Output
 
     public var operands: [Value] {
         return [source]
     }
 
-    public init(name: String, source: Value) {
-        self.name = name
+    public init(source: Value, destination: Output) {
         self.source = source
+        self.destination = destination
     }
 }
 
@@ -341,13 +356,13 @@ public final class LoadInstruction : DefiningInstruction {
 public final class StoreInstruction : Instruction {
     public var parent: BasicBlock?
     public var source: Value
-    public var destination: Value
+    public var destination: Parameter
 
     public var operands: [Value] {
         return [source, destination]
     }
 
-    public init(source: Value, destination: Value) {
+    public init(source: Value, destination: Parameter) {
         self.source = source
         self.destination = destination
     }

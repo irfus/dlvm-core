@@ -10,9 +10,12 @@
 /// Base
 ///
 
-public protocol Value : TextOutputStreamable {
-    var type: DataType { get set }
+public protocol ValueRepresentation : TextOutputStreamable {
     var shape: TensorShape { get set }
+    var type: DataType { get set }
+}
+
+public protocol Value : ValueRepresentation, TextOutputStreamable {
 }
 
 public extension Value {
@@ -46,10 +49,19 @@ public protocol Named {
     var name: String { get set }
 }
 
+public protocol Global : Named, TextOutputStreamable {
+    weak var parent: Module? { get }
+}
+
 public typealias NamedValue = Value & Named & Usee
 
-public protocol GlobalValue : NamedValue {
+public protocol GlobalValue : NamedValue, Global {
+}
+
+public protocol GlobalPlaceholder : Named, Usee, Global, ValueRepresentation {
     weak var parent: Module? { get }
+    var type: DataType { get set }
+    var shape: TensorShape { get set }
 }
 
 public extension Value {
@@ -58,7 +70,7 @@ public extension Value {
     }
 }
 
-internal extension Value where Self : ManagedUsee {
+internal extension ManagedUsee {
     func addUser(_ user: Instruction) {
         users.insert(user)
     }
@@ -72,7 +84,7 @@ internal extension Value where Self : ManagedUsee {
     }
 }
 
-public final class Input : GlobalValue, ManagedUsee {
+public final class Input : GlobalPlaceholder, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
@@ -84,6 +96,23 @@ public final class Input : GlobalValue, ManagedUsee {
         self.name = name
         self.type = type
         self.shape = shape
+    }
+}
+
+public final class Constant : GlobalValue, ManagedUsee {
+    public var name: String
+    public var type: DataType
+    public var shape: TensorShape
+    public var defaultInitializer: Initializer
+    public internal(set) var users: NamedObjectSet<Instruction> = []
+    public internal(set) weak var parent: Module?
+
+    public init(name: String, type: DataType, shape: TensorShape,
+                defaultInitializer: Initializer) {
+        self.name = name
+        self.type = type
+        self.shape = shape
+        self.defaultInitializer = defaultInitializer
     }
 }
 
@@ -104,7 +133,7 @@ public final class Parameter : GlobalValue, ManagedUsee {
     }
 }
 
-public final class Output : GlobalValue, ManagedUsee {
+public final class Output : GlobalPlaceholder, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
