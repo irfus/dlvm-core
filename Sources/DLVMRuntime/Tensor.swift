@@ -6,141 +6,46 @@
 //
 //
 
-import DLVM
-
-public struct TensorIndex : ExpressibleByArrayLiteral, Comparable {
-    var elements: [Int]
-    
-    public init(arrayLiteral elements: Int...) {
-        self.elements = elements
-    }
-
-    public init(_ indexElements: Int...) {
-        self.elements = indexElements
-    }
-
-    public init<S: Sequence>(_ indexElements: S) where S.Iterator.Element == Int {
-        self.elements = Array(indexElements)
-    }
-
-    public init(repeating repeatedValue: Int, count: Int) {
-        self.elements = Array(repeating: repeatedValue, count: count)
-    }
-
-    /// Compute the contiguous storage index from high-dimensional tensor indices
-    /// - parameter indices: tensor indices
-    /// - returns: index in contiguous storage
-    /// - note: the count of indices must equal the rank of the tensor
-    public func contiguousIndex(in shape: TensorShape) -> Int {
-        /// Row-major order addressing
-        let trimmedShape = shape.prefix(count)
-        return elements.enumerated().reduce(0, { acc, next -> Int in
-            next.element + trimmedShape.dropFirst(next.offset).reduce(1, *)
-        })
-    }
-
-    public static func ==(lhs: TensorIndex, rhs: TensorIndex) -> Bool {
-        return lhs.elements == rhs.elements
-    }
-
-    public static func <(lhs: TensorIndex, rhs: TensorIndex) -> Bool {
-        for (x, y) in zip(lhs.elements, rhs.elements) {
-            /// Less-than at a higher dimension => true
-            if x < y { return true }
-            /// Greater-than at a higher dimension => false
-            if x > y { return false }
-            /// Otherwise, at the same higher dimension => continue
-        }
-        return false
-    }
-    
-}
-
-extension TensorIndex : RandomAccessCollection {
-
-    public var count: Int {
-        return elements.count
-    }
-
-    public subscript(bounds: Range<Int>) -> TensorIndex {
-        get {
-            return TensorIndex(elements[bounds])
-        }
-        set {
-            elements[bounds] = ArraySlice(newValue.elements)
-        }
-    }
-
-    public var indices: CountableRange<Int> {
-        return elements.indices
-    }
-
-    public func index(after i: Int) -> Int {
-        return elements.index(after: i)
-    }
-
-    public func index(before i: Int) -> Int {
-        return elements.index(before: i)
-    }
-
-    public var startIndex: Int {
-        return elements.startIndex
-    }
-
-    public var endIndex: Int {
-        return elements.endIndex
-    }
-
-    /// Size of i-th dimension
-    /// - parameter i: dimension
-    public subscript(i: Int) -> Int {
-        get {
-            return elements[i]
-        }
-        set {
-            elements[i] = newValue
-        }
-    }
-    
-}
-
-public extension TensorShape {
-
-    public var tensorIndices: AnySequence<TensorIndex> {
-        return AnySequence(sequence(state: (shapeIndex: 0, indexElement: 0), next: {
-            (state: inout (shapeIndex: Int, indexElement: Int)) in
-            guard state.shapeIndex < self.rank else { return nil }
-            if state.indexElement >= self[state.shapeIndex] {
-                state.shapeIndex += 1
-                state.indexElement = 0
-            }
-            var index = TensorIndex(self)
-            index[state.shapeIndex] = state.indexElement
-            state.indexElement += 1
-            return index
-        }))
-    }
-    
-}
+import struct DLVM.TensorShape
+import struct DLVM.TensorIndex
 
 /// Tensor
-public struct Tensor<Element> : RandomAccessCollection {
-    public typealias Index = TensorIndex
-
+public struct Tensor<Element> {
     /// Tensor shape
     public internal(set) var shape: TensorShape
     
     /// Contiguous storage
     public internal(set) var elements: ArraySlice<Element>
 
+    /// Initialize a tensor using an existing slice of elements in row-major order
+    /// - parameter shape: tensor shape
+    /// - parameter elements: slice of existing elements in row-major order
     internal init(shape: TensorShape, elements: ArraySlice<Element>) {
-        self.elements = elements
         self.shape = shape
+        precondition(elements.count >= shape.contiguousSize,
+                     "The slice has fewer elements than required by the shape")
+        self.elements = elements.prefix(shape.contiguousSize)
     }
 
-    public init<S: Sequence>(shape: TensorShape, elements: S)
-        where S.Iterator.Element == Element {
-        self.init(shape: shape, elements: ArraySlice(elements))
+    /// Initialize a tensor from a sequence of elements in row-major order
+    /// - parameter shape: tensor shape
+    /// - parameter elements: sequence of elements in row-major order
+    /// - parameter vacancySupplier
+    public init<S: Sequence>(shape: TensorShape, elements: S,
+                             vacancySupplier supplier: (() -> Element)? = nil)
+        where S.Iterator.Element == Element,
+              S.SubSequence : Sequence,
+              S.SubSequence.Iterator.Element == Element {
+        var slice = ArraySlice(elements.prefix(shape.contiguousSize))
+        /// If elements fewer than required by the shape and supplier is provided
+        /// generate new elements using the supplier until vacancy is filled
+        if slice.count < shape.contiguousSize, let supplier = supplier {
+            slice.reserveCapacity(shape.contiguousSize)
+            repeat {
+                slice.append(supplier())
+            } while slice.count < shape.contiguousSize
+        }
+        self.init(shape: shape, elements: slice)
     }
     
     /// Allocate and initialize a tensor to a repeated value
@@ -154,15 +59,20 @@ public struct Tensor<Element> : RandomAccessCollection {
 
     /// Allocate and initialize a tensor using the factory function
     /// - parameter shape: tensor shape
-    /// - parameter repeating: repeated value
+    /// - parameter supplier: factory function providing values lazily
     public init(shape: TensorShape, supplier: () -> Element) {
         let contiguousSize = shape.contiguousSize
         self.elements = ArraySlice((0..<contiguousSize).map { _ in supplier() })
         self.shape = shape
     }
-    
 
-    /// Access an element of the tensor
+}
+
+// MARK: - RandomAccessCollection
+extension Tensor : RandomAccessCollection {
+    public typealias Index = Int
+
+    /// Access a sub-tensor at an index specified by a list of dimensional indices
     /// - parameter indices: tensor indices
     /// - note: the count of indices must equal the rank of the tensor
     public subscript(indices: Int...) -> Tensor<Element> {
@@ -174,34 +84,60 @@ public struct Tensor<Element> : RandomAccessCollection {
         }
     }
 
+    /// Access a sub-tensor at index
     public subscript(index: TensorIndex) -> Tensor<Element> {
         get {
             let newShape = shape.dropFirst(index.count)
             let contiguousIndex = index.contiguousIndex(in: shape)
-            let range = contiguousIndex..<contiguousIndex+(newShape.first ?? 1)
-            return Tensor(shape: shape.dropFirst(index.count),
-                          elements: elements[range])
+            let range = contiguousIndex..<contiguousIndex+newShape.contiguousSize
+            return Tensor(shape: newShape, elements: elements[range])
         }
         set {
             let newShape = shape.dropFirst(index.count)
             let contiguousIndex = index.contiguousIndex(in: shape)
-            let range = contiguousIndex..<contiguousIndex+(newShape.first ?? 1)
+            let range = contiguousIndex..<contiguousIndex+newShape.contiguousSize
             elements[range] = newValue.elements
         }
     }
 
-    public var indices: AnySequence<TensorIndex> {
-        return shape.tensorIndices
+    /// Access a sub-tensor at the current dimension at index
+    public subscript(index: Int) -> Tensor<Element> {
+        get {
+            return self[[index]]
+        }
+        set {
+            self[[index]] = newValue
+        }
     }
 
-    public var startIndex: TensorIndex {
-        return TensorIndex(repeating: 0, count: shape.rank)
+    public var count: Int {
+        return shape.first ?? 0
     }
 
-    public var endIndex: TensorIndex {
-        return TensorIndex(shape)
+    /// Returns a sequence of tensor indices for scalar elements
+    public var indices: CountableRange<Int> {
+        return 0..<count
     }
 
+    public var startIndex: Int {
+        return 0
+    }
+
+    public var endIndex: Int {
+        return count
+    }
+
+    /// Returns the index after the specified one in the current dimension
+    public func index(after i: Int) -> Int {
+        return i + 1
+    }
+
+    /// Returns the index before the specified one in the current dimension
+    public func index(before i: Int) -> Int {
+        return i - 1
+    }
+
+    /// Returns the index after the specified one in the last dimension
     public func index(after i: TensorIndex) -> TensorIndex {
         guard !i.isEmpty else { return i }
         var newIndex = i
@@ -209,6 +145,7 @@ public struct Tensor<Element> : RandomAccessCollection {
         return newIndex
     }
 
+    /// Returns the index before the specified one in the last dimension
     public func index(before i: TensorIndex) -> TensorIndex {
         guard !i.isEmpty else { return i }
         var newIndex = i
