@@ -7,7 +7,12 @@
 //
 
 open class IRBuilder {
-    open let module: Module
+    fileprivate let _module: Module
+
+    open var module: Module {
+        _module.updateAnalysisInformation()
+        return _module
+    }
 
     var contextBlocks: [BasicBlock] = []
 
@@ -20,7 +25,7 @@ open class IRBuilder {
     fileprivate var nameIdTable: [String : Int] = [:]
     
     public init(moduleName: String) {
-        module = Module(name: moduleName)
+        _module = Module(name: moduleName)
     }
 }
 
@@ -68,38 +73,39 @@ extension IRBuilder {
             preconditionFailure("Current block doesn't exist")
         }
         block.append(instruction)
+        instruction.updateOperandUsers()
         return instruction
     }
     
     @discardableResult
     open func declare(_ input: Input) -> Input {
-        module.insert(input)
+        _module.insert(input)
         return input
     }
 
     @discardableResult
     open func declare(_ parameter: Parameter) -> Parameter {
-        module.insert(parameter)
+        _module.insert(parameter)
         return parameter
     }
 
     @discardableResult
     open func declare(_ output: Output) -> Output {
-        module.insert(output)
+        _module.insert(output)
         return output
     }
     
     @discardableResult
     open func declareInput(name: String, type: DataType, shape: TensorShape) -> Input {
         let input = Input(name: name, type: type, shape: shape)
-        module.insert(input)
+        _module.insert(input)
         return input
     }
     
     @discardableResult
     open func declareOutput(name: String, type: DataType, shape: TensorShape) -> Output {
         let output = Output(name: name, type: type, shape: shape)
-        module.insert(output)
+        _module.insert(output)
         return output
     }
     
@@ -108,7 +114,7 @@ extension IRBuilder {
                                initializer: Initializer) -> Parameter {
         let parameter = Parameter(name: name, type: type, shape: shape,
                                   initializer: initializer)
-        module.insert(parameter)
+        _module.insert(parameter)
         return parameter
     }
 
@@ -117,7 +123,7 @@ extension IRBuilder {
                               defaultInitializer: Initializer) -> Constant {
         let constant = Constant(name: name, type: type, shape: shape,
                                 defaultInitializer: defaultInitializer)
-        module.insert(constant)
+        _module.insert(constant)
         return constant
     }
 
@@ -126,7 +132,7 @@ extension IRBuilder {
         let block = BasicBlock(name: disambiguatedName(for: name))
         clearContextBlocks()
         pushContextBlock(block)
-        module.insert(block)
+        _module.insert(block)
         return block
     }
 
