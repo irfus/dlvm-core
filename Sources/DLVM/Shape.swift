@@ -8,6 +8,8 @@
 /// Tensor shape
 public struct TensorShape : ExpressibleByArrayLiteral {
 
+    public typealias SubSequence = TensorShape
+
     var dimensions: [Int]
 
     /// Initialize with rank, and set the size of each dimension to 1.
@@ -71,7 +73,20 @@ extension TensorShape {
 }
 
 extension TensorShape : RandomAccessCollection {
-    
+
+    public subscript(bounds: Range<Int>) -> TensorShape {
+        get {
+            return TensorShape(dimensions[bounds])
+        }
+        set {
+            dimensions[bounds] = ArraySlice(newValue.dimensions)
+        }
+    }
+
+    public var indices: CountableRange<Int> {
+        return dimensions.indices
+    }
+
     public func index(after i: Int) -> Int {
         return dimensions.index(after: i)
     }
