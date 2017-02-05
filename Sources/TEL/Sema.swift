@@ -14,7 +14,6 @@ import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.BinaryIntegrationFunction
 
 public enum SemanticError : Error {
     case dataTypeRedeclared

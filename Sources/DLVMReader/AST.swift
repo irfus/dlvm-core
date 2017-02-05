@@ -13,7 +13,6 @@ import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.LogicOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.BinaryIntegrationFunction
 
 public protocol ASTNode {
     var range: SourceRange { get }
@@ -95,7 +94,6 @@ public enum InstructionNode : ASTNode {
     case tensorMultiply(OperandNode, OperandNode, SourceRange)
     case arithmetic(ArithmeticOperator, OperandNode, OperandNode, SourceRange)
     case logic(LogicOperator, OperandNode, OperandNode, SourceRange)
-    case binaryReduction(BinaryIntegrationFunction, OperandNode, OperandNode, SourceRange)
     case reduce(ReductionFunction, OperandNode, SourceRange)
     case elementwise(ElementwiseFunction, OperandNode, SourceRange)
     case aggregate(AggregationFunction, OperandNode, SourceRange)
@@ -114,7 +112,6 @@ public enum InstructionNode : ASTNode {
              let .tensorMultiply(_, _, sr),
              let .arithmetic(_, _, _, sr),
              let .logic(_, _, _, sr),
-             let .binaryReduction(_, _, _, sr),
              let .reduce(_, _, sr),
              let .elementwise(_, _, sr),
              let .aggregate(_, _, sr),

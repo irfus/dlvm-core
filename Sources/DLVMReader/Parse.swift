@@ -86,7 +86,6 @@ import enum DLVM.ComparisonPredicate
 import enum DLVM.AggregationFunction
 import enum DLVM.ArithmeticOperator
 import enum DLVM.ReductionFunction
-import enum DLVM.BinaryIntegrationFunction
 import protocol DLVM.LexicallyConvertible
 
 extension Parsible where Self : LexicallyConvertible {
@@ -96,7 +95,6 @@ extension Parsible where Self : LexicallyConvertible {
 }
 
 extension ElementwiseFunction : Parsible {}
-extension BinaryIntegrationFunction: Parsible {}
 extension ArithmeticOperator : Parsible {}
 extension ComparisonPredicate : Parsible {}
 extension LogicOperator: Parsible {}
@@ -142,8 +140,7 @@ extension InstructionNode : Parsible {
       ) ** OperandNode.parser.!
 
     private static let binaryParser: Parser<InstructionNode> =
-      ( BinaryIntegrationFunction.parser <~~ spaces ^^ curry(InstructionNode.binaryReduction)
-      | ArithmeticOperator.parser <~~ spaces        ^^ curry(InstructionNode.arithmetic)
+      ( ArithmeticOperator.parser <~~ spaces        ^^ curry(InstructionNode.arithmetic)
       | LogicOperator.parser <~~ spaces             ^^ curry(InstructionNode.logic)
       | ComparisonPredicate.parser <~~ spaces       ^^ curry(InstructionNode.comparison)
       | "mmul" ~~> spaces                           ^^= curry(InstructionNode.matrixMultiply)

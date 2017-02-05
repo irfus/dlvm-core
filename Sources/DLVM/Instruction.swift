@@ -32,10 +32,6 @@ public enum ElementwiseFunction {
     case lgamma, digamma, erf, erfc, rint
 }
 
-public enum BinaryIntegrationFunction {
-    case crossEntropy
-}
-
 public enum ReductionFunction {
     case logical(LogicOperator)
     case arithmetic(ArithmeticOperator)
@@ -150,7 +146,6 @@ public class HomomorphicBinaryInstruction<Function> : BinaryCallInstruction {
 /// Shape-preserving, type-preserving (homomorphic) transformation instructions
 public typealias ElementwiseInstruction = HomomorphicUnaryInstruction<ElementwiseFunction>
 public typealias AggregationInstruction = HomomorphicUnaryInstruction<AggregationFunction>
-public typealias BinaryReductionInstruction = HomomorphicBinaryInstruction<BinaryIntegrationFunction>
 public typealias ArithmeticInstruction = HomomorphicBinaryInstruction<ArithmeticOperator>
 public typealias LogicInstruction = HomomorphicBinaryInstruction<LogicOperator>
 
