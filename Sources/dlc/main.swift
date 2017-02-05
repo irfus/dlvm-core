@@ -11,6 +11,7 @@ do {
     let ast = try ModuleNode.parser.parse(irSource)
     print(ast.range)
     let module = try ast.makeModule()
+    try module.verify()
     print(module)
 }
 catch {

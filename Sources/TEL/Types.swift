@@ -74,12 +74,12 @@ public extension FunctionType {
             return broadcastedShape
         case .binaryReduction: return .scalar
         case .matrixMultiplication:
-            guard let resultShape = args[0].matrixMultiplied(by: args[1]) else {
+            guard let resultShape = args[0].matrixMultiplied(with: args[1]) else {
                 throw FunctionTypeError.shapeMismatch(args[0], args[1])
             }
             return resultShape
         case .tensorMultiplication:
-            guard let resultShape = args[0].multiplied(by: args[1]) else {
+            guard let resultShape = args[0].multiplied(with: args[1]) else {
                 throw FunctionTypeError.shapeMismatch(args[0], args[1])
             }
             return resultShape
