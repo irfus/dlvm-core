@@ -338,12 +338,6 @@ extension InstructionDeclarationNode {
                                         firstOperand: try lhs.makeValue(in: env, module: module),
                                         secondOperand: try rhs.makeValue(in: env, module: module))
 
-            case let .binaryReduction(fun, lhs, rhs, _):
-                return BinaryReductionInstruction(name: name,
-                                                  function: fun,
-                                                  firstOperand: try lhs.makeValue(in: env, module: module),
-                                                  secondOperand: try rhs.makeValue(in: env, module: module))
-
             case let .comparison(fun, lhs, rhs, _):
                 return ComparisonInstruction(name: name,
                                              function: fun,

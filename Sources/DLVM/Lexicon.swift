@@ -89,9 +89,3 @@ extension LogicOperator: LexicallyConvertible {
         "xor" : .xor
     ]
 }
-
-extension BinaryIntegrationFunction: LexicallyConvertible {
-    public static let lexicon: [String : BinaryIntegrationFunction] = [
-        "crossEnt" : .crossEntropy
-    ]
-}

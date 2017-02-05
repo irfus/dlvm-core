@@ -155,14 +155,6 @@ extension ComparisonPredicate : TextOutputStreamable {
     }
 }
 
-extension BinaryIntegrationFunction: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case .crossEntropy: target.write("crossEnt")
-        }
-    }
-}
-
 extension BasicBlock : TextOutputStreamable {
 
     fileprivate func makeIndentation() -> String {
@@ -233,8 +225,6 @@ extension Instruction {
             target.write(" along \(inst.axis)")
         case let inst as ReductionInstruction:
             target.write("reduce \(inst.function) \(inst.operand)")
-        case let inst as BinaryReductionInstruction:
-            target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
         case let inst as ShapeCastInstruction:
             target.write("shapecast \(inst.operand) to \(inst.target)")
         case let inst as TypeCastInstruction:

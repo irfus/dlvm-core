@@ -211,15 +211,6 @@ extension IRBuilder {
         let inst = ReductionInstruction(name: name ?? makeVariableName(), function: function, operand: operand)
         return build(inst)
     }
-
-    @discardableResult
-    open func makeBinaryReduction(_ function: BinaryIntegrationFunction,
-                                  _ firstOperand: Value, _ secondOperand: Value,
-                                  name: String? = nil) -> BinaryReductionInstruction {
-        let inst = BinaryReductionInstruction(name: name ?? makeVariableName(), function: function,
-                                              firstOperand: firstOperand, secondOperand: secondOperand)
-        return build(inst)
-    }
     
     @discardableResult
     open func makeConcatenation(_ operands: [Value], axis: Int,

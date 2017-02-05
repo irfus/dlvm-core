@@ -34,8 +34,6 @@ public extension FunctionProtocol {
             return builder.makeLogicOperation(f.irFunction, args[0], args[1], name: name)
         case let f as Function<ComparisonPredicate>:
             return builder.makeComparison(f.irFunction, args[0], args[1], name: name)
-        case let f as Function<BinaryIntegrationFunction>:
-            return builder.makeBinaryReduction(f.irFunction, args[0], args[1], name: name)
         default:
             preconditionFailure("Unsupported function class \(type(of: self))")
         }
@@ -67,11 +65,6 @@ private func logic(_ name: String, operator: LogicOperator)
 private func comparison(_ name: String, predicate: ComparisonPredicate)
     -> Function<ComparisonPredicate> {
     return Function<ComparisonPredicate>(name: name, type: .comparison, irFunction: predicate)
-}
-
-private func binaryReduction(_ name: String, function: BinaryIntegrationFunction)
-    -> Function<BinaryIntegrationFunction> {
-    return Function<BinaryIntegrationFunction>(name: name, type: .binaryReduction, irFunction: function)
 }
 
 /// - MARK: TEL built-in functions
@@ -117,9 +110,6 @@ public let builtinFunctions: [FunctionProtocol] = [
     comparison("<=", predicate: .lessThanOrEqualTo),
     comparison("==", predicate: .equalTo),
     comparison("!=", predicate: .notEqualTo),
-
-    /// Binary reduction functions
-    binaryReduction("crossEntropy", function: .crossEntropy)
 ]
 
 public let builtinFunctionTable: [String : FunctionProtocol] = {
