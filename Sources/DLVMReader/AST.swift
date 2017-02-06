@@ -94,7 +94,7 @@ public enum InstructionNode : ASTNode {
     case tensorMultiply(OperandNode, OperandNode, SourceRange)
     case arithmetic(ArithmeticOperator, OperandNode, OperandNode, SourceRange)
     case logic(LogicOperator, OperandNode, OperandNode, SourceRange)
-    case reduce(ReductionFunction, OperandNode, SourceRange)
+    case reduce(ReductionFunction, OperandNode, Int?, SourceRange)
     case elementwise(ElementwiseFunction, OperandNode, SourceRange)
     case aggregate(AggregationFunction, OperandNode, SourceRange)
     case comparison(ComparisonPredicate, OperandNode, OperandNode, SourceRange)
@@ -112,7 +112,7 @@ public enum InstructionNode : ASTNode {
              let .tensorMultiply(_, _, sr),
              let .arithmetic(_, _, _, sr),
              let .logic(_, _, _, sr),
-             let .reduce(_, _, sr),
+             let .reduce(_, _, _, sr),
              let .elementwise(_, _, sr),
              let .aggregate(_, _, sr),
              let .comparison(_, _, _, sr),

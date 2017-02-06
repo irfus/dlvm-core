@@ -159,15 +159,18 @@ public class ReductionInstruction : UnaryCallInstruction {
     public var parent: BasicBlock?
     public var name: String
     public lazy var type: DataType = self.operand.type
-    public var shape: TensorShape = .scalar
+    public lazy var shape: TensorShape =
+        self.axis.flatMap(self.operand.shape.droppingDimension) ?? .scalar
     public var function: ReductionFunction
     public var operand: Value
+    public var axis: Int?
     public internal(set) var users: NamedObjectSet<Instruction> = []
     
-    public init(name: String, function: ReductionFunction, operand: Value) {
+    public init(name: String, function: ReductionFunction, operand: Value, axis: Int?) {
         self.name = name
         self.function = function
         self.operand = operand
+        self.axis = axis
     }
 }
 

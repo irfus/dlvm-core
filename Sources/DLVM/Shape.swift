@@ -1,5 +1,6 @@
 //
-//  Shape.swift //  DLVM
+//  Shape.swift
+//  DLVM
 //
 //  Created by Richard Wei on 11/13/16.
 //
@@ -14,7 +15,7 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 
     /// Initialize with rank, and set the size of each dimension to 1.
     /// - parameter rank: rank of the tensor
-    public init(rank: Int) {
+    fileprivate init(rank: Int) {
         dimensions = Array(repeating: 1, count: rank)
     }
 
@@ -117,6 +118,7 @@ extension TensorShape : RandomAccessCollection {
 }
 
 extension TensorShape : Equatable {
+
     public static func ==(lhs: TensorShape, rhs: TensorShape) -> Bool {
         return lhs.dimensions == rhs.dimensions
     }
@@ -125,6 +127,20 @@ extension TensorShape : Equatable {
 infix operator ⊗ : MultiplicationPrecedence
 
 public extension TensorShape {
+
+    public func droppingDimension(_ dimension: Int) -> TensorShape {
+        precondition(indices.contains(dimension), "Dimension index out of range")
+        var newDims = dimensions
+        newDims.remove(at: dimension)
+        return TensorShape(newDims)
+    }
+
+    public func compatibleShape(with other: TensorShape) -> TensorShape {
+        if rank >= other.rank { return self }
+        var newShape = TensorShape(rank: other.rank)
+        newShape[other.rank-rank..<other.rank] = other
+        return newShape
+    }
 
     /// Concatenate two tensor shapes that have every dimension equal except
     /// the specified dimension to concatenate along (the last dimension, by

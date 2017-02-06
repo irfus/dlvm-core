@@ -32,6 +32,7 @@ public enum SemanticError : Error {
     case redeclaredExtension(BasicBlockNode)
     case notValue(OperandNode)
     case notPlaceholder(OperandNode)
+    case axisOutOfRange(OperandNode, InstructionNode)
 }
 
 extension ModuleNode {
@@ -250,7 +251,7 @@ extension OperandNode {
             guard type == global.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape == global.shape else {
+            guard shape ~= global.shape else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return global
@@ -270,7 +271,7 @@ extension OperandNode {
             guard type == temporary.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape == temporary.shape else {
+            guard shape ~= temporary.shape else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return temporary
@@ -292,7 +293,7 @@ extension OperandNode {
         guard type == placeholder.type else {
             throw SemanticError.typeMismatch(self, type)
         }
-        guard shape == placeholder.shape else {
+        guard shape ~= placeholder.shape else {
             throw SemanticError.shapeMismatch(self, shape)
         }
         return placeholder
@@ -346,6 +347,9 @@ extension InstructionDeclarationNode {
 
             case let .concatenate(ops, axis, _):
                 let vals = try ops.map { [unowned env] in try $0.makeValue(in: env, module: module) }
+                if let axis = axis, !vals[0].shape.indices.contains(axis) {
+                    throw SemanticError.axisOutOfRange(ops[0], instruction)
+                }
                 return ConcatenationInstruction(name: name, operands: vals, axis: axis ?? 0)
 
             case let .elementwise(fun, op, _):
@@ -363,10 +367,12 @@ extension InstructionDeclarationNode {
                                                        firstOperand: try lhs.makeValue(in: env, module: module),
                                                        secondOperand: try rhs.makeValue(in: env, module: module))
 
-            case let .reduce(fun, op, _):
-                return ReductionInstruction(name: name,
-                                            function: fun,
-                                            operand: try op.makeValue(in: env, module: module))
+            case let .reduce(fun, op, axis, _):
+                let val = try op.makeValue(in: env, module: module)
+                if let axis = axis, !val.shape.indices.contains(axis) {
+                    throw SemanticError.axisOutOfRange(op, instruction)
+                }
+                return ReductionInstruction(name: name, function: fun, operand: val, axis: axis)
 
             case let .shapeCast(op, shape, _):
                 return ShapeCastInstruction(name: name,

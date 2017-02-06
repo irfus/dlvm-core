@@ -206,9 +206,10 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func makeReduction(_ function: ReductionFunction, _ operand: Value,
+    open func makeReduction(_ function: ReductionFunction, _ operand: Value, axis: Int? = nil,
                             name: String? = nil) -> ReductionInstruction {
-        let inst = ReductionInstruction(name: name ?? makeVariableName(), function: function, operand: operand)
+        let inst = ReductionInstruction(name: name ?? makeVariableName(), function: function,
+                                        operand: operand, axis: axis)
         return build(inst)
     }
     
