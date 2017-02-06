@@ -120,12 +120,12 @@ extension TensorShape : RandomAccessCollection {
 extension TensorShape : Equatable {
 
     public static func ==(lhs: TensorShape, rhs: TensorShape) -> Bool {
-        return lhs.dimensions == rhs.dimensions
+        return lhs ~= rhs
     }
 
     public static func ~=(lhs: TensorShape, rhs: TensorShape) -> Bool {
         return withConformedShapes(lhs, rhs) { lhs, rhs in
-            return lhs == rhs
+            return lhs.dimensions == rhs.dimensions
         }
     }
     
@@ -151,6 +151,10 @@ public func withConformedShapes<Result>(
 }
 
 public extension TensorShape {
+
+    public func prepending(_ dimensionSize: Int) -> TensorShape {
+        return TensorShape([dimensionSize] + dimensions)
+    }
 
     public func droppingDimension(_ dimension: Int) -> TensorShape {
         precondition(indices.contains(dimension), "Dimension index out of range")
