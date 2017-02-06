@@ -30,10 +30,12 @@ public protocol Parsible {
 
 extension Variable : Parsible {
     public static let parser =
+        /*
         identifier ^^ curry(Variable.recurrent)
      ** ("[" ~~> identifier.!)
      ** ("-" ~~> number ^^ {-$0}).withDefault(0) <~~ "]"
-      | identifier ^^^ Variable.simple
+        */
+        identifier ^^^ Variable.simple
 }
 
 extension Attribute: Parsible {

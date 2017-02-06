@@ -160,11 +160,15 @@ public extension TensorShape {
     }
 
     public func droppingHigherPaddings() -> TensorShape {
-        return drop(while: {$0 == 1})
+        // Would use `drop(while:)` in Swift 3.1
+        let nonOneIndex = indices.first(where: { self[$0] != 1 }) ?? endIndex
+        return suffix(from: nonOneIndex)
     }
 
     public func droppingZeroDimensions() -> TensorShape {
-        return prefix(while: {$0 != 0})
+        // Would use `prefix(while:)` in Swift 3.1
+        let firstZeroIndex = indices.first(where: { self[$0] == 0 }) ?? endIndex
+        return prefix(upTo: firstZeroIndex)
     }
 
     public func simplified() -> TensorShape {
