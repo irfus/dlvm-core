@@ -60,15 +60,15 @@ extension TensorShape {
     }
 
     public var isScalar: Bool {
-        return rank == 0
+        return simplified().rank == 0
     }
 
     public var isVector: Bool {
-        return rank == 1
+        return simplified().rank == 1
     }
 
     public var isMatrix: Bool {
-        return rank == 2
+        return simplified().rank == 2
     }
 
 }
@@ -122,9 +122,33 @@ extension TensorShape : Equatable {
     public static func ==(lhs: TensorShape, rhs: TensorShape) -> Bool {
         return lhs.dimensions == rhs.dimensions
     }
+
+    public static func ~=(lhs: TensorShape, rhs: TensorShape) -> Bool {
+        return withConformedShapes(lhs, rhs) { lhs, rhs in
+            return lhs == rhs
+        }
+    }
+    
 }
 
 infix operator ⊗ : MultiplicationPrecedence
+
+public func withConformedShapes<Result>(
+    _ lhs: TensorShape, _ rhs: TensorShape,
+    _ body: (TensorShape, TensorShape) throws -> Result) rethrows -> Result {
+    let lhs = lhs.simplified()
+    let rhs = rhs.simplified()
+    if lhs.rank == rhs.rank { return try body(lhs, rhs) }
+    if lhs.rank < rhs.rank {
+        var newLhs = TensorShape(rank: rhs.rank)
+        newLhs[rhs.rank-lhs.rank..<rhs.rank] = lhs
+        return try body(newLhs, rhs)
+    } else {
+        var newRhs = TensorShape(rank: lhs.rank)
+        newRhs[lhs.rank-rhs.rank..<lhs.rank] = rhs
+        return try body(lhs, newRhs)
+    }
+}
 
 public extension TensorShape {
 
@@ -135,11 +159,16 @@ public extension TensorShape {
         return TensorShape(newDims)
     }
 
-    public func compatibleShape(with other: TensorShape) -> TensorShape {
-        if rank >= other.rank { return self }
-        var newShape = TensorShape(rank: other.rank)
-        newShape[other.rank-rank..<other.rank] = other
-        return newShape
+    public func droppingHigherPaddings() -> TensorShape {
+        return drop(while: {$0 == 1})
+    }
+
+    public func droppingZeroDimensions() -> TensorShape {
+        return prefix(while: {$0 != 0})
+    }
+
+    public func simplified() -> TensorShape {
+        return droppingHigherPaddings().droppingZeroDimensions()
     }
 
     /// Concatenate two tensor shapes that have every dimension equal except
@@ -150,8 +179,10 @@ public extension TensorShape {
     /// - Returns: concatenated shape, or nil if dimensions don't match
     public func concatenating(with other: TensorShape,
                               alongDimension dim: Int = 0) -> TensorShape? {
-        guard dimensions.prefix(dim) == other.dimensions.prefix(dim),
-            dimensions.suffix(from: dim+1) == other.dimensions.suffix(from: dim+1) else {
+        /// We do not use conformed shapes here, because two shapes like [1x8] & [1x8] can
+        /// be concatenated
+        guard self.dimensions.prefix(dim) == other.dimensions.prefix(dim),
+            self.dimensions.suffix(from: dim+1) == other.dimensions.suffix(from: dim+1) else {
             return nil // Dimension mismatch
         }
         var newShape = self
@@ -159,28 +190,16 @@ public extension TensorShape {
         return newShape
     }
 
-    /// Form in-place concatenation with the other tensor shape
-    ///
-    /// - Precondition: The dimensions except the specified axis must be equal
-    /// - Parameter other: shape to concatenate with
-    public mutating func formConcatenation(with other: TensorShape,
-                                           alongDimension dim: Int = 0) {
-        precondition(
-            dimensions.prefix(dim) == other.dimensions.prefix(dim) &&
-                dimensions.suffix(from: dim+1) == other.dimensions.suffix(from: dim+1),
-            "Cannot concatenate due to shape mismatch"
-        )
-        self[dim] += other[dim]
-    }
-
     public func canConcatenate(with other: TensorShape) -> Bool {
         return concatenating(with: other) != nil
     }
 
     public func multiplied(with other: TensorShape) -> TensorShape? {
-        guard last == other.first else { return nil }
-        let newDim = dimensions.dropLast() + other.dimensions.dropFirst()
-        return TensorShape(newDim)
+        return withConformedShapes(self, other) { lhs, rhs in
+            guard lhs.last == rhs.first else { return nil }
+            let newDim = lhs.dimensions.dropLast() + rhs.dimensions.dropFirst()
+            return TensorShape(newDim)
+        }
     }
 
     public static func ⊗ (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
@@ -192,14 +211,16 @@ public extension TensorShape {
     }
 
     public func matrixMultiplied(with other: TensorShape) -> TensorShape? {
-        /// Has to be a matrix at least
-        guard rank >= 2, other.rank >= 2 else { return nil }
-        /// Match inner dimensions for matrix multiplication
-        guard dropFirst().first == other.first else { return nil }
-        /// Multiply inner dimensions
-        var newShape = self
-        newShape[1] = other[1]
-        return newShape
+        return withConformedShapes(self, other) { lhs, rhs in
+            /// Has to be a matrix at least
+            guard lhs.rank >= 2, rhs.rank >= 2 else { return nil }
+            /// Match inner dimensions for matrix multiplication
+            guard lhs.dropFirst().first == rhs.first else { return nil }
+            /// Multiply inner dimensions
+            var newShape = lhs
+            newShape[1] = rhs[1]
+            return newShape
+        }
     }
 
     public func canMatrixMultiply(with other: TensorShape) -> Bool {
@@ -208,18 +229,22 @@ public extension TensorShape {
 
     /// Matrix/vector transpose
     public var transpose: TensorShape? {
+        let shape = simplified()
         guard rank <= 2 else { return nil }
-        if rank == 2 { return [self[1], self[0]] }
-        else if rank == 1 { return [self[1], 1] }
-        return self
-    }
-
-    public func canBroadcast(to other: TensorShape) -> Bool {
-        return rank <= other.rank && other.suffix(rank).elementsEqual(self)
+        if rank == 2 { return [shape[1], shape[0]] }
+        else if rank == 1 { return [shape[1], 1] }
+        return shape
     }
 
     public func broadcasted(to other: TensorShape) -> TensorShape? {
-        return canBroadcast(to: other) ? other : nil
+        /// Only scalar broadcasting for now
+        return withConformedShapes(self, other) { lhs, rhs in
+            lhs.isScalar || lhs == rhs ? other : nil
+        }
+    }
+
+    public func canBroadcast(to other: TensorShape) -> Bool {
+        return broadcasted(to: other) != nil
     }
 
 }
