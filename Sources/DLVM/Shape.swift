@@ -394,27 +394,6 @@ extension TensorIndex : Strideable {
 
 public extension TensorShape {
 
-    /// Returns a sequence of tensor indices for scalar elements
-    public var scalarIndices: AnySequence<TensorIndex> {
-        return AnySequence(sequence(state: (shapeIndex: 0, indexElement: 0), next: {
-            (state: inout (shapeIndex: Int, indexElement: Int)) in
-            guard state.shapeIndex < self.rank else { return nil }
-            if state.indexElement >= self[state.shapeIndex] {
-                state.shapeIndex += 1
-                state.indexElement = 0
-            }
-            var index = TensorIndex(self)
-            index[state.shapeIndex] = state.indexElement
-            state.indexElement += 1
-            return index
-        }))
-    }
-
-    /// Returns a sequence of tensor indices in the specified dimension
-    public func tensorIndices(inDimension dimension: Int) -> AnySequence<TensorIndex> {
-        return prefix(dimension+1).scalarIndices
-    }
-
     /// Returns the row-major order index for the specified tensor index
     /// - parameter index: tensor index
     public func contiguousIndex(for index: TensorIndex) -> Int {
