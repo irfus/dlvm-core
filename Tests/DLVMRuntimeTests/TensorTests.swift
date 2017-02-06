@@ -31,7 +31,7 @@ class TensorTests: XCTestCase {
         XCTAssertEqual(tensor[0][1][2].shape, .scalar)
         for subTensor in tensor[0] {
             XCTAssertEqual(subTensor.shape, shape.dropFirst(2))
-            XCTAssertEqual(subTensor.elements, [0, 0, 0])
+            XCTAssertEqual(subTensor.items, [0, 0, 0])
         }
     }
 
