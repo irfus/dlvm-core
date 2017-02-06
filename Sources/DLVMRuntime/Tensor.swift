@@ -170,6 +170,7 @@ extension Tensor : RangeReplaceableCollection {
 // MARK: - RandomAccessCollection
 extension Tensor : RandomAccessCollection {
     public typealias Index = Int
+    public typealias SubSequence = Tensor<ItemType>
 
     /// Access a sub-tensor at an index specified by a list of dimensional indices
     /// - parameter indices: tensor indices
