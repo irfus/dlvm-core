@@ -446,7 +446,11 @@ public class Program {
                       in env: inout SemaEnvironment) throws -> TensorShape {
         switch expression {
 
-        case .constant(_, _):
+        case let .constant(const, _):
+            /// If a float constant is used under an int context, error
+            if case .float(_, _) = const, env.dataType.base == .int {
+                throw SemanticError.cannotInferShape(expression)
+            }
             return .scalar
 
         case let .variable(v, _):
@@ -455,22 +459,14 @@ public class Program {
             }
             return shape
 
-        case let .infixOp(_, sideExpr, .constant(const, _), _),
-             let .infixOp(_, .constant(const, _), sideExpr, _):
-            let sideShape = try shape(of: sideExpr, in: &env)
-            /// If a float constant is used under an int context, error
-            if case .float(_, _) = const, env.dataType.base == .int {
-                throw SemanticError.cannotInferShape(expression)
-            }
-            return sideShape
-
         case let .infixOp(_, lhs, rhs, _):
             let leftShape = try shape(of: lhs, in: &env)
             let rightShape = try shape(of: rhs, in: &env)
-            guard leftShape == rightShape else {
+            guard let shape = leftShape.broadcasted(to: rightShape)
+                           ?? rightShape.broadcasted(to: leftShape) else {
                 throw SemanticError.operatorShapeMismatch(lhs, leftShape, rhs, rightShape)
             }
-            return leftShape
+            return shape
 
         case let .negate(e, _):
             return try shape(of: e, in: &env)

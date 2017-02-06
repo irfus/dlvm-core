@@ -110,14 +110,6 @@ class CodeGenerator {
             }
             /// Can't be an output. This won't be reached
             preconditionFailure("Unsupported expression \(expression)")
-        case let .infixOp(op, .constant(c, _), rhs, _):
-            let lhsOp = c.operand(for: program.dataType), rhsOp = build(rhs)
-            return builder.makeArithmeticOperation(op.instructionOperator,
-                                                   lhsOp, rhsOp, name: name)
-        case let .infixOp(op, lhs, .constant(c, _), _):
-            let lhsOp = build(lhs), rhsOp = c.operand(for: program.dataType)
-            return builder.makeArithmeticOperation(op.instructionOperator,
-                                                   lhsOp, rhsOp, name: name)
         case let .infixOp(op, lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
             return builder.makeArithmeticOperation(op.instructionOperator,
