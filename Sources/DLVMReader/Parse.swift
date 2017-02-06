@@ -134,10 +134,14 @@ extension InstructionNode : Parsible {
     private static let unaryParser: Parser<InstructionNode> =
       ( ElementwiseFunction.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
       | AggregationFunction.parser <~~ spaces ^^ curry(InstructionNode.aggregate)
-      | "reduce" ~~> spaces ~~> ReductionFunction.parser.! <~~ spaces
-                                              ^^ curry(InstructionNode.reduce)
       | "load" ~~> spaces                     ^^= curry(InstructionNode.load)
       ) ** OperandNode.parser.!
+
+    private static let reduceParser: Parser<InstructionNode> =
+        "reduce" ~~> ReductionFunction.parser.nonbacktracking().amid(spaces)
+      ^^ curry(InstructionNode.reduce)
+      ** OperandNode.parser.!
+      ** (Lexer.token("along").amid(spaces) ~~> number.!).?
 
     private static let binaryParser: Parser<InstructionNode> =
       ( ArithmeticOperator.parser <~~ spaces        ^^ curry(InstructionNode.arithmetic)
@@ -179,6 +183,7 @@ extension InstructionNode : Parsible {
 
     public static let parser: Parser<InstructionNode> = unaryParser
                                                       | binaryParser
+                                                      | reduceParser
                                                       | concatParser
                                                       | shapeCastParser
                                                       | typeCastParser
