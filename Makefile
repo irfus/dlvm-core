@@ -1,6 +1,6 @@
-CFLAGS=`llvm-config --cflags`
+CFLAGS=-I`llvm-config --includedir`
 LDFLAGS=-L`llvm-config --libdir`
-SFLAGS=-Xcc "$(CFLAGS)" -Xlinker "$(LDFLAGS)"
+SFLAGS=-Xcc $(CFLAGS) -Xlinker $(LDFLAGS)
 
 all:
 	swift build $(SFLAGS)
