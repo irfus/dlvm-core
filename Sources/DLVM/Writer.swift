@@ -81,7 +81,7 @@ extension TensorInitializer : TextOutputStreamable {
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         if !isScalar {
-            target.write("[\(dimensions.map{String($0)}.joined(separator: "x"))]")
+            target.write("[\(map{String($0)}.joined(separator: "x"))]")
         }
     }
 }

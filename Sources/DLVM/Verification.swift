@@ -132,7 +132,7 @@ fileprivate extension Instruction {
     }
 
     func homomorphicShape(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws -> TensorShape {
-        guard lhs.shape ~= rhs.shape else {
+        guard lhs.shape ~ rhs.shape else {
             throw VerificationError.shapeMismatch(lhs, rhs, self)
         }
         return lhs.shape
@@ -162,7 +162,7 @@ fileprivate extension DefiningInstruction {
         guard self.type == type else {
             throw VerificationError.unexpectedType(self, type)
         }
-        guard self.shape ~= shape else {
+        guard self.shape ~ shape else {
             throw VerificationError.unexpectedShape(self, shape)
         }
     }
@@ -287,7 +287,7 @@ extension LoopInstruction.Condition {
     fileprivate func verify(in inst: LoopInstruction) throws {
         switch self {
         case let .times(v):
-            guard v.shape ~= .scalar else {
+            guard v.shape ~ .scalar else {
                 throw VerificationError.conditionTimesNotScalar(inst)
             }
         case let .untilEqual(v1, v2):
