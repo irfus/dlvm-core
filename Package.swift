@@ -18,7 +18,7 @@ let package = Package(
         /// TEL compiler library (libTEL)
         Target(name: "TEL", dependencies: ["DLVM"]),
         /// TEL compiler driver
-        Target(name: "telc", dependencies: ["DLVM", "TEL"])
+        Target(name: "telc", dependencies: ["TEL", "DLVM", "DLVMReader"])
     ],
     dependencies: [
       	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 7),
