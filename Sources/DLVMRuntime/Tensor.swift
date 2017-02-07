@@ -27,7 +27,11 @@ public struct Tensor<ItemType> {
         return elementShape?.prepending(count) ?? .scalar
     }
 
-    public var itemCountPerElement: Int
+    /// The number of items (atoms) per element (sub-tensor).
+    /// - Note: This holds the same value as the computed property
+    /// `shape.contiguousSize`, which is extremely frequently used.
+    /// We cache it in this variable whenever a new shape is set
+    public private(set) var itemCountPerElement: Int
 
     /// Contiguous storage
     public internal(set) var items: ArraySlice<ItemType>
