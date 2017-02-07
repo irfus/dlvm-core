@@ -34,6 +34,24 @@ public struct Tensor<ItemType> {
         return items.capacity / itemCountPerElement
     }
 
+    internal init(elementShape: TensorShape, items: ArraySlice<ItemType>) {
+        let contiguousSize = elementShape.contiguousSize
+        precondition(items.count % contiguousSize == 0,
+                     "Item count does not match element shape")
+        self.elementShape = elementShape
+        self.items = items
+        self.itemCountPerElement = contiguousSize
+    }
+
+    /// Initialize a tensor using an existing slice of elements in row-major order
+    /// - parameter shape: tensor shape
+    /// - parameter elements: slice of existing elements in row-major order
+    internal init(shape: TensorShape, items: ArraySlice<ItemType>) {
+        precondition(items.count >= shape.contiguousSize,
+                     "The slice has fewer elements than required by the shape")
+        self.init(elementShape: shape.dropFirst(), items: items.prefix(shape.contiguousSize))
+    }
+
     /// Initialize an empty tensor of scalar elements
     public init() {
         self.init(elementShape: .scalar)
@@ -41,26 +59,21 @@ public struct Tensor<ItemType> {
 
     /// Initialize an empty tensor
     public init(elementShape: TensorShape) {
-        self.elementShape = elementShape
-        itemCountPerElement = elementShape.contiguousSize
-        items = ArraySlice()
+        self.init(elementShape: elementShape, items: [])
     }
 
-    public init<C : Collection>(elementShape: TensorShape, elements: C)
-        where C.Iterator.Element == Tensor<ItemType>, C.IndexDistance == Int {
+    /// Initialize a tensor from a sequence of tensors of element shape
+    public init<S : Collection>(elementShape: TensorShape, elements: S)
+        where S.Iterator.Element == Tensor<ItemType> {
         self.init(elementShape: elementShape)
         self.append(contentsOf: elements)
     }
 
-    /// Initialize a tensor using an existing slice of elements in row-major order
-    /// - parameter shape: tensor shape
-    /// - parameter elements: slice of existing elements in row-major order
-    internal init(shape: TensorShape, items: ArraySlice<ItemType>) {
-        self.elementShape = shape.dropFirst()
-        precondition(items.count >= shape.contiguousSize,
-                     "The slice has fewer elements than required by the shape")
-        self.items = items.prefix(shape.contiguousSize)
-        itemCountPerElement = elementShape.contiguousSize
+    /// Initialize a tensor from a collection of tensors of element shape
+    public init<C : Collection>(elementShape: TensorShape, elements: C)
+        where C.Iterator.Element == Tensor<ItemType>, C.IndexDistance == Int {
+        self.init(elementShape: elementShape)
+        self.append(contentsOf: elements)
     }
 
     /// Initialize a tensor from a sequence of elements in row-major order
@@ -71,36 +84,31 @@ public struct Tensor<ItemType> {
                              vacancySupplier supplier: (() -> ItemType)? = nil)
         where S.Iterator.Element == ItemType, S.SubSequence : Sequence,
               S.SubSequence.Iterator.Element == ItemType {
-        var slice = ArraySlice(items.prefix(shape.contiguousSize))
+        let contiguousSize = shape.contiguousSize
+        var slice = ArraySlice(items.prefix(contiguousSize))
         /// If elements fewer than required by the shape and supplier is provided
         /// generate new elements using the supplier until vacancy is filled
-        if slice.count < shape.contiguousSize, let supplier = supplier {
+        if slice.count < contiguousSize, let supplier = supplier {
             slice.reserveCapacity(shape.contiguousSize)
-            repeat {
-                slice.append(supplier())
-            } while slice.count < shape.contiguousSize
+            slice.append(contentsOf: (0..<contiguousSize).map { _ in supplier() })
         }
         self.init(shape: shape, items: slice)
     }
-    
+
     /// Allocate and initialize a tensor to a repeated value
     /// - parameter shape: tensor shape
     /// - parameter repeating: repeated value
     public init(shape: TensorShape, repeating repeatedValue: ItemType) {
-        self.items = ArraySlice(repeating: repeatedValue,
-                                count: shape.contiguousSize)
-        self.elementShape = shape.dropFirst()
-        itemCountPerElement = elementShape.contiguousSize
+        let items = ArraySlice(repeating: repeatedValue, count: shape.contiguousSize)
+        self.init(shape: shape, items: items)
     }
 
     /// Allocate and initialize a tensor using the factory function
     /// - parameter shape: tensor shape
     /// - parameter supplier: factory function providing values lazily
     public init(shape: TensorShape, supplier: () -> ItemType) {
-        let contiguousSize = shape.contiguousSize
-        self.items = ArraySlice((0..<contiguousSize).map { _ in supplier() })
-        self.elementShape = shape.dropFirst()
-        itemCountPerElement = elementShape.contiguousSize
+        let items = ArraySlice((0..<shape.contiguousSize).map { _ in supplier() })
+        self.init(shape: shape, items: items)
     }
 
     internal func itemIndex(fromIndex index: Int) -> Int {
@@ -114,6 +122,18 @@ public struct Tensor<ItemType> {
     
 }
 
+extension Tensor where ItemType : Strideable {
+    
+    public init(shape: TensorShape, itemRange: Range<ItemType>) {
+        var item = itemRange.lowerBound
+        self.init(shape: shape, supplier: {
+            defer { item = item.advanced(by: 1) }
+            return item
+        })
+    }
+    
+}
+
 // MARK: - RangeReplaceableCollection
 extension Tensor : RangeReplaceableCollection {
 
@@ -123,7 +143,7 @@ extension Tensor : RangeReplaceableCollection {
 
     public mutating func append(_ newElement: Tensor<ItemType>) {
         precondition(newElement.shape == elementShape, "Element shape mismatch")
-        items.reserveCapacity(items.capacity + newElement.itemCount)
+        reserveCapacity(count + 1)
         items.append(contentsOf: newElement.items)
     }
 
@@ -140,12 +160,25 @@ extension Tensor : RangeReplaceableCollection {
         return self[range]
     }
 
-    public mutating func append<C : Collection>(contentsOf newElements: C)
-        where C.Iterator.Element == Tensor<ItemType>, C.IndexDistance == Int {
-        reserveCapacity(newElements.count)
+    public mutating func append<S : Sequence>(contentsOf newElements: S)
+        where S.Iterator.Element == Tensor<ItemType> {
         for element in newElements {
             append(element)
         }
+    }
+
+    public mutating func append<C : Collection>(contentsOf newElements: C)
+        where C.Iterator.Element == Tensor<ItemType>, C.IndexDistance == Int {
+        reserveCapacity(count + newElements.count)
+        for element in newElements {
+            append(element)
+        }
+    }
+
+    public mutating func append(contentsOf newElements: Tensor<ItemType>) {
+        precondition(newElements.elementShape == elementShape, "Element shape mismatch")
+        reserveCapacity(count + newElements.count)
+        items.append(contentsOf: newElements.items)
     }
 
     public mutating func replaceSubrange<C : Collection>
