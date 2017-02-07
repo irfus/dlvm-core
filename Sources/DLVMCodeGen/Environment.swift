@@ -1,9 +1,9 @@
 //
 //  Environment.swift
-//  DLVMCodeGen
+//  DLVM
 //
 //  Created by Richard Wei on 2/6/17.
 //
 //
 
-import LLVM
+import LLVM_C

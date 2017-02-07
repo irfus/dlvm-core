@@ -22,6 +22,6 @@ let package = Package(
     ],
     dependencies: [
       	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 7),
-      	.Package(url: "https://github.com/trill-lang/LLVMSwift", majorVersion: 0, minor: 1)
+      	.Package(url: "https://github.com/rxwei/LLVM_C", majorVersion: 2, minor: 0)
     ]
 )
