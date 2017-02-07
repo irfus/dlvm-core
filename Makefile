@@ -1,15 +1,6 @@
-OS=$(shell uname)
-ifeq ($(OS), Linux)
-INCDIR := /usr/local/include
-LIBDIR := /usr/local/lib64
-else
-INCDIR := /usr/local/include
-LIBDIR := /usr/local/lib
-endif
-
-CFLAGS=-I$(INCDIR)
-LDFLAGS=-L$(LIBDIR)
-SFLAGS=-Xcc $(CFLAGS) -Xlinker $(LDFLAGS)
+CFLAGS=`llvm-config --cflags`
+LDFLAGS=-L`llvm-config --libdir`
+SFLAGS=-Xcc "$(CFLAGS)" -Xlinker "$(LDFLAGS)"
 
 all:
 	swift build $(SFLAGS)
