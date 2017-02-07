@@ -16,10 +16,13 @@ struct Options {
                                         helpMessage: "Generate backpropagation IR")
     /// NN optimization algorithm
     static let nnOptimizer = StringOption(longFlag: "training-optimizer",
-                                        helpMessage: "Neural network optimization algorithm for backpropagation")
+                                          helpMessage: "Training optimization algorithm as part of backpropagation")
     /// Loss function
     static let lossFunction = StringOption(longFlag: "loss-function",
-                                           helpMessage: "Loss function for backpropagation")
+                                           helpMessage: "Loss function for training")
+    /// Print IR
+    static let shouldPrintIR = BoolOption(longFlag: "print-ir",
+                                          helpMessage: "Print IR after transformation")
     /// Output
     static let outputPaths = MultiStringOption(shortFlag: "o", longFlag: "outputs",
                                                helpMessage: "Output file paths")
@@ -33,6 +36,7 @@ cli.addOptions(Options.filePaths,
                Options.shouldBPGen,
                Options.nnOptimizer,
                Options.lossFunction,
+               Options.shouldPrintIR,
                Options.outputPaths,
                Options.needsHelp)
 
@@ -73,6 +77,11 @@ func main() throws {
         let module = try ast.makeModule()
         print("Module \"\(module.name)\"")
         try module.verify()
+
+        if Options.shouldPrintIR.wasSet {
+            print(module)
+        }
+        
         /// Write IR
         try module.write(toFile: outputPath)
         print("Written to \(outputPath)")

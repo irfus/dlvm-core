@@ -12,6 +12,9 @@ struct Options {
     /// Output
     static let outputPaths = MultiStringOption(shortFlag: "o", longFlag: "outputs",
                                                helpMessage: "Output file paths")
+    /// Print IR
+    static let shouldPrintIR = BoolOption(longFlag: "print-ir",
+                                          helpMessage: "Print DLVM IR after compilation")
     /// Help
     static let needsHelp = BoolOption(shortFlag: "h", longFlag: "help",
                                       helpMessage: "Print help message")
@@ -19,6 +22,7 @@ struct Options {
 
 cli.addOptions(Options.filePaths,
                Options.outputPaths,
+               Options.shouldPrintIR,
                Options.needsHelp)
 
 /// Parse command line
@@ -63,6 +67,12 @@ func main() throws {
         /// Generate IR
         let module = program.makeModule()
         try module.verify()
+
+        /// Print IR if needed
+        if Options.shouldPrintIR.wasSet {
+            print(module)
+        }
+        
         /// Write IR
         try module.write(toFile: outputPath)
         print("DLVM module \"\(module.name)\" written to \(outputPath)")
