@@ -38,11 +38,11 @@ cli.addOptions(Options.filePaths,
 
 /// Parse command line
 do { try cli.parse(strict: true) }
-catch { cli.printUsage(error); exit(EX_USAGE) }
+catch { cli.printUsage(error); exit(EXIT_FAILURE) }
 
 func error(_ message: String) {
     print("error: " + message)
-    exit(EX_USAGE)
+    exit(EXIT_FAILURE)
 }
 
 func main() throws {
