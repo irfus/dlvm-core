@@ -6,22 +6,25 @@
 //
 //
 
-import struct DLVM.TensorShape
-import struct DLVM.TensorIndex
+import DLVM
 
 /// Tensor
 public struct Tensor<ItemType> {
 
     /// Sub-tensor (element) shape
-    public internal(set) var elementShape: TensorShape {
+    public internal(set) var elementShape: TensorShape? {
         didSet {
-            itemCountPerElement = elementShape.contiguousSize
+            itemCountPerElement = elementShape?.contiguousSize ?? 0
         }
+    }
+
+    public var isScalar: Bool {
+        return elementShape == nil
     }
 
     /// Tensor shape
     public var shape: TensorShape {
-        return elementShape.prepending(count)
+        return elementShape?.prepending(count) ?? .scalar
     }
 
     public var itemCountPerElement: Int
@@ -34,22 +37,23 @@ public struct Tensor<ItemType> {
         return items.capacity / itemCountPerElement
     }
 
-    internal init(elementShape: TensorShape, items: ArraySlice<ItemType>) {
-        let contiguousSize = elementShape.contiguousSize
-        precondition(items.count % contiguousSize == 0,
+    fileprivate init(elementShape: TensorShape?, items: ArraySlice<ItemType>) {
+        let elementContiguousSize = elementShape?.contiguousSize ?? 1
+        precondition(items.count % elementContiguousSize == 0,
                      "Item count does not match element shape")
+        self.itemCountPerElement = elementShape == nil ? 0 : elementContiguousSize
         self.elementShape = elementShape
         self.items = items
-        self.itemCountPerElement = contiguousSize
     }
 
     /// Initialize a tensor using an existing slice of elements in row-major order
     /// - parameter shape: tensor shape
     /// - parameter elements: slice of existing elements in row-major order
-    internal init(shape: TensorShape, items: ArraySlice<ItemType>) {
+    fileprivate init(shape: TensorShape, items: ArraySlice<ItemType>) {
         precondition(items.count >= shape.contiguousSize,
                      "The slice has fewer elements than required by the shape")
-        self.init(elementShape: shape.dropFirst(), items: items.prefix(shape.contiguousSize))
+        self.init(elementShape: shape.isScalar ? nil : shape.dropFirst(),
+                  items: items.prefix(shape.contiguousSize))
     }
 
     /// Initialize an empty tensor of scalar elements
@@ -60,6 +64,11 @@ public struct Tensor<ItemType> {
     /// Initialize an empty tensor
     public init(elementShape: TensorShape) {
         self.init(elementShape: elementShape, items: [])
+    }
+
+    /// Initialize a scalar tensor
+    public init(scalar: ItemType) {
+        self.init(elementShape: nil, items: [scalar])
     }
 
     /// Initialize a tensor from a sequence of tensors of element shape
@@ -122,16 +131,56 @@ public struct Tensor<ItemType> {
     
 }
 
+// MARK: - Element equality and item equality
+public extension Tensor where ItemType : Equatable {
+
+    public func elementsEqual(_ other: Tensor<ItemType>) -> Bool {
+        return shape.elementsEqual(other.shape) && items.elementsEqual(other.items)
+    }
+
+    public func itemsEqual(_ other: Tensor<ItemType>) -> Bool {
+        return items.elementsEqual(other.items)
+    }
+
+}
+
+// MARK: - Isomorphism
+public extension Tensor {
+
+    public func isSimilar(to other: Tensor<ItemType>) -> Bool {
+        return shape ~ other.shape
+    }
+
+    public func isIsomorphic(to other: Tensor<ItemType>) -> Bool {
+        return shape == other.shape
+    }
+
+}
+
+// MARK: - Initializers for Strideable item type
 extension Tensor where ItemType : Strideable {
-    
-    public init(shape: TensorShape, itemRange: Range<ItemType>) {
-        var item = itemRange.lowerBound
+
+    public init(shape: TensorShape, itemsIncreasingFrom lowerBound: ItemType) {
+        var item = lowerBound
         self.init(shape: shape, supplier: {
             defer { item = item.advanced(by: 1) }
             return item
         })
     }
-    
+
+}
+
+// MARK: - Initializers for Strideable item type
+extension Tensor where ItemType : Strideable, ItemType.Stride : SignedInteger {
+
+    public init(scalarElementsIn bounds: CountableRange<ItemType>) {
+        self.init(elementShape: .scalar, items: ArraySlice(bounds))
+    }
+
+    public init(scalarElementsIn bounds: CountableClosedRange<ItemType>) {
+        self.init(elementShape: .scalar, items: ArraySlice(bounds))
+    }
+
 }
 
 // MARK: - RangeReplaceableCollection
@@ -189,10 +238,16 @@ extension Tensor : RangeReplaceableCollection {
 
     public subscript(bounds: Range<Int>) -> Tensor<ItemType> {
         get {
+            guard let elementShape = elementShape else {
+                preconditionFailure("I am a scalar and I have no dimensions!")
+            }
             return Tensor(shape: elementShape.prepending(bounds.count),
                           items: items[itemSubrange(fromSubrange: bounds)])
         }
         set {
+            guard let elementShape = elementShape else {
+                preconditionFailure("I am a scalar and I have no dimensions!")
+            }
             precondition(newValue.shape == elementShape, "Element shape mismatch")
             items[itemSubrange(fromSubrange: bounds)] = newValue.items
         }
@@ -205,31 +260,33 @@ extension Tensor : RandomAccessCollection {
     public typealias Index = Int
     public typealias SubSequence = Tensor<ItemType>
 
-    /// Access a sub-tensor at an index specified by a list of dimensional indices
-    /// - parameter indices: tensor indices
-    /// - note: the count of indices must equal the rank of the tensor
-    public subscript(indices: Int...) -> Tensor<ItemType> {
-        get {
-            return self[TensorIndex(indices)]
-        }
-        set {
-            self[TensorIndex(indices)] = newValue
-        }
-    }
-
     /// Access a sub-tensor at index
     public subscript(index: TensorIndex) -> Tensor<ItemType> {
         get {
+            precondition(!(isScalar && !index.isEmpty), "I am a scalar and I have no dimensions!")
             let newShape = shape.dropFirst(index.count)
             let contiguousIndex = index.contiguousIndex(in: shape)
             let range = contiguousIndex..<contiguousIndex+newShape.contiguousSize
             return Tensor(shape: newShape, items: items[range])
         }
         set {
+            precondition(!(isScalar && !index.isEmpty), "I am a scalar and I have no dimensions!")
             let newShape = shape.dropFirst(index.count)
             let contiguousIndex = index.contiguousIndex(in: shape)
             let range = contiguousIndex..<contiguousIndex+newShape.contiguousSize
             items[range] = newValue.items
+        }
+    }
+
+    /// Access a sub-tensor at an index specified by a list of dimensional indices
+    /// - parameter indices: tensor indices
+    /// - note: the count of indices must equal the raw rank of the tensor
+    public subscript(indices: Int...) -> Tensor<ItemType> {
+        get {
+            return self[TensorIndex(indices)]
+        }
+        set {
+            self[TensorIndex(indices)] = newValue
         }
     }
     
@@ -244,7 +301,7 @@ extension Tensor : RandomAccessCollection {
     }
 
     public var count: Int {
-        return items.count / itemCountPerElement
+        return isScalar ? 0 : items.count / itemCountPerElement
     }
 
     /// Returns a sequence of tensor indices for scalar elements
@@ -288,6 +345,7 @@ extension Tensor : RandomAccessCollection {
 
 }
 
+// MARK: - Reshaping
 public extension Tensor {
 
     public func reshaped(as newShape: TensorShape) -> Tensor? {
