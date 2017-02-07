@@ -251,7 +251,7 @@ extension OperandNode {
             guard type == global.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape ~= global.shape else {
+            guard shape ~ global.shape else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return global
@@ -271,7 +271,7 @@ extension OperandNode {
             guard type == temporary.type else {
                 throw SemanticError.typeMismatch(self, type)
             }
-            guard shape ~= temporary.shape else {
+            guard shape ~ temporary.shape else {
                 throw SemanticError.shapeMismatch(self, shape)
             }
             return temporary
@@ -293,7 +293,7 @@ extension OperandNode {
         guard type == placeholder.type else {
             throw SemanticError.typeMismatch(self, type)
         }
-        guard shape ~= placeholder.shape else {
+        guard shape ~ placeholder.shape else {
             throw SemanticError.shapeMismatch(self, shape)
         }
         return placeholder

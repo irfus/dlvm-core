@@ -31,7 +31,7 @@ public struct DataType : Equatable {
         return self.init(base: .float, size: size)
     }
 
-    public static func ~=(lhs: DataType, rhs: DataType) -> Bool {
+    public static func ~(lhs: DataType, rhs: DataType) -> Bool {
         return lhs.base == rhs.base
     }
 

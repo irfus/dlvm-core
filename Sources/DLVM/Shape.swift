@@ -11,7 +11,7 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 
     public typealias SubSequence = TensorShape
 
-    var dimensions: [Int]
+    fileprivate var dimensions: [Int]
 
     /// Initialize with rank, and set the size of each dimension to 1.
     /// - parameter rank: rank of the tensor
@@ -22,8 +22,8 @@ public struct TensorShape : ExpressibleByArrayLiteral {
     /// Initialize with sizes of dimensions. The rank of the tensor
     /// is the length of the parameter list.
     /// - parameter dimensions: sizes of dimensions
-    public init<C: Collection>(_ dimensions: C)
-        where C.Iterator.Element == Int {
+    public init<C: Collection>(_ dimensions: C) where C.Iterator.Element == Int {
+        precondition(!dimensions.contains(0), "Dimension element is zero")
         self.dimensions = Array(dimensions)
     }
 
@@ -42,7 +42,7 @@ public struct TensorShape : ExpressibleByArrayLiteral {
 
     /// Size of the tensor as a contiguously stored array
     public var contiguousSize: Int {
-        return dimensions.reduce(1, *)
+        return simplified().reduce(1, *)
     }
 
 }
@@ -60,15 +60,15 @@ extension TensorShape {
     }
 
     public var isScalar: Bool {
-        return simplified().rank == 0
+        return rank == 0
     }
 
     public var isVector: Bool {
-        return simplified().rank == 1
+        return rank == 1
     }
 
     public var isMatrix: Bool {
-        return simplified().rank == 2
+        return rank == 2
     }
 
 }
@@ -117,16 +117,36 @@ extension TensorShape : RandomAccessCollection {
 
 }
 
+infix operator ~ : ComparisonPrecedence
+
 extension TensorShape : Equatable {
 
     public static func ==(lhs: TensorShape, rhs: TensorShape) -> Bool {
-        return lhs ~= rhs
+        return lhs.dimensions == rhs.dimensions
     }
 
-    public static func ~=(lhs: TensorShape, rhs: TensorShape) -> Bool {
-        return withConformedShapes(lhs, rhs) { lhs, rhs in
-            return lhs.dimensions == rhs.dimensions
-        }
+    public static func ==(lhs: TensorShape?, rhs: TensorShape) -> Bool {
+        return lhs.flatMap { $0 == rhs } ?? false
+    }
+
+    public static func ==(lhs: TensorShape, rhs: TensorShape?) -> Bool {
+        return rhs.flatMap { lhs == $0 } ?? false
+    }
+
+    public func isSimilar(to other: TensorShape) -> Bool {
+        return simplified() == other.simplified()
+    }
+
+    public static func ~(lhs: TensorShape, rhs: TensorShape) -> Bool {
+        return lhs.isSimilar(to: rhs)
+    }
+
+    public static func ~(lhs: TensorShape?, rhs: TensorShape) -> Bool {
+        return lhs.flatMap { $0 ~ rhs } ?? false
+    }
+
+    public static func ~(lhs: TensorShape, rhs: TensorShape?) -> Bool {
+        return rhs.flatMap { lhs ~ $0 } ?? false
     }
     
 }
@@ -220,8 +240,6 @@ public extension TensorShape {
 
     public func matrixMultiplied(with other: TensorShape) -> TensorShape? {
         return withConformedShapes(self, other) { lhs, rhs in
-            /// Has to be a matrix at least
-            guard lhs.rank >= 2, rhs.rank >= 2 else { return nil }
             /// Match inner dimensions for matrix multiplication
             guard lhs.dropFirst().first == rhs.first else { return nil }
             /// Multiply inner dimensions
@@ -247,7 +265,7 @@ public extension TensorShape {
     public func broadcasted(to other: TensorShape) -> TensorShape? {
         /// Only scalar broadcasting for now
         return withConformedShapes(self, other) { lhs, rhs in
-            lhs.isScalar || lhs == rhs ? other : nil
+            lhs ~ .scalar || lhs == rhs ? other : nil
         }
     }
 
