@@ -74,7 +74,7 @@ func main() throws {
         print("Module \"\(module.name)\"")
         try module.verify()
         /// Write IR
-        try "\(module)".write(toFile: outputPath, atomically: true, encoding: .utf8)
+        try module.write(toFile: outputPath)
         print("Written to \(outputPath)")
     }
 

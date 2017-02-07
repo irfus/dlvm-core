@@ -64,8 +64,7 @@ func main() throws {
         let module = program.makeModule()
         try module.verify()
         /// Write IR
-        FileManager.default.createFile(atPath: outputPath, contents: nil, attributes: nil)
-        try "\(module)".write(toFile: outputPath, atomically: true, encoding: .utf8)
+        try module.write(toFile: outputPath)
         print("DLVM module \"\(module.name)\" written to \(outputPath)")
     }
 

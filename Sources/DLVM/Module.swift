@@ -265,3 +265,14 @@ extension Module {
     }
     
 }
+
+// MARK: - Output
+extension Module {
+
+    open func write(toFile path: String) throws {
+        var contents = ""
+        write(to: &contents)
+        try contents.write(toFile: path, atomically: true, encoding: .utf8)
+    }
+    
+}
