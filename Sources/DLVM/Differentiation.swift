@@ -1,12 +1,12 @@
 //
-//  Gradient.swift
+//  Differentiation.swift
 //  DLVM
 //
 //  Created by Richard Wei on 12/20/16.
 //
 //
 
-open class GradientPass : ExtensionGenerationPass {
+open class AutomaticDifferentiationPass : BasicBlockExtensionPass {
     public static let extensionType: BasicBlock.ExtensionType = .backpropagation
     open var body: BasicBlock
 
@@ -15,7 +15,7 @@ open class GradientPass : ExtensionGenerationPass {
     }
 
     open func run() -> PassResult {
-        let result = PassResult(changed: false)
+        let result = PassResult()
         return result
     }
 }
