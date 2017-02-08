@@ -14,12 +14,8 @@ open class IRBuilder {
         return _module
     }
 
-    var contextBlocks: [BasicBlock] = []
+    var currentBlock: BasicBlock?
 
-    open var currentBlock: BasicBlock? {
-        return contextBlocks.last
-    }
-    
     fileprivate var variableNameId: Int = 0
     fileprivate var blockNameId: Int = 0
     fileprivate var nameIdTable: [String : Int] = [:]
@@ -51,18 +47,6 @@ extension IRBuilder {
         return name
     }
 
-    func pushContextBlock(_ bb: BasicBlock) {
-        contextBlocks.append(bb)
-    }
-
-    func popContextBlock() -> BasicBlock? {
-        return contextBlocks.popLast()
-    }
-
-    func clearContextBlocks() {
-        contextBlocks.removeAll()
-    }
-    
 }
 
 // MARK: - Main builder API
@@ -73,10 +57,10 @@ extension IRBuilder {
             preconditionFailure("Current block doesn't exist")
         }
         block.append(instruction)
-        instruction.updateOperandUsers()
+        instruction.updateUsers()
         return instruction
     }
-    
+
     @discardableResult
     open func declare(_ input: Input) -> Input {
         _module.insert(input)
@@ -130,8 +114,6 @@ extension IRBuilder {
     @discardableResult
     open func makeGlobalBasicBlock(named name: String) -> BasicBlock {
         let block = BasicBlock(name: disambiguatedName(for: name))
-        clearContextBlocks()
-        pushContextBlock(block)
         _module.insert(block)
         return block
     }
@@ -256,19 +238,34 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func beginLoop(named name: String? = nil) -> BasicBlock {
-        let bb = BasicBlock(name: name ?? makeBlockName())
-        pushContextBlock(bb)
-        return bb
-    }
-
-    @discardableResult
-    open func exitLoop(onCondition condition: LoopInstruction.Condition) -> LoopInstruction {
-        guard let bb = popContextBlock() else {
-            preconditionFailure("Not in a loop")
+    open func makeLoop(onCondition condition: LoopInstruction.Condition,
+                       name: String? = nil,
+                       inLoopBody executeInLoopBody: ((BasicBlock) -> Void)? = nil) -> LoopInstruction {
+        guard let block = currentBlock else {
+            preconditionFailure("Current block doesn't exist")
         }
-        let inst = LoopInstruction(condition: condition, body: bb)
+        let body = BasicBlock(name: name ?? makeBlockName(), parent: block)
+        let inst = LoopInstruction(condition: condition,
+                                   body: body)
+        if let executeInLoopBody = executeInLoopBody {
+            move(to: body)
+            executeInLoopBody(body)
+            moveToParentBlock()
+        }
         return build(inst)
     }
-    
+
+}
+
+// MARK: - Positioning
+extension IRBuilder {
+
+    open func move(to basicBlock: BasicBlock) {
+        currentBlock = basicBlock
+    }
+
+    open func moveToParentBlock() {
+        currentBlock = currentBlock?.parent
+    }
+
 }
