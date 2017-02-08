@@ -7,6 +7,37 @@
 //
 
 ///
+/// ## Analysis information protocols
+///
+
+public protocol Usee : class {
+    var users: NamedObjectSet<Instruction> { get }
+}
+
+internal protocol ManagedUsee : Usee {
+    var users: NamedObjectSet<Instruction> { get set }
+    func addUser(_ user: Instruction)
+    func removeUser(_ user: Instruction)
+    func removeAllUsers()
+}
+
+internal extension ManagedUsee {
+    func addUser(_ user: Instruction) {
+        users.insert(user)
+    }
+
+    func removeUser(_ user: Instruction) {
+        users.remove(user)
+    }
+
+    func removeAllUsers() {
+        users.removeAll()
+    }
+}
+
+public typealias User = Instruction
+
+///
 /// Base
 ///
 
@@ -32,19 +63,6 @@ public extension Value {
     }
 }
 
-public protocol Usee : class {
-    var users: NamedObjectSet<Instruction> { get }
-}
-
-public typealias User = Instruction
-
-internal protocol ManagedUsee : Usee {
-    var users: NamedObjectSet<Instruction> { get set }
-    func addUser(_ user: Instruction)
-    func removeUser(_ user: Instruction)
-    func removeAllUsers()
-}
-
 public protocol Named {
     var name: String { get set }
 }
@@ -67,20 +85,6 @@ public protocol GlobalPlaceholder : Named, Usee, Global, ValueRepresentation {
 public extension Value {
     public var isGlobal: Bool {
         return self is GlobalValue
-    }
-}
-
-internal extension ManagedUsee {
-    func addUser(_ user: Instruction) {
-        users.insert(user)
-    }
-
-    func removeUser(_ user: Instruction) {
-        users.remove(user)
-    }
-
-    func removeAllUsers() {
-        users.removeAll()
     }
 }
 
@@ -120,6 +124,7 @@ public final class Parameter : GlobalValue, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
+    public weak var gradientValue: NamedValue?
     public var initializer: Initializer
     public internal(set) var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var module: Module?
@@ -137,6 +142,7 @@ public final class Output : GlobalPlaceholder, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
+    public weak var errorValue: NamedValue?
     public var isRecurrent: Bool = false
     public internal(set) var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var module: Module?

@@ -51,21 +51,22 @@ public protocol Instruction : class, SelfVerifiable {
     weak var parent: BasicBlock? { get set }
 }
 
-public protocol NestingInstruction : Instruction {
-    var body: BasicBlock { get set }
-}
-
-public protocol DefiningInstruction : Instruction, NamedValue {
-}
-
+// MARK: - Analysis information
 extension Instruction {
-    func updateOperandUsers() {
+    func updateUsers() {
         for operand in operands {
             if let usee = operand as? ManagedUsee {
                 usee.addUser(self)
             }
         }
     }
+}
+
+public protocol NestingInstruction : Instruction {
+    var body: BasicBlock { get set }
+}
+
+public protocol DefiningInstruction : Instruction, NamedValue {
 }
 
 /// Abstract class for unary instruction
