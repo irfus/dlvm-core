@@ -122,6 +122,13 @@ open class BasicBlock : IRCollection, IRObject, Named, Global {
         }
     }
 
+    ///
+    /// ## Analysis information
+    ///
+
+    /// Operands used in this immediate basic block
+    open fileprivate(set) var exportedOutputs: NamedObjectSet<Output> = []
+
 }
 
 // MARK: - Child basic blocks
@@ -214,6 +221,9 @@ extension BasicBlock {
         if let instruction = instruction as? NestingInstruction {
             addChild(instruction.body)
         }
+        if let instruction = instruction as? ExportInstruction {
+            exportedOutputs.insert(instruction.destination)
+        }
     }
 
     /// Index of the instruction in the basic block
@@ -291,6 +301,10 @@ extension BasicBlock {
         return extensions.keys.contains(type)
     }
 
+    open func removeExtension(ofType type: ExtensionType) {
+        extensions.removeValue(forKey: type)
+    }
+
     /// Set/get an extension
     open subscript(extensionType: ExtensionType) -> BasicBlock? {
         get {
@@ -312,6 +326,8 @@ extension BasicBlock {
 
     /// Update analysis information
     func updateAnalysisInformation() {
+        /// Clear used global values
+        exportedOutputs.removeAll()
         /// Update users
         updateUsers()
         /// Exhaustively update children
@@ -326,7 +342,11 @@ extension BasicBlock {
             if let user = inst as? ManagedUsee {
                 user.removeAllUsers()
             }
-            inst.updateOperandUsers()
+            inst.updateUsers()
+            /// Update exported output set
+            if let exp = inst as? ExportInstruction {
+                exportedOutputs.insert(exp.destination)
+            }
         }
     }
     

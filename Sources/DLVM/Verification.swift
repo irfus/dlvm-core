@@ -37,6 +37,8 @@ public protocol SelfVerifiable {
 extension Module : SelfVerifiable {
 
     open func verify() throws {
+        /// Update
+        updateAnalysisInformation()
         /// Check for redeclared global values
         var globalValueNames: Set<String> = []
         func checkForRedeclaration<T: Global, S: Sequence>(in values: S) throws

@@ -20,8 +20,15 @@ public protocol ObjectSetProtocol {
     subscript(name: String) -> Element? { get }
     mutating func insert(_ value: Element)
     mutating func remove(_ value: Element)
+    func contains(_ value: Element) -> Bool
     func value(named name: String) -> Element?
     @discardableResult mutating func removeValue(named name: String) -> Element?
+}
+
+public extension ObjectSetProtocol {
+    public func containsValue(named name: String) -> Bool {
+        return value(named: name) != nil
+    }
 }
 
 fileprivate extension ObjectSetImplementation where Set : NSMutableCopying {
@@ -60,6 +67,10 @@ public struct NamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementati
         if let namedValue = value as? Named {
             nameTable[namedValue.name] = value
         }
+    }
+    
+    public func contains(_ value: Element) -> Bool {
+        return set.contains(value)
     }
 
     public mutating func remove(_ value: Element) {
@@ -116,6 +127,10 @@ public struct OrderedNamedObjectSet<Element : Value> : ObjectSetProtocol, Object
         }
     }
 
+    public func contains(_ value: Element) -> Bool {
+        return set.contains(value)
+    }
+
     public mutating func remove(_ value: Element) {
         mutatingSet.remove(value)
         if let namedValue = value as? Named {
@@ -141,6 +156,9 @@ public struct OrderedNamedObjectSet<Element : Value> : ObjectSetProtocol, Object
 
 }
 
+// MARK: - RandomAccessCollection, BidirectionalCollection
+/// - Note: Need to conform to MutableCollection; add `subscript(i: Int)` setter
+/// and `subscript(bounds: Range<Int>)`
 extension OrderedNamedObjectSet : RandomAccessCollection, BidirectionalCollection {
 
     public func index(after i: Int) -> Int {
