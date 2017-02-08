@@ -14,6 +14,11 @@ open class BackpropagationPass<Loss, Opt, AutoDiff> : BasicBlockExtensionPass
 
     public var body: BasicBlock
 
+    lazy var lossFunctionPass: Loss = Loss(body: self.body)
+    lazy var autoDiffPass: AutoDiff = AutoDiff(body: self.body)
+    lazy var optimizerPass: Opt = Opt(body: self.body)
+
+
     public static var extensionType: BasicBlock.ExtensionType {
         return .backpropagation
     }
