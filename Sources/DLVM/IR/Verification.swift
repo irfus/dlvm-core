@@ -26,8 +26,7 @@ public enum VerificationError : Error {
     case cannotTensorMultiply(TensorMultiplicationInstruction)
     case cannotMatrixMultiply(MatrixMultiplicationInstruction)
     case cannotConcatenate(Value, ConcatenationInstruction)
-    case concatenationOperandsEmpty(ConcatenationInstruction)
-    case conditionTimesNotScalar(LoopInstruction)
+    case operandsEmpty(Instruction)
 }
 
 public protocol SelfVerifiable {
@@ -72,23 +71,6 @@ extension Module : SelfVerifiable {
 extension BasicBlock : SelfVerifiable {
 
     open func verify() throws {
-        
-        /// Check naming of child blocks
-        /// Check extension type
-        var bbNames: Set<String> = []
-        for subBlock in descendants {
-            guard subBlock.extensionType == self.extensionType else {
-                throw VerificationError.extensionTypeMismatch(subBlock, parent: self)
-            }
-            guard !bbNames.contains(subBlock.name) else {
-                throw VerificationError.basicBlockRedeclared(subBlock)
-            }
-            guard subBlock.parent === self else {
-                throw VerificationError.blockParentMismatch(subBlock, parent: self)
-            }
-            bbNames.insert(subBlock.name)
-        }
-
         /// Check instructions
         var instNames: Set<String> = []
         for inst in instructions {
@@ -270,8 +252,9 @@ public extension MatrixMultiplicationInstruction {
 public extension ConcatenationInstruction {
     public func verify() throws {
         guard let firstOp = operands.first else {
-            throw VerificationError.concatenationOperandsEmpty(self)
+            throw VerificationError.operandsEmpty(self)
         }
+        /// TODO: Check repeated operands
         let (type, shape) = try operands.dropFirst()
                                         .reduce((firstOp.type, firstOp.shape),
                                         { acc, next in
@@ -285,23 +268,24 @@ public extension ConcatenationInstruction {
     }
 }
 
-extension LoopInstruction.Condition {
-    fileprivate func verify(in inst: LoopInstruction) throws {
-        switch self {
-        case let .times(v):
-            guard v.shape.isScalar else {
-                throw VerificationError.conditionTimesNotScalar(inst)
-            }
-        case let .untilEqual(v1, v2):
-            try inst.verifyHomomorphicBroadcasted(v1, v2)
+public extension PhiInstruction {
+    public func verify() throws {
+        guard let firstOp = operands.first else {
+            throw VerificationError.operandsEmpty(self)
         }
+        /// TODO: Check repeated operands
+        let (type, shape) = try operands.dropFirst()
+                                        .reduce((firstOp.type, firstOp.shape),
+                                        { acc, next in
+            let type = try homogeneousType(firstOp, next)
+            let shape = try homomorphicShape(firstOp, next)
+            return (type, shape)
+        })
+        try verifyDeclaration(type: type, shape: shape)
     }
 }
 
-public extension LoopInstruction {
+public extension BranchInstruction {
     public func verify() throws {
-        /// TODO: Check for dominance
-        try condition.verify(in: self)
-        try body.verify()
     }
 }

@@ -10,7 +10,7 @@ extension DefiningInstruction where Self : Named {
     }
 }
 
-extension Parameter {
+extension Variable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
         target.write(shape.isScalar ? " $" : " \(shape) $")
@@ -157,8 +157,8 @@ extension ComparisonPredicate : TextOutputStreamable {
 
 extension BasicBlock : TextOutputStreamable {
 
-    fileprivate func makeIndentation() -> String {
-        return String(repeating: "    ", count: depth)
+    private func makeIndentation() -> String {
+        return "    "
     }
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
@@ -179,17 +179,6 @@ extension BasicBlock : TextOutputStreamable {
         makeIndentation().write(to: &target)
         /// End block
         target.write("}")
-    }
-}
-
-extension LoopInstruction.Condition : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case let .times(val):
-            target.write("for \(val) times")
-        case let .untilEqual(lhs, rhs):
-            target.write("until \(lhs) equals \(rhs)")
-        }
     }
 }
 
@@ -229,8 +218,10 @@ extension Instruction {
             target.write("shapecast \(inst.operand) to \(inst.target)")
         case let inst as TypeCastInstruction:
             target.write("typecast \(inst.operand) to \(inst.target)")
-        case let inst as LoopInstruction:
-            target.write("loop \(inst.body) \(inst.condition)")
+        case let inst as PhiInstruction:
+            target.write("phi \(inst.incomingValues.map{"(\($0) \($1))"}.joined(separator: ", "))")
+        case let inst as BranchInstruction:
+            target.write("br \(inst.destination)")
         default:
             preconditionFailure("Unsupported instruction class \(type(of: self))")
             break

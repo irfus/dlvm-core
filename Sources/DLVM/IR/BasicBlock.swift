@@ -8,7 +8,7 @@
 
 import Foundation
 
-open class BasicBlock : IRCollection, IRObject, Named, Global {
+open class BasicBlock : IRCollection, Named, Global {
 
     public typealias Element = Instruction
 
@@ -39,33 +39,6 @@ open class BasicBlock : IRCollection, IRObject, Named, Global {
     }
 
     ///
-    /// ## Basic block hierarchy
-    ///
-
-    /// Parent basic block in the hierarchy
-    open fileprivate(set) weak var parent: BasicBlock? {
-        didSet {
-            module = parent?.module
-        }
-    }
-
-    /// Child basic blocks in the hierarchy
-    fileprivate var childSet = NSMutableOrderedSet()
-    /// Table of child basic blocks for name lookup
-    fileprivate var childTable: [String : BasicBlock] = [:]
-
-    /// Child basic block list
-    /// - Note: this is an API getter that returns a facade object
-    /// from instructionSet
-    open var children: [BasicBlock] {
-        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-            return childSet.array as! [BasicBlock]
-        #else
-            return childSet.map { $0 as! BasicBlock }
-        #endif
-    }
-
-    ///
     /// ## Extensions
     ///
 
@@ -78,13 +51,6 @@ open class BasicBlock : IRCollection, IRObject, Named, Global {
     open fileprivate(set) var extensionType: ExtensionType?
     /// Basic block extensions
     open fileprivate(set) var extensions: [ExtensionType : BasicBlock] = [:]
-
-    /// Main basic block representing the corresponding forward pass
-    open weak fileprivate(set) var mainBlock: BasicBlock? {
-        didSet {
-            module = mainBlock?.module
-        }
-    }
 
     /// Whether this basic block is an extension of another
     open var isExtension: Bool {
@@ -101,11 +67,6 @@ open class BasicBlock : IRCollection, IRObject, Named, Global {
 
     public required init(name: String) {
         self.name = name
-    }
-
-    public convenience init(name: String, parent: BasicBlock) {
-        self.init(name: name)
-        self.parent = parent
     }
 
     public convenience init(name: String, instructions: [Instruction]) {
@@ -128,70 +89,6 @@ open class BasicBlock : IRCollection, IRObject, Named, Global {
 
     /// Operands used in this immediate basic block
     open fileprivate(set) var exportedOutputs: NamedObjectSet<Output> = []
-
-}
-
-// MARK: - Child basic blocks
-// - Note: Child basic blocks are fully managed by BasicBlock class
-extension BasicBlock {
-
-    fileprivate func addChild(_ child: BasicBlock) {
-        guard !containsChild(child) else { return }
-        child.parent = self
-        childSet.add(child)
-        childTable[child.name] = child
-    }
-
-    fileprivate func containsChild(_ child: BasicBlock) -> Bool {
-        return childSet.contains(child)
-    }
-
-    open func removeChild(_ child: BasicBlock) {
-        precondition(hasChild(child), "This basic block is not a child")
-        childSet.remove(child)
-        childTable.removeValue(forKey: child.name)
-    }
-
-    @discardableResult
-    open func removeChild(named name: String) -> BasicBlock? {
-        guard let child = child(named: name) else {
-            return nil
-        }
-        removeChild(child)
-        return child
-    }
-
-    open func hasChild(_ child: BasicBlock) -> Bool {
-        return childSet.contains(child)
-    }
-
-    open func child(named name: String) -> BasicBlock? {
-        return childTable[name]
-    }
-
-    open func containsChild(named name: String) -> Bool {
-        return childTable.keys.contains(name)
-    }
-
-    /// All descendants, exhaustively, post-order
-    /// - Complexity: O(n^2)
-    open var descendants: [BasicBlock] {
-        return children.flatMap { $0.descendants + [$0] }
-    }
-
-    /// Exhaustively search for and return descendant
-    /// - Complexity: O(n^2)
-    open func descendant(named name: String) -> BasicBlock? {
-        return child(named: name)
-            ?? children.lazy.flatMap{$0.descendant(named: name)}.first
-    }
-
-    /// Exhaustively search for and return descendant
-    /// - Complexity: O(n^2)
-    open func hasDescendant(named name: String) -> Bool {
-        return containsChild(named: name)
-            || children.lazy.contains(where: {$0.hasDescendant(named: name)})
-    }
 
 }
 
@@ -218,9 +115,6 @@ extension BasicBlock {
         if let instruction = instruction as? DefiningInstruction {
             instructionTable[instruction.name] = instruction
         }
-        if let instruction = instruction as? NestingInstruction {
-            addChild(instruction.body)
-        }
         if let instruction = instruction as? ExportInstruction {
             exportedOutputs.insert(instruction.destination)
         }
@@ -242,48 +136,12 @@ extension BasicBlock {
         if let instruction = instruction as? DefiningInstruction {
             instructionTable.removeValue(forKey: instruction.name)
         }
-        if let instruction = instruction as? NestingInstruction {
-            removeChild(instruction.body)
-        }
     }
 
     /// Returns the instruction having the specified name 
     /// in the current basic block
     open func instruction(named name: String) -> DefiningInstruction? {
         return instructionTable[name]
-    }
-
-}
-
-// MARK: - Hierarchical basic block properties
-extension BasicBlock {
-    
-    open var depth: Int {
-        return parent?.depth.advanced(by: 1) ?? 0
-    }
-
-    open var root: BasicBlock {
-        return parent?.root ?? self
-    }
-
-    /// Returns the instruction having the specified name
-    /// in the current scope (including self, forwardBlock?, and parent?)
-    /// - Complexity: O(depth)
-    open func contextualInstruction(named name: String) -> DefiningInstruction? {
-        return instruction(named: name)
-            /// Search forward basic block
-            ?? mainBlock?.contextualInstruction(named: name)
-            /// Search parent
-            ?? parent?.contextualInstruction(named: name)
-    }
-
-    open func contextualValue(named name: String) -> Value? {
-        return module?.globalValue(named: name) ?? contextualInstruction(named: name)
-    }
-
-    /// Search the module for and returns the global value having the specified name
-    open func globalValue(named name: String) -> Value? {
-        return module?.globalValue(named: name)
     }
 
 }
@@ -313,7 +171,6 @@ extension BasicBlock {
         set {
             guard let newValue = newValue else { return }
             extensions[extensionType] = newValue
-            newValue.mainBlock = self
             newValue.name = name
             newValue.extensionType = extensionType
         }
@@ -330,10 +187,6 @@ extension BasicBlock {
         exportedOutputs.removeAll()
         /// Update users
         updateUsers()
-        /// Exhaustively update children
-        for child in children {
-            child.updateAnalysisInformation()
-        }
     }
 
     /// Update user information

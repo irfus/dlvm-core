@@ -142,10 +142,6 @@ extension Module {
         return parameterTable[name] ?? constantTable[name]
     }
 
-    open func globalPlaceholder(named name: String) -> GlobalPlaceholder? {
-        return inputTable[name] ?? outputTable[name]
-    }
-
     open func containsGlobalValue(named name: String) -> Bool {
         return parameterTable.keys.contains(name)
             || constantTable.keys.contains(name)
