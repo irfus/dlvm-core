@@ -88,11 +88,10 @@ public extension Value {
     }
 }
 
-public final class Input : GlobalPlaceholder, ManagedUsee {
+public class Input : GlobalPlaceholder, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
-    public var isRecurrent: Bool = false
     public internal(set) var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var module: Module?
 
@@ -100,6 +99,19 @@ public final class Input : GlobalPlaceholder, ManagedUsee {
         self.name = name
         self.type = type
         self.shape = shape
+    }
+}
+
+protocol Recurrent {
+    var length: Variable { get set }
+}
+
+public class RecurrentInput : Input {
+    public var length: Variable
+    public init(name: String, type: DataType, shape: TensorShape,
+                length: Variable) {
+        self.length = length
+        super.init(name: name, type: type, shape: shape)
     }
 }
 
@@ -120,11 +132,10 @@ public final class Constant : GlobalValue, ManagedUsee {
     }
 }
 
-public final class Parameter : GlobalValue, ManagedUsee {
+public class Variable : GlobalValue, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
-    public weak var gradientValue: NamedValue?
     public var initializer: Initializer
     public internal(set) var users: NamedObjectSet<Instruction> = []
     public internal(set) weak var module: Module?
@@ -138,7 +149,11 @@ public final class Parameter : GlobalValue, ManagedUsee {
     }
 }
 
-public final class Output : GlobalPlaceholder, ManagedUsee {
+public final class Parameter : Variable {
+    public weak var gradientValue: NamedValue?
+}
+
+public class Output : Global, ValueRepresentation, ManagedUsee {
     public var name: String
     public var type: DataType
     public var shape: TensorShape
@@ -151,6 +166,16 @@ public final class Output : GlobalPlaceholder, ManagedUsee {
         self.name = name
         self.type = type
         self.shape = shape
+    }
+}
+
+public final class RecurrentOutput : Output {
+    public var length: Variable
+
+    public init(name: String, type: DataType, shape: TensorShape,
+                length: Variable) {
+        self.length = length
+        super.init(name: name, type: type, shape: shape)
     }
 }
 

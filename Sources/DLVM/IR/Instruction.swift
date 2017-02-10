@@ -62,10 +62,6 @@ extension Instruction {
     }
 }
 
-public protocol NestingInstruction : Instruction {
-    var body: BasicBlock { get set }
-}
-
 public protocol DefiningInstruction : Instruction, NamedValue {
 }
 
@@ -364,26 +360,41 @@ public final class StoreInstruction : Instruction {
     }
 }
 
-/// Loop instruction
-public final class LoopInstruction : NestingInstruction {
-    public enum Condition {
-        case times(Value)
-        case untilEqual(Value, Value)
-    }
-    
+public final class PhiInstruction : DefiningInstruction {
     public var parent: BasicBlock?
-    public var condition: Condition
-    public var body: BasicBlock
+    public var name: String
+    public lazy var type: DataType = self.incomingValues[0].0.type
+    public lazy var shape: TensorShape = self.incomingValues[0].0.shape
+    public var incomingValues: [(Value, BasicBlock)]
+    public internal(set) var users: NamedObjectSet<Instruction> = []
 
     public var operands: [Value] {
-        switch condition {
-        case let .times(times): return [times]
-        case let .untilEqual(v1, v2): return [v1, v2]
-        }
+        return incomingValues.map{$0.0}
     }
 
-    public init(condition: Condition, body: BasicBlock) {
-        self.condition = condition
-        self.body = body
+    public init(name: String, incomingValues: [(Value, BasicBlock)]) {
+        self.name = name
+        self.incomingValues = incomingValues
+    }
+}
+
+public protocol TerminatorInstruction : Instruction {
+    var destinations: [BasicBlock] { get }
+}
+
+public final class BranchInstruction : TerminatorInstruction {
+    public var parent: BasicBlock?
+    public var destination: BasicBlock
+
+    public var operands: [Value] {
+        return []
+    }
+
+    public var destinations: [BasicBlock] {
+        return [destination]
+    }
+
+    public init(destination: BasicBlock) {
+        self.destination = destination
     }
 }

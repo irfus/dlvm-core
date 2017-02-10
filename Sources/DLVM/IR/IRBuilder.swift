@@ -237,24 +237,6 @@ extension IRBuilder {
         return build(inst)
     }
 
-    @discardableResult
-    open func makeLoop(onCondition condition: LoopInstruction.Condition,
-                       name: String? = nil,
-                       inLoopBody executeInLoopBody: ((BasicBlock) -> Void)? = nil) -> LoopInstruction {
-        guard let block = currentBlock else {
-            preconditionFailure("Current block doesn't exist")
-        }
-        let body = BasicBlock(name: name ?? makeBlockName(), parent: block)
-        let inst = LoopInstruction(condition: condition,
-                                   body: body)
-        if let executeInLoopBody = executeInLoopBody {
-            move(to: body)
-            executeInLoopBody(body)
-            moveToParentBlock()
-        }
-        return build(inst)
-    }
-
 }
 
 // MARK: - Positioning
@@ -262,10 +244,6 @@ extension IRBuilder {
 
     open func move(to basicBlock: BasicBlock) {
         currentBlock = basicBlock
-    }
-
-    open func moveToParentBlock() {
-        currentBlock = currentBlock?.parent
     }
 
 }
