@@ -104,7 +104,8 @@ public enum InstructionNode : ASTNode {
     case load(OperandNode, SourceRange)
     case export(OperandNode, OperandNode, SourceRange)
     case store(OperandNode, OperandNode, SourceRange)
-    case loop(BasicBlockNode, LoopConditionNode, SourceRange)
+    case recur(inputs: [OperandNode], states: [OperandNode], outputs: [OperandNode],
+              body: BasicBlockNode, SourceRange)
 
     public var range: SourceRange {
         switch self {
@@ -122,7 +123,7 @@ public enum InstructionNode : ASTNode {
              let .load(_, sr),
              let .store(_, _, sr),
              let .export(_, _, sr),
-             let .loop(_, _, sr):
+             let .recur(_, _, _, _, sr):
             return sr
         }
     }

@@ -110,7 +110,7 @@ extension NamedObjectSet : Sequence {
 
 }
 
-public struct OrderedNamedObjectSet<Element : Value> : ObjectSetProtocol, ObjectSetImplementation {
+public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementation {
     fileprivate var set = NSMutableOrderedSet()
     fileprivate var nameTable: [String : Element] = [:]
 
