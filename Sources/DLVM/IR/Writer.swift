@@ -2,55 +2,27 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-extension DefiningInstruction where Self : Named {
+extension GlobalValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        type.write(to: &target)
-        target.write(shape.isScalar ? " %" : " \(shape) %")
-        name.write(to: &target)
+        target.write("declare \(kind) \(shape) \(type) @\(name) = \(initializer)")
     }
 }
 
-extension Variable {
+extension Placeholder : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        type.write(to: &target)
-        target.write(shape.isScalar ? " $" : " \(shape) $")
-        name.write(to: &target)
+        target.write("declare placeholder \(shape) \(type) @\(name)")
     }
 }
 
-extension Input {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        type.write(to: &target)
-        target.write(shape.isScalar ? " @" : " \(shape) @")
-        name.write(to: &target)
-    }
-}
-
-extension Output {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        type.write(to: &target)
-        target.write(shape.isScalar ? " &" : " \(shape) &")
-        name.write(to: &target)
-    }
-}
-
-extension Constant {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        type.write(to: &target)
-        target.write(shape.isScalar ? " '" : " \(shape) '")
-        name.write(to: &target)
-    }
-}
-
-extension ImmediateValue : TextOutputStreamable {
+extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
         target.write(shape.isScalar ? " " : " \(shape) ")
-        immediate.write(to: &target)
+        literal.write(to: &target)
     }
 }
 
-extension Immediate : TextOutputStreamable {
+extension ScalarLiteral : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .bool(b): target.write(b.description)
@@ -60,7 +32,7 @@ extension Immediate : TextOutputStreamable {
     }
 }
 
-extension TensorInitializer : TextOutputStreamable {
+extension TensorLiteral : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .elements(elements):
@@ -74,6 +46,15 @@ extension TensorInitializer : TextOutputStreamable {
             target.write("repeating \(immediate)")
         case let .random(from: lowerBound, to: upperBound):
             target.write("random from \(lowerBound) to \(upperBound)")
+        }
+    }
+}
+
+extension Literal : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case .scalar(let lit): lit.write(to: &target)
+        case .tensor(let lit): lit.write(to: &target)
         }
     }
 }
@@ -103,7 +84,7 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension AggregationFunction: TextOutputStreamable {
+extension IntegrationFunction: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .softmax: target.write("softmax")
@@ -155,6 +136,53 @@ extension ComparisonPredicate : TextOutputStreamable {
     }
 }
 
+extension Control : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .branch(bb):
+            target.write("br \(bb)")
+        case let .condBranch(op, thenBB, elseBB):
+            target.write("condbr \(op), \(thenBB), \(elseBB)")
+        case let .export(op, out):
+            target.write("export \(op) to \(out)")
+        case let .store(op, v):
+            target.write("store \(op) to \(v)")
+        }
+    }
+}
+
+extension Operation : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .arithmetic(f, op1, op2):
+            target.write("\(f) \(op1), \(op2)")
+        case let .compare(f, op1, op2):
+            target.write("\(f) \(op1), \(op2)")
+        case let .logical(f, op1, op2):
+            target.write("\(f) \(op1), \(op2)")
+        case let .matrixMultiply(op1, op2):
+            target.write("matmul \(op1), \(op2)")
+        case let .integrate(f, op):
+            target.write("\(f) \(op)")
+        case let .transform(f, op):
+            target.write("\(f) \(op)")
+        case let .reduce(f, op, axis: axis):
+            target.write("\(f) \(op) along \(axis)")
+        case let .phi(ops):
+            target.write("phi \(ops.map{"[\($0) \($1)]"}.joined(separator: ", "))")
+        case let .concat(ops, axis: axis):
+            target.write("concat \(ops.map{"\($0)"}.joined(separator: ", ")) along \(axis)")
+        case let .typeCast(op, t):
+            target.write("typecast \(op) to \(t)")
+        case let .shapeCast(op, s):
+            target.write("shapecast \(op) to \(s)")
+        }
+    }
+}
+
+
+/*
+
 extension BasicBlock : TextOutputStreamable {
 
     private func makeIndentation() -> String {
@@ -173,59 +201,12 @@ extension BasicBlock : TextOutputStreamable {
             /// Write indentation
             makeIndentation().write(to: &target)
             target.write("    ")
-            inst.writeDefinition(to: &target)
+            inst.write(to: &target)
             target.write("\n")
         }
         makeIndentation().write(to: &target)
         /// End block
         target.write("}")
-    }
-}
-
-extension Instruction {
-    public func writeDefinition<Target : TextOutputStream>(to target: inout Target) {
-        if let defInst = self as? DefiningInstruction {
-            target.write("%\(defInst.name) = ")
-        }
-        switch self {
-        case let inst as TensorMultiplicationInstruction:
-            target.write("tmul \(inst.firstOperand), \(inst.secondOperand)")
-        case let inst as MatrixMultiplicationInstruction:
-            target.write("mmul \(inst.firstOperand), \(inst.secondOperand)")
-        case let inst as ArithmeticInstruction:
-            target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-        case let inst as LogicInstruction:
-            target.write("\(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-        case let inst as ComparisonInstruction:
-            target.write("cmp \(inst.function) \(inst.firstOperand), \(inst.secondOperand)")
-        case let inst as ElementwiseInstruction:
-            target.write("\(inst.function) \(inst.operand)")
-        case let inst as AggregationInstruction:
-            target.write("\(inst.function) \(inst.operand)")
-        case let inst as StoreInstruction:
-            target.write("store \(inst.source) to \(inst.destination)")
-        case let inst as ExportInstruction:
-            target.write("export \(inst.source) to \(inst.destination)")
-        case let inst as LoadInstruction:
-            target.write("load \(inst.source)")
-        case let inst as ConcatenationInstruction:
-            target.write("concat ")
-            inst.operands.map{"\($0)"}.joined(separator: ", ").write(to: &target)
-            target.write(" along \(inst.axis)")
-        case let inst as ReductionInstruction:
-            target.write("reduce \(inst.function) \(inst.operand)")
-        case let inst as ShapeCastInstruction:
-            target.write("shapecast \(inst.operand) to \(inst.target)")
-        case let inst as TypeCastInstruction:
-            target.write("typecast \(inst.operand) to \(inst.target)")
-        case let inst as PhiInstruction:
-            target.write("phi \(inst.incomingValues.map{"(\($0) \($1))"}.joined(separator: ", "))")
-        case let inst as BranchInstruction:
-            target.write("br \(inst.destination)")
-        default:
-            preconditionFailure("Unsupported instruction class \(type(of: self))")
-            break
-        }
     }
 }
 
@@ -281,3 +262,5 @@ extension Module : TextOutputStreamable {
         }
     }
 }
+
+*/

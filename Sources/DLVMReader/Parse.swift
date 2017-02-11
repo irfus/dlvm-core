@@ -176,8 +176,8 @@ extension InstructionNode : Parsible {
      ** OperandNode.parser.! <~~ Lexer.token("to").amid(spaces)
      ** OperandNode.parser.!
 
-    private static let loopParser: Parser<InstructionNode> =
-        "loop" ~~> spaces ^^= curry(InstructionNode.loop)
+    private static let recurParser: Parser<InstructionNode> =
+        "recur" ~~> spaces ^^= curry(InstructionNode.recur)
      ** BasicBlockNode.parser.! <~~ spaces.!
      ** LoopConditionNode.parser.!
 
@@ -189,7 +189,7 @@ extension InstructionNode : Parsible {
                                                       | typeCastParser
                                                       | exportParser
                                                       | storeParser
-                                                      | loopParser
+                                                      | recurParser
                                                      .. "an instruction"
 }
 

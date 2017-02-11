@@ -7,25 +7,19 @@
 //
 
 public enum VerificationError : Error {
-    case globalMissingParent(Global)
-    case globalRedeclared(Global)
     case basicBlockRedeclared(BasicBlock)
     case extensionTypeMismatch(BasicBlock, parent: BasicBlock)
-    case redeclaredInstruction(DefiningInstruction)
+    case redeclaredOperation(Def<Operation>)
     case blockMissingModule(BasicBlock)
     case blockModuleMismatch(BasicBlock, Module)
-    case blockParentMismatch(BasicBlock, parent: BasicBlock)
-    case instructionMissingParent(Instruction)
     case instructionParentMismatch(Instruction, parent: BasicBlock)
-    case shapeMismatch(ValueRepresentation, ValueRepresentation, Instruction)
-    case typeMismatch(ValueRepresentation, ValueRepresentation, Instruction)
-    case unexpectedShape(DefiningInstruction, TensorShape)
-    case unexpectedType(DefiningInstruction, DataType)
-    case logicOperandNotLogic(DefiningInstruction)
-    case cannotShapeCast(ShapeCastInstruction)
-    case cannotTensorMultiply(TensorMultiplicationInstruction)
-    case cannotMatrixMultiply(MatrixMultiplicationInstruction)
-    case cannotConcatenate(Value, ConcatenationInstruction)
+    case shapeMismatch(Use, Use, Def<Operation>)
+    case typeMismatch(Use, Use, Def<Operation>)
+    case unexpectedShape(Use, TensorShape)
+    case unexpectedType(Use, DataType)
+    case cannotShapeCast(Def<Operation>)
+    case cannotMatrixMultiply(Def<Operation>)
+    case cannotConcatenate(Def<Operation>)
     case operandsEmpty(Instruction)
 }
 
@@ -36,23 +30,6 @@ public protocol SelfVerifiable {
 extension Module : SelfVerifiable {
 
     open func verify() throws {
-        /// Update
-        updateAnalysisInformation()
-        /// Check for redeclared global values
-        var globalValueNames: Set<String> = []
-        func checkForRedeclaration<T: Global, S: Sequence>(in values: S) throws
-            where S.Iterator.Element == T {
-            for value in values {
-                _ = try value.parent()
-                guard !globalValueNames.contains(value.name) else {
-                    throw VerificationError.globalRedeclared(value)
-                }
-            }
-        }
-        try checkForRedeclaration(in: inputs)
-        try checkForRedeclaration(in: parameters)
-        try checkForRedeclaration(in: outputs)
-
         /// Check basic blocks
         for bb in basicBlocks {
             /// Check module reference
@@ -88,15 +65,6 @@ extension BasicBlock : SelfVerifiable {
         }
     }
 
-}
-
-fileprivate extension Global {
-    func parent() throws -> Module {
-        guard let module = module else {
-            throw VerificationError.globalMissingParent(self)
-        }
-        return module
-    }
 }
 
 fileprivate extension Instruction {
@@ -139,6 +107,8 @@ fileprivate extension Instruction {
         _ = try broadcastedShape(lhs, rhs)
     }
 }
+
+/*
 
 // MARK: - Verification helpers
 fileprivate extension DefiningInstruction {
@@ -289,3 +259,5 @@ public extension BranchInstruction {
     public func verify() throws {
     }
 }
+
+ */
