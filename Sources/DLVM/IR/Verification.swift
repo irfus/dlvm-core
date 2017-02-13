@@ -9,17 +9,16 @@
 public enum VerificationError : Error {
     case basicBlockRedeclared(BasicBlock)
     case extensionTypeMismatch(BasicBlock, parent: BasicBlock)
-    case redeclaredOperation(Def<Operation>)
+    case redeclaredInstruction(Instruction)
     case blockMissingModule(BasicBlock)
     case blockModuleMismatch(BasicBlock, Module)
-    case instructionParentMismatch(Instruction, parent: BasicBlock)
-    case shapeMismatch(Use, Use, Def<Operation>)
-    case typeMismatch(Use, Use, Def<Operation>)
+    case shapeMismatch(Use, Use, Instruction)
+    case typeMismatch(Use, Use, Instruction)
     case unexpectedShape(Use, TensorShape)
     case unexpectedType(Use, DataType)
-    case cannotShapeCast(Def<Operation>)
-    case cannotMatrixMultiply(Def<Operation>)
-    case cannotConcatenate(Def<Operation>)
+    case cannotShapeCast(Instruction)
+    case cannotMatrixMultiply(Instruction)
+    case cannotConcatenate(Instruction)
     case operandsEmpty(Instruction)
 }
 
@@ -51,31 +50,21 @@ extension BasicBlock : SelfVerifiable {
         /// Check instructions
         var instNames: Set<String> = []
         for inst in instructions {
-            let parent = try inst.parent()
-            guard parent === self else {
-                throw VerificationError.instructionParentMismatch(inst, parent: self)
-            }
-            if let defInst = inst as? DefiningInstruction {
-                guard !instNames.contains(defInst.name) else {
-                    throw VerificationError.redeclaredInstruction(defInst)
+            if let name = inst.name {
+                guard !instNames.contains(name) else {
+                    throw VerificationError.redeclaredInstruction(inst)
                 }
-                instNames.insert(defInst.name)
+                instNames.insert(name)
             }
-            try inst.verify()
+            // try inst.verify()
         }
     }
 
 }
 
 fileprivate extension Instruction {
-    func parent() throws -> BasicBlock {
-        guard let bb = parent else {
-            throw VerificationError.instructionMissingParent(self)
-        }
-        return bb
-    }
 
-    func broadcastedShape(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws -> TensorShape {
+    func broadcastedShape(_ lhs: Use, _ rhs: Use) throws -> TensorShape {
         guard let shape = lhs.shape.broadcasted(to: rhs.shape)
                        ?? rhs.shape.broadcasted(to: lhs.shape) else {
             throw VerificationError.shapeMismatch(lhs, rhs, self)
@@ -83,26 +72,26 @@ fileprivate extension Instruction {
         return shape
     }
 
-    func homomorphicShape(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws -> TensorShape {
+    func homomorphicShape(_ lhs: Use, _ rhs: Use) throws -> TensorShape {
         guard lhs.shape == rhs.shape else {
             throw VerificationError.shapeMismatch(lhs, rhs, self)
         }
         return lhs.shape
     }
 
-    func homogeneousType(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws -> DataType {
+    func homogeneousType(_ lhs: Use, _ rhs: Use) throws -> DataType {
         guard lhs.type == rhs.type else {
             throw VerificationError.typeMismatch(lhs, rhs, self)
         }
         return lhs.type
     }
 
-    func verifyHomomorphic(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws {
+    func verifyHomomorphic(_ lhs: Use, _ rhs: Use) throws {
         _ = try homogeneousType(lhs, rhs)
         _ = try broadcastedShape(lhs, rhs)
     }
 
-    func verifyHomomorphicBroadcasted(_ lhs: ValueRepresentation, _ rhs: ValueRepresentation) throws {
+    func verifyHomomorphicBroadcasted(_ lhs: Use, _ rhs: Use) throws {
         _ = try homogeneousType(lhs, rhs)
         _ = try broadcastedShape(lhs, rhs)
     }

@@ -62,9 +62,18 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func declare(_ value: GlobalValue) -> GlobalValue {
-        _module.insert(value)
-        return value
+    open func declare(_ placeholder: Placeholder, name: String? = nil) -> Def<Placeholder> {
+        let def = Def<Placeholder>(name: name ?? makeVariableName(), value: placeholder)
+        _module.insert(.placeholder(def))
+        return def
+    }
+
+    @discardableResult
+    open func declare(_ value: GlobalValue, name: String? = nil) -> Use {
+        let def = Def<GlobalValue>(name: name ?? makeVariableName(), value: value)
+        _module.insert(.value(def))
+        let use = Use(kind: .global(def))
+        return use
     }
 
     @discardableResult
@@ -76,7 +85,9 @@ extension IRBuilder {
 
     @discardableResult
     open func makeOperation(_ operation: Operation, name: String? = nil) -> Use {
-        return .local(build(operation, name: name))
+        let def = build(operation, name: name)
+        let use = Use(kind: .local(def))
+        return use
     }
 
 }

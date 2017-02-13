@@ -15,6 +15,7 @@ open class Module {
     open var name: String
 
     public fileprivate(set) var basicBlocks = OrderedNamedObjectSet<BasicBlock>()
+    public fileprivate(set) var globals = OrderedNamedObjectSet<Global>()
 
     open var entryBlock: BasicBlock? {
         return basicBlock(named: "entry")
@@ -44,9 +45,9 @@ extension Module {
         basicBlocks.remove(basicBlock)
         basicBlock.module = self
     }
-    
+
     open func basicBlock(named name: String) -> BasicBlock? {
-        return basicBlocks.value(named: name)
+        return basicBlocks.element(named: name)
     }
 
     open func containsBasicBlock(named name: String) -> Bool {
@@ -58,135 +59,31 @@ extension Module {
     }
 
 }
-//
-//// MARK: - Global values
-//extension Module {
-//
-//    open func insert(_ input: GlobalValue) {
-//    }
-//
-//    open func globalValue(named name: String) -> GlobalValue? {
-//    }
-//
-//    open func containsGlobalValue(named name: String) -> Bool {
-//        return parameterTable.keys.contains(name)
-//            || constantTable.keys.contains(name)
-//            || outputTable.keys.contains(name)
-//    }
-//
-//    
-//
-//// MARK: - Input
-//extension Module {
-//    
-//    /// Global inputs
-//    open var inputs: AnyCollection<Input> {
-//        return AnyCollection(inputTable.values)
-//    }
-//    
-//    open func input(named name: String) -> Input? {
-//        return inputTable[name]
-//    }
-//    
-//    @discardableResult
-//    open func removeInput(named name: String) -> Input? {
-//        let input = inputTable[name]
-//        inputTable.removeValue(forKey: name)
-//        return input
-//    }
-//
-//    open func containsInput(named name: String) -> Bool {
-//        return inputTable.keys.contains(name)
-//    }
-//    
-//}
-//
-//// MARK: - Output
-//extension Module {
-//    
-//    /// Global outputs
-//    open var outputs: AnyCollection<Output> {
-//        return AnyCollection(outputTable.values)
-//    }
-//
-//    open func output(named name: String) -> Output? {
-//        return outputTable[name]
-//    }
-//    
-//    @discardableResult
-//    open func removeOutput(named name: String) -> Output? {
-//        let output = outputTable[name]
-//        outputTable.removeValue(forKey: name)
-//        return output
-//    }
-//
-//    open func containsOutput(named name: String) -> Bool {
-//        return outputTable.keys.contains(name)
-//    }
-//    
-//}
-//
-//// MARK: - Parameter
-//extension Module {
-//    
-//    open var parameters: AnyCollection<Parameter> {
-//        return AnyCollection(parameterTable.values)
-//    }
-//    
-//    open func parameter(named name: String) -> Parameter? {
-//        return parameterTable[name]
-//    }
-//    
-//    @discardableResult
-//    open func removeParameter(named name: String) -> Parameter? {
-//        let parameter = parameterTable[name]
-//        parameterTable.removeValue(forKey: name)
-//        return parameter
-//    }
-//
-//    open func containsParameter(named name: String) -> Bool {
-//        return parameterTable.keys.contains(name)
-//    }
-//    
-//}
-//
-//// MARK: - Constants
-//extension Module {
-//
-//    open var constants: AnyCollection<Constant> {
-//        return AnyCollection(constantTable.values)
-//    }
-//
-//    open func constant(named name: String) -> Constant? {
-//        return constantTable[name]
-//    }
-//
-//    @discardableResult
-//    open func removeConstant(named name: String) -> Constant? {
-//        let constant = constantTable[name]
-//        constantTable.removeValue(forKey: name)
-//        return constant
-//    }
-//
-//    open func containsConstant(named name: String) -> Bool {
-//        return constantTable.keys.contains(name)
-//    }
-//    
-//}
-//
-//// MARK: - Analysis information
-//extension Module {
-//
-//    open func updateAnalysisInformation() {
-//        inputs.forEach { $0.removeAllUsers() }
-//        parameters.forEach { $0.removeAllUsers() }
-//        outputs.forEach { $0.removeAllUsers() }
-//        for bb in basicBlocks {
-//            bb.updateAnalysisInformation()
-//        }
-//    }
-//    
-//}
+
+// MARK: - Globals
+extension Module {
+
+    open func insert(_ global: Global) {
+        globals.insert(global)
+    }
+
+    open func index(of global: Global) -> Int? {
+        return globals.index(of: global)
+    }
+    
+    open func remove(_ global: Global) {
+        globals.remove(global)
+    }
+    
+    open func global(named name: String) -> Global? {
+        return globals.element(named: name)
+    }
+
+    open func contains(_ global: Global) -> Bool {
+        return globals.contains(global)
+    }
+
+}
 
 // MARK: - Output
 extension Module {
