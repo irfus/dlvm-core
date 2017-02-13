@@ -18,16 +18,16 @@ fileprivate protocol ObjectSetImplementation {
 public protocol ObjectSetProtocol {
     associatedtype Element
     subscript(name: String) -> Element? { get }
-    mutating func insert(_ value: Element)
-    mutating func remove(_ value: Element)
-    func contains(_ value: Element) -> Bool
-    func value(named name: String) -> Element?
-    @discardableResult mutating func removeValue(named name: String) -> Element?
+    mutating func insert(_ element: Element)
+    mutating func remove(_ element: Element)
+    func contains(_ element: Element) -> Bool
+    func element(named name: String) -> Element?
+    @discardableResult mutating func removeElement(named name: String) -> Element?
 }
 
 public extension ObjectSetProtocol {
     public func containsValue(named name: String) -> Bool {
-        return value(named: name) != nil
+        return element(named: name) != nil
     }
 }
 
@@ -62,20 +62,20 @@ public struct NamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementati
         return nameTable[name]
     }
 
-    public mutating func insert(_ value: Element) {
-        mutatingSet.add(value)
-        if let namedValue = value as? Named {
-            nameTable[namedValue.name] = value
+    public mutating func insert(_ element: Element) {
+        mutatingSet.add(element)
+        if let namedValue = element as? Named {
+            nameTable[namedValue.name] = element
         }
     }
     
-    public func contains(_ value: Element) -> Bool {
-        return set.contains(value)
+    public func contains(_ element: Element) -> Bool {
+        return set.contains(element)
     }
 
-    public mutating func remove(_ value: Element) {
-        mutatingSet.remove(value)
-        if let namedValue = value as? Named {
+    public mutating func remove(_ element: Element) {
+        mutatingSet.remove(element)
+        if let namedValue = element as? Named {
             nameTable[namedValue.name] = nil
         }
     }
@@ -85,15 +85,15 @@ public struct NamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementati
         nameTable.removeAll()
     }
 
-    public func value(named name: String) -> Element? {
+    public func element(named name: String) -> Element? {
         return nameTable[name]
     }
 
     @discardableResult
-    public mutating func removeValue(named name: String) -> Element? {
-        guard let value = value(named: name) else { return nil }
-        remove(value)
-        return value
+    public mutating func removeElement(named name: String) -> Element? {
+        guard let element = element(named: name) else { return nil }
+        remove(element)
+        return element
     }
 
 }
@@ -120,20 +120,20 @@ public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImple
         return nameTable[name]
     }
 
-    public mutating func insert(_ value: Element) {
-        mutatingSet.add(value)
-        if let namedValue = value as? Named {
-            nameTable[namedValue.name] = value
+    public mutating func insert(_ element: Element) {
+        mutatingSet.add(element)
+        if let namedValue = element as? Named {
+            nameTable[namedValue.name] = element
         }
     }
 
-    public func contains(_ value: Element) -> Bool {
-        return set.contains(value)
+    public func contains(_ element: Element) -> Bool {
+        return set.contains(element)
     }
 
-    public mutating func remove(_ value: Element) {
-        mutatingSet.remove(value)
-        if let namedValue = value as? Named {
+    public mutating func remove(_ element: Element) {
+        mutatingSet.remove(element)
+        if let namedValue = element as? Named {
             nameTable[namedValue.name] = nil
         }
     }
@@ -143,15 +143,19 @@ public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImple
         nameTable.removeAll()
     }
 
-    public func value(named name: String) -> Element? {
+    public func element(named name: String) -> Element? {
         return nameTable[name]
     }
 
     @discardableResult
-    public mutating func removeValue(named name: String) -> Element? {
-        guard let value = value(named: name) else { return nil }
-        remove(value)
-        return value
+    public mutating func removeElement(named name: String) -> Element? {
+        guard let element = element(named: name) else { return nil }
+        remove(element)
+        return element
+    }
+
+    public func index(of element: Element) -> Int? {
+        return set.index(of: element)
     }
 
 }

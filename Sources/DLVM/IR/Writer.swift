@@ -2,15 +2,13 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-extension GlobalValue : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("declare \(kind) \(shape) \(type) @\(name) = \(initializer)")
-    }
-}
-
-extension Placeholder : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("declare placeholder \(shape) \(type) @\(name)")
+public extension Value {
+    static var referencePrefix: String {
+        switch Self.scope {
+            case .global: return "@"
+            case .local: return "%"
+            case .none: return ""
+        }
     }
 }
 
@@ -84,18 +82,6 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension IntegrationFunction: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case .softmax: target.write("softmax")
-        case .logSoftmax: target.write("logSoftmax")
-        case .argmax: target.write("argmax")
-        case .argmin: target.write("argmin")
-        case let .scan(fun): target.write("scan \(fun)")
-        }
-    }
-}
-
 extension ArithmeticOperator : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
@@ -114,11 +100,21 @@ extension ArithmeticOperator : TextOutputStreamable {
     }
 }
 
-extension ReductionFunction : TextOutputStreamable {
+extension BooleanFunction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .logical(fun): target.write("\(fun)")
-        case let .arithmetic(fun): target.write("\(fun)")
+        case .and: target.write("and")
+        case .or: target.write("or")
+        case .xor: target.write("xor")
+        }
+    }
+}
+
+extension AssociativeFunction : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .arithmetic(fun): fun.write(to: &target)
+        case let .boolean(fun): fun.write(to: &target)
         }
     }
 }
@@ -136,12 +132,33 @@ extension ComparisonPredicate : TextOutputStreamable {
     }
 }
 
+extension BinaryFunction : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .associative(fun): fun.write(to: &target)
+        case let .comparison(fun): fun.write(to: &target)
+        }
+    }
+}
+
+extension UnaryFunction : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .elementwise(fun): target.write("\(fun)")
+        case let .integration(fun): target.write("\(fun)")
+        case let .scan(fun): fun.write(to: &target)
+        }
+    }
+}
+
 extension Control : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .branch(bb):
+        case let .br(bb):
             target.write("br \(bb)")
-        case let .condBranch(op, thenBB, elseBB):
+        case .ret:
+            target.write("ret")
+        case let .condBr(op, thenBB, elseBB):
             target.write("condbr \(op), \(thenBB), \(elseBB)")
         case let .export(op, out):
             target.write("export \(op) to \(out)")
@@ -154,17 +171,13 @@ extension Control : TextOutputStreamable {
 extension Operation : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .arithmetic(f, op1, op2):
-            target.write("\(f) \(op1), \(op2)")
-        case let .compare(f, op1, op2):
-            target.write("\(f) \(op1), \(op2)")
-        case let .logical(f, op1, op2):
+        case let .condLoad(p, bb):
+            target.write("condload \(p), %\(bb.name)")
+        case let .binary(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
         case let .matrixMultiply(op1, op2):
             target.write("matmul \(op1), \(op2)")
-        case let .integrate(f, op):
-            target.write("\(f) \(op)")
-        case let .transform(f, op):
+        case let .unary(f, op):
             target.write("\(f) \(op)")
         case let .reduce(f, op, axis: axis):
             target.write("\(f) \(op) along \(axis)")
@@ -180,23 +193,28 @@ extension Operation : TextOutputStreamable {
     }
 }
 
-
-/*
+extension Use : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("\(shape) \(type) ")
+        switch kind {
+        case let .global(def):
+            target.write("@\(def.name)")
+        case let .local(def):
+            target.write("%\(def.name)")
+        case let .literal(lit):
+            lit.literal.write(to: &target)
+        }
+    }
+}
 
 extension BasicBlock : TextOutputStreamable {
-
     private func makeIndentation() -> String {
         return "    "
     }
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if let extensionType = extensionType {
-            target.write("extension !\(name) for \(extensionType)")
-        } else {
-            target.write("!\(name)")
-        }
         /// Begin block
-        target.write(" {\n")
+        target.write("\(name):\n")
         for inst in elements {
             /// Write indentation
             makeIndentation().write(to: &target)
@@ -205,8 +223,28 @@ extension BasicBlock : TextOutputStreamable {
             target.write("\n")
         }
         makeIndentation().write(to: &target)
-        /// End block
-        target.write("}")
+    }
+}
+
+extension Instruction : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .control(control):
+            control.write(to: &target)
+        case let .operation(def):
+            target.write("%\(def.name) = \(def.value)")
+        }
+    }
+}
+
+extension Global : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .placeholder(def):
+            target.write("declare placeholder \(def.type) \(def.shape) @\(def.name)\n")
+        case let .value(def):
+            target.write("declare parameter \(def.type) \(def.shape) @\(def.name) = \(def.value.initializer)\n")
+        }
     }
 }
 
@@ -225,27 +263,9 @@ extension Module : TextOutputStreamable {
         target.write("module \(name)\n\n")
         /// Need add an empty line between different kinds of globals
         /// We check for non-emptiness, which looks crappy but works :)
-        if !inputs.isEmpty {
-            for input in inputs {
-                target.write("declare input \(input.type) \(input.shape) \(input.name)\n")
-            }
-            target.write("\n")
-        }
-        if !constants.isEmpty {
-            for constant in constants {
-                target.write("declare constant \(constant.type) \(constant.shape) \(constant.name) = \(constant.defaultInitializer)\n")
-            }
-            target.write("\n")
-        }
-        if !parameters.isEmpty {
-            for parameter in parameters {
-                target.write("declare parameter \(parameter.type) \(parameter.shape) \(parameter.name) = \(parameter.initializer)\n")
-            }
-            target.write("\n")
-        }
-        if !outputs.isEmpty {
-            for output in outputs {
-                target.write("declare output \(output.type) \(output.shape) \(output.name)\n")
+        if !globals.isEmpty {
+            for global in globals {
+                global.write(to: &target)
             }
             target.write("\n")
         }
@@ -253,14 +273,7 @@ extension Module : TextOutputStreamable {
         target.write("\n")
         for bb in basicBlocks {
             bb.write(to: &target)
-            /// Write out all the extensions
-            for ext in bb.extensions.values {
-                target.write("\n\n")
-                ext.write(to: &target)
-            }
             target.write("\n\n")
         }
     }
 }
-
-*/

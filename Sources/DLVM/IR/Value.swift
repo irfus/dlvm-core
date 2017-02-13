@@ -33,9 +33,16 @@ internal extension ManagedUsee {
     }
 }
 
+public enum Scope {
+    case global
+    case local
+    case none
+}
+
 public protocol Value {
     var shape: TensorShape { get }
     var type: DataType { get }
+    static var scope: Scope { get }
 }
 
 public enum Literal {
@@ -76,25 +83,31 @@ public struct LiteralValue : Value {
     public var type: DataType
     public var shape: TensorShape
     public var literal: ScalarLiteral
+    public static let scope: Scope = .none
 }
 
 public protocol Named {
     var name: String { get set }
 }
 
-public struct GlobalValue : Named, Value {
+public enum Global {
+    case value(Def<GlobalValue>)
+    case placeholder(Def<Placeholder>)
+}
+
+public struct GlobalValue : Value {
     public enum Kind {
         case variable, constant
     }
-    public var name: String
     public var kind: Kind
     public var shape: TensorShape
     public var type: DataType
     public var initializer: Literal
+    public static let scope: Scope = .global
 }
 
-public struct Placeholder : Value, Named {
-    public var name: String
+public struct Placeholder : Value {
     public var shape: TensorShape
     public var type: DataType
+    public static let scope: Scope = .global
 }
