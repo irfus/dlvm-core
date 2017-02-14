@@ -11,9 +11,10 @@ import struct DLVM.DataType
 import struct DLVM.TensorShape
 import enum DLVM.ElementwiseFunction
 import enum DLVM.ComparisonPredicate
-import enum DLVM.AggregationFunction
+import enum DLVM.IntegrationFunction
 import enum DLVM.ArithmeticOperator
-import enum DLVM.ReductionFunction
+import enum DLVM.BinaryFunction
+import enum DLVM.BooleanFunction
 
 public enum SemanticError : Error {
     case dataTypeRedeclared
