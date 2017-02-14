@@ -8,10 +8,9 @@
 
 public enum VerificationError : Error {
     case basicBlockRedeclared(BasicBlock)
-    case extensionTypeMismatch(BasicBlock, parent: BasicBlock)
     case redeclaredInstruction(Instruction)
     case blockMissingModule(BasicBlock)
-    case blockModuleMismatch(BasicBlock, Module)
+    case blockFunctionMismatch(BasicBlock, Function)
     case shapeMismatch(Use, Use, Instruction)
     case typeMismatch(Use, Use, Instruction)
     case unexpectedShape(Use, TensorShape)
@@ -27,21 +26,27 @@ public protocol SelfVerifiable {
 }
 
 extension Module : SelfVerifiable {
-
     open func verify() throws {
+        for fun in functions {
+            try fun.verify()
+        }
+    }
+}
+
+extension Function : SelfVerifiable {
+    public func verify() throws {
         /// Check basic blocks
         for bb in basicBlocks {
             /// Check module reference
-            guard let bbModule = bb.module else {
+            guard let bbFunction = bb.parent else {
                 throw VerificationError.blockMissingModule(bb)
             }
-            guard self === bbModule else {
-                throw VerificationError.blockModuleMismatch(bb, self)
+            guard self === bbFunction else {
+                throw VerificationError.blockFunctionMismatch(bb, self)
             }
             try bb.verify()
         }
     }
-    
 }
 
 extension BasicBlock : SelfVerifiable {

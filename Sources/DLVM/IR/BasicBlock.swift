@@ -15,8 +15,13 @@ open class BasicBlock : IRCollection, Named {
     /// Name of the basic block
     open var name: String
 
-    /// Parent module
-    open internal(set) weak var module: Module?
+    /// Parent function
+    open internal(set) weak var parent: Function?
+
+    /// Module containing the parent function
+    open weak var module: Module? {
+        return parent?.parent
+    }
 
     ///
     /// ## Instructions
@@ -38,12 +43,12 @@ open class BasicBlock : IRCollection, Named {
         #endif
     }
 
-    /// Whether this basic is an entry block
-    /// - Note: This depends on the parent module's entry block; if this block
-    /// is not added to a module or doesn't have the name "module", then it's
-    /// not considered an entry
-    open var isEntry: Bool {
-        return module?.entryBlock === self
+    open var isForwardEntry: Bool {
+        return parent?.forwardEntry === self
+    }
+    
+    open var isBackwardEntry: Bool {
+        return parent?.backwardEntry === self
     }
 
     public required init(name: String) {

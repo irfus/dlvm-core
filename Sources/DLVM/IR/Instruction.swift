@@ -72,8 +72,10 @@ public class Def<ValueType : Value> : ManagedUsee, Named {
 
 public struct Use {
     public enum Kind {
+        case argument(Def<Argument>)
         case local(Def<Operation>)
         case global(Def<GlobalValue>)
+        case placeholder(Def<Placeholder>)
         case literal(LiteralValue)
     }
     public var shape: TensorShape
@@ -92,8 +94,37 @@ public struct Use {
             self.init(shape: def.shape, type: def.type, kind: kind)
         case .global(let def):
             self.init(shape: def.shape, type: def.type, kind: kind)
+        case .placeholder(let def):
+            self.init(shape: def.shape, type: def.type, kind: kind)
+        case .argument(let def):
+            self.init(shape: def.shape, type: def.type, kind: kind)
         case .literal(let lit):
             self.init(shape: lit.shape, type: lit.type, kind: kind)
+        }
+    }
+
+    public var definition: AnyObject? {
+        switch kind {
+        case let .global(def): return def
+        case let .local(def): return def
+        case let .placeholder(def): return def
+        case let .argument(def): return def
+        case .literal: return nil
+        }
+    }
+
+    public var name: String? {
+        switch kind {
+        case .local(let def):
+            return def.name
+        case .global(let def):
+            return def.name
+        case .placeholder(let def):
+            return def.name
+        case .argument(let def):
+            return def.name
+        default:
+            return nil
         }
     }
 }
@@ -105,14 +136,14 @@ public enum Instruction {
 
 public enum Control {
     case store(Use, to: GlobalValue)
-    case export(Use, to: GlobalValue)
+    case export(Use)
     case br(BasicBlock)
     case condBr(Use, BasicBlock, BasicBlock)
+    case dequeueBr(Def<Placeholder>, BasicBlock, BasicBlock)
     case ret
 }
 
 public enum Operation {
-    case condLoad(Def<Placeholder>, BasicBlock)
     case reduce(AssociativeFunction, Use, axis: Int?)
     case unary(IntegrationFunction, Use)
     case binary(BinaryFunction, Use, Use)
@@ -129,6 +160,15 @@ extension Instruction {
             return nil
         }
         return def.name
+    }
+}
+
+extension Use : Equatable {
+    public static func ==(lhs: Use, rhs: Use) -> Bool {
+        return lhs.definition === rhs.definition
+            && lhs.name == rhs.name
+            && lhs.shape == rhs.shape
+            && lhs.type == rhs.type
     }
 }
 
@@ -154,8 +194,6 @@ extension Operation : Value {
             return t
         case let .shapeCast(op, _):
             return op.type
-        case let .condLoad(p, _):
-            return p.type
         }
     }
 
@@ -175,8 +213,6 @@ extension Operation : Value {
             return op.shape
         case let .shapeCast(_, s):
             return s
-        case let .condLoad(p, _):
-            return p.shape
         }
     }
 
@@ -188,7 +224,7 @@ extension Control : User {
     public var operands: [Use] {
         switch self {
         case .condBr(let op, _, _),
-             .export(let op, _),
+             .export(let op),
              .store(let op, _):
             return [op]
         default:
@@ -212,8 +248,6 @@ extension Operation : User {
             return [op]
         case let .phi(incomings):
             return incomings.map{$0.0}
-        case .condLoad(_):
-            return []
         }
     }
 }
@@ -230,5 +264,67 @@ extension Instruction : User {
 public extension Def where ValueType : User {
     public var operands: [Use] {
         return value.operands
+    }
+}
+
+extension Instruction {
+    func substituting(_ actualUse: Use, for use: Use) -> Instruction {
+        switch self {
+        case let .control(ctrl):
+            return .control(ctrl.substituting(actualUse, for: use))
+        case let .operation(def):
+            let oper = def.value.substituting(actualUse, for: use)
+            let newDef = Def<Operation>(name: def.name, value: oper)
+            return .operation(newDef)
+        }
+    }
+}
+
+extension Control {
+    func substituting(_ actualUse: Use, for use: Use) -> Control {
+        switch self {
+        case .store(use, to: let dest):
+            return .store(actualUse, to: dest)
+        case .condBr(use, let thenBB, let elseBB):
+            return .condBr(actualUse, thenBB, elseBB)
+        case .export(use):
+            return .export(actualUse)
+        default:
+            return self
+        }
+    }
+}
+
+extension Operation {
+    func substituting(_ actualUse: Use, for use: Use) -> Operation {
+        let condSubst = {$0 == use ? actualUse : $0}
+        switch self {
+        case .unary(let fun, use):
+            return .unary(fun, actualUse)
+        case .binary(let fun, use, let use2):
+            return .binary(fun, actualUse, use2)
+        case .binary(let fun, let use1, use):
+            return .binary(fun, use1, actualUse)
+        case .binary(let fun, use, use):
+            return .binary(fun, actualUse, actualUse)
+        case let .concat(uses, axis: axis):
+            return .concat(uses.map(condSubst), axis: axis)
+        case let .phi(uses):
+            return .phi(uses.map{(condSubst($0), $1)})
+        case .reduce(let fun, use, axis: let axis):
+            return .reduce(fun, actualUse, axis: axis)
+        case .matrixMultiply(use, let use2):
+            return .matrixMultiply(actualUse, use2)
+        case .matrixMultiply(let use1, use):
+            return .matrixMultiply(use1, actualUse)
+        case .matrixMultiply(use, use):
+            return .matrixMultiply(actualUse, actualUse)
+        case .shapeCast(use, let shape):
+            return .shapeCast(actualUse, shape)
+        case .typeCast(use, let type):
+            return .typeCast(actualUse, type)
+        default:
+            return self
+        }
     }
 }
