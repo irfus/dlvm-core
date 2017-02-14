@@ -63,27 +63,33 @@ public enum ScalarLiteral {
 }
 
 public enum TensorLiteral {
-    case elements([LiteralValue])
-    case random(from: LiteralValue, to: LiteralValue)
-    case repeating(LiteralValue)
+    case elements([ScalarLiteral])
+    case random(from: ScalarLiteral, to: ScalarLiteral)
+    case repeating(ScalarLiteral)
 
     public var typeBase: DataType.Base {
         switch self {
         case let .elements(elements):
-            return elements[0].type.base
+            return elements[0].typeBase
         case let .random(from: lowerbound, to: _):
-            return lowerbound.type.base
+            return lowerbound.typeBase
         case let .repeating(value):
-            return value.type.base
+            return value.typeBase
         }
     }
 }
 
 public struct LiteralValue : Value {
-    public var type: DataType
     public var shape: TensorShape
+    public var type: DataType
     public var literal: ScalarLiteral
     public static let scope: Scope = .none
+
+    public init(shape: TensorShape, type: DataType, literal: ScalarLiteral) {
+        self.shape = shape
+        self.type = type
+        self.literal = literal
+    }
 }
 
 public protocol Named {
@@ -104,10 +110,22 @@ public struct GlobalValue : Value {
     public var type: DataType
     public var initializer: Literal
     public static let scope: Scope = .global
+
+    public init(kind: Kind, shape: TensorShape, type: DataType, initializer: Literal) {
+        self.kind = kind
+        self.shape = shape
+        self.type = type
+        self.initializer = initializer
+    }
 }
 
 public struct Placeholder : Value {
     public var shape: TensorShape
     public var type: DataType
-    public static let scope: Scope = .global
+    public static var scope: Scope = .global
+
+    public init(shape: TensorShape, type: DataType) {
+        self.shape = shape
+        self.type = type
+    }
 }

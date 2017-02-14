@@ -14,7 +14,11 @@ open class IRBuilder {
         return _module
     }
 
-    var currentBlock: BasicBlock?
+    weak var currentBlock: BasicBlock?
+
+    weak var currentFunction: Function? {
+        return currentBlock?.parent
+    }
 
     fileprivate var variableNameId: Int = 0
     fileprivate var blockNameId: Int = 0
@@ -62,10 +66,11 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func declare(_ placeholder: Placeholder, name: String? = nil) -> Def<Placeholder> {
+    open func declare(_ placeholder: Placeholder, name: String? = nil) -> Use {
         let def = Def<Placeholder>(name: name ?? makeVariableName(), value: placeholder)
         _module.insert(.placeholder(def))
-        return def
+        let use = Use(kind: .placeholder(def))
+        return use
     }
 
     @discardableResult
@@ -77,9 +82,16 @@ extension IRBuilder {
     }
 
     @discardableResult
+    open func makeFunction(named name: String, argument: Def<Argument>, result: Argument) -> Function {
+        let fun = Function(name: name, argument: argument, result: result)
+        _module.insert(fun)
+        return fun
+    }
+
+    @discardableResult
     open func makeBasicBlock(named name: String) -> BasicBlock {
         let block = BasicBlock(name: disambiguatedName(for: name))
-        _module.insert(block)
+        currentFunction?.append(block)
         return block
     }
 
@@ -88,6 +100,11 @@ extension IRBuilder {
         let def = build(operation, name: name)
         let use = Use(kind: .local(def))
         return use
+    }
+
+    @discardableResult
+    open func makeControl(_ control: Control) {
+        currentBlock?.append(.control(control))
     }
 
 }

@@ -2,16 +2,6 @@
 // Created by Richard Wei on 12/25/16.
 //
 
-public extension Value {
-    static var referencePrefix: String {
-        switch Self.scope {
-            case .global: return "@"
-            case .local: return "%"
-            case .none: return ""
-        }
-    }
-}
-
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
@@ -160,10 +150,12 @@ extension Control : TextOutputStreamable {
             target.write("ret")
         case let .condBr(op, thenBB, elseBB):
             target.write("condbr \(op), \(thenBB), \(elseBB)")
-        case let .export(op, out):
-            target.write("export \(op) to \(out)")
+        case let .export(op):
+            target.write("export \(op)")
         case let .store(op, v):
             target.write("store \(op) to \(v)")
+        case let .dequeueBr(def, thenBB, elseBB):
+            target.write("deqbr &\(def.name) \(thenBB) \(elseBB)")
         }
     }
 }
@@ -171,8 +163,6 @@ extension Control : TextOutputStreamable {
 extension Operation : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .condLoad(p, bb):
-            target.write("condload \(p), %\(bb.name)")
         case let .binary(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
         case let .matrixMultiply(op1, op2):
@@ -197,9 +187,11 @@ extension Use : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("\(shape) \(type) ")
         switch kind {
-        case let .global(def):
+        case let .placeholder(def as Named),
+             let .global(def as Named):
             target.write("@\(def.name)")
-        case let .local(def):
+        case let .local(def as Named),
+             let .argument(def as Named):
             target.write("%\(def.name)")
         case let .literal(lit):
             lit.literal.write(to: &target)
@@ -243,22 +235,13 @@ extension Global : TextOutputStreamable {
         case let .placeholder(def):
             target.write("declare placeholder \(def.type) \(def.shape) @\(def.name)\n")
         case let .value(def):
-            target.write("declare parameter \(def.type) \(def.shape) @\(def.name) = \(def.value.initializer)\n")
+            target.write("declare \(def.value.kind) \(def.type) \(def.shape) @\(def.name) = \(def.value.initializer)\n")
         }
     }
 }
 
 extension Module : TextOutputStreamable {
 
-    private func writeOperandNotationDescription<Target : TextOutputStream>(to target: inout Target) {
-        target.write("// Operand notations:\n")
-        target.write("//   @ ---- input\n")
-        target.write("//   ' ---- constant\n")
-        target.write("//   $ ---- parameter\n")
-        target.write("//   & ---- output\n")
-        target.write("//   % ---- temporary\n")
-    }
-    
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n\n")
         /// Need add an empty line between different kinds of globals
@@ -269,10 +252,10 @@ extension Module : TextOutputStreamable {
             }
             target.write("\n")
         }
-        writeOperandNotationDescription(to: &target)
         target.write("\n")
-        for bb in basicBlocks {
-            bb.write(to: &target)
+        for _ in functions {
+            /// TODO: Print function
+//            bb.write(to: &target)
             target.write("\n\n")
         }
     }

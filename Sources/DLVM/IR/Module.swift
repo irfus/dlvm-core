@@ -10,15 +10,15 @@ import Foundation
 
 /// Module representing a neural network
 open class Module {
-    public typealias Element = BasicBlock
+    public typealias Element = Function
     
     open var name: String
 
-    public fileprivate(set) var basicBlocks = OrderedNamedObjectSet<BasicBlock>()
+    public fileprivate(set) var functions = OrderedNamedObjectSet<Function>()
     public fileprivate(set) var globals = OrderedNamedObjectSet<Global>()
 
-    open var entryBlock: BasicBlock? {
-        return basicBlock(named: "entry")
+    open weak var mainFunction: Function? {
+        return function(named: "main")
     }
 
     public init(name: String) {
@@ -29,33 +29,33 @@ open class Module {
 // MARK: - Basic block
 extension Module {
     
-    open func insert(_ basicBlock: BasicBlock) {
-        if let existingBlock = self.basicBlock(named: basicBlock.name) {
+    open func insert(_ function: Function) {
+        if let existingBlock = self.function(named: function.name) {
             remove(existingBlock)
         }
-        basicBlocks.insert(basicBlock)
-        basicBlock.module = self
+        functions.insert(function)
+        function.parent = self
     }
 
-    open func index(of basicBlock: BasicBlock) -> Int? {
-        return basicBlocks.index(of: basicBlock)
+    open func index(of function: Function) -> Int? {
+        return functions.index(of: function)
     }
     
-    open func remove(_ basicBlock: BasicBlock) {
-        basicBlocks.remove(basicBlock)
-        basicBlock.module = self
+    open func remove(_ function: Function) {
+        functions.remove(function)
+        function.parent = self
     }
 
-    open func basicBlock(named name: String) -> BasicBlock? {
-        return basicBlocks.element(named: name)
+    open func function(named name: String) -> Function? {
+        return functions.element(named: name)
     }
 
-    open func containsBasicBlock(named name: String) -> Bool {
-        return basicBlocks.containsValue(named: name)
+    open func containsFunction(named name: String) -> Bool {
+        return functions.containsValue(named: name)
     }
 
-    open func contains(_ basicBlock: BasicBlock) -> Bool {
-        return basicBlocks.contains(basicBlock)
+    open func contains(_ function: Function) -> Bool {
+        return functions.contains(function)
     }
 
 }
