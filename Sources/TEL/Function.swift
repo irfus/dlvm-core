@@ -8,114 +8,48 @@
 
 import DLVM
 
-public protocol FunctionProtocol {
-    var name: String { get }
-    var type: FunctionType { get }
-}
-
-public struct Function<IRFunction> : FunctionProtocol {
-    public var name: String
-    public var type: FunctionType
-    public var irFunction: IRFunction
-}
-
-public extension FunctionProtocol {
-    public func makeInstruction(withArguments args: [Value],
-                                using builder: IRBuilder,
-                                name: String? = nil) -> DefiningInstruction {
-        switch self {
-        case let f as Function<AggregationFunction>:
-            return builder.makeAggregation(f.irFunction, args[0], name: name)
-        case let f as Function<ElementwiseFunction>:
-            return builder.makeElementwiseTransformation(f.irFunction, args[0], name: name)
-        case let f as Function<ArithmeticOperator>:
-            return builder.makeArithmeticOperation(f.irFunction, args[0], args[1], name: name)
-        case let f as Function<LogicOperator>:
-            return builder.makeLogicOperation(f.irFunction, args[0], args[1], name: name)
-        case let f as Function<ComparisonPredicate>:
-            return builder.makeComparison(f.irFunction, args[0], args[1], name: name)
-        default:
-            preconditionFailure("Unsupported function class \(type(of: self))")
-        }
-    }
-}
-
-/// - MARK: Helper factory functions
-
-private func aggregation(_ name: String, function: AggregationFunction)
-    -> Function<AggregationFunction> {
-        return Function<AggregationFunction>(name: name, type: .homomorphicUnary, irFunction: function)
-}
-
-private func elementwise(_ name: String, function: ElementwiseFunction)
-    -> Function<ElementwiseFunction> {
-    return Function<ElementwiseFunction>(name: name, type: .homomorphicUnary, irFunction: function)
-}
-
-private func arithmetic(_ name: String, operator: ArithmeticOperator)
-    -> Function<ArithmeticOperator> {
-    return Function<ArithmeticOperator>(name: name, type: .homomorphicBinary, irFunction: `operator`)
-}
-
-private func logic(_ name: String, operator: LogicOperator)
-    -> Function<LogicOperator> {
-    return Function<LogicOperator>(name: name, type: .homomorphicBinary, irFunction: `operator`)
-}
-
-private func comparison(_ name: String, predicate: ComparisonPredicate)
-    -> Function<ComparisonPredicate> {
-    return Function<ComparisonPredicate>(name: name, type: .comparison, irFunction: predicate)
-}
-
 /// - MARK: TEL built-in functions
-public let builtinFunctions: [FunctionProtocol] = [
+fileprivate let intrinsicTable: [String : FunctionKind] = [
     /// Elementwise tranfer functions
-    elementwise("sigmoid", function: .sigmoid),
-    elementwise("log", function: .log),
-    elementwise("exp", function: .exp),
-    elementwise("tan", function: .tan),
-    elementwise("tanh", function: .tanh),
-    elementwise("atan", function: .atan),
-    elementwise("sin", function: .sin),
-    elementwise("asin", function: .asin),
-    elementwise("cos", function: .cos),
-    elementwise("acos", function: .acos),
-    elementwise("sqrt", function: .sqrt),
-    elementwise("ceil", function: .ceil),
-    elementwise("floor", function: .floor),
+    "sigmoid" : .unary(.elementwise(.sigmoid)),
+    "log" : .unary(.elementwise(.log)),
+    "exp" : .unary(.elementwise(.exp)),
+    "tan" : .unary(.elementwise(.tan)),
+    "tanh" : .unary(.elementwise(.tanh)),
+    "atan" : .unary(.elementwise(.atan)),
+    "sin" : .unary(.elementwise(.sin)),
+    "asin" : .unary(.elementwise(.asin)),
+    "cos" : .unary(.elementwise(.cos)),
+    "acos" : .unary(.elementwise(.acos)),
+    "sqrt" : .unary(.elementwise(.sqrt)),
+    "ceil" : .unary(.elementwise(.ceil)),
+    "floor" : .unary(.elementwise(.floor)),
 
-    /// Aggregate transfer functions
-    aggregation("softmax", function: .softmax),
-    aggregation("logSoftmax", function: .logSoftmax),
+    /// Integration functions
+    "softmax" : .unary(.integration(.softmax)),
+    "logSoftmax" : .unary(.integration(.logSoftmax)),
 
-    /// Logical operators
-    logic("&&", operator: .and),
-    logic("||", operator: .or),
-    logic("^^", operator: .xor),
+    /// Logical operators (not yet supported)
+//    "&&" : .binary(.associative(.boolean(.and))),
+//    "||" : .binary(.associative(.boolean(.or))),
+//    "^^" : .binary(.associative(.boolean(.xor))),
 
     /// Arithmetic operators
-    arithmetic("+", operator: .add),
-    arithmetic("-", operator: .subtract),
-    arithmetic("*", operator: .multiply),
-    arithmetic("/", operator: .divide),
-    arithmetic("min", operator: .min),
-    arithmetic("max", operator: .max),
-    arithmetic("pow", operator: .power),
-    arithmetic("mod", operator: .modulo),
+    "+" : .binary(.associative(.arithmetic(.add))),
+    "-" : .binary(.associative(.arithmetic(.subtract))),
+    "*" : .binary(.associative(.arithmetic(.multiply))),
+    "/" : .binary(.associative(.arithmetic(.divide))),
+    "min" : .binary(.associative(.arithmetic(.min))),
+    "max" : .binary(.associative(.arithmetic(.max))),
+    "pow" : .binary(.associative(.arithmetic(.power))),
+    "mod" : .binary(.associative(.arithmetic(.modulo))),
 
-    /// Comparison operators
-    comparison(">", predicate: .greaterThan),
-    comparison("<", predicate: .lessThan),
-    comparison(">=", predicate: .greaterThanOrEqualTo),
-    comparison("<=", predicate: .lessThanOrEqualTo),
-    comparison("==", predicate: .equalTo),
-    comparison("!=", predicate: .notEqualTo),
+    /// Comparison operators (not yet supported)
+//    ">" : .binary(.comparison(.greaterThan)),
+//    "<" : .binary(.comparison(.lessThan)),
+//    ">=" : .binary(.comparison(.greaterThanOrEqualTo)),
+//    "<=" : .binary(.comparison(.lessThanOrEqualTo)),
+//    "==" : .binary(.comparison(.equalTo)),
+//    "!=" : .binary(.comparison(.notEqualTo)),
 ]
 
-public let builtinFunctionTable: [String : FunctionProtocol] = {
-    var dict: [String : FunctionProtocol] = [:]
-    for function in builtinFunctions {
-        dict[function.name] = function
-    }
-    return dict
-}()

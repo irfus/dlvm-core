@@ -33,9 +33,9 @@ extension FunctionTypeError : CustomStringConvertible {
 /// to allow function declarations in TEL.
 
 public enum FunctionType {
-    case homomorphicUnary, homomorphicBinary, binaryReduction
+    case monomorphicUnary, monomorphicBinary
     case matrixMultiplication, tensorMultiplication
-    case logicalBinary, comparison
+    case comparison
 }
 
 internal extension FunctionType {
@@ -49,12 +49,10 @@ internal extension FunctionType {
 public extension FunctionType {
     public var argumentCount: Int {
         switch self {
-        case .homomorphicUnary: return 1
-        case .homomorphicBinary: return 2
-        case .binaryReduction: return 2
+        case .monomorphicUnary: return 1
+        case .monomorphicBinary: return 2
         case .matrixMultiplication: return 2
         case .tensorMultiplication: return 2
-        case .logicalBinary: return 2
         case .comparison: return 2
         }
     }
@@ -66,13 +64,12 @@ public extension FunctionType {
     public func resultShape(forArguments args: [TensorShape]) throws -> TensorShape {
         try checkSanity(forArguments: args)
         switch self {
-        case .homomorphicUnary: return args[0]
-        case .homomorphicBinary, .comparison, .logicalBinary:
+        case .monomorphicUnary: return args[0]
+        case .monomorphicBinary, .comparison, .comparison:
             guard let broadcastedShape = broadcast(args[0], args[1]) else {
                 throw FunctionTypeError.shapeMismatch(args[0], args[1])
             }
             return broadcastedShape
-        case .binaryReduction: return .scalar
         case .matrixMultiplication:
             guard let resultShape = args[0].matrixMultiplied(with: args[1]) else {
                 throw FunctionTypeError.shapeMismatch(args[0], args[1])

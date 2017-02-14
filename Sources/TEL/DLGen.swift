@@ -18,9 +18,9 @@ public extension Program {
 }
 
 struct CodeGenEnvironment {
-    var variables: [String : DLVM.ValueRepresentation] = [:]
+    var variables: [String : DLVM.Use] = [:]
     
-    subscript(key: String) -> DLVM.ValueRepresentation? {
+    subscript(key: String) -> DLVM.Use? {
         get {
             return variables[key]
         }
@@ -42,44 +42,40 @@ class CodeGenerator {
     func makeModule() -> Module {
         /// Declare input
         for input in program.inputs {
-            let value = builder.declareInput(name: input.name, type: program.dataType, shape: input.shape)
-            environment[value.name] = value
+            let placeholder = Placeholder(shape: input.shape, type: program.dataType)
+            let use = builder.declare(placeholder, name: input.name)
+            environment[input.name] = use
         }
         /// Define globals
         for param in program.parameters {
-            let initializer: TensorInitializer
+            let initializer: TensorLiteral
             switch param.initializer {
             case let .constant(.int(i)):
-                initializer = .repeating(ImmediateValue(type: program.dataType, immediate: .int(i)))
+                initializer = .repeating(.int(i))
             case let .constant(.float(f)):
-                initializer = .repeating(ImmediateValue(type: program.dataType, immediate: .float(f)))
+                initializer = .repeating(.float(f))
             case let .random(.int(i1), .int(i2)):
-                initializer = .random(from: ImmediateValue(type: program.dataType, immediate: .int(i1)),
-                                      to: ImmediateValue(type: program.dataType, immediate: .int(i2)))
+                initializer = .random(from: .int(i1), to: .int(i2))
             case let .random(.float(f1), .float(f2)):
-                initializer = .random(from: ImmediateValue(type: program.dataType, immediate: .float(f1)),
-                                      to: ImmediateValue(type: program.dataType, immediate: .float(f2)))
+                initializer = .random(from: .float(f1), to: .float(f2))
             default:
                 preconditionFailure("This should not have passed Sema")
             }
-            let value = builder.declareParameter(name: param.name, type: program.dataType,
-                                                 shape: param.shape, initializer: initializer)
-            environment[value.name] = value
+            let variable = GlobalValue(kind: .variable,
+                                       shape: param.shape, type: program.dataType,
+                                       initializer: .tensor(initializer))
+            let use = builder.declare(variable, name: param.name)
+            environment[param.name] = use
         }
         
         /// Entry block
-        builder.makeGlobalBasicBlock(named: "entry")
+        let entry = builder.makeBasicBlock(named: "entry")
+        builder.move(to: entry)
 
         /// Generate hidden layers
         for layer in program.layers {
-            let value = build(layer.expression, named: layer.name)
-            if layer.isOutput {
-                let output = builder.declareOutput(name: layer.name, type: program.dataType,
-                                                   shape: layer.shape)
-                environment[output.name] = output
-                builder.makeExport(value, to: output)
-            }
-            environment[layer.name] = value
+            let use = build(layer.expression, named: layer.name)
+            environment[layer.name] = use
         }
 
         /// Done!
@@ -88,7 +84,7 @@ class CodeGenerator {
     
     /// TODO: support recurrence
     @discardableResult
-    func build(_ expression: Expression, named name: String? = nil) -> DLVM.Value {
+    func build(_ expression: Expression, named name: String? = nil) -> DLVM.Use {
         switch expression {
         case let .constant(c, _):
             return c.operand(for: program.dataType)
@@ -105,7 +101,7 @@ class CodeGenerator {
             if let input = op as? DLVM.Input {
                 return builder.makeLoad(input)
             }
-            if let val = op as? DLVM.Value {
+            if let val = op as? DLVM.Use {
                 return val
             }
             /// Can't be an output. This won't be reached
