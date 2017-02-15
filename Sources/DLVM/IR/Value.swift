@@ -82,10 +82,10 @@ public enum TensorLiteral {
 public struct LiteralValue : Value {
     public var shape: TensorShape
     public var type: DataType
-    public var literal: ScalarLiteral
+    public var literal: Literal
     public static let scope: Scope = .none
 
-    public init(shape: TensorShape, type: DataType, literal: ScalarLiteral) {
+    public init(shape: TensorShape, type: DataType, literal: Literal) {
         self.shape = shape
         self.type = type
         self.literal = literal
@@ -99,6 +99,7 @@ public protocol Named {
 public enum Global {
     case value(Def<GlobalValue>)
     case placeholder(Def<Placeholder>)
+    case output(Def<Output>)
 }
 
 public struct GlobalValue : Value {
@@ -119,13 +120,71 @@ public struct GlobalValue : Value {
     }
 }
 
-public struct Placeholder : Value {
+public protocol PotentiallyRecurrentValue : Value {
+    var isRecurrent: Bool { get }
+}
+
+public class Def<ValueType : Value> : ManagedUsee, Named, Value {
+    public typealias UserType = Instruction
+    public var name: String
     public var shape: TensorShape
     public var type: DataType
+    public var value: ValueType
+    public var users: NamedObjectSet<Instruction> = []
+
+    public static var scope: Scope {
+        return ValueType.scope
+    }
+    
+    public init(name: String, value: ValueType) {
+        self.name = name
+        self.shape = value.shape
+        self.type = value.type
+        self.value = value
+    }
+}
+
+public extension Def where ValueType : PotentiallyRecurrentValue {
+    public var isRecurrent: Bool {
+        return value.isRecurrent
+    }
+}
+
+public extension Global {
+    var isRecurrent: Bool {
+        switch self {
+        case let .placeholder(def):
+            return def.value.isRecurrent
+        case let .output(def):
+            return def.value.isRecurrent
+        default:
+            return false
+        }
+    }
+}
+
+public struct Placeholder : PotentiallyRecurrentValue {
+    public var shape: TensorShape
+    public var type: DataType
+    public var isRecurrent: Bool
     public static var scope: Scope = .global
 
-    public init(shape: TensorShape, type: DataType) {
+    public init(shape: TensorShape, type: DataType, isRecurrent: Bool) {
         self.shape = shape
         self.type = type
+        self.isRecurrent = isRecurrent
+    }
+}
+
+public struct Output : PotentiallyRecurrentValue {
+    public var shape: TensorShape
+    public var type: DataType
+    public var isRecurrent: Bool
+    public static var scope: Scope = .global
+
+    public init(shape: TensorShape, type: DataType, isRecurrent: Bool) {
+        self.shape = shape
+        self.type = type
+        self.isRecurrent = isRecurrent
     }
 }

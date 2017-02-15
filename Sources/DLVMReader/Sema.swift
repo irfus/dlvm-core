@@ -43,69 +43,8 @@ extension ModuleNode {
 
 extension BasicBlockNode {
     public func makeBasicBlock(in env: BasicBlock?, module: Module) throws -> BasicBlock {
-        let bb: BasicBlock
-        let extType = try extensionTypeName.map { (extTypeName) throws -> BasicBlock.ExtensionType in
-            guard let extType = BasicBlock.ExtensionType.lexicon[extTypeName] else {
-                throw SemanticError.unsupportedExtensionType(self)
-            }
-            return extType
-        }
-        switch (env, extType) {
-        /// Non-extension cannot live in an extension
-        case let (env?, nil) where env.isExtension:
-            throw SemanticError.nonextensionInExtension(self)
+        let bb = BasicBlock()
 
-        /// Extension cannot live in a non-extension
-        case let (env?, _?) where !env.isExtension:
-            throw SemanticError.extensionInNonextension(self)
-
-        /// Extension must have the same type as parent's
-        case let (env?, extType?) where extType != env.extensionType:
-            throw SemanticError.extensionTypeMismatchWithParent(self)
-
-        /// Non-extension cannot be duplicate
-        case (nil, nil) where module.containsBasicBlock(named: name):
-            throw SemanticError.redeclaredBasicBlock(self)
-
-        /// Nested non-extension's name must not be duplicate
-        case let (env?, nil) where module.containsBasicBlock(named: name):
-            throw SemanticError.redeclaredBasicBlock(self)
-
-        /// Global extension
-        case let (nil, extType?):
-            /// Search for basic block
-            guard let mainBB = module.basicBlock(named: name) else {
-                throw SemanticError.cannotFindMainBlock(self)
-            }
-            guard !mainBB.hasExtension(ofType: extType) else {
-                throw SemanticError.redeclaredExtension(self)
-            }
-            bb = mainBB.makeExtension(ofType: extType)
-
-        /// Nested extension
-        case let (env?, extType?):
-            guard let mainBB = env.mainBlock else {
-                throw SemanticError.cannotFindMainBlock(self)
-            }
-            guard !mainBB.hasExtension(ofType: extType) else {
-                throw SemanticError.redeclaredExtension(self)
-            }
-            bb = mainBB.makeExtension(ofType: extType)
-
-        /// Global non-extension
-        case (nil, nil):
-            bb = BasicBlock(name: name)
-
-        /// Nested non-extension
-        case let (env?, nil):
-            bb = BasicBlock(name: name, parent: env)
-        }
-        
-        for instNode in instructions {
-            let inst = try instNode.makeInstruction(in: bb, module: module)
-            bb.append(inst)
-        }
-        return bb
     }
 }
 

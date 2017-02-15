@@ -1,12 +1,10 @@
 //
-//  Function.swift
+//  Intrinsics.swift
 //  DLVM
 //
 //  Created by Richard Wei on 2/13/17.
 //
 //
-
-import Foundation
 
 public struct Argument : Value {
     public var shape: TensorShape
@@ -19,13 +17,13 @@ open class Function : Named, IRCollection {
     public typealias Element = BasicBlock
 
     public var name: String
-    public var argument: Def<Argument>
-    public var result: Argument
+    public var argument: Def<Argument>?
+    public var result: Argument?
     public var basicBlocks = OrderedNamedObjectSet<BasicBlock>()
 
     public weak var parent: Module?
 
-    public init(name: String, argument: Def<Argument>, result: Argument) {
+    public init(name: String, argument: Def<Argument>?, result: Argument?) {
         self.name = name
         self.argument = argument
         self.result = result
@@ -51,7 +49,7 @@ extension Function {
 
     open func remove(_ basicBlock: BasicBlock) {
         basicBlocks.remove(basicBlock)
-        basicBlock.parent = self
+        basicBlock.parent = nil
     }
 
     open func basicBlock(named name: String) -> BasicBlock? {

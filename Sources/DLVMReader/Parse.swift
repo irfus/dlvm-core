@@ -80,11 +80,11 @@ extension OperandNode : Parsible {
      .. "an operand"
 }
 
-import enum DLVM.ElementwiseFunction
+import enum DLVM.ElementwiseOp
 import enum DLVM.LogicOperator
-import enum DLVM.ComparisonPredicate
-import enum DLVM.AggregationFunction
-import enum DLVM.ArithmeticOperator
+import enum DLVM.ComparisonOp
+import enum DLVM.IntegrationOp
+import enum DLVM.ArithmeticOp
 import enum DLVM.ReductionFunction
 import protocol DLVM.LexicallyConvertible
 
@@ -94,19 +94,19 @@ extension Parsible where Self : LexicallyConvertible {
     }
 }
 
-extension ElementwiseFunction : Parsible {}
-extension ArithmeticOperator : Parsible {}
-extension ComparisonPredicate : Parsible {}
+extension ElementwiseOp: Parsible {}
+extension ArithmeticOp: Parsible {}
+extension ComparisonOp: Parsible {}
 extension LogicOperator: Parsible {}
 
 extension ReductionFunction : Parsible {
     public static let parser: Parser<ReductionFunction> =
         LogicOperator.parser       ^^ ReductionFunction.logical
-      | ArithmeticOperator.parser  ^^ ReductionFunction.arithmetic
+      | ArithmeticOp.parser  ^^ ReductionFunction.arithmetic
      .. "reduction function"
 }
 
-extension AggregationFunction : Parsible {
+extension IntegrationOp: Parsible {
     public static let parser: Parser<AggregationFunction> =
         identifier.map(AggregationFunction.lexicon)
       | Lexer.token("scan") ~~> spaces ~~> ReductionFunction.parser.! ^^ AggregationFunction.scan
@@ -132,7 +132,7 @@ extension LoopConditionNode : Parsible {
 extension InstructionNode : Parsible {
 
     private static let unaryParser: Parser<InstructionNode> =
-      ( ElementwiseFunction.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
+      ( ElementwiseOp.parser <~~ spaces ^^ curry(InstructionNode.elementwise)
       | AggregationFunction.parser <~~ spaces ^^ curry(InstructionNode.aggregate)
       | "load" ~~> spaces                     ^^= curry(InstructionNode.load)
       ) ** OperandNode.parser.!
@@ -144,9 +144,9 @@ extension InstructionNode : Parsible {
       ** (Lexer.token("along").amid(spaces) ~~> number.!).?
 
     private static let binaryParser: Parser<InstructionNode> =
-      ( ArithmeticOperator.parser <~~ spaces        ^^ curry(InstructionNode.arithmetic)
+      ( ArithmeticOp.parser <~~ spaces        ^^ curry(InstructionNode.arithmetic)
       | LogicOperator.parser <~~ spaces             ^^ curry(InstructionNode.logic)
-      | ComparisonPredicate.parser <~~ spaces       ^^ curry(InstructionNode.comparison)
+      | ComparisonOp.parser <~~ spaces       ^^ curry(InstructionNode.comparison)
       | "mmul" ~~> spaces                           ^^= curry(InstructionNode.matrixMultiply)
       | "tmul" ~~> spaces                           ^^= curry(InstructionNode.tensorMultiply)
       ) ** OperandNode.parser.! <~~ comma.! ** OperandNode.parser.!

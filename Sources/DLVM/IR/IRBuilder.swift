@@ -66,9 +66,18 @@ extension IRBuilder {
     }
 
     @discardableResult
+    open func declare(_ output: Output, name: String? = nil) -> Def<Output> {
+        let def = Def<Output>(name: name ?? makeVariableName(), value: output)
+        let global: Global = .output(def)
+        _module.insert(global)
+        return def
+    }
+
+    @discardableResult
     open func declare(_ placeholder: Placeholder, name: String? = nil) -> Use {
         let def = Def<Placeholder>(name: name ?? makeVariableName(), value: placeholder)
-        _module.insert(.placeholder(def))
+        let global: Global = .placeholder(def)
+        _module.insert(global)
         let use = Use(kind: .placeholder(def))
         return use
     }
@@ -82,28 +91,28 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func makeFunction(named name: String, argument: Def<Argument>, result: Argument) -> Function {
+    open func buildFunction(named name: String, argument: Def<Argument>?, result: Argument?) -> Function {
         let fun = Function(name: name, argument: argument, result: result)
         _module.insert(fun)
         return fun
     }
 
     @discardableResult
-    open func makeBasicBlock(named name: String) -> BasicBlock {
+    open func buildBasicBlock(named name: String, in function: Function) -> BasicBlock {
         let block = BasicBlock(name: disambiguatedName(for: name))
-        currentFunction?.append(block)
+        function.append(block)
         return block
     }
 
     @discardableResult
-    open func makeOperation(_ operation: Operation, name: String? = nil) -> Use {
+    open func buildOperation(_ operation: Operation, name: String? = nil) -> Use {
         let def = build(operation, name: name)
         let use = Use(kind: .local(def))
         return use
     }
 
     @discardableResult
-    open func makeControl(_ control: Control) {
+    open func buildControl(_ control: Control) {
         currentBlock?.append(.control(control))
     }
 

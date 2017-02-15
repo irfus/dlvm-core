@@ -43,7 +43,7 @@ extension Module {
     
     open func remove(_ function: Function) {
         functions.remove(function)
-        function.parent = self
+        function.parent = nil
     }
 
     open func function(named name: String) -> Function? {

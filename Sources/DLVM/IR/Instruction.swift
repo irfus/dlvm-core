@@ -6,70 +6,6 @@
 //
 //
 
-public enum ComparisonPredicate {
-    case lessThan, lessThanOrEqualTo
-    case greaterThan, greaterThanOrEqualTo
-    case equalTo, notEqualTo
-}
-
-public enum BooleanFunction {
-    case and, or, xor
-}
-
-public enum ArithmeticOperator {
-    case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, modulo, power, mean
-}
-
-public enum ElementwiseFunction {
-    case sigmoid, tanh
-    case log, exp, neg, sign, square, sqrt, round, rsqrt, ceil, floor
-    case tan, cos, sin, acos, asin, atan
-    case lgamma, digamma, erf, erfc, rint
-}
-
-public enum FunctionKind {
-    case unary(UnaryFunction)   /// Monomorphic
-    case binary(BinaryFunction) /// Monomorphic
-    case matrixMultiplication   /// Matrix multiplication
-    case reduction              /// Reducing 1 dimension
-}
-
-public enum IntegrationFunction {
-    case softmax, logSoftmax, argmax, argmin
-}
-
-public enum UnaryFunction {
-    case elementwise(ElementwiseFunction)
-    case integration(IntegrationFunction)
-    case scan(BinaryFunction)
-}
-
-public enum AssociativeFunction {
-    case boolean(BooleanFunction)
-    case arithmetic(ArithmeticOperator)
-}
-
-public enum BinaryFunction {
-    case associative(AssociativeFunction)
-    case comparison(ComparisonPredicate)
-}
-
-public class Def<ValueType : Value> : ManagedUsee, Named {
-    public typealias UserType = Instruction
-    public var name: String
-    public var shape: TensorShape
-    public var type: DataType
-    public var value: ValueType
-    public var users: NamedObjectSet<Instruction> = []
-    public init(name: String, value: ValueType) {
-        self.name = name
-        self.shape = value.shape
-        self.type = value.type
-        self.value = value
-    }
-}
-
 public struct Use {
     public enum Kind {
         case argument(Def<Argument>)
@@ -106,7 +42,7 @@ public struct Use {
     public var definition: AnyObject? {
         switch kind {
         case let .global(def): return def
-        case let .local(def): return def
+        case let .local(def): return def 
         case let .placeholder(def): return def
         case let .argument(def): return def
         case .literal: return nil
@@ -115,15 +51,12 @@ public struct Use {
 
     public var name: String? {
         switch kind {
-        case .local(let def):
+        case .local(let def as Named),
+             .global(let def as Named),
+             .placeholder(let def as Named),
+             .argument(let def as Named):
             return def.name
-        case .global(let def):
-            return def.name
-        case .placeholder(let def):
-            return def.name
-        case .argument(let def):
-            return def.name
-        default:
+        case .literal:
             return nil
         }
     }
@@ -135,22 +68,45 @@ public enum Instruction {
 }
 
 public enum Control {
-    case store(Use, to: GlobalValue)
-    case export(Use)
+    /// Store use to global value
+    case store(Use, to: Def<GlobalValue>)
+    /// Export to use
+    case export(Use, to: Def<Output>)
+    /// Unconditionally branch to basic block
     case br(BasicBlock)
+    /// Conditional branch depending on the value
     case condBr(Use, BasicBlock, BasicBlock)
-    case dequeueBr(Def<Placeholder>, BasicBlock, BasicBlock)
-    case ret
+    /// Advance recurrent sequence. Branch left if non-empty,
+    /// branch right if empty
+    case recBr(Def<Placeholder>, BasicBlock, BasicBlock)
+    /// End forward propagation
+    case endForward
+    /// End backpropagation
+    case endFackward
+    /// Return
+    case ret(Use?)
 }
 
 public enum Operation {
-    case reduce(AssociativeFunction, Use, axis: Int?)
-    case unary(IntegrationFunction, Use)
-    case binary(BinaryFunction, Use, Use)
-    case matrixMultiply(Use, Use)
+    /// Scan operation with optional axis
+    /// If axis is not given, scan is performed on contiguous elements
+    case scan(AssociativeOp, Use, axis: Int?)
+    /// Reduction operation with optional axis
+    /// If axis is not given, reduction is performed on contiguous elements
+    case reduce(AssociativeOp, Use, axis: Int?)
+    /// Monomorphic unary operation
+    case unary(UnaryOp, Use)
+    /// Monomorphic binary operation
+    case binary(BinaryOp, Use, Use)
+    /// Matrix multiplication operation
+    case matMul(Use, Use)
+    /// Concatenation operation
     case concat([Use], axis: Int)
+    /// Phi node of SSA form
     case phi([(Use, BasicBlock)])
+    /// Type cast operation
     case typeCast(Use, DataType)
+    /// Shape cast operation
     case shapeCast(Use, TensorShape)
 }
 
@@ -181,10 +137,11 @@ extension Operation : Value {
         case .binary(.associative(.boolean), _, _),
              .binary(.comparison, _, _):
             return .bool
-        case let .matrixMultiply(op1, _):
+        case let .matMul(op1, _):
             return op1.type
         case let .unary(_, op),
-             let .reduce(_, op, _):
+             let .reduce(_, op, _),
+             let .scan(_, op, _):
             return op.type
         case let .phi(ops):
             return ops[0].0.type
@@ -200,10 +157,11 @@ extension Operation : Value {
     public var shape: TensorShape {
         switch self {
         case let .binary(_, op1, _),
-             let .matrixMultiply(op1, _):
+             let .matMul(op1, _):
             return op1.shape
         case let .unary(_, op),
-             let .reduce(_, op, _):
+             let .reduce(_, op, _),
+             let .scan(_, op, axis: _):
             return op.shape
         case let .phi(ops):
             return ops[0].0.shape
@@ -224,8 +182,9 @@ extension Control : User {
     public var operands: [Use] {
         switch self {
         case .condBr(let op, _, _),
-             .export(let op),
-             .store(let op, _):
+             .export(let op, _),
+             .store(let op, _),
+             .ret(let op?):
             return [op]
         default:
             return []
@@ -237,12 +196,13 @@ extension Operation : User {
     public var operands: [Use] {
         switch self {
         case let .binary(_, op1, op2),
-             let .matrixMultiply(op1, op2):
+             let .matMul(op1, op2):
             return [op1, op2]
         case .concat(let uses, axis: _):
             return uses
         case let .unary(_, op),
              let .reduce(_, op, _),
+             let .scan(_, op, _),
              let .shapeCast(op, _),
              let .typeCast(op, _):
             return [op]
@@ -267,7 +227,7 @@ public extension Def where ValueType : User {
     }
 }
 
-extension Instruction {
+public extension Instruction {
     func substituting(_ actualUse: Use, for use: Use) -> Instruction {
         switch self {
         case let .control(ctrl):
@@ -280,22 +240,24 @@ extension Instruction {
     }
 }
 
-extension Control {
+public extension Control {
     func substituting(_ actualUse: Use, for use: Use) -> Control {
         switch self {
         case .store(use, to: let dest):
             return .store(actualUse, to: dest)
         case .condBr(use, let thenBB, let elseBB):
             return .condBr(actualUse, thenBB, elseBB)
-        case .export(use):
-            return .export(actualUse)
+        case .export(use, to: let dest):
+            return .export(actualUse, to: dest)
+        case .ret(use?):
+            return .ret(actualUse)
         default:
             return self
         }
     }
 }
 
-extension Operation {
+public extension Operation {
     func substituting(_ actualUse: Use, for use: Use) -> Operation {
         let condSubst = {$0 == use ? actualUse : $0}
         switch self {
@@ -313,12 +275,12 @@ extension Operation {
             return .phi(uses.map{(condSubst($0), $1)})
         case .reduce(let fun, use, axis: let axis):
             return .reduce(fun, actualUse, axis: axis)
-        case .matrixMultiply(use, let use2):
-            return .matrixMultiply(actualUse, use2)
-        case .matrixMultiply(let use1, use):
-            return .matrixMultiply(use1, actualUse)
-        case .matrixMultiply(use, use):
-            return .matrixMultiply(actualUse, actualUse)
+        case .matMul(use, let use2):
+            return .matMul(actualUse, use2)
+        case .matMul(let use1, use):
+            return .matMul(use1, actualUse)
+        case .matMul(use, use):
+            return .matMul(actualUse, actualUse)
         case .shapeCast(use, let shape):
             return .shapeCast(actualUse, shape)
         case .typeCast(use, let type):

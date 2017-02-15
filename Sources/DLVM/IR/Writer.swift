@@ -49,9 +49,7 @@ extension Literal : TextOutputStreamable {
 
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if !isScalar {
-            target.write("[\(map{String($0)}.joined(separator: "x"))]")
-        }
+        target.write("[\(map{String($0)}.joined(separator: "x"))]")
     }
 }
 
@@ -72,7 +70,7 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension ArithmeticOperator : TextOutputStreamable {
+extension ArithmeticOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .add: target.write("add")
@@ -81,8 +79,8 @@ extension ArithmeticOperator : TextOutputStreamable {
         case .divide: target.write("div")
         case .min: target.write("min")
         case .max: target.write("max")
-        case .truncateDivide: target.write("truncDiv")
-        case .floorDivide: target.write("floorDiv")
+        case .truncateDivide: target.write("truncdiv")
+        case .floorDivide: target.write("floordiv")
         case .modulo: target.write("mod")
         case .power: target.write("pow")
         case .mean: target.write("mean")
@@ -90,7 +88,7 @@ extension ArithmeticOperator : TextOutputStreamable {
     }
 }
 
-extension BooleanFunction : TextOutputStreamable {
+extension BooleanOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .and: target.write("and")
@@ -100,7 +98,7 @@ extension BooleanFunction : TextOutputStreamable {
     }
 }
 
-extension AssociativeFunction : TextOutputStreamable {
+extension AssociativeOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .arithmetic(fun): fun.write(to: &target)
@@ -109,7 +107,7 @@ extension AssociativeFunction : TextOutputStreamable {
     }
 }
 
-extension ComparisonPredicate : TextOutputStreamable {
+extension ComparisonOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .equalTo: target.write("eq")
@@ -122,7 +120,7 @@ extension ComparisonPredicate : TextOutputStreamable {
     }
 }
 
-extension BinaryFunction : TextOutputStreamable {
+extension BinaryOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .associative(fun): fun.write(to: &target)
@@ -131,12 +129,11 @@ extension BinaryFunction : TextOutputStreamable {
     }
 }
 
-extension UnaryFunction : TextOutputStreamable {
+extension UnaryOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .elementwise(fun): target.write("\(fun)")
         case let .integration(fun): target.write("\(fun)")
-        case let .scan(fun): fun.write(to: &target)
         }
     }
 }
@@ -146,16 +143,23 @@ extension Control : TextOutputStreamable {
         switch self {
         case let .br(bb):
             target.write("br \(bb)")
-        case .ret:
-            target.write("ret")
+        case .endForward:
+            target.write("endfwd")
+        case .endFackward:
+            target.write("endbwd")
         case let .condBr(op, thenBB, elseBB):
             target.write("condbr \(op), \(thenBB), \(elseBB)")
-        case let .export(op):
-            target.write("export \(op)")
+        case let .export(op, v):
+            target.write("export \(op) to \(v)")
         case let .store(op, v):
             target.write("store \(op) to \(v)")
-        case let .dequeueBr(def, thenBB, elseBB):
-            target.write("deqbr &\(def.name) \(thenBB) \(elseBB)")
+        case let .recBr(def, thenBB, elseBB):
+            target.write("deqbr \(def) \(thenBB) \(elseBB)")
+        case let .ret(op):
+            target.write("ret")
+            if let op = op {
+                target.write(" \(op)")
+            }
         }
     }
 }
@@ -165,12 +169,14 @@ extension Operation : TextOutputStreamable {
         switch self {
         case let .binary(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
-        case let .matrixMultiply(op1, op2):
+        case let .matMul(op1, op2):
             target.write("matmul \(op1), \(op2)")
         case let .unary(f, op):
             target.write("\(f) \(op)")
         case let .reduce(f, op, axis: axis):
-            target.write("\(f) \(op) along \(axis)")
+            target.write("reduce \(f) \(op) along \(axis)")
+        case let .scan(f, op, axis: axis):
+            target.write("scan \(f) \(op) along \(axis)")
         case let .phi(ops):
             target.write("phi \(ops.map{"[\($0) \($1)]"}.joined(separator: ", "))")
         case let .concat(ops, axis: axis):
@@ -180,41 +186,6 @@ extension Operation : TextOutputStreamable {
         case let .shapeCast(op, s):
             target.write("shapecast \(op) to \(s)")
         }
-    }
-}
-
-extension Use : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(shape) \(type) ")
-        switch kind {
-        case let .placeholder(def as Named),
-             let .global(def as Named):
-            target.write("@\(def.name)")
-        case let .local(def as Named),
-             let .argument(def as Named):
-            target.write("%\(def.name)")
-        case let .literal(lit):
-            lit.literal.write(to: &target)
-        }
-    }
-}
-
-extension BasicBlock : TextOutputStreamable {
-    private func makeIndentation() -> String {
-        return "    "
-    }
-
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        /// Begin block
-        target.write("\(name):\n")
-        for inst in elements {
-            /// Write indentation
-            makeIndentation().write(to: &target)
-            target.write("    ")
-            inst.write(to: &target)
-            target.write("\n")
-        }
-        makeIndentation().write(to: &target)
     }
 }
 
@@ -231,12 +202,85 @@ extension Instruction : TextOutputStreamable {
 
 extension Global : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("declare ")
+        if isRecurrent {
+            target.write("rec ")
+        }
         switch self {
         case let .placeholder(def):
-            target.write("declare placeholder \(def.type) \(def.shape) @\(def.name)\n")
+            target.write("placeholder \(def)")
         case let .value(def):
-            target.write("declare \(def.value.kind) \(def.type) \(def.shape) @\(def.name) = \(def.value.initializer)\n")
+            target.write("\(def.value.kind) ")
+            def.write(to: &target)
+            target.write(" = \(def.value.initializer)")
+        case let .output(def):
+            target.write("output \(def)")
         }
+        target.write("\n")
+    }
+}
+
+extension Use : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        if !shape.isScalar {
+            target.write("\(shape) ")
+        }
+        target.write("\(type) ")
+        switch kind {
+        case let .placeholder(def): target.write("@\(def.name)")
+        case let .global(def):      target.write("@\(def.name)")
+        case let .local(def):       target.write("%\(def.name)")
+        case let .argument(def):    target.write("%\(def.name)")
+        case let .literal(lit):     lit.literal.write(to: &target)
+        }
+    }
+}
+
+extension Def : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        if !shape.isScalar {
+            target.write("\(shape) ")
+        }
+        target.write("\(type) ")
+        switch ValueType.scope {
+        case .global: target.write("@")
+        case .local: target.write("%")
+        default: break
+        }
+        name.write(to: &target)
+    }
+}
+
+extension BasicBlock : TextOutputStreamable {
+    private func makeIndentation() -> String {
+        return "    "
+    }
+
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        /// Begin block
+        target.write("\(name):\n")
+        for inst in elements {
+            /// Write indentation
+            makeIndentation().write(to: &target)
+            inst.write(to: &target)
+            target.write("\n")
+        }
+    }
+}
+
+extension Function : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("define ")
+        if let result = result {
+            target.write("\(result.shape) \(result.type) ")
+        }
+        target.write("@\(name)(")
+        argument?.write(to: &target)
+        target.write(") {\n")
+        for bb in basicBlocks {
+            bb.write(to: &target)
+        }
+        target.write("}")
     }
 }
 
@@ -253,9 +297,8 @@ extension Module : TextOutputStreamable {
             target.write("\n")
         }
         target.write("\n")
-        for _ in functions {
-            /// TODO: Print function
-//            bb.write(to: &target)
+        for fun in functions {
+            fun.write(to: &target)
             target.write("\n\n")
         }
     }

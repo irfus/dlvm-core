@@ -19,10 +19,12 @@ public extension Program {
 
 struct CodeGenEnvironment {
     var variables: [String : DLVM.Use] = [:]
+
+    var outputs: [String : DLVM.Def<Output>] = [:]
     
-    subscript(key: String) -> DLVM.Use? {
+    subscript(key: String) -> DLVM.Use {
         get {
-            return variables[key]
+            return variables[key]!
         }
         set {
             variables[key] = newValue
@@ -42,7 +44,9 @@ class CodeGenerator {
     func makeModule() -> Module {
         /// Declare input
         for input in program.inputs {
-            let placeholder = Placeholder(shape: input.shape, type: program.dataType)
+            let placeholder = Placeholder(shape: input.shape,
+                                          type: program.dataType,
+                                          isRecurrent: false)
             let use = builder.declare(placeholder, name: input.name)
             environment[input.name] = use
         }
@@ -69,13 +73,18 @@ class CodeGenerator {
         }
         
         /// Entry block
-        let entry = builder.makeBasicBlock(named: "entry")
+        let function = builder.buildFunction(named: "main", argument: nil, result: nil)
+        let entry = builder.buildBasicBlock(named: "forward", in: function)
         builder.move(to: entry)
 
         /// Generate hidden layers
         for layer in program.layers {
-            let use = build(layer.expression, named: layer.name)
-            environment[layer.name] = use
+            let op = build(layer.expression, named: layer.name)
+            environment[layer.name] = op
+            if layer.isOutput {
+                let output = builder.declare(Output(shape: layer.shape, type: program.dataType, isRecurrent: false))
+                builder.buildControl(.export(op, to: output))
+            }
         }
 
         /// Done!
@@ -89,44 +98,40 @@ class CodeGenerator {
         case let .constant(c, _):
             return c.operand(for: program.dataType)
         case let .call(funcName, args, _):
-            guard let function = builtinFunctionTable[funcName] else {
+            guard let opKind = intrinsicTable[funcName] else {
                 preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
             }
             let argOps = args.map { [unowned self] in self.build($0) }
-            return function.makeInstruction(withArguments: argOps, using: builder, name: name)
+            let operation = try! opKind.makeOperation(with: argOps)
+            return builder.buildOperation(operation, name: name)
         case let .variable(variable, _):
-            guard let op = environment[variable.name] else {
-                preconditionFailure("Undeclared variable \(variable.name). This shouldn't have passed Sema.")
-            }
-            if let input = op as? DLVM.Input {
-                return builder.makeLoad(input)
-            }
-            if let val = op as? DLVM.Use {
-                return val
-            }
-            /// Can't be an output. This won't be reached
-            preconditionFailure("Unsupported expression \(expression)")
+            return environment[variable.name]
         case let .infixOp(op, lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
-            return builder.makeArithmeticOperation(op.instructionOperator,
-                                                   lhsOp, rhsOp, name: name)
+            let operation: Operation = .binary(.associative(.arithmetic(op.instructionOperator)), lhsOp, rhsOp)
+            return builder.buildOperation(operation, name: name)
         case let .negate(expr, _):
             let exprOp = build(expr)
-            return builder.makeElementwiseTransformation(.neg, exprOp)
+            let operation: Operation = .unary(.elementwise(.neg), exprOp)
+            return builder.buildOperation(operation, name: name)
         case let .product(lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
-            return builder.makeMatrixMultiplication(lhsOp, rhsOp, name: name)
+            let operation: Operation = .matMul(lhsOp, rhsOp)
+            return builder.buildOperation(operation, name: name)
         case let .concat(exprs, dimension: dim, _):
             let exprOps = exprs.map { [unowned self] in self.build($0) }
-            return builder.makeConcatenation(exprOps, axis: dim, name: name)
+            let operation: Operation = .concat(exprOps, axis: dim)
+            return builder.buildOperation(operation, name: name)
         case let .reshape(expr, shape: dims, _):
             let exprOp = build(expr)
             let targetShape = TensorShape(dims)
-            return builder.makeShapeCast(exprOp, targetShape: targetShape, name: name)
+            let operation: Operation = .shapeCast(exprOp, targetShape)
+            return builder.buildOperation(operation, name: name)
         case let .transpose(expr, _):
             let exprOp = build(expr)
             guard let targetShape = exprOp.shape.transpose else { fallthrough }
-            return builder.makeShapeCast(exprOp, targetShape: targetShape, name: name)
+            let operation: Operation = .shapeCast(exprOp, targetShape)
+            return builder.buildOperation(operation, name: name)
         default:
             preconditionFailure("Unsupported expression \(expression). This shouldn't have passed Sema.")
         }
@@ -135,18 +140,22 @@ class CodeGenerator {
 }
 
 fileprivate extension Constant {
-    func operand(for dataType: DataType) -> ImmediateValue {
+    func operand(for dataType: DataType) -> DLVM.Use {
+        let literal: Literal
         switch self {
         case let .int(i, _) where dataType.base == .float:
-            return ImmediateValue(type: dataType, immediate: .float(Double(i)))
-        case let .int(i, _): return ImmediateValue(type: dataType, immediate: .int(i))
-        case let .float(f, _): return ImmediateValue(type: dataType, immediate: .float(f))
+            literal = .scalar(.float(Double(i)))
+        case let .int(i, _):
+            literal = .scalar(.int(i))
+        case let .float(f, _):
+            literal = .scalar(.float(f))
         }
+        return Use(kind: .literal(LiteralValue(shape: .scalar, type: dataType, literal: literal)))
     }
 }
 
 fileprivate extension Expression.InfixOperator {
-    var instructionOperator: ArithmeticOperator {
+    var instructionOperator: ArithmeticOp {
         switch self {
         case .add: return .add
         case .sub: return .subtract
