@@ -118,6 +118,7 @@ extension TensorShape : RandomAccessCollection {
 }
 
 infix operator ~ : ComparisonPrecedence
+infix operator !~ : ComparisonPrecedence
 
 extension TensorShape : Equatable {
 
@@ -147,6 +148,18 @@ extension TensorShape : Equatable {
 
     public static func ~(lhs: TensorShape, rhs: TensorShape?) -> Bool {
         return rhs.flatMap { lhs ~ $0 } ?? false
+    }
+
+    public static func !~(lhs: TensorShape, rhs: TensorShape) -> Bool {
+        return !lhs.isSimilar(to: rhs)
+    }
+
+    public static func !~(lhs: TensorShape?, rhs: TensorShape) -> Bool {
+        return !(lhs.flatMap { $0 ~ rhs } ?? false)
+    }
+
+    public static func !~(lhs: TensorShape, rhs: TensorShape?) -> Bool {
+        return !(rhs.flatMap { lhs ~ $0 } ?? false)
     }
     
 }

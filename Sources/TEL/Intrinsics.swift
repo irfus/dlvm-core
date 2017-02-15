@@ -1,5 +1,5 @@
 //
-//  Function.swift
+//  Intrinsics.swift
 //  DLVM
 //
 //  Created by Richard Wei on 1/29/17.
@@ -8,8 +8,8 @@
 
 import DLVM
 
-/// - MARK: TEL built-in functions
-fileprivate let intrinsicTable: [String : FunctionKind] = [
+/// - MARK: TEL intrinsics
+let intrinsicTable: [String : OpKind] = [
     /// Elementwise tranfer functions
     "sigmoid" : .unary(.elementwise(.sigmoid)),
     "log" : .unary(.elementwise(.log)),
@@ -35,10 +35,10 @@ fileprivate let intrinsicTable: [String : FunctionKind] = [
 //    "^^" : .binary(.associative(.boolean(.xor))),
 
     /// Arithmetic operators
-    "+" : .binary(.associative(.arithmetic(.add))),
-    "-" : .binary(.associative(.arithmetic(.subtract))),
-    "*" : .binary(.associative(.arithmetic(.multiply))),
-    "/" : .binary(.associative(.arithmetic(.divide))),
+//    "+" : .binary(.associative(.arithmetic(.add))),
+//    "-" : .binary(.associative(.arithmetic(.subtract))),
+//    "*" : .binary(.associative(.arithmetic(.multiply))),
+//    "/" : .binary(.associative(.arithmetic(.divide))),
     "min" : .binary(.associative(.arithmetic(.min))),
     "max" : .binary(.associative(.arithmetic(.max))),
     "pow" : .binary(.associative(.arithmetic(.power))),

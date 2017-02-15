@@ -7,10 +7,10 @@
 //
 
 import struct Parsey.SourceRange
-import enum DLVM.ElementwiseFunction
-import enum DLVM.ComparisonPredicate
-import enum DLVM.AggregationFunction
-import enum DLVM.ArithmeticOperator
+import enum DLVM.ElementwiseOp
+import enum DLVM.ComparisonOp
+import enum DLVM.IntegrationOp
+import enum DLVM.ArithmeticOp
 import enum DLVM.LogicOperator
 import enum DLVM.ReductionFunction
 
@@ -92,12 +92,12 @@ public enum LoopConditionNode : ASTNode {
 public enum InstructionNode : ASTNode {
     case matrixMultiply(OperandNode, OperandNode, SourceRange)
     case tensorMultiply(OperandNode, OperandNode, SourceRange)
-    case arithmetic(ArithmeticOperator, OperandNode, OperandNode, SourceRange)
+    case arithmetic(ArithmeticOp, OperandNode, OperandNode, SourceRange)
     case logic(LogicOperator, OperandNode, OperandNode, SourceRange)
     case reduce(ReductionFunction, OperandNode, Int?, SourceRange)
-    case elementwise(ElementwiseFunction, OperandNode, SourceRange)
-    case aggregate(AggregationFunction, OperandNode, SourceRange)
-    case comparison(ComparisonPredicate, OperandNode, OperandNode, SourceRange)
+    case elementwise(ElementwiseOp, OperandNode, SourceRange)
+    case aggregate(IntegrationOp, OperandNode, SourceRange)
+    case comparison(ComparisonOp, OperandNode, OperandNode, SourceRange)
     case concatenate([OperandNode], Int?, SourceRange)
     case shapeCast(OperandNode, ShapeNode, SourceRange)
     case typeCast(OperandNode, TypeNode, SourceRange)
