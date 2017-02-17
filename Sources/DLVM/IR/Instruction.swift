@@ -11,7 +11,6 @@ public struct Use {
         case argument(Def<Argument>)
         case local(Def<Operation>)
         case global(Def<GlobalValue>)
-        case placeholder(Def<Placeholder>)
         case literal(LiteralValue)
     }
     public var shape: TensorShape
@@ -30,8 +29,6 @@ public struct Use {
             self.init(shape: def.shape, type: def.type, kind: kind)
         case .global(let def):
             self.init(shape: def.shape, type: def.type, kind: kind)
-        case .placeholder(let def):
-            self.init(shape: def.shape, type: def.type, kind: kind)
         case .argument(let def):
             self.init(shape: def.shape, type: def.type, kind: kind)
         case .literal(let lit):
@@ -43,7 +40,6 @@ public struct Use {
         switch kind {
         case let .global(def): return def
         case let .local(def): return def 
-        case let .placeholder(def): return def
         case let .argument(def): return def
         case .literal: return nil
         }
@@ -53,7 +49,6 @@ public struct Use {
         switch kind {
         case .local(let def as Named),
              .global(let def as Named),
-             .placeholder(let def as Named),
              .argument(let def as Named):
             return def.name
         case .literal:
@@ -76,9 +71,6 @@ public enum Control {
     case br(BasicBlock)
     /// Conditional branch depending on the value
     case condBr(Use, BasicBlock, BasicBlock)
-    /// Advance recurrent sequence. Branch left if non-empty,
-    /// branch right if empty
-    case recBr(Def<Placeholder>, BasicBlock, BasicBlock)
     /// End forward propagation
     case endForward
     /// End backpropagation
@@ -88,6 +80,8 @@ public enum Control {
 }
 
 public enum Operation {
+    /// Pull a value from the input batch in the current epoch
+    case pull(Def<Placeholder>, BasicBlock, BasicBlock)
     /// Scan operation with optional axis
     /// If axis is not given, scan is performed on contiguous elements
     case scan(AssociativeOp, Use, axis: Int?)
@@ -151,6 +145,8 @@ extension Operation : Value {
             return t
         case let .shapeCast(op, _):
             return op.type
+        case let .pull(ph, _, _):
+            return ph.type
         }
     }
 
@@ -171,6 +167,8 @@ extension Operation : Value {
             return op.shape
         case let .shapeCast(_, s):
             return s
+        case let .pull(ph, _, _):
+            return ph.shape
         }
     }
 
@@ -208,6 +206,8 @@ extension Operation : User {
             return [op]
         case let .phi(incomings):
             return incomings.map{$0.0}
+        case .pull:
+            return []
         }
     }
 }

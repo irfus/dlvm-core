@@ -142,19 +142,17 @@ extension Control : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .br(bb):
-            target.write("br \(bb)")
+            target.write("br %\(bb.name)")
         case .endForward:
             target.write("endfwd")
         case .endFackward:
             target.write("endbwd")
         case let .condBr(op, thenBB, elseBB):
-            target.write("condbr \(op), \(thenBB), \(elseBB)")
+            target.write("condbr \(op), %\(thenBB.name), %\(elseBB.name)")
         case let .export(op, v):
             target.write("export \(op) to \(v)")
         case let .store(op, v):
             target.write("store \(op) to \(v)")
-        case let .recBr(def, thenBB, elseBB):
-            target.write("deqbr \(def) \(thenBB) \(elseBB)")
         case let .ret(op):
             target.write("ret")
             if let op = op {
@@ -174,9 +172,15 @@ extension Operation : TextOutputStreamable {
         case let .unary(f, op):
             target.write("\(f) \(op)")
         case let .reduce(f, op, axis: axis):
-            target.write("reduce \(f) \(op) along \(axis)")
+            target.write("reduce \(f) \(op)")
+            if let axis = axis {
+                target.write(" along \(axis)")
+            }
         case let .scan(f, op, axis: axis):
-            target.write("scan \(f) \(op) along \(axis)")
+            target.write("scan \(f) \(op)")
+            if let axis = axis {
+                target.write(" along \(axis)")
+            }
         case let .phi(ops):
             target.write("phi \(ops.map{"[\($0) \($1)]"}.joined(separator: ", "))")
         case let .concat(ops, axis: axis):
@@ -185,6 +189,8 @@ extension Operation : TextOutputStreamable {
             target.write("typecast \(op) to \(t)")
         case let .shapeCast(op, s):
             target.write("shapecast \(op) to \(s)")
+        case let .pull(def, thenBB, elseBB):
+            target.write("pull \(def), %\(thenBB.name), %\(elseBB.name)")
         }
     }
 }
@@ -227,7 +233,6 @@ extension Use : TextOutputStreamable {
         }
         target.write("\(type) ")
         switch kind {
-        case let .placeholder(def): target.write("@\(def.name)")
         case let .global(def):      target.write("@\(def.name)")
         case let .local(def):       target.write("%\(def.name)")
         case let .argument(def):    target.write("%\(def.name)")

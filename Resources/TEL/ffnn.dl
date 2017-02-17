@@ -13,10 +13,16 @@ declare output [1x8] f32 @v9
 
 define @main() {
 forward:
-    %v0 = matmul [4x4] f32 @W1, [4x1] f32 @i1
+    %i1 = pull [4x1] f32 @i1, %then, %end
+end:
+    endfwd
+then:
+    %v0 = matmul [4x4] f32 @W1, [4x1] f32 %i1
     %v1 = add [4x4] f32 %v0, [4x1] f32 @b1
     %h1 = sigmoid [4x4] f32 %v1
-    %v2 = concat [4x4] f32 %h1, [4x1] f32 @i2 along 0
+    %i2 = pull [4x1] f32 @i2, %then.1, %end
+then.1:
+    %v2 = concat [4x4] f32 %h1, [4x1] f32 %i2 along 0
     %v3 = sub f32 1.0, [4x4] f32 %v2
     %v4 = matmul [8x8] f32 @W2, f32 %v3
     %v5 = add [8x8] f32 %v4, [8x1] f32 @b2
@@ -26,5 +32,6 @@ forward:
     %v8 = softmax [8x8] f32 %v7
     %o = shapecast [8x8] f32 %v8 to [8x8]
     export [8x8] f32 %o to [1x8] f32 @v9
+    br %end
 }
 
