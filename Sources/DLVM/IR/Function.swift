@@ -43,6 +43,14 @@ extension Function {
         basicBlock.parent = self
     }
 
+    open func insert(_ basicBlock: BasicBlock, after previous: BasicBlock) {
+        if let existingBlock = self.basicBlock(named: basicBlock.name) {
+            remove(existingBlock)
+        }
+        basicBlocks.insert(basicBlock, after: previous)
+        basicBlock.parent = self
+    }
+
     open func index(of basicBlock: BasicBlock) -> Int? {
         return basicBlocks.index(of: basicBlock)
     }
@@ -82,6 +90,15 @@ extension Function {
 
     open var instructions: [Instruction] {
         return basicBlocks.lazy.flatMap{$0.instructions}
+    }
+
+    open func localValue(named name: String) -> Use? {
+        for bb in basicBlocks {
+            if let oper = bb.operation(named: name) {
+                return Use(kind: .local(oper))
+            }
+        }
+        return nil
     }
 
     /// TODO: Make substitutions of basic block references in branch instructions

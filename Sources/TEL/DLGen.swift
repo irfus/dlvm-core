@@ -21,7 +21,13 @@ struct CodeGenEnvironment {
     var variables: [String : DLVM.Use] = [:]
 
     var outputs: [String : DLVM.Def<Output>] = [:]
-    
+    var placeholders: [String : DLVM.Def<Placeholder>] = [:]
+    weak var endBlock: BasicBlock?
+
+    func containsValue(named name: String) -> Bool {
+        return variables.keys.contains(name)
+    }
+
     subscript(key: String) -> DLVM.Use {
         get {
             return variables[key]!
@@ -47,8 +53,8 @@ class CodeGenerator {
             let placeholder = Placeholder(shape: input.shape,
                                           type: program.dataType,
                                           isRecurrent: false)
-            let use = builder.declare(placeholder, name: input.name)
-            environment[input.name] = use
+            let ph = builder.declare(placeholder, name: input.name)
+            environment.placeholders[input.name] = ph
         }
         /// Define globals
         for param in program.parameters {
@@ -87,7 +93,13 @@ class CodeGenerator {
             }
         }
 
-        /// Done!
+        /// Emit `endForward`
+        if let endBlock = environment.endBlock {
+            builder.buildControl(.br(endBlock))
+        } else {
+            builder.buildControl(.endForward)
+        }
+        
         return builder.module
     }
     
@@ -97,6 +109,28 @@ class CodeGenerator {
         switch expression {
         case let .constant(c, _):
             return c.operand(for: program.dataType)
+        case let .variable(variable, _):
+            if environment.containsValue(named: variable.name) {
+                return environment[variable.name]
+            }
+            /// If it's a placeholder, emit a `pull` instruction and build two basic blocks
+            if let ph = environment.placeholders[variable.name] {
+                let currentBB = builder.currentBlock
+                let thenBB = builder.buildBasicBlock(named: "then")
+                let elseBB = environment.endBlock ?? {
+                    let end = builder.buildBasicBlock(named: "end")
+                    environment.endBlock = end
+                    builder.move(to: end)
+                    builder.buildControl(.endForward)
+                    return end
+                }()
+                builder.move(to: currentBB)
+                let local = builder.buildOperation(.pull(ph, thenBB, elseBB), name: variable.name)
+                builder.move(to: thenBB)
+                environment[variable.name] = local
+                return local
+            }
+            preconditionFailure("Unknown variable name. Something's wrong with DLGen")
         case let .call(funcName, args, _):
             guard let opKind = intrinsicTable[funcName] else {
                 preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
@@ -104,8 +138,6 @@ class CodeGenerator {
             let argOps = args.map { [unowned self] in self.build($0) }
             let operation = try! opKind.makeOperation(with: argOps)
             return builder.buildOperation(operation, name: name)
-        case let .variable(variable, _):
-            return environment[variable.name]
         case let .infixOp(op, lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
             let operation: Operation = .binary(.associative(.arithmetic(op.instructionOperator)), lhsOp, rhsOp)

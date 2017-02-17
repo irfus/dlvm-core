@@ -120,11 +120,29 @@ public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImple
         return nameTable[name]
     }
 
-    public mutating func insert(_ element: Element) {
-        mutatingSet.add(element)
+    private mutating func insertName(of element: Element) {
         if let namedValue = element as? Named {
             nameTable[namedValue.name] = element
         }
+    }
+
+    private mutating func removeName(of element: Element) {
+        if let namedValue = element as? Named {
+            nameTable[namedValue.name] = nil
+        }
+    }
+
+    public mutating func insert(_ element: Element) {
+        mutatingSet.add(element)
+        insertName(of: element)
+    }
+
+    public mutating func insert(_ element: Element, after previous: Element) {
+        guard let previousIndex = index(of: previous) else {
+            preconditionFailure("Element to insert before is not in the set")
+        }
+        mutatingSet.insert(element, at: previousIndex + 1)
+        insertName(of: element)
     }
 
     public func contains(_ element: Element) -> Bool {
@@ -133,9 +151,7 @@ public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImple
 
     public mutating func remove(_ element: Element) {
         mutatingSet.remove(element)
-        if let namedValue = element as? Named {
-            nameTable[namedValue.name] = nil
-        }
+        removeName(of: element)
     }
 
     public mutating func removeAll() {

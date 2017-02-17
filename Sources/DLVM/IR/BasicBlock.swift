@@ -114,7 +114,7 @@ extension BasicBlock {
 
     /// Returns the instruction having the specified name 
     /// in the current basic block
-    open func instruction(named name: String) -> Def<Operation>? {
+    open func operation(named name: String) -> Def<Operation>? {
         return operationTable[name]
     }
 

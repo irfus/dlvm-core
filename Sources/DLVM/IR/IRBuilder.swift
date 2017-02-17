@@ -14,9 +14,9 @@ open class IRBuilder {
         return _module
     }
 
-    weak var currentBlock: BasicBlock?
+    open fileprivate(set) weak var currentBlock: BasicBlock?
 
-    weak var currentFunction: Function? {
+    open weak var currentFunction: Function? {
         return currentBlock?.parent
     }
 
@@ -74,12 +74,11 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func declare(_ placeholder: Placeholder, name: String? = nil) -> Use {
+    open func declare(_ placeholder: Placeholder, name: String? = nil) -> Def<Placeholder> {
         let def = Def<Placeholder>(name: name ?? makeVariableName(), value: placeholder)
         let global: Global = .placeholder(def)
         _module.insert(global)
-        let use = Use(kind: .placeholder(def))
-        return use
+        return def
     }
 
     @discardableResult
@@ -96,6 +95,15 @@ extension IRBuilder {
         _module.insert(fun)
         return fun
     }
+    
+    @discardableResult
+    open func buildBasicBlock(named name: String) -> BasicBlock {
+        let block = BasicBlock(name: disambiguatedName(for: name))
+        if let currentBlock = currentBlock, let function = currentBlock.parent {
+            function.insert(block, after: currentBlock)
+        }
+        return block
+    }
 
     @discardableResult
     open func buildBasicBlock(named name: String, in function: Function) -> BasicBlock {
@@ -111,7 +119,6 @@ extension IRBuilder {
         return use
     }
 
-    @discardableResult
     open func buildControl(_ control: Control) {
         currentBlock?.append(.control(control))
     }
@@ -121,7 +128,7 @@ extension IRBuilder {
 // MARK: - Positioning
 extension IRBuilder {
 
-    open func move(to basicBlock: BasicBlock) {
+    open func move(to basicBlock: BasicBlock?) {
         currentBlock = basicBlock
     }
 
