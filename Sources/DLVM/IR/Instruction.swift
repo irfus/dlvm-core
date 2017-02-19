@@ -74,8 +74,8 @@ public enum Instruction {
 public enum Control {
     /// Store use to global value
     case store(Use, to: Def<GlobalValue>)
-    /// Export to use
-    case export(Use, to: Def<Output>)
+    /// Yield value to output
+    case yield(Use, to: Def<Output>)
     /// Unconditionally branch to basic block
     case br(BasicBlock)
     /// Conditional branch depending on the value
@@ -222,7 +222,7 @@ extension Control : User {
     public var operands: [Use] {
         switch self {
         case .condBr(let op, _, _),
-             .export(let op, _),
+             .yield(let op, _),
              .store(let op, _),
              .ret(let op?):
             return [op]
@@ -294,8 +294,8 @@ public extension Control {
             return .store(actualUse, to: dest)
         case .condBr(use, let thenBB, let elseBB):
             return .condBr(actualUse, thenBB, elseBB)
-        case .export(use, to: let dest):
-            return .export(actualUse, to: dest)
+        case .yield(use, to: let dest):
+            return .yield(actualUse, to: dest)
         case .ret(use?):
             return .ret(actualUse)
         default:
