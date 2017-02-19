@@ -8,7 +8,7 @@
 
 import Foundation
 
-open class BasicBlock : IRCollection, Named {
+open class BasicBlock : IRCollection, IRObject, Named {
 
     public typealias Element = Instruction
 
@@ -118,6 +118,19 @@ extension BasicBlock {
         return operationTable[name]
     }
 
+    /// Whether there exists a terminator instruction
+    open var hasTerminator: Bool {
+        return instructions.last?.isTerminator ?? false
+    }
+
+    /// Terminator instruction
+    open var terminator: Instruction {
+        guard let last = instructions.last, last.isTerminator else {
+            preconditionFailure("Terminator does not exist. Not a well-formed basic block")
+        }
+        return last
+    }
+    
 }
 
 // MARK: - Analysis information

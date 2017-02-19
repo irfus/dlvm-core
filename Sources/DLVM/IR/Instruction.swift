@@ -122,7 +122,7 @@ public enum Operation {
 }
 
 public enum Intrinsic {
-
+    
 }
 
 extension Instruction {
@@ -140,6 +140,37 @@ extension Use : Equatable {
             && lhs.name == rhs.name
             && lhs.shape == rhs.shape
             && lhs.type == rhs.type
+    }
+}
+
+public extension Instruction {
+    var isTerminator: Bool {
+        switch self {
+        case .control(let ctrl): return ctrl.isTerminator
+        case .operation(let def): return def.value.isTerminator
+        }
+    }
+}
+
+public extension Control {
+    var isTerminator: Bool {
+        switch self {
+        case .br, .condBr, .ret:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+public extension Operation {
+    var isTerminator: Bool {
+        switch self {
+        case .pull:
+            return true
+        default:
+            return false
+        }
     }
 }
 
