@@ -442,5 +442,12 @@ public extension TensorShape {
     public func contiguousIndex(for index: TensorIndex) -> Int {
         return index.contiguousIndex(in: self)
     }
+
+    public subscript(index: TensorIndex) -> TensorShape? {
+        guard index.count < rank else {
+            return nil
+        }
+        return dropFirst(index.count)
+    }
     
 }

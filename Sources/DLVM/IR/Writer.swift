@@ -53,6 +53,14 @@ extension TensorShape : TextOutputStreamable {
     }
 }
 
+extension TensorIndex : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("(")
+        map{"\($0)"}.joined(separator: ", ").write(to: &target)
+        target.write(")")
+    }
+}
+
 extension DataType.Base : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
@@ -202,13 +210,17 @@ extension Operation : TextOutputStreamable {
             if shape.isScalar {
                 target.write("\(shape) ")
             }
-            target.write("@\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+            target.write("\(type) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .diff(shape, type, fun, use, wrt: idx):
             target.write("diff ")
             if shape.isScalar {
                 target.write("\(shape) ")
             }
-            target.write("@\(fun.name) wrt #2 from \(use)")
+            target.write("\(type) @\(fun.name) wrt #\(idx) from \(use)")
+        case let .subtensor(use, idx):
+            target.write("subtensor \(idx) of \(use)")
+        case let .element(use, i):
+            target.write("element \(i) of \(use)")
         }
     }
 }
@@ -228,7 +240,7 @@ extension Global : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("declare ")
         if isRecurrent {
-            target.write("rec ")
+            target.write("recurrent ")
         }
         switch self {
         case let .placeholder(def):
@@ -291,7 +303,7 @@ extension BasicBlock : TextOutputStreamable {
     }
 }
 
-extension Function : TextOutputStreamable {
+extension Function: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("define ")
         target.write("@\(name)(")
@@ -303,19 +315,28 @@ extension Function : TextOutputStreamable {
         target.write("{\n")
 
         target.write("    forward {\n")
-        for bb in forwardSection {
+        for bb in forwardPass {
             bb.write(to: &target)
         }
         target.write("    }\n")
 
-        if !backwardSection.isEmpty {
+        /// Non-parametric backward pass
+        if let backwardPass = backwardPass {
             target.write("    backward {\n")
-            for bb in backwardSection {
+            for bb in backwardPass {
                 bb.write(to: &target)
             }
             target.write("    }\n")
         }
 
+        /// Parametric backward passes (partial derivatives)
+        for (i, section) in parametricBackwardPasses.enumerated()  {
+            target.write("    backward(#\(i)) {\n")
+            for bb in section {
+                bb.write(to: &target)
+            }
+            target.write("    }\n")
+        }
         target.write("}")
     }
 }

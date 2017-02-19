@@ -111,6 +111,10 @@ public enum Operation {
     case typeCast(Use, DataType)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
+    /// Subtensor addressing
+    case subtensor(Use, TensorIndex)
+    /// Element in the immediate dimension
+    case element(Use, Int)
     /// Function call
     case call(TensorShape, DataType, Function, [Use])
     /// Differentiate
@@ -169,6 +173,9 @@ extension Operation : Value {
         case let .call(_, type, _, _),
              let .diff(_, type, _, _, _):
             return type
+        case let .element(op, _),
+             let .subtensor(op, _):
+            return op.type
         }
     }
 
@@ -200,6 +207,10 @@ extension Operation : Value {
         case let .call(shape, _, _, _),
              let .diff(shape, _, _, _, _):
             return shape
+        case let .element(op, _):
+            return op.shape.dropFirst()
+        case let .subtensor(op, idx):
+            return op.shape[idx] ?? op.shape
         }
     }
 
@@ -241,6 +252,9 @@ extension Operation : User {
             return ops
         case .pull, .get, .diff:
             return []
+        case let .subtensor(op, _),
+             let .element(op, _):
+            return [op]
         }
     }
 }

@@ -43,12 +43,8 @@ open class BasicBlock : IRCollection, Named {
         #endif
     }
 
-    open var isForwardEntry: Bool {
-        return parent?.forwardEntry === self
-    }
-    
-    open var isBackwardEntry: Bool {
-        return parent?.backwardEntry === self
+    open var isEntry: Bool {
+        return parent?.entry === self
     }
 
     public required init(name: String) {

@@ -19,8 +19,11 @@ open class Function : Named, IRCollection {
     public var name: String
     public var arguments: [Def<Argument>]
     public var result: Argument?
-    public var forwardSection = OrderedNamedObjectSet<BasicBlock>()
-    public var backwardSection = OrderedNamedObjectSet<BasicBlock>()
+    public var forwardPass = OrderedNamedObjectSet<BasicBlock>()
+    public var backwardPass: OrderedNamedObjectSet<BasicBlock>?
+
+    public lazy var parametricBackwardPasses: [OrderedNamedObjectSet<BasicBlock>] =
+        self.arguments.map { _ in [] }
 
     public weak var parent: Module?
 
@@ -41,7 +44,7 @@ extension Function {
         if let existingBlock = self.basicBlock(named: basicBlock.name) {
             remove(existingBlock)
         }
-        forwardSection.insert(basicBlock)
+        forwardPass.insert(basicBlock)
         basicBlock.parent = self
     }
 
@@ -49,53 +52,49 @@ extension Function {
         if let existingBlock = self.basicBlock(named: basicBlock.name) {
             remove(existingBlock)
         }
-        forwardSection.insert(basicBlock, after: previous)
+        forwardPass.insert(basicBlock, after: previous)
         basicBlock.parent = self
     }
 
     open func index(of basicBlock: BasicBlock) -> Int? {
-        return forwardSection.index(of: basicBlock)
+        return forwardPass.index(of: basicBlock)
     }
 
     open func remove(_ basicBlock: BasicBlock) {
-        forwardSection.remove(basicBlock)
+        forwardPass.remove(basicBlock)
         basicBlock.parent = nil
     }
 
     open func basicBlock(named name: String) -> BasicBlock? {
-        return forwardSection.element(named: name)
+        return forwardPass.element(named: name)
     }
 
     open func containsBasicBlock(named name: String) -> Bool {
-        return forwardSection.containsValue(named: name)
+        return forwardPass.containsValue(named: name)
     }
 
     open func contains(_ basicBlock: BasicBlock) -> Bool {
-        return forwardSection.contains(basicBlock)
+        return forwardPass.contains(basicBlock)
     }
 
     open var elements: [BasicBlock] {
-        return Array(forwardSection)
+        return Array(forwardPass)
     }
     
 }
 
 extension Function {
 
-    open weak var forwardEntry: BasicBlock? {
-        return forwardSection.element(named: "forward")
-    }
-
-    open weak var backwardEntry: BasicBlock? {
-        return forwardSection.element(named: "backward")
+    open weak var entry: BasicBlock? {
+        return forwardPass.element(named: "entry")
     }
 
     open var instructions: [Instruction] {
-        return forwardSection.lazy.flatMap{$0.instructions}
+        return forwardPass.lazy.flatMap{$0.instructions}
     }
 
     open func localValue(named name: String) -> Use? {
-        for bb in forwardSection {
+        for bb in forwardPass {
             if let oper = bb.operation(named: name) {
                 return Use(kind: .local(oper))
             }

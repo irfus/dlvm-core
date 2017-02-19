@@ -90,7 +90,8 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildFunction(named name: String, arguments: [(String, Argument)], result: Argument?) -> Function {
+    open func buildFunction(named name: String, 
+                            arguments: [(String, Argument)], result: Argument?) -> Function {
         let fun = Function(name: name, arguments: arguments, result: result)
         _module.insert(fun)
         return fun
