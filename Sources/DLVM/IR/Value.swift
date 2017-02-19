@@ -12,11 +12,11 @@ public protocol User {
 
 public protocol Usee : class {
     associatedtype UserType : User
-    var users: NamedObjectSet<UserType> { get }
+    var users: KVSet<UserType> { get }
 }
 
 internal protocol ManagedUsee : Usee {
-    var users: NamedObjectSet<UserType> { get set }
+    var users: KVSet<UserType> { get set }
 }
 
 internal extension ManagedUsee {
@@ -130,7 +130,7 @@ public class Def<ValueType : Value> : ManagedUsee, Named, Value {
     public var shape: TensorShape
     public var type: DataType
     public var value: ValueType
-    public var users: NamedObjectSet<Instruction> = []
+    public var users: KVSet<Instruction> = []
 
     public static var scope: Scope {
         return ValueType.scope
