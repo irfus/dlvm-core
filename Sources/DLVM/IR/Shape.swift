@@ -118,6 +118,7 @@ extension TensorShape : RandomAccessCollection {
 }
 
 infix operator ~ : ComparisonPrecedence
+infix operator !~ : ComparisonPrecedence
 
 extension TensorShape : Equatable {
 
@@ -148,6 +149,18 @@ extension TensorShape : Equatable {
     public static func ~(lhs: TensorShape, rhs: TensorShape?) -> Bool {
         return rhs.flatMap { lhs ~ $0 } ?? false
     }
+
+    public static func !~(lhs: TensorShape, rhs: TensorShape) -> Bool {
+        return !lhs.isSimilar(to: rhs)
+    }
+
+    public static func !~(lhs: TensorShape?, rhs: TensorShape) -> Bool {
+        return !(lhs.flatMap { $0 ~ rhs } ?? false)
+    }
+
+    public static func !~(lhs: TensorShape, rhs: TensorShape?) -> Bool {
+        return !(rhs.flatMap { lhs ~ $0 } ?? false)
+    }
     
 }
 
@@ -177,7 +190,7 @@ public extension TensorShape {
     }
 
     public func droppingDimension(_ dimension: Int) -> TensorShape {
-        precondition(indices.contains(dimension), "Dimension index out of range")
+        guard indices.contains(dimension) else { return self }
         var newDims = dimensions
         newDims.remove(at: dimension)
         return TensorShape(newDims)
@@ -269,8 +282,16 @@ public extension TensorShape {
         }
     }
 
+    public func mutuallyBroadcasted(with other: TensorShape) -> TensorShape? {
+        return broadcasted(to: other) ?? other.broadcasted(to: self)
+    }
+
     public func canBroadcast(to other: TensorShape) -> Bool {
         return broadcasted(to: other) != nil
+    }
+
+    public func canMutuallyBroadcast(with other: TensorShape) -> Bool {
+        return mutuallyBroadcasted(with: other) != nil
     }
 
 }

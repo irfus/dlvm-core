@@ -6,27 +6,25 @@
 //
 //
 
-///
-/// ## Analysis information protocols
-///
+public protocol User {
+    var operands: [Use] { get }
+}
 
 public protocol Usee : class {
-    var users: NamedObjectSet<Instruction> { get }
+    associatedtype UserType : User
+    var users: NamedObjectSet<UserType> { get }
 }
 
 internal protocol ManagedUsee : Usee {
-    var users: NamedObjectSet<Instruction> { get set }
-    func addUser(_ user: Instruction)
-    func removeUser(_ user: Instruction)
-    func removeAllUsers()
+    var users: NamedObjectSet<UserType> { get set }
 }
 
 internal extension ManagedUsee {
-    func addUser(_ user: Instruction) {
+    func addUser(_ user: UserType) {
         users.insert(user)
     }
 
-    func removeUser(_ user: Instruction) {
+    func removeUser(_ user: UserType) {
         users.remove(user)
     }
 
@@ -35,142 +33,24 @@ internal extension ManagedUsee {
     }
 }
 
-public typealias User = Instruction
-
-///
-/// Base
-///
-
-public protocol ValueRepresentation : TextOutputStreamable {
-    var shape: TensorShape { get set }
-    var type: DataType { get set }
+public enum Scope {
+    case global
+    case local
+    case none
 }
 
-public protocol Value : ValueRepresentation, TextOutputStreamable {
+public protocol Value {
+    var shape: TensorShape { get }
+    var type: DataType { get }
+    static var scope: Scope { get }
 }
 
-public extension Value {
-    public var isMatrix: Bool {
-        return shape.isMatrix
-    }
-
-    public var isVector: Bool {
-        return shape.isVector
-    }
-
-    public var isScalar: Bool {
-        return shape.isScalar
-    }
+public enum Literal {
+    case scalar(ScalarLiteral)
+    case tensor(TensorLiteral)
 }
 
-public protocol Named {
-    var name: String { get set }
-}
-
-public protocol Global : Named, TextOutputStreamable {
-    weak var module: Module? { get }
-}
-
-public typealias NamedValue = Value & Named & Usee
-
-public protocol GlobalValue : NamedValue, Global {
-}
-
-public protocol GlobalPlaceholder : Named, Usee, Global, ValueRepresentation {
-    weak var module: Module? { get }
-    var type: DataType { get set }
-    var shape: TensorShape { get set }
-}
-
-public extension Value {
-    public var isGlobal: Bool {
-        return self is GlobalValue
-    }
-}
-
-public final class Input : GlobalPlaceholder, ManagedUsee {
-    public var name: String
-    public var type: DataType
-    public var shape: TensorShape
-    public var isRecurrent: Bool = false
-    public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var module: Module?
-
-    public init(name: String, type: DataType, shape: TensorShape) {
-        self.name = name
-        self.type = type
-        self.shape = shape
-    }
-}
-
-public final class Constant : GlobalValue, ManagedUsee {
-    public var name: String
-    public var type: DataType
-    public var shape: TensorShape
-    public var defaultInitializer: Initializer
-    public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var module: Module?
-
-    public init(name: String, type: DataType, shape: TensorShape,
-                defaultInitializer: Initializer) {
-        self.name = name
-        self.type = type
-        self.shape = shape
-        self.defaultInitializer = defaultInitializer
-    }
-}
-
-public final class Parameter : GlobalValue, ManagedUsee {
-    public var name: String
-    public var type: DataType
-    public var shape: TensorShape
-    public weak var gradientValue: NamedValue?
-    public var initializer: Initializer
-    public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var module: Module?
-
-    public init(name: String, type: DataType,
-                shape: TensorShape, initializer: Initializer) {
-        self.name = name
-        self.type = type
-        self.shape = shape
-        self.initializer = initializer
-    }
-}
-
-public final class Output : GlobalPlaceholder, ManagedUsee {
-    public var name: String
-    public var type: DataType
-    public var shape: TensorShape
-    public weak var errorValue: NamedValue?
-    public var isRecurrent: Bool = false
-    public internal(set) var users: NamedObjectSet<Instruction> = []
-    public internal(set) weak var module: Module?
-
-    public init(name: String, type: DataType, shape: TensorShape) {
-        self.name = name
-        self.type = type
-        self.shape = shape
-    }
-}
-
-public protocol Initializer : TextOutputStreamable {
-    var typeBase: DataType.Base { get }
-}
-
-public struct ImmediateValue : Value {
-    public var type: DataType
-    public var shape: TensorShape
-    public var immediate: Immediate
-
-    public init(type: DataType, shape: TensorShape = .scalar, immediate: Immediate) {
-        self.type = type
-        self.shape = shape
-        self.immediate = immediate
-    }
-}
-
-public enum Immediate : Initializer {
+public enum ScalarLiteral {
     case int(Int), float(Double), bool(Bool)
 
     public var typeBase: DataType.Base {
@@ -182,19 +62,131 @@ public enum Immediate : Initializer {
     }
 }
 
-public enum TensorInitializer : Initializer {
-    case elements([ImmediateValue])
-    case random(from: ImmediateValue, to: ImmediateValue)
-    case repeating(ImmediateValue)
+public enum TensorLiteral {
+    case elements([ScalarLiteral])
+    case random(from: ScalarLiteral, to: ScalarLiteral)
+    case repeating(ScalarLiteral)
 
     public var typeBase: DataType.Base {
         switch self {
         case let .elements(elements):
-            return elements[0].type.base
+            return elements[0].typeBase
         case let .random(from: lowerbound, to: _):
-            return lowerbound.type.base
+            return lowerbound.typeBase
         case let .repeating(value):
-            return value.type.base
+            return value.typeBase
         }
     }
 }
+
+public struct LiteralValue : Value {
+    public var shape: TensorShape
+    public var type: DataType
+    public var literal: Literal
+    public static let scope: Scope = .none
+
+    public init(shape: TensorShape, type: DataType, literal: Literal) {
+        self.shape = shape
+        self.type = type
+        self.literal = literal
+    }
+}
+
+public protocol Named {
+    var name: String { get set }
+}
+
+public enum Global {
+    case value(Def<GlobalValue>)
+    case placeholder(Def<Placeholder>)
+    case output(Def<Output>)
+}
+
+public struct GlobalValue : Value {
+    public enum Kind {
+        case variable, constant
+    }
+    public var kind: Kind
+    public var shape: TensorShape
+    public var type: DataType
+    public var initializer: Literal
+    public static let scope: Scope = .global
+
+    public init(kind: Kind, shape: TensorShape, type: DataType, initializer: Literal) {
+        self.kind = kind
+        self.shape = shape
+        self.type = type
+        self.initializer = initializer
+    }
+}
+
+public protocol PotentiallyRecurrentValue : Value {
+    var isRecurrent: Bool { get }
+}
+
+public class Def<ValueType : Value> : ManagedUsee, Named, Value {
+    public typealias UserType = Instruction
+    public var name: String
+    public var shape: TensorShape
+    public var type: DataType
+    public var value: ValueType
+    public var users: NamedObjectSet<Instruction> = []
+
+    public static var scope: Scope {
+        return ValueType.scope
+    }
+    
+    public init(name: String, value: ValueType) {
+        self.name = name
+        self.shape = value.shape
+        self.type = value.type
+        self.value = value
+    }
+}
+
+public extension Def where ValueType : PotentiallyRecurrentValue {
+    public var isRecurrent: Bool {
+        return value.isRecurrent
+    }
+}
+
+public extension Global {
+    var isRecurrent: Bool {
+        switch self {
+        case let .placeholder(def):
+            return def.value.isRecurrent
+        case let .output(def):
+            return def.value.isRecurrent
+        default:
+            return false
+        }
+    }
+}
+
+public struct Placeholder : PotentiallyRecurrentValue {
+    public var shape: TensorShape
+    public var type: DataType
+    public var isRecurrent: Bool
+    public static var scope: Scope = .global
+
+    public init(shape: TensorShape, type: DataType, isRecurrent: Bool) {
+        self.shape = shape
+        self.type = type
+        self.isRecurrent = isRecurrent
+    }
+}
+
+public struct Output : PotentiallyRecurrentValue {
+    public var shape: TensorShape
+    public var type: DataType
+    public var isRecurrent: Bool
+    public static var scope: Scope = .global
+
+    public init(shape: TensorShape, type: DataType, isRecurrent: Bool) {
+        self.shape = shape
+        self.type = type
+        self.isRecurrent = isRecurrent
+    }
+}
+
+public typealias AnyDef = Value & Named & AnyObject

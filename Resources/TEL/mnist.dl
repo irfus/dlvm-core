@@ -1,23 +1,57 @@
 module mnist
 
-declare input f32 [1x784] x
+declare placeholder [1x784] f32 @x
+declare placeholder [1x784] f32 @y.ref
+declare variable [784x10] f32 @W = repeating 0.0
+declare variable [1x10] f32 @b = repeating 0.0
+declare output [1x10] f32 @y
 
-declare parameter f32 [1x10] b = repeating f32 0.0
-declare parameter f32 [784x10] W = repeating f32 0.0
 
-declare output f32 [1x10] y
+define @main() {
 
-// Operand notations:
-//   @ ---- input
-//   ' ---- constant
-//   $ ---- parameter
-//   & ---- output
-//   % ---- temporary
+    forward {
+    entry:
+        %x = pull [1x784] f32 @x, default [1x784] f32 0.0
+        %v0 = call [1x10] f32 @gemm([1x784] f32 %x, [784x10] f32 @W)
+        %y = add [1x10] f32 %v0, [1x10] f32 @b
+        export [1x10] f32 %y to [1x10] f32 @y
+        br %end
+    }
 
-!entry {
-    %v0 = load f32 [1x784] @x
-    %v1 = mmul f32 [1x784] %v0, f32 [784x10] $W
-    %y = add f32 [1x10] %v1, f32 [1x10] $b
-    export f32 [1x10] %y to f32 [1x10] &y
+    /// BPGen
+    backward {
+    entry:
+        /// CostGen: mean sqr error
+        %yref = pull [1x10] f32 @y.ref, %then, %end
+        %err = sub [1x10] f32 %yref, [1x10] f32 %y
+        %sqrerr = mul [1x10] f32 %err, [1x10] f32 %err
+        %mean = reduce mean %sqrerr
+
+        /// DiffGen: generic automatic differentiation
+        br %then
+    then:
+        %dy1 = sub [1x10] f32 %mean, [1x10] f32 %v0
+        %dy2 = sub [1x10] f32 %mean, [1x10] f32 %b
+        %dv0 = 
+
+    end:
+        ret
+    }
+
 }
 
+define @gemm([1x784] f32 %x, [784x10] f32 %y) -> [1x10] f32 {
+
+    forward {
+    entry:
+        %v0 = call @dlvm.linear.gemm([1x10] f32 %x, [784x10] f32 %y)
+        ret %v0
+    }
+
+    backward([1x10] f32 %e) for [1x784] f32 %x {
+    entry:
+        %d0 = diff %v0, arg 0, [1x10] f32 %e
+        ret %d0
+    }
+
+}

@@ -1,5 +1,5 @@
 //
-//  Types.swift
+//  DataType.swift
 //  DLVM
 //
 //  Created by Richard Wei on 12/20/16.
@@ -9,6 +9,10 @@
 public struct DataType : Equatable {
     public enum Base {
         case bool, int, float
+
+        public var isNumeric: Bool {
+            return self != .bool
+        }
     }
 
     public var base: Base
@@ -37,6 +41,10 @@ public struct DataType : Equatable {
 
     public static func ==(lhs: DataType, rhs: DataType) -> Bool {
         return lhs.base == rhs.base && lhs.size == rhs.size
+    }
+
+    public var isNumeric: Bool {
+        return base.isNumeric
     }
 
 }
