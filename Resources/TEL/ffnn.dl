@@ -8,30 +8,28 @@ declare variable [8x8] f32 @W3 = random from 0.0 to 1.0
 declare variable [4x1] f32 @b1 = repeating 0.0
 declare variable [8x1] f32 @b2 = repeating 0.0
 declare variable [8x1] f32 @b3 = repeating 0.0
-declare output [1x8] f32 @v9
+declare output [1x8] f32 @v11
 
 
 define @main() {
-forward:
-    %i1 = pull [4x1] f32 @i1, %then, %end
-end:
-    endfwd
-then:
-    %v0 = matmul [4x4] f32 @W1, [4x1] f32 %i1
-    %v1 = add [4x4] f32 %v0, [4x1] f32 @b1
-    %h1 = sigmoid [4x4] f32 %v1
-    %i2 = pull [4x1] f32 @i2, %then.1, %end
-then.1:
-    %v2 = concat [4x4] f32 %h1, [4x1] f32 %i2 along 0
-    %v3 = sub f32 1.0, [4x4] f32 %v2
-    %v4 = matmul [8x8] f32 @W2, f32 %v3
-    %v5 = add [8x8] f32 %v4, [8x1] f32 @b2
-    %h2 = max f32 0.0, [8x8] f32 %v5
-    %v6 = matmul [8x8] f32 @W3, f32 %h2
-    %v7 = add [8x8] f32 %v6, [8x1] f32 @b3
-    %v8 = softmax [8x8] f32 %v7
-    %o = shapecast [8x8] f32 %v8 to [8x8]
-    export [8x8] f32 %o to [1x8] f32 @v9
-    br %end
+    forward {
+    entry:
+        %v0 = get [4x1] f32 @i1
+        %v1 = matmul [4x4] f32 @W1, [4x1] f32 %v0
+        %v2 = add [4x1] f32 %v1, [4x1] f32 @b1
+        %h1 = sigmoid [4x1] f32 %v2
+        %v3 = get [4x1] f32 @i2
+        %v4 = concat [4x1] f32 %h1, [4x1] f32 %v3 to [8x1] f32 along 0
+        %v5 = sub f32 1.0, [8x1] f32 %v4
+        %v6 = matmul [8x8] f32 @W2, [8x1] f32 %v5
+        %v7 = add [8x1] f32 %v6, [8x1] f32 @b2
+        %h2 = max f32 0.0, [8x1] f32 %v7
+        %v8 = matmul [8x8] f32 @W3, [8x1] f32 %h2
+        %v9 = add [8x1] f32 %v8, [8x1] f32 @b3
+        %v10 = softmax [8x1] f32 %v9
+        %o = shapecast [8x1] f32 %v10 to [1x8]
+        export [1x8] f32 %o to [1x8] f32 @v11
+        ret
+    }
 }
 

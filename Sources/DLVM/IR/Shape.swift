@@ -190,7 +190,7 @@ public extension TensorShape {
     }
 
     public func droppingDimension(_ dimension: Int) -> TensorShape {
-        precondition(indices.contains(dimension), "Dimension index out of range")
+        guard indices.contains(dimension) else { return self }
         var newDims = dimensions
         newDims.remove(at: dimension)
         return TensorShape(newDims)
@@ -282,8 +282,16 @@ public extension TensorShape {
         }
     }
 
+    public func mutuallyBroadcasted(with other: TensorShape) -> TensorShape? {
+        return broadcasted(to: other) ?? other.broadcasted(to: self)
+    }
+
     public func canBroadcast(to other: TensorShape) -> Bool {
         return broadcasted(to: other) != nil
+    }
+
+    public func canMutuallyBroadcast(with other: TensorShape) -> Bool {
+        return mutuallyBroadcasted(with: other) != nil
     }
 
 }

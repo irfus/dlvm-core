@@ -188,3 +188,5 @@ public struct Output : PotentiallyRecurrentValue {
         self.isRecurrent = isRecurrent
     }
 }
+
+public typealias AnyDef = Value & Named & AnyObject

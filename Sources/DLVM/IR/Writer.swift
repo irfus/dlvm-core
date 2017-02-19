@@ -143,10 +143,6 @@ extension Control : TextOutputStreamable {
         switch self {
         case let .br(bb):
             target.write("br %\(bb.name)")
-        case .endForward:
-            target.write("endfwd")
-        case .endFackward:
-            target.write("endbwd")
         case let .condBr(op, thenBB, elseBB):
             target.write("condbr \(op), %\(thenBB.name), %\(elseBB.name)")
         case let .export(op, v):
@@ -181,16 +177,38 @@ extension Operation : TextOutputStreamable {
             if let axis = axis {
                 target.write(" along \(axis)")
             }
-        case let .phi(ops):
-            target.write("phi \(ops.map{"[\($0) \($1)]"}.joined(separator: ", "))")
-        case let .concat(ops, axis: axis):
-            target.write("concat \(ops.map{"\($0)"}.joined(separator: ", ")) along \(axis)")
+        case let .phi(shape, type, ops):
+            target.write("phi ")
+            if !shape.isScalar {
+                target.write("\(shape) ")
+            }
+            target.write("\(type) \(ops.map{"[\($0) \($1)]"}.joined(separator: ", "))")
+        case let .concat(shape, type, ops, axis: axis):
+            target.write("concat \(ops.map{"\($0)"}.joined(separator: ", ")) to ")
+            if !shape.isScalar {
+                target.write("\(shape) ")
+            }
+            target.write("\(type) along \(axis)")
         case let .typeCast(op, t):
             target.write("typecast \(op) to \(t)")
         case let .shapeCast(op, s):
             target.write("shapecast \(op) to \(s)")
         case let .pull(def, thenBB, elseBB):
             target.write("pull \(def), %\(thenBB.name), %\(elseBB.name)")
+        case let .get(def):
+            target.write("get \(def)")
+        case let .call(shape, type, fun, args):
+            target.write("call ")
+            if shape.isScalar {
+                target.write("\(shape) ")
+            }
+            target.write("@\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+        case let .diff(shape, type, fun, use, wrt: idx):
+            target.write("diff ")
+            if shape.isScalar {
+                target.write("\(shape) ")
+            }
+            target.write("@\(fun.name) wrt #2 from \(use)")
         }
     }
 }
@@ -258,12 +276,12 @@ extension Def : TextOutputStreamable {
 
 extension BasicBlock : TextOutputStreamable {
     private func makeIndentation() -> String {
-        return "    "
+        return "        "
     }
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
         /// Begin block
-        target.write("\(name):\n")
+        target.write("    \(name):\n")
         for inst in elements {
             /// Write indentation
             makeIndentation().write(to: &target)
@@ -276,15 +294,28 @@ extension BasicBlock : TextOutputStreamable {
 extension Function : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("define ")
-        if let result = result {
-            target.write("\(result.shape) \(result.type) ")
-        }
         target.write("@\(name)(")
-        argument?.write(to: &target)
-        target.write(") {\n")
-        for bb in basicBlocks {
+        arguments.map{"\($0)"}.joined(separator: ", ").write(to: &target)
+        target.write(") ")
+        if let result = result {
+            target.write("-> \(result.shape) \(result.type) ")
+        }
+        target.write("{\n")
+
+        target.write("    forward {\n")
+        for bb in forwardSection {
             bb.write(to: &target)
         }
+        target.write("    }\n")
+
+        if !backwardSection.isEmpty {
+            target.write("    backward {\n")
+            for bb in backwardSection {
+                bb.write(to: &target)
+            }
+            target.write("    }\n")
+        }
+
         target.write("}")
     }
 }
