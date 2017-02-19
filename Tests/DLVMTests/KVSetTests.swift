@@ -7,13 +7,13 @@
 //
 
 import XCTest
-@testable import struct DLVM.NamedObjectSet
-@testable import struct DLVM.OrderedNamedObjectSet
+@testable import struct DLVM.KVSet
+@testable import struct DLVM.OrderedKVSet
 
-class ObjectSetTests: XCTestCase {
+class KVSetTests: XCTestCase {
 
     func testCopyOnWrite() {
-        var set = NamedObjectSet<Int>()
+        var set = KVSet<Int>()
         set.insert(1)
 
         var setCopy = set

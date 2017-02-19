@@ -93,7 +93,7 @@ extension IRBuilder {
     open func buildFunction(named name: String, 
                             arguments: [(String, Argument)], result: Argument?) -> Function {
         let fun = Function(name: name, arguments: arguments, result: result)
-        _module.insert(fun)
+        _module.append(fun)
         return fun
     }
     

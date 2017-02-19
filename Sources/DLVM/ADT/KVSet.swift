@@ -8,30 +8,29 @@
 
 import Foundation
 
-fileprivate protocol ObjectSetImplementation {
+fileprivate protocol KVSetImplementation {
     associatedtype Element
     associatedtype Set : AnyObject
     var set: Set { get set }
     var nameTable: [String : Element] { get set }
 }
 
-public protocol ObjectSetProtocol {
+public protocol KVSetProtocol {
     associatedtype Element
     subscript(name: String) -> Element? { get }
-    mutating func insert(_ element: Element)
     mutating func remove(_ element: Element)
     func contains(_ element: Element) -> Bool
     func element(named name: String) -> Element?
     @discardableResult mutating func removeElement(named name: String) -> Element?
 }
 
-public extension ObjectSetProtocol {
+public extension KVSetProtocol {
     public func containsValue(named name: String) -> Bool {
         return element(named: name) != nil
     }
 }
 
-fileprivate extension ObjectSetImplementation where Set : NSMutableCopying {
+fileprivate extension KVSetImplementation where Set : NSMutableCopying {
     var mutatingSet: Set {
         mutating get {
             if !isKnownUniquelyReferenced(&set) {
@@ -42,7 +41,7 @@ fileprivate extension ObjectSetImplementation where Set : NSMutableCopying {
     }
 }
 
-public struct NamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementation, ExpressibleByArrayLiteral {
+public struct KVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleByArrayLiteral {
     fileprivate var set = NSMutableSet()
     fileprivate var nameTable: [String : Element] = [:]
 
@@ -98,7 +97,7 @@ public struct NamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementati
 
 }
 
-extension NamedObjectSet : Sequence {
+extension KVSet: Sequence {
 
     public var count: Int {
         return set.count
@@ -110,7 +109,7 @@ extension NamedObjectSet : Sequence {
 
 }
 
-public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementation, ExpressibleByArrayLiteral {
+public struct OrderedKVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleByArrayLiteral {
     fileprivate var set = NSMutableOrderedSet()
     fileprivate var nameTable: [String : Element] = [:]
 
@@ -118,7 +117,7 @@ public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImple
 
     public init<S: Sequence>(_ elements: S) where S.Iterator.Element == Element {
         for element in elements {
-            insert(element)
+            append(element)
         }
     }
 
@@ -142,7 +141,7 @@ public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImple
         }
     }
 
-    public mutating func insert(_ element: Element) {
+    public mutating func append(_ element: Element) {
         mutatingSet.add(element)
         insertName(of: element)
     }
@@ -184,12 +183,16 @@ public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImple
         return set.index(of: element)
     }
 
+    public var array: [Element] {
+        return set.array as! [Element]
+    }
+
 }
 
 // MARK: - RandomAccessCollection, BidirectionalCollection
 /// - Note: Need to conform to MutableCollection; add `subscript(i: Int)` setter
 /// and `subscript(bounds: Range<Int>)`
-extension OrderedNamedObjectSet : RandomAccessCollection, BidirectionalCollection {
+extension OrderedKVSet: RandomAccessCollection, BidirectionalCollection {
 
     public func index(after i: Int) -> Int {
         return i + 1

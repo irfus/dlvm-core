@@ -9,13 +9,13 @@
 import Foundation
 
 /// Module representing a neural network
-open class Module {
+open class Module : IRCollection {
     public typealias Element = Function
     
     open var name: String
 
-    public fileprivate(set) var functions = OrderedNamedObjectSet<Function>()
-    public fileprivate(set) var globals = OrderedNamedObjectSet<Global>()
+    public fileprivate(set) var functions = OrderedKVSet<Function>()
+    public fileprivate(set) var globals = OrderedKVSet<Global>()
 
     open weak var mainFunction: Function? {
         return function(named: "main")
@@ -26,14 +26,18 @@ open class Module {
     }
 }
 
-// MARK: - Basic block
+// MARK: - Functions
 extension Module {
+
+    open var elements: [Function] {
+        return functions.array
+    }
     
-    open func insert(_ function: Function) {
+    open func append(_ function: Function) {
         if let existingBlock = self.function(named: function.name) {
             remove(existingBlock)
         }
-        functions.insert(function)
+        functions.append(function)
         function.parent = self
     }
 
@@ -64,7 +68,7 @@ extension Module {
 extension Module {
 
     open func insert(_ global: Global) {
-        globals.insert(global)
+        globals.append(global)
     }
 
     open func index(of global: Global) -> Int? {

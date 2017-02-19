@@ -13,16 +13,16 @@ public struct Argument : Value {
     public static var scope: Scope = .local
 }
 
-open class Function : Named, IRCollection {
+open class Function : Named, IRCollection, IRObject {
     public typealias Element = BasicBlock
 
     public var name: String
     public var arguments: [Def<Argument>]
     public var result: Argument?
-    public var forwardPass = OrderedNamedObjectSet<BasicBlock>()
-    public var backwardPass: OrderedNamedObjectSet<BasicBlock>?
+    public var forwardPass = OrderedKVSet<BasicBlock>()
+    public var backwardPass: OrderedKVSet<BasicBlock>?
 
-    public lazy var parametricBackwardPasses: [OrderedNamedObjectSet<BasicBlock>] =
+    public lazy var parametricBackwardPasses: [OrderedKVSet<BasicBlock>] =
         self.arguments.map { _ in [] }
 
     public weak var parent: Module?
@@ -44,7 +44,7 @@ extension Function {
         if let existingBlock = self.basicBlock(named: basicBlock.name) {
             remove(existingBlock)
         }
-        forwardPass.insert(basicBlock)
+        forwardPass.append(basicBlock)
         basicBlock.parent = self
     }
 
