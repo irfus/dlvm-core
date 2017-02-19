@@ -89,7 +89,7 @@ class CodeGenerator {
             environment[layer.name] = op
             if layer.isOutput {
                 let output = builder.declare(Output(shape: layer.shape, type: program.dataType, isRecurrent: false))
-                builder.buildControl(.export(op, to: output))
+                builder.buildControl(.yield(op, to: output))
             }
         }
 

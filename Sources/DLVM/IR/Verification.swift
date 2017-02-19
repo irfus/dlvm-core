@@ -121,7 +121,7 @@ extension Control : SelfVerifiable {
                 throw VerificationError.unexpectedShape(use, .scalar, self)
             }
 
-        case let .export(use, to: out):
+        case let .yield(use, to: out):
             guard use.type == out.type else {
                 throw VerificationError.unexpectedType(use, out.type, self)
             }

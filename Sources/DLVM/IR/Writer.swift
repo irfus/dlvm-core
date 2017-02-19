@@ -153,8 +153,8 @@ extension Control : TextOutputStreamable {
             target.write("br %\(bb.name)")
         case let .condBr(op, thenBB, elseBB):
             target.write("condbr \(op), %\(thenBB.name), %\(elseBB.name)")
-        case let .export(op, v):
-            target.write("export \(op) to \(v)")
+        case let .yield(op, v):
+            target.write("yield \(op) to \(v)")
         case let .store(op, v):
             target.write("store \(op) to \(v)")
         case let .ret(op):
