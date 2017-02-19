@@ -12,14 +12,8 @@ public protocol LexicallyConvertible {
     static var lexicon: [String : Self] { get }
 }
 
-extension BasicBlock.ExtensionType : LexicallyConvertible {
-    public static var lexicon: [String : BasicBlock.ExtensionType] = [
-        "backpropagation" : .backpropagation
-    ]
-}
-
-extension AggregationFunction : LexicallyConvertible {
-    public static var lexicon: [String : AggregationFunction] = [
+extension IntegrationOp: LexicallyConvertible {
+    public static var lexicon: [String : IntegrationOp] = [
         "softmax"    : .softmax,
         "logSoftmax" : .logSoftmax,
         "argmax"     : .argmax,
@@ -27,8 +21,8 @@ extension AggregationFunction : LexicallyConvertible {
     ]
 }
 
-extension ComparisonPredicate : LexicallyConvertible {
-    public static let lexicon: [String : ComparisonPredicate] = [
+extension ComparisonOp: LexicallyConvertible {
+    public static let lexicon: [String : ComparisonOp] = [
         "lt"  : .lessThan,
         "leq" : .lessThanOrEqualTo,
         "gt"  : .greaterThan,
@@ -38,24 +32,24 @@ extension ComparisonPredicate : LexicallyConvertible {
     ]
 }
 
-extension ArithmeticOperator : LexicallyConvertible {
-    public static let lexicon: [String : ArithmeticOperator] = [
+extension ArithmeticOp: LexicallyConvertible {
+    public static let lexicon: [String : ArithmeticOp] = [
         "add"      : .add,
         "sub"      : .subtract,
         "mul"      : .multiply,
         "div"      : .divide,
         "min"      : .min,
         "max"      : .max,
-        "truncDiv" : .truncateDivide,
-        "floorDiv" : .floorDivide,
+        "truncdiv" : .truncateDivide,
+        "floordiv" : .floorDivide,
         "mod"      : .modulo,
         "pow"      : .power,
         "mean"     : .mean
     ]
 }
 
-extension ElementwiseFunction : LexicallyConvertible {
-    public static let lexicon: [String : ElementwiseFunction] = [
+extension ElementwiseOp: LexicallyConvertible {
+    public static let lexicon: [String : ElementwiseOp] = [
         "sigmoid" : .sigmoid,
         "tanh"    : .tanh,
         "log"     : .log,
@@ -82,8 +76,8 @@ extension ElementwiseFunction : LexicallyConvertible {
     ]
 }
 
-extension LogicOperator: LexicallyConvertible {
-    public static var lexicon: [String : LogicOperator] = [
+extension BooleanOp: LexicallyConvertible {
+    public static var lexicon: [String : BooleanOp] = [
         "and" : .and,
         "or"  : .or,
         "xor" : .xor

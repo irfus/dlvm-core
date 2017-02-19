@@ -9,11 +9,12 @@
 
 import struct DLVM.DataType
 import struct DLVM.TensorShape
-import enum DLVM.ElementwiseFunction
-import enum DLVM.ComparisonPredicate
-import enum DLVM.AggregationFunction
-import enum DLVM.ArithmeticOperator
-import enum DLVM.ReductionFunction
+import enum DLVM.ElementwiseOp
+import enum DLVM.ComparisonOp
+import enum DLVM.IntegrationOp
+import enum DLVM.ArithmeticOp
+import enum DLVM.BinaryOp
+import enum DLVM.BooleanOp
 
 public enum SemanticError : Error {
     case dataTypeRedeclared
@@ -51,7 +52,7 @@ extension SemanticError : CustomStringConvertible {
         case .moduleNameRedeclared:
             return "Network name is redeclared"
         case .moduleNameMissing:
-            return "Network name is undefined. Would you like to add a '@name ...'?"
+            return "Network name is undefined. Would you like to add a 'name ...' declaration?"
         case let .initializerMissing(variable):
             return "Variable \(variable) : \(variable.range) needs an initializer"
         case let .initializerUnexpected(variable):
@@ -504,11 +505,16 @@ public class Program {
         /// For now we assume only unary and binary functions
         case let .call(funcName, args, _):
             let argShapes = try args.map { try shape(of: $0, in: &env) }
-            guard let function = builtinFunctionTable[funcName] else {
+            guard let function = intrinsicTable[funcName] else {
                 throw SemanticError.functionUnknown(expression, funcName)
             }
+            guard function.argumentCount == args.count else {
+                throw SemanticError.functionTypeError(
+                    expression, .argumentCountMismatch(expected: function.argumentCount, actual: args.count))
+            }
             do {
-                return try function.type.resultShape(forArguments: argShapes)
+                let resultShape: TensorShape = try function.resultShape(forArguments: argShapes)
+                return resultShape
             } catch let error as FunctionTypeError {
                 throw SemanticError.functionTypeError(expression, error)
             }

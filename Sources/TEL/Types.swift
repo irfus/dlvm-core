@@ -6,11 +6,13 @@
 //
 //
 
-import struct DLVM.TensorShape
+import DLVM
 
 public enum FunctionTypeError : Error {
     case argumentCountMismatch(expected: Int, actual: Int)
     case shapeMismatch(TensorShape, TensorShape)
+    case concatEmpty
+    case notSupported
 }
 
 extension FunctionTypeError : CustomStringConvertible {
@@ -23,66 +25,67 @@ extension FunctionTypeError : CustomStringConvertible {
         case let .argumentCountMismatch(expected: expected, actual: actual):
             return "Expected \(expected) arguments, but \(actual) are provided"
 
+        case .notSupported:
+            return "Function not yet supported"
+
+        case .concatEmpty:
+            return "Expected at least one argument in concatenation"
+
         }
     }
 }
 
-/// - Note: This is not a formal type system. Type computation is purely defined
-/// in the host language. I have sketched a somewhat formal type system in the 
-/// previous commits but they are obviously extra work since we are not going
-/// to allow function declarations in TEL.
+extension DLVM.OpKind {
 
-public enum FunctionType {
-    case homomorphicUnary, homomorphicBinary, binaryReduction
-    case matrixMultiplication, tensorMultiplication
-    case logicalBinary, comparison
-}
+    private func checkArgumentCount(with arguments: [Use]) throws {
+        guard argumentCount == arguments.count else {
+            throw FunctionTypeError.argumentCountMismatch(expected: argumentCount,
+                                                          actual: arguments.count)
+        }
+    }
 
-internal extension FunctionType {
-    func checkSanity(forArguments args: [TensorShape]) throws {
+    func makeOperation(with arguments: [Use]) throws -> Operation {
+        try checkArgumentCount(with: arguments)
+        switch self {
+        case let .unary(op):
+            return .unary(op, arguments[0])
+        case let .binary(op):
+            return .binary(op, arguments[0], arguments[1])
+        case .matMul:
+            return .matMul(arguments[0], arguments[1])
+        default:
+            throw FunctionTypeError.notSupported
+        }
+    }
+
+    func resultShape(forArguments args: [TensorShape]) throws -> TensorShape {
         guard args.count == argumentCount else {
             throw FunctionTypeError.argumentCountMismatch(expected: argumentCount, actual: args.count)
         }
-    }
-}
-
-public extension FunctionType {
-    public var argumentCount: Int {
         switch self {
-        case .homomorphicUnary: return 1
-        case .homomorphicBinary: return 2
-        case .binaryReduction: return 2
-        case .matrixMultiplication: return 2
-        case .tensorMultiplication: return 2
-        case .logicalBinary: return 2
-        case .comparison: return 2
+        case .concat where args.isEmpty:
+            throw FunctionTypeError.concatEmpty
+        case .concat:
+            return try args.dropFirst().reduce(args[0], { acc, x in
+                guard let shape = acc.concatenating(with: x) else {
+                    throw FunctionTypeError.shapeMismatch(acc, x)
+                }
+                return shape
+            })
+        case .binary:
+            guard let shape = args[0].broadcasted(to: args[1])
+                           ?? args[1].broadcasted(to: args[0]) else {
+                throw FunctionTypeError.shapeMismatch(args[0], args[1])
+            }
+            return shape
+        case .unary, .scan, .reduce:
+            return args[0]
+        case .matMul:
+            guard let shape = args[0].matrixMultiplied(with: args[1]) else {
+                throw FunctionTypeError.shapeMismatch(args[0], args[1])
+            }
+            return shape
         }
     }
 
-    private func broadcast(_ lhs: TensorShape, _ rhs: TensorShape) -> TensorShape? {
-        return lhs.broadcasted(to: rhs) ?? rhs.broadcasted(to: lhs)
-    }
-
-    public func resultShape(forArguments args: [TensorShape]) throws -> TensorShape {
-        try checkSanity(forArguments: args)
-        switch self {
-        case .homomorphicUnary: return args[0]
-        case .homomorphicBinary, .comparison, .logicalBinary:
-            guard let broadcastedShape = broadcast(args[0], args[1]) else {
-                throw FunctionTypeError.shapeMismatch(args[0], args[1])
-            }
-            return broadcastedShape
-        case .binaryReduction: return .scalar
-        case .matrixMultiplication:
-            guard let resultShape = args[0].matrixMultiplied(with: args[1]) else {
-                throw FunctionTypeError.shapeMismatch(args[0], args[1])
-            }
-            return resultShape
-        case .tensorMultiplication:
-            guard let resultShape = args[0].multiplied(with: args[1]) else {
-                throw FunctionTypeError.shapeMismatch(args[0], args[1])
-            }
-            return resultShape
-        }
-    }
 }

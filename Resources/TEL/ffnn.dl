@@ -1,39 +1,35 @@
 module ffnn
 
-declare input f32 [4x1] i2
-declare input f32 [4x1] i1
+declare placeholder [4x1] f32 @i1
+declare placeholder [4x1] f32 @i2
+declare variable [4x4] f32 @W1 = random from 0.0 to 1.0
+declare variable [8x8] f32 @W2 = random from 0.0 to 1.0
+declare variable [8x8] f32 @W3 = random from 0.0 to 1.0
+declare variable [4x1] f32 @b1 = repeating 0.0
+declare variable [8x1] f32 @b2 = repeating 0.0
+declare variable [8x1] f32 @b3 = repeating 0.0
+declare output [1x8] f32 @v11
 
-declare parameter f32 [8x8] W3 = random from f32 0.0 to f32 1.0
-declare parameter f32 [4x4] W1 = random from f32 0.0 to f32 1.0
-declare parameter f32 [8x1] b3 = repeating f32 0.0
-declare parameter f32 [8x1] b2 = repeating f32 0.0
-declare parameter f32 [4x1] b1 = repeating f32 0.0
-declare parameter f32 [8x8] W2 = random from f32 0.0 to f32 1.0
 
-declare output f32 [1x8] o
-
-// Operand notations:
-//   @ ---- input
-//   ' ---- constant
-//   $ ---- parameter
-//   & ---- output
-//   % ---- temporary
-
-!entry {
-    %v0 = load f32 [4x1] @i1
-    %v1 = mmul f32 [4x4] $W1, f32 [4x1] %v0
-    %v2 = add f32 [4x1] %v1, f32 [4x1] $b1
-    %h1 = sigmoid f32 [4x1] %v2
-    %v3 = load f32 [4x1] @i2
-    %v4 = concat f32 [4x1] %h1, f32 [4x1] %v3 along 0
-    %v5 = sub f32 1.0, f32 [8x1] %v4
-    %v6 = mmul f32 [8x8] $W2, f32 [8x1] %v5
-    %v7 = add f32 [8x1] %v6, f32 [8x1] $b2
-    %h2 = max f32 0.0, f32 [8x1] %v7
-    %v8 = mmul f32 [8x8] $W3, f32 [8x1] %h2
-    %v9 = add f32 [8x1] %v8, f32 [8x1] $b3
-    %v10 = softmax f32 [8x1] %v9
-    %o = shapecast f32 [8x1] %v10 to [1x8]
-    export f32 [1x8] %o to f32 [1x8] &o
+define @main() {
+    forward {
+    entry:
+        %v0 = get [4x1] f32 @i1
+        %v1 = matmul [4x4] f32 @W1, [4x1] f32 %v0
+        %v2 = add [4x1] f32 %v1, [4x1] f32 @b1
+        %h1 = sigmoid [4x1] f32 %v2
+        %v3 = get [4x1] f32 @i2
+        %v4 = concat [4x1] f32 %h1, [4x1] f32 %v3 to [8x1] f32 along 0
+        %v5 = sub f32 1.0, [8x1] f32 %v4
+        %v6 = matmul [8x8] f32 @W2, [8x1] f32 %v5
+        %v7 = add [8x1] f32 %v6, [8x1] f32 @b2
+        %h2 = max f32 0.0, [8x1] f32 %v7
+        %v8 = matmul [8x8] f32 @W3, [8x1] f32 %h2
+        %v9 = add [8x1] f32 %v8, [8x1] f32 @b3
+        %v10 = softmax [8x1] f32 %v9
+        %o = shapecast [8x1] f32 %v10 to [1x8]
+        export [1x8] f32 %o to [1x8] f32 @v11
+        ret
+    }
 }
 

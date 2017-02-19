@@ -43,71 +43,8 @@ extension ModuleNode {
 
 extension BasicBlockNode {
     public func makeBasicBlock(in env: BasicBlock?, module: Module) throws -> BasicBlock {
-        let bb: BasicBlock
-        let extType = try extensionTypeName.map { (extTypeName) throws -> BasicBlock.ExtensionType in
-            guard let extType = BasicBlock.ExtensionType.lexicon[extTypeName] else {
-                throw SemanticError.unsupportedExtensionType(self)
-            }
-            return extType
-        }
-        switch (env, extType) {
-        /// Non-extension cannot live in an extension
-        case let (env?, nil) where env.isExtension:
-            throw SemanticError.nonextensionInExtension(self)
+        let bb = BasicBlock()
 
-        /// Extension cannot live in a non-extension
-        case let (env?, _?) where !env.isExtension:
-            throw SemanticError.extensionInNonextension(self)
-
-        /// Extension must have the same type as parent's
-        case let (env?, extType?) where extType != env.extensionType:
-            throw SemanticError.extensionTypeMismatchWithParent(self)
-
-        /// Non-extension cannot be duplicate
-        case (nil, nil) where module.containsBasicBlock(named: name):
-            throw SemanticError.redeclaredBasicBlock(self)
-
-        /// Nested non-extension's name must not be duplicate
-        case let (env?, nil) where module.containsBasicBlock(named: name)
-                                || env.hasDescendant(named: name):
-            throw SemanticError.redeclaredBasicBlock(self)
-
-        /// Global extension
-        case let (nil, extType?):
-            /// Search for basic block
-            guard let mainBB = module.basicBlock(named: name)
-                ?? module.basicBlocks.flatMap({$0.descendant(named: name)}).first else {
-                throw SemanticError.cannotFindMainBlock(self)
-            }
-            guard !mainBB.hasExtension(ofType: extType) else {
-                throw SemanticError.redeclaredExtension(self)
-            }
-            bb = mainBB.makeExtension(ofType: extType)
-
-        /// Nested extension
-        case let (env?, extType?):
-            guard let mainBB = env.mainBlock?.descendant(named: name) else {
-                throw SemanticError.cannotFindMainBlock(self)
-            }
-            guard !mainBB.hasExtension(ofType: extType) else {
-                throw SemanticError.redeclaredExtension(self)
-            }
-            bb = mainBB.makeExtension(ofType: extType)
-
-        /// Global non-extension
-        case (nil, nil):
-            bb = BasicBlock(name: name)
-
-        /// Nested non-extension
-        case let (env?, nil):
-            bb = BasicBlock(name: name, parent: env)
-        }
-        
-        for instNode in instructions {
-            let inst = try instNode.makeInstruction(in: bb, module: module)
-            bb.append(inst)
-        }
-        return bb
     }
 }
 
@@ -240,20 +177,27 @@ extension VariableNode {
 }
 
 extension OperandNode {
+
+    private func check(type: DataType, shape: TensorShape,
+                       against valRep: ValueRepresentation) throws {
+        guard type == valRep.type else {
+            throw SemanticError.typeMismatch(self, type)
+        }
+        guard shape == valRep.shape else {
+            throw SemanticError.shapeMismatch(self, shape)
+        }
+    }
+    
     public func makeValue(in env: BasicBlock, module: Module) throws -> Value {
         let type = self.type.makeType()
         let shape = self.shape?.makeShape() ?? .scalar
+
         switch variable {
         case let .parameter(name, _), let .constant(name, _):
             guard let global = module.globalValue(named: name) else {
                 throw SemanticError.undeclaredVariable(variable)
             }
-            guard type == global.type else {
-                throw SemanticError.typeMismatch(self, type)
-            }
-            guard shape == global.shape else {
-                throw SemanticError.shapeMismatch(self, shape)
-            }
+            try check(type: type, shape: shape, against: global)
             return global
 
         case let .immediate(imm, _):
@@ -265,15 +209,10 @@ extension OperandNode {
             return ImmediateValue(type: type, shape: shape, immediate: immidiate)
 
         case let .temporary(name, _):
-            guard let temporary = env.contextualInstruction(named: name) else {
+            guard let temporary = env.instruction(named: name) else {
                 throw SemanticError.undeclaredVariable(variable)
             }
-            guard type == temporary.type else {
-                throw SemanticError.typeMismatch(self, type)
-            }
-            guard shape == temporary.shape else {
-                throw SemanticError.shapeMismatch(self, shape)
-            }
+            try check(type: type, shape: shape, against: temporary)
             return temporary
 
         default:
@@ -281,36 +220,30 @@ extension OperandNode {
         }
     }
 
-    public func makePlaceholder(in env: BasicBlock, module: Module) throws -> GlobalPlaceholder {
+    public func makeInput(in env: BasicBlock, module: Module) throws -> Input {
         let type = self.type.makeType()
         let shape = self.shape?.makeShape() ?? .scalar
         guard variable.isPlaceholder, let name = variable.name else {
             throw SemanticError.notPlaceholder(self)
         }
-        guard let placeholder = module.globalPlaceholder(named: name) else {
+        guard let input = module.input(named: name) else {
             throw SemanticError.undeclaredVariable(variable)
         }
-        guard type == placeholder.type else {
-            throw SemanticError.typeMismatch(self, type)
-        }
-        guard shape == placeholder.shape else {
-            throw SemanticError.shapeMismatch(self, shape)
-        }
-        return placeholder
+        try check(type: type, shape: shape, against: input)
+        return input
     }
-}
 
-extension LoopConditionNode {
-    public func makeLoopCondition(in env: BasicBlock, module: Module) throws -> LoopInstruction.Condition {
-        switch self {
-        case let .times(op, _):
-            let val = try op.makeValue(in: env, module: module)
-            return .times(val)
-        case let .untilEqual(lhs, rhs, _):
-            let lVal = try lhs.makeValue(in: env, module: module)
-            let rVal = try rhs.makeValue(in: env, module: module)
-            return .untilEqual(lVal, rVal)
+    public func makeOutput(in env: BasicBlock, module: Module) throws -> Output {
+        let type = self.type.makeType()
+        let shape = self.shape?.makeShape() ?? .scalar
+        guard variable.isPlaceholder, let name = variable.name else {
+            throw SemanticError.notPlaceholder(self)
         }
+        guard let output = module.output(named: name) else {
+            throw SemanticError.undeclaredVariable(variable)
+        }
+        try check(type: type, shape: shape, against: output)
+        return output
     }
 }
 
@@ -357,9 +290,7 @@ extension InstructionDeclarationNode {
                 return ElementwiseInstruction(name: name, function: fun, operand: val)
 
             case let .load(op, _):
-                guard let val = try op.makePlaceholder(in: env, module: module) as? Input else {
-                    throw SemanticError.notInput(op)
-                }
+                let val = try op.makeInput(in: env, module: module)
                 return LoadInstruction(name: name, source: val)
 
             case let .matrixMultiply(lhs, rhs, _):
@@ -405,15 +336,12 @@ extension InstructionDeclarationNode {
 
             case let .export(src, dest, _):
                 let srcVal = try src.makeValue(in: env, module: module)
-                guard let destVal = try dest.makePlaceholder(in: env, module: module) as? Output else {
-                    throw SemanticError.notOutput(dest)
-                }
+                let destVal = try dest.makeOutput(in: env, module: module)
                 return ExportInstruction(source: srcVal, destination: destVal)
 
-            case let .loop(bb, cond, _):
-                let condVal = try cond.makeLoopCondition(in: env, module: module)
-                let bbVal = try bb.makeBasicBlock(in: env, module: module)
-                return LoopInstruction(condition: condVal, body: bbVal)
+            case let .recur(inputs: inputs, states: states, outputs: outputs, body: body, _):
+                let inputs = try inputs.map { try $0.makeInput(in: env, module: module) }
+                
             default:
                 throw SemanticError.missingName(self)
             }

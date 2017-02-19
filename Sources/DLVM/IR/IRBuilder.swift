@@ -10,11 +10,15 @@ open class IRBuilder {
     fileprivate let _module: Module
 
     open var module: Module {
-        _module.updateAnalysisInformation()
+        // _module.updateAnalysisInformation()
         return _module
     }
 
-    var currentBlock: BasicBlock?
+    open fileprivate(set) weak var currentBlock: BasicBlock?
+
+    open weak var currentFunction: Function? {
+        return currentBlock?.parent
+    }
 
     fileprivate var variableNameId: Int = 0
     fileprivate var blockNameId: Int = 0
@@ -51,208 +55,72 @@ extension IRBuilder {
 
 // MARK: - Main builder API
 extension IRBuilder {
-    
-    private func build<Inst : Instruction>(_ instruction: Inst) -> Inst {
+
+    private func build(_ operation: Operation, name: String?) -> Def<Operation> {
         guard let block = currentBlock else {
             preconditionFailure("Current block doesn't exist")
         }
-        block.append(instruction)
-        instruction.updateUsers()
-        return instruction
+        let def = Def(name: name ?? makeVariableName(), value: operation)
+        block.append(.operation(def))
+        return def
     }
 
     @discardableResult
-    open func declare(_ input: Input) -> Input {
-        _module.insert(input)
-        return input
+    open func declare(_ output: Output, name: String? = nil) -> Def<Output> {
+        let def = Def<Output>(name: name ?? makeVariableName(), value: output)
+        let global: Global = .output(def)
+        _module.insert(global)
+        return def
     }
 
     @discardableResult
-    open func declare(_ parameter: Parameter) -> Parameter {
-        _module.insert(parameter)
-        return parameter
+    open func declare(_ placeholder: Placeholder, name: String? = nil) -> Def<Placeholder> {
+        let def = Def<Placeholder>(name: name ?? makeVariableName(), value: placeholder)
+        let global: Global = .placeholder(def)
+        _module.insert(global)
+        return def
     }
 
     @discardableResult
-    open func declare(_ output: Output) -> Output {
-        _module.insert(output)
-        return output
+    open func declare(_ value: GlobalValue, name: String? = nil) -> Use {
+        let def = Def<GlobalValue>(name: name ?? makeVariableName(), value: value)
+        _module.insert(.value(def))
+        let use = Use(kind: .global(def))
+        return use
+    }
+
+    @discardableResult
+    open func buildFunction(named name: String, arguments: [(String, Argument)], result: Argument?) -> Function {
+        let fun = Function(name: name, arguments: arguments, result: result)
+        _module.insert(fun)
+        return fun
     }
     
     @discardableResult
-    open func declareInput(name: String, type: DataType, shape: TensorShape) -> Input {
-        let input = Input(name: name, type: type, shape: shape)
-        _module.insert(input)
-        return input
-    }
-    
-    @discardableResult
-    open func declareOutput(name: String, type: DataType, shape: TensorShape) -> Output {
-        let output = Output(name: name, type: type, shape: shape)
-        _module.insert(output)
-        return output
-    }
-    
-    @discardableResult
-    open func declareParameter(name: String, type: DataType, shape: TensorShape,
-                               initializer: Initializer) -> Parameter {
-        let parameter = Parameter(name: name, type: type, shape: shape,
-                                  initializer: initializer)
-        _module.insert(parameter)
-        return parameter
-    }
-
-    @discardableResult
-    open func declareConstant(name: String, type: DataType, shape: TensorShape,
-                              defaultInitializer: Initializer) -> Constant {
-        let constant = Constant(name: name, type: type, shape: shape,
-                                defaultInitializer: defaultInitializer)
-        _module.insert(constant)
-        return constant
-    }
-
-    @discardableResult
-    open func makeGlobalBasicBlock(named name: String) -> BasicBlock {
+    open func buildBasicBlock(named name: String) -> BasicBlock {
         let block = BasicBlock(name: disambiguatedName(for: name))
-        _module.insert(block)
+        if let currentBlock = currentBlock, let function = currentBlock.parent {
+            function.insert(block, after: currentBlock)
+        }
         return block
     }
 
     @discardableResult
-    open func makeExtension(ofType type: BasicBlock.ExtensionType, for basicBlock: BasicBlock) -> BasicBlock {
-        return basicBlock.makeExtension(ofType: type)
-    }
-    
-    @discardableResult
-    open func makeArithmeticOperation(_ `operator`: ArithmeticOperator,
-                                      _ lhs: Value, _ rhs: Value,
-                                      name: String? = nil) -> ArithmeticInstruction {
-        let inst = ArithmeticInstruction(name: name ?? makeVariableName(),
-                                         function: `operator`,
-                                         firstOperand: lhs, secondOperand: rhs)
-        return build(inst)
+    open func buildBasicBlock(named name: String, in function: Function) -> BasicBlock {
+        let block = BasicBlock(name: disambiguatedName(for: name))
+        function.append(block)
+        return block
     }
 
     @discardableResult
-    open func makeLogicOperation(_ `operator`: LogicOperator,
-                                 _ lhs: Value, _ rhs: Value,
-                                 name: String? = nil) -> LogicInstruction {
-        let inst = LogicInstruction(name: name ?? makeVariableName(),
-                                    function: `operator`,
-                                    firstOperand: lhs, secondOperand: rhs)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeComparison(_ `operator`: ComparisonPredicate,
-                             _ lhs: Value, _ rhs: Value,
-                             name: String? = nil) -> ComparisonInstruction {
-        let inst = ComparisonInstruction(name: name ?? makeVariableName(),
-                                         function: `operator`,
-                                         firstOperand: lhs, secondOperand: rhs)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeTensorMultiplication(_ lhs: Value, _ rhs: Value,
-                                       name: String? = nil) -> TensorMultiplicationInstruction {
-        let inst = TensorMultiplicationInstruction(name: name ?? makeVariableName(),
-                                                   firstOperand: lhs, secondOperand: rhs)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeMatrixMultiplication(_ lhs: Value, _ rhs: Value,
-                                       name: String? = nil) -> MatrixMultiplicationInstruction {
-        let inst = MatrixMultiplicationInstruction(name: name ?? makeVariableName(),
-                                                   firstOperand: lhs, secondOperand: rhs)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeElementwiseTransformation(_ function: ElementwiseFunction,
-                                            _ operand: Value,
-                                            name: String? = nil) -> ElementwiseInstruction {
-        let inst = ElementwiseInstruction(name: name ?? makeVariableName(),
-                                          function: function, operand: operand)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeAggregation(_ function: AggregationFunction,
-                              _ operand: Value,
-                              name: String? = nil) -> AggregationInstruction {
-        let inst = AggregationInstruction(name: name ?? makeVariableName(),
-                                          function: function, operand: operand)
-        return build(inst)
+    open func buildOperation(_ operation: Operation, name: String? = nil) -> Use {
+        let def = build(operation, name: name)
+        let use = Use(kind: .local(def))
+        return use
     }
 
-    @discardableResult
-    open func makeReduction(_ function: ReductionFunction, _ operand: Value, axis: Int? = nil,
-                            name: String? = nil) -> ReductionInstruction {
-        let inst = ReductionInstruction(name: name ?? makeVariableName(), function: function,
-                                        operand: operand, axis: axis)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeConcatenation(_ operands: [Value], axis: Int,
-                                name: String? = nil) -> ConcatenationInstruction {
-        let inst = ConcatenationInstruction(name: name ?? makeVariableName(),
-                                            operands: operands, axis: axis)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeShapeCast(_ operand: Value, targetShape: TensorShape,
-                            name: String? = nil) -> ShapeCastInstruction {
-        let inst = ShapeCastInstruction(name: name ?? makeVariableName(),
-                                        operand: operand, target: targetShape)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeTypeCast(_ operand: Value, targetType: DataType,
-                           name: String? = nil) -> TypeCastInstruction {
-        let inst = TypeCastInstruction(name: name ?? makeVariableName(), operand: operand,
-                                       target: targetType)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeLoad(_ source: Input, name: String? = nil) -> LoadInstruction {
-        let inst = LoadInstruction(name: name ?? makeVariableName(), source: source)
-        return build(inst)
-    }
-
-    @discardableResult
-    open func makeExport(_ source: Value, to destination: Output) -> ExportInstruction {
-        let inst = ExportInstruction(source: source, destination: destination)
-        return build(inst)
-    }
-    
-    @discardableResult
-    open func makeStore(_ source: Value, to destination: Parameter) -> StoreInstruction {
-        let inst = StoreInstruction(source: source, destination: destination)
-        return build(inst)
-    }
-
-    @discardableResult
-    open func makeLoop(onCondition condition: LoopInstruction.Condition,
-                       name: String? = nil,
-                       inLoopBody executeInLoopBody: ((BasicBlock) -> Void)? = nil) -> LoopInstruction {
-        guard let block = currentBlock else {
-            preconditionFailure("Current block doesn't exist")
-        }
-        let body = BasicBlock(name: name ?? makeBlockName(), parent: block)
-        let inst = LoopInstruction(condition: condition,
-                                   body: body)
-        if let executeInLoopBody = executeInLoopBody {
-            move(to: body)
-            executeInLoopBody(body)
-            moveToParentBlock()
-        }
-        return build(inst)
+    open func buildControl(_ control: Control) {
+        currentBlock?.append(.control(control))
     }
 
 }
@@ -260,12 +128,8 @@ extension IRBuilder {
 // MARK: - Positioning
 extension IRBuilder {
 
-    open func move(to basicBlock: BasicBlock) {
+    open func move(to basicBlock: BasicBlock?) {
         currentBlock = basicBlock
-    }
-
-    open func moveToParentBlock() {
-        currentBlock = currentBlock?.parent
     }
 
 }
