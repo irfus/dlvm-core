@@ -79,8 +79,8 @@ class CodeGenerator {
         }
         
         /// Entry block
-        let function = builder.buildFunction(named: "main", argument: nil, result: nil)
-        let entry = builder.buildBasicBlock(named: "forward", in: function)
+        let function = builder.buildFunction(named: "main", arguments: [], result: nil)
+        let entry = builder.buildBasicBlock(named: "entry", in: function)
         builder.move(to: entry)
 
         /// Generate hidden layers
@@ -97,7 +97,7 @@ class CodeGenerator {
         if let endBlock = environment.endBlock {
             builder.buildControl(.br(endBlock))
         } else {
-            builder.buildControl(.endForward)
+            builder.buildControl(.ret(nil))
         }
         
         return builder.module
@@ -113,22 +113,29 @@ class CodeGenerator {
             if environment.containsValue(named: variable.name) {
                 return environment[variable.name]
             }
-            /// If it's a placeholder, emit a `pull` instruction and build two basic blocks
+            /// If it's a placeholder, emit a `pull` or `get` instruction
             if let ph = environment.placeholders[variable.name] {
-                let currentBB = builder.currentBlock
-                let thenBB = builder.buildBasicBlock(named: "then")
-                let elseBB = environment.endBlock ?? {
-                    let end = builder.buildBasicBlock(named: "end")
-                    environment.endBlock = end
-                    builder.move(to: end)
-                    builder.buildControl(.endForward)
-                    return end
-                }()
-                builder.move(to: currentBB)
-                let local = builder.buildOperation(.pull(ph, thenBB, elseBB), name: variable.name)
-                builder.move(to: thenBB)
-                environment[variable.name] = local
-                return local
+                if ph.isRecurrent {
+                    let currentBB = builder.currentBlock
+                    let thenBB = builder.buildBasicBlock(named: "then")
+                    let elseBB = environment.endBlock ?? {
+                        let end = builder.buildBasicBlock(named: "end")
+                        environment.endBlock = end
+                        builder.move(to: end)
+                        builder.buildControl(.ret(nil))
+                        return end
+                    }()
+                    builder.move(to: currentBB)
+                    let local = builder.buildOperation(.pull(ph, thenBB, elseBB), name: variable.name)
+                    builder.move(to: thenBB)
+                    environment[variable.name] = local
+                    return local
+                }
+                else {
+                    let val = builder.buildOperation(.get(ph))
+                    environment[variable.name] = val
+                    return val
+                }
             }
             preconditionFailure("Unknown variable name. Something's wrong with DLGen")
         case let .call(funcName, args, _):
@@ -152,7 +159,12 @@ class CodeGenerator {
             return builder.buildOperation(operation, name: name)
         case let .concat(exprs, dimension: dim, _):
             let exprOps = exprs.map { [unowned self] in self.build($0) }
-            let operation: Operation = .concat(exprOps, axis: dim)
+            guard let shape = exprOps.dropFirst().reduce(exprOps.first?.shape, { acc, x in
+                return acc?.concatenating(with: x.shape, alongDimension: dim)
+            }) else {
+                preconditionFailure("Concatenation shape not available. Should not have passed Sema.")
+            }
+            let operation: Operation = .concat(shape, exprOps[0].type, exprOps, axis: dim)
             return builder.buildOperation(operation, name: name)
         case let .reshape(expr, shape: dims, _):
             let exprOp = build(expr)

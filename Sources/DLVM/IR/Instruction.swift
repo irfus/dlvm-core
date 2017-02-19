@@ -36,12 +36,21 @@ public struct Use {
         }
     }
 
-    public var definition: AnyObject? {
+    public var definition: AnyDef? {
         switch kind {
         case let .global(def): return def
         case let .local(def): return def 
         case let .argument(def): return def
         case .literal: return nil
+        }
+    }
+
+    public var value: Value {
+        switch kind {
+        case let .global(def): return def
+        case let .local(def): return def
+        case let .argument(def): return def
+        case let .literal(lit): return lit
         }
     }
 
@@ -71,17 +80,17 @@ public enum Control {
     case br(BasicBlock)
     /// Conditional branch depending on the value
     case condBr(Use, BasicBlock, BasicBlock)
-    /// End forward propagation
-    case endForward
-    /// End backpropagation
-    case endFackward
     /// Return
     case ret(Use?)
 }
 
 public enum Operation {
-    /// Pull a value from the input batch in the current epoch
+    /// Pull a value from the recurrent input batch in the current epoch
+    /// - Precondition: placeholder must be recurrent
     case pull(Def<Placeholder>, BasicBlock, BasicBlock)
+    /// Get the value of the non-recurrent input
+    /// - Precondition: placeholder must **not** be recurrent
+    case get(Def<Placeholder>)
     /// Scan operation with optional axis
     /// If axis is not given, scan is performed on contiguous elements
     case scan(AssociativeOp, Use, axis: Int?)
@@ -95,13 +104,21 @@ public enum Operation {
     /// Matrix multiplication operation
     case matMul(Use, Use)
     /// Concatenation operation
-    case concat([Use], axis: Int)
+    case concat(TensorShape, DataType, [Use], axis: Int)
     /// Phi node of SSA form
-    case phi([(Use, BasicBlock)])
+    case phi(TensorShape, DataType, [(Use, BasicBlock)])
     /// Type cast operation
     case typeCast(Use, DataType)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
+    /// Function call
+    case call(TensorShape, DataType, Function, [Use])
+    /// Differentiate
+    case diff(TensorShape, DataType, Function, Use, wrt: Int)
+}
+
+public enum Intrinsic {
+
 }
 
 extension Instruction {
@@ -137,38 +154,52 @@ extension Operation : Value {
              let .reduce(_, op, _),
              let .scan(_, op, _):
             return op.type
-        case let .phi(ops):
-            return ops[0].0.type
-        case let .concat(ops, _):
-            return ops[0].type
+        case let .phi(_, type, _):
+            return type
+        case let .concat(_, type, _, _):
+            return type
         case let .typeCast(_, t):
             return t
         case let .shapeCast(op, _):
             return op.type
         case let .pull(ph, _, _):
             return ph.type
+        case let .get(ph):
+            return ph.type
+        case let .call(_, type, _, _),
+             let .diff(_, type, _, _, _):
+            return type
         }
     }
 
     public var shape: TensorShape {
         switch self {
-        case let .binary(_, op1, _),
-             let .matMul(op1, _):
-            return op1.shape
+        case let .matMul(op1, op2):
+            return op1.shape.matrixMultiplied(with: op2.shape) ?? op1.shape
+        case let .binary(_, op1, op2):
+            return op1.shape.mutuallyBroadcasted(with: op2.shape) ?? op1.shape
         case let .unary(_, op),
-             let .reduce(_, op, _),
              let .scan(_, op, axis: _):
             return op.shape
-        case let .phi(ops):
-            return ops[0].0.shape
-        case let .concat(ops, _):
-            return ops[0].shape
+        case .reduce(_, _, axis: nil):
+            return .scalar
+        case let .reduce(_, op, axis: axis?):
+            return op.shape.droppingDimension(axis)
+        case let .phi(shape, _, _):
+            return shape
+        case let .concat(shape, _, _, _):
+            return shape
         case let .typeCast(op, _):
             return op.shape
         case let .shapeCast(_, s):
             return s
         case let .pull(ph, _, _):
             return ph.shape
+        case let .get(ph):
+            return ph.shape
+        case let .call(shape, _, _, _),
+             let .diff(shape, _, _, _, _):
+            return shape
         }
     }
 
@@ -196,7 +227,7 @@ extension Operation : User {
         case let .binary(_, op1, op2),
              let .matMul(op1, op2):
             return [op1, op2]
-        case .concat(let uses, axis: _):
+        case .concat(_, _, let uses, axis: _):
             return uses
         case let .unary(_, op),
              let .reduce(_, op, _),
@@ -204,9 +235,11 @@ extension Operation : User {
              let .shapeCast(op, _),
              let .typeCast(op, _):
             return [op]
-        case let .phi(incomings):
+        case let .phi(_, _, incomings):
             return incomings.map{$0.0}
-        case .pull:
+        case .call(_, _, _, let ops):
+            return ops
+        case .pull, .get, .diff:
             return []
         }
     }
@@ -269,10 +302,10 @@ public extension Operation {
             return .binary(fun, use1, actualUse)
         case .binary(let fun, use, use):
             return .binary(fun, actualUse, actualUse)
-        case let .concat(uses, axis: axis):
-            return .concat(uses.map(condSubst), axis: axis)
-        case let .phi(uses):
-            return .phi(uses.map{(condSubst($0), $1)})
+        case let .concat(shape, type, uses, axis: axis):
+            return .concat(shape, type, uses.map(condSubst), axis: axis)
+        case let .phi(shape, type, uses):
+            return .phi(shape, type, uses.map{(condSubst($0), $1)})
         case .reduce(let fun, use, axis: let axis):
             return .reduce(fun, actualUse, axis: axis)
         case .matMul(use, let use2):

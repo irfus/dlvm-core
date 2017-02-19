@@ -83,6 +83,10 @@ extension BasicBlock {
         return instructionSet.contains(element)
     }
 
+    open func containsOperation(_ operation: Def<Operation>) -> Bool {
+        return instructionSet.contains(Instruction.operation(operation))
+    }
+
     open func containsInstruction(named name: String) -> Bool {
         return operationTable.keys.contains(name)
     }
