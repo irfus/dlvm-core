@@ -110,11 +110,21 @@ extension NamedObjectSet : Sequence {
 
 }
 
-public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementation {
+public struct OrderedNamedObjectSet<Element> : ObjectSetProtocol, ObjectSetImplementation, ExpressibleByArrayLiteral {
     fileprivate var set = NSMutableOrderedSet()
     fileprivate var nameTable: [String : Element] = [:]
 
     public init() {}
+
+    public init<S: Sequence>(_ elements: S) where S.Iterator.Element == Element {
+        for element in elements {
+            insert(element)
+        }
+    }
+
+    public init(arrayLiteral elements: Element...) {
+        self.init(elements)
+    }
 
     public subscript(name: String) -> Element? {
         return nameTable[name]

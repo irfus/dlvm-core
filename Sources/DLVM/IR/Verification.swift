@@ -33,6 +33,8 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case functionArgumentIndexInvalid(Int, Function, Node)
     case notAFunctionCall(Use, Function, Node)
     case functionDiffArgumentMismatch(TensorShape, DataType, Def<Argument>, Function, Node)
+    case invalidTensorIndex(Use, TensorIndex, Node)
+    case invalidIndex(Use, Int, Node)
 }
 
 public protocol SelfVerifiable {
@@ -47,10 +49,10 @@ extension Module : SelfVerifiable {
     }
 }
 
-extension Function : SelfVerifiable {
+extension Function: SelfVerifiable {
     public func verify() throws {
         /// Check basic blocks
-        for bb in forwardSection {
+        for bb in forwardPass {
             /// Check module reference
             guard let bbFunction = bb.parent else {
                 throw VerificationError.blockMissingModule(bb, self)
@@ -261,6 +263,16 @@ extension Operation : SelfVerifiable {
             let arg = fun.arguments[idx]
             guard shape == arg.shape, type == arg.type else {
                 throw VerificationError.functionDiffArgumentMismatch(shape, type, arg, fun, self)
+            }
+
+        case let .subtensor(use, idx):
+            guard let _ = use.shape[idx] else {
+                throw VerificationError.invalidTensorIndex(use, idx, self)
+            }
+
+        case let .element(use, i):
+            guard let first = use.shape.first, i < first else {
+                throw VerificationError.invalidIndex(use, i, self)
             }
         }
     }
