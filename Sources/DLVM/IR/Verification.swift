@@ -11,6 +11,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case redeclaredInstruction(Instruction, Node)
     case blockMissingModule(BasicBlock, Node)
     case blockFunctionMismatch(BasicBlock, Node)
+    case blockMissingTerminator(BasicBlock)
     case unbroadcastableMismatch(Use, Use, Node)
     case typeMismatch(Use, Use, Node)
     case unexpectedShape(Use, TensorShape, Node)
@@ -66,10 +67,12 @@ extension Function: SelfVerifiable {
 }
 
 extension BasicBlock : SelfVerifiable {
-
     open func verify() throws {
         /// Check instructions
         var instNames: Set<String> = []
+        guard let last = instructions.last, last.isTerminator else {
+            throw VerificationError<BasicBlock>.blockMissingTerminator(self)
+        }
         for inst in instructions {
             if let name = inst.name {
                 guard !instNames.contains(name) else {
@@ -80,7 +83,6 @@ extension BasicBlock : SelfVerifiable {
             try inst.verify()
         }
     }
-
 }
 
 extension Instruction : SelfVerifiable {
