@@ -80,9 +80,19 @@ extension Function {
     open var elements: [BasicBlock] {
         return Array(forwardPass)
     }
+
+    open func localValue(named name: String) -> Use? {
+        for bb in forwardPass {
+            if let oper = bb.operation(named: name) {
+                return Use(kind: .local(oper))
+            }
+        }
+        return nil
+    }
     
 }
 
+// MARK: - Control Flow Graph
 extension Function {
 
     open weak var entry: BasicBlock? {
@@ -93,13 +103,12 @@ extension Function {
         return forwardPass.lazy.flatMap{$0.instructions}
     }
 
-    open func localValue(named name: String) -> Use? {
-        for bb in forwardPass {
-            if let oper = bb.operation(named: name) {
-                return Use(kind: .local(oper))
-            }
-        }
-        return nil
+    open var depthFirst: IteratorSequence<DepthFirstIterator<BasicBlock>> {
+        return IteratorSequence(DepthFirstIterator(root: entry))
+    }
+
+    open var breathFirst: IteratorSequence<BreathFirstIterator<BasicBlock>> {
+        return IteratorSequence(BreathFirstIterator(root: entry))
     }
 
 }

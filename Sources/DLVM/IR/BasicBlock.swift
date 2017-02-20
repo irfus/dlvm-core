@@ -8,7 +8,7 @@
 
 import Foundation
 
-open class BasicBlock : IRCollection, IRObject, Named {
+public final class BasicBlock : IRCollection, IRObject, Named {
 
     public typealias Element = Instruction
 
@@ -124,9 +124,9 @@ extension BasicBlock {
     }
 
     /// Terminator instruction
-    open var terminator: Instruction {
+    open var terminator: Instruction? {
         guard let last = instructions.last, last.isTerminator else {
-            preconditionFailure("Terminator does not exist. Not a well-formed basic block")
+            return nil
         }
         return last
     }
@@ -151,4 +151,34 @@ extension BasicBlock {
         }
     }
 
+}
+
+// MARK: - Control Flow Graph
+extension BasicBlock : GraphNode {
+
+    public var children: [BasicBlock] {
+        guard let terminator = self.terminator else { return [] }
+        switch terminator {
+        case let .control(.br(dest)):
+            return [dest]
+        case let .control(.condBr(_, thenBB, elseBB)):
+            return [thenBB, elseBB]
+        case let .operation(def):
+            if case let .pull(_, thenBB, elseBB) = def.value {
+                return [thenBB, elseBB]
+            }
+            fallthrough
+        default:
+            return []
+        }
+    }
+
+    open var depthFirst: IteratorSequence<DepthFirstIterator<BasicBlock>> {
+        return IteratorSequence(DepthFirstIterator(root: self))
+    }
+
+    open var breathFirst: IteratorSequence<BreathFirstIterator<BasicBlock>> {
+        return IteratorSequence(BreathFirstIterator(root: self))
+    }
+    
 }

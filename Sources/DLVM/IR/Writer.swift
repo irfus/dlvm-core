@@ -263,9 +263,9 @@ extension Use : TextOutputStreamable {
         }
         target.write("\(type) ")
         switch kind {
-        case let .global(def):      target.write("@\(def.name)")
-        case let .local(def):       target.write("%\(def.name)")
-        case let .argument(def):    target.write("%\(def.name)")
+        case let .global(ref):      target.write("@\(ref.name)")
+        case let .local(ref):       target.write("%\(ref.name)")
+        case let .argument(ref):    target.write("%\(ref.name)")
         case let .literal(lit):     lit.literal.write(to: &target)
         }
     }
