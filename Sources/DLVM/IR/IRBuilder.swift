@@ -27,6 +27,10 @@ open class IRBuilder {
     public init(moduleName: String) {
         _module = Module(name: moduleName)
     }
+
+    public init(module: Module) {
+        _module = module
+    }
 }
 
 // MARK: - Helpers
