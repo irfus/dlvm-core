@@ -14,20 +14,20 @@ public protocol WhateverFirstIterator : IteratorProtocol {
 public struct DepthFirstIterator<Node : GraphNode> : WhateverFirstIterator {
     private var stack: [Node] = []
     private var visited: KVSet<Node> = []
-    
+
     public init(root: Node?) {
         if let root = root {
             stack.append(root)
         }
     }
-
+    
     public mutating func next() -> Node? {
         if stack.isEmpty { return nil }
         let node = stack.removeLast()
-        visited.insert(node)
-        for child in node.children where !visited.contains(child) {
+        for child in node.children.reversed() where !visited.contains(child) {
             stack.append(child)
         }
+        visited.insert(node)
         return node
     }
 }
