@@ -1,22 +1,76 @@
 //
-// Created by Richard Wei on 2/18/17.
+//  Dominance.swift
+//  DLVM
+//
+//  Created by Richard Wei on 2/18/17.
 //
 
-public struct DominatorNode {
-    internal var reversePostorderID: Int
-    internal var immediateDominator: Instruction
-}
+open class DominatorNode<Body : AnyObject> : GraphNode {
+    open var body: Body
+    open var children: Set<DominatorNode> = []
 
-public struct DominatorTree {
-    public var nodes: [BasicBlock]
-}
+    fileprivate var dfsInNumber = -1, dfsOutNumber = -1
 
-public extension DominatorTree {
-
-    public init?(function: Function) {
-        guard let entry = function.entry else { return nil }
-        /// TODO: implement
-        fatalError()
+    open weak var immediateDominator: DominatorNode? {
+        willSet {
+            immediateDominator?.children.remove(self)
+            newValue?.addChild(self)
+        }
     }
 
+    public init(body: Body, immediateDominator: DominatorNode? = nil) {
+        self.body = body
+        self.immediateDominator = immediateDominator
+    }
+
+    func isDominated(by other: DominatorNode) -> Bool {
+        return dfsInNumber >= other.dfsInNumber
+            && dfsOutNumber <= other.dfsOutNumber
+    }
+}
+
+// MARK: - Children
+public extension DominatorNode {
+
+    func addChild(_ node: DominatorNode) {
+        children.insert(node)
+    }
+
+    func removeChild(_ node: DominatorNode) {
+        children.remove(node)
+    }
+
+    func containsChild(_ node: DominatorNode) -> Bool {
+        return children.contains(node)
+    }
+
+    func removeAllChildren() {
+        children.removeAll()
+    }
+
+}
+
+// MARK: - Traversal
+public extension DominatorNode {
+
+    public var depthFirst: IteratorSequence<DepthFirstIterator<DominatorNode<Body>>> {
+        return IteratorSequence(DepthFirstIterator(root: self))
+    }
+
+    public var breathFirst: IteratorSequence<BreadthFirstIterator<DominatorNode<Body>>> {
+        return IteratorSequence(BreadthFirstIterator(root: self))
+    }
+    
+}
+
+open class DominatorTree<Body : AnyObject> {
+    fileprivate var nodes: [Unowned<Body> : DominatorNode<Body>] = [:]
+    fileprivate var root: DominatorNode<Body>
+
+    init(root: DominatorNode<Body>) {
+        self.root = root
+        for node in root.depthFirst {
+            nodes[Unowned(node.body)] = node
+        }
+    }
 }

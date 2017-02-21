@@ -8,7 +8,7 @@
 
 import Foundation
 
-public final class BasicBlock : IRCollection, IRObject, Named {
+open class BasicBlock : IRCollection, IRObject, Named {
 
     public typealias Element = Instruction
 
