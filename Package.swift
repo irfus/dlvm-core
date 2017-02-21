@@ -10,7 +10,7 @@ let package = Package(
         /// DLVM compiler driver
 //        Target(name: "dlc", dependencies: ["DLVM", "DLVMReader", "DLVMCodeGen"]),
         /// DLVM runtime
-//        Target(name: "DLVMRuntime", dependencies: ["DLVM", "DLVMReader"]),
+        Target(name: "DLVMRuntime", dependencies: ["DLVM"]),
         /// DLVM code generator
         Target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
         /// DLVM interpreter
@@ -29,6 +29,5 @@ let package = Package(
         "Sources/DLVMReader",
         "Sources/dlc",
         "Sources/dli",
-        "Sources/DLVMRuntime",
     ]
 )

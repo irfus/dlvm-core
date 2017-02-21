@@ -8,10 +8,11 @@
 
 public struct Tree<Element> : GraphNode {
     public var value: Element
-    public var children: [Tree] = []
+    public var children: [Tree]
 
-    public init(value: Element) {
+    public init(value: Element, children: [Tree] = []) {
         self.value = value
+        self.children = children
     }
 }
 
@@ -20,5 +21,13 @@ extension Tree : Sequence {
 
     public func makeIterator() -> Iterator {
         return Iterator(root: self)
+    }
+
+    public var preorder: IteratorSequence<DepthFirstIterator<Tree<Element>>> {
+        return IteratorSequence(DepthFirstIterator(root: self))
+    }
+
+    public var levelOrder: IteratorSequence<BreathFirstIterator<Tree<Element>>> {
+        return IteratorSequence(BreathFirstIterator(root: self))
     }
 }

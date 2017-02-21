@@ -28,7 +28,7 @@ define @main() {
         %v9 = add [8x1] f32 %v8, [8x1] f32 @b3
         %v10 = softmax [8x1] f32 %v9
         %o = shapecast [8x1] f32 %v10 to [1x8]
-        export [1x8] f32 %o to [1x8] f32 @v11
+        yield [1x8] f32 %o to [1x8] f32 @v11
         ret
     }
 }
