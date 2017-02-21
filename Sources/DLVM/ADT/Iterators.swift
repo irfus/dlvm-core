@@ -11,9 +11,11 @@ public protocol WhateverFirstIterator : IteratorProtocol {
     init(root: Node?)
 }
 
-public struct DepthFirstIterator<Node : GraphNode> : WhateverFirstIterator {
+public struct DepthFirstIterator<Node : GraphNode> : WhateverFirstIterator
+    where Node.Children.Iterator.Element == Node {
+
     private var stack: [Node] = []
-    private var visited: KVSet<Node> = []
+    private var visited: Set<Node> = []
 
     public init(root: Node?) {
         if let root = root {

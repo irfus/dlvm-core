@@ -36,3 +36,27 @@ public struct Weak<Object: AnyObject> {
         return ref.object
     }
 }
+
+extension Unowned : Hashable {
+
+    public static func ==(lhs: Unowned, rhs: Unowned) -> Bool {
+        return lhs.object === rhs.object
+    }
+
+    public var hashValue: Int {
+        return ObjectIdentifier(object).hashValue
+    }
+    
+}
+
+extension Weak : Hashable {
+
+    public static func ==(lhs: Weak, rhs: Weak) -> Bool {
+        return lhs.object === rhs.object
+    }
+
+    public var hashValue: Int {
+        return object.flatMap { ObjectIdentifier($0).hashValue } ?? 0
+    }
+    
+}

@@ -7,10 +7,11 @@
 //
 
 public protocol GraphNode {
-    var children: [Self] { get }
+    associatedtype Children : Sequence
+    var children: Children { get }
 }
 
-public extension GraphNode {
+public extension GraphNode where Children : Collection {
     var isLeaf: Bool {
         return children.isEmpty
     }
