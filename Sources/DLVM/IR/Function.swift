@@ -107,8 +107,8 @@ extension Function {
         return IteratorSequence(DepthFirstIterator(root: entry))
     }
 
-    open var breathFirst: IteratorSequence<BreathFirstIterator<BasicBlock>> {
-        return IteratorSequence(BreathFirstIterator(root: entry))
+    open var breathFirst: IteratorSequence<BreadthFirstIterator<BasicBlock>> {
+        return IteratorSequence(BreadthFirstIterator(root: entry))
     }
 
 }

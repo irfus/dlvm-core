@@ -32,7 +32,9 @@ public struct DepthFirstIterator<Node : GraphNode> : WhateverFirstIterator {
     }
 }
 
-public struct BreathFirstIterator<Node : GraphNode> : WhateverFirstIterator {
+public struct BreadthFirstIterator<Node : GraphNode> : WhateverFirstIterator
+    where Node.Children.Iterator.Element == Node {
+    
     private var stack: [Node] = []
     private var visited: KVSet<Node> = []
     
