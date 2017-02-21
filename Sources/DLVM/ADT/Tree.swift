@@ -27,7 +27,7 @@ extension Tree : Sequence {
         return IteratorSequence(DepthFirstIterator(root: self))
     }
 
-    public var levelOrder: IteratorSequence<BreathFirstIterator<Tree<Element>>> {
-        return IteratorSequence(BreathFirstIterator(root: self))
+    public var levelOrder: IteratorSequence<BreadthFirstIterator<Tree<Element>>> {
+        return IteratorSequence(BreadthFirstIterator(root: self))
     }
 }

@@ -177,8 +177,8 @@ extension BasicBlock : GraphNode {
         return IteratorSequence(DepthFirstIterator(root: self))
     }
 
-    open var breathFirst: IteratorSequence<BreathFirstIterator<BasicBlock>> {
-        return IteratorSequence(BreathFirstIterator(root: self))
+    open var breathFirst: IteratorSequence<BreadthFirstIterator<BasicBlock>> {
+        return IteratorSequence(BreadthFirstIterator(root: self))
     }
     
 }
