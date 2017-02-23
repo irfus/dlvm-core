@@ -16,10 +16,53 @@ public struct PassResult : PassResultProtocol {
     public init() {}
 }
 
-public protocol Pass : class, SelfVerifiable {
+public protocol Pass : class {
     associatedtype Result : PassResultProtocol
     associatedtype Body : AnyObject
     var body: Body { get }
     func run() -> Result
-    init(body: Body)
+}
+
+public extension Pass where Body : IRObject, Body.Parent == Module {
+    var module: Module? {
+        return body.parent
+    }
+
+    func makeBuilder() -> IRBuilder? {
+        return module.flatMap { IRBuilder(module: $0) }
+    }
+}
+
+public extension Pass where Body : IRObject, Body.Parent == Function {
+    var module: Module? {
+        return body.parent?.parent
+    }
+
+    func makeBuilder() -> IRBuilder? {
+        return module.flatMap { IRBuilder(module: $0) }
+    }
+}
+
+public extension Pass where Body == BasicBlock {
+    func makeBuilder() -> IRBuilder? {
+        return module.flatMap {
+            let builder = IRBuilder(module: $0)
+            builder.move(to: body)
+            return builder
+        }
+    }
+}
+
+public extension Pass where Body : IRObject, Body.Parent == BasicBlock {
+    var module: Module? {
+        return body.parent?.parent?.parent
+    }
+
+    func makeBuilder() -> IRBuilder? {
+        return module.flatMap {
+            let builder = IRBuilder(module: $0)
+            builder.move(to: body.parent)
+            return builder
+        }
+    }
 }
