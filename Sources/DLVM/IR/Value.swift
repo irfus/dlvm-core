@@ -190,3 +190,30 @@ public struct Output : PotentiallyRecurrentValue {
 }
 
 public typealias AnyDef = Value & Named & AnyObject
+
+public extension Value {
+    func makeZero() -> LiteralValue {
+        let literal: Literal
+        switch (type.base, shape) {
+        case (.bool, []):
+            literal = .scalar(.bool(false))
+        case (.float, []):
+            literal = .scalar(.float(0))
+        case (.int, []):
+            literal = .scalar(.int(0))
+        case (.bool, _):
+            literal = .tensor(.repeating(.bool(false)))
+        case (.float, _):
+            literal = .tensor(.repeating(.float(0)))
+        case (.int, _):
+            literal = .tensor(.repeating(.int(0)))
+        }
+        return LiteralValue(shape: shape, type: type, literal: literal)
+    }
+}
+
+public extension Use {
+    func makeZero() -> LiteralValue {
+        return value.makeZero()
+    }
+}
