@@ -93,6 +93,10 @@ extension IRBuilder {
         return use
     }
 
+    open func makeLiteral(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
+        return Use(kind: .literal(LiteralValue(shape: shape, type: type, literal: literal)))
+    }
+
     @discardableResult
     open func buildFunction(named name: String, 
                             arguments: [(String, Argument)], result: Argument?) -> Function {
