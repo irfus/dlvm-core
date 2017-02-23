@@ -221,6 +221,12 @@ extension Operation : TextOutputStreamable {
             target.write("subtensor \(idx) of \(use)")
         case let .element(use, i):
             target.write("element \(i) of \(use)")
+        case let .intrinsic(shape, type, intrin, args):
+            target.write("intrin ")
+            if shape.isScalar {
+                target.write("\(shape) ")
+            }
+            target.write("\(type) @\(intrin.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         }
     }
 }
