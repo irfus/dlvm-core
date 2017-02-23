@@ -309,7 +309,18 @@ extension BasicBlock : TextOutputStreamable {
     }
 }
 
-extension Function: TextOutputStreamable {
+extension DifferentiationVariable : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        switch self {
+        case let .argument(def):
+            def.write(to: &target)
+        case let .global(def):
+            def.write(to: &target)
+        }
+    }
+}
+
+extension Function : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("define ")
         target.write("@\(name)(")
@@ -326,18 +337,9 @@ extension Function: TextOutputStreamable {
         }
         target.write("    }\n")
 
-        /// Non-parametric backward pass
-        if let backwardPass = backwardPass {
-            target.write("    backward {\n")
-            for bb in backwardPass {
-                bb.write(to: &target)
-            }
-            target.write("    }\n")
-        }
-
         /// Parametric backward passes (partial derivatives)
-        for (i, section) in parametricBackwardPasses.enumerated()  {
-            target.write("    backward(#\(i)) {\n")
+        for (variable, section) in backwardPasses  {
+            target.write("    backward(\(variable)) {\n")
             for bb in section {
                 bb.write(to: &target)
             }

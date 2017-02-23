@@ -13,6 +13,35 @@ public struct Argument : Value {
     public static var scope: Scope = .local
 }
 
+public enum DifferentiationVariable {
+    case argument(Def<Argument>)
+    case global(Def<Placeholder>)
+
+    public var definition: AnyDef {
+        switch self {
+            case .global(let def): return def
+            case .argument(let def): return def
+        }
+    }
+}
+
+extension DifferentiationVariable : Hashable {
+    public static func ==(lhs: DifferentiationVariable, rhs: DifferentiationVariable) -> Bool {
+        switch (lhs, rhs) {
+        case let (.argument(x), .argument(y)): return x === y
+        case let (.global(x), .global(y)): return x === y
+        default: return false
+        }
+    }
+    
+    public var hashValue: Int {
+        switch self {
+        case .argument(let def): return ObjectIdentifier(def).hashValue
+        case .global(let def): return ObjectIdentifier(def).hashValue
+        }
+    }
+}
+
 open class Function : Named, IRCollection, IRObject {
     public typealias Element = BasicBlock
 
@@ -20,10 +49,8 @@ open class Function : Named, IRCollection, IRObject {
     public var arguments: [Def<Argument>]
     public var result: Argument?
     public var forwardPass = OrderedKVSet<BasicBlock>()
-    public var backwardPass: OrderedKVSet<BasicBlock>?
 
-    public lazy var parametricBackwardPasses: [OrderedKVSet<BasicBlock>] =
-        self.arguments.map { _ in [] }
+    public var backwardPasses: [DifferentiationVariable : OrderedKVSet<BasicBlock>] = [:]
 
     public weak var parent: Module?
 
