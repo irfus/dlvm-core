@@ -7,12 +7,14 @@
 //
 
 public struct Use {
+
     public enum Kind {
         case argument(Def<Argument>)
         case local(Def<Operation>)
         case global(Def<GlobalValue>)
         case literal(LiteralValue)
     }
+
     public var shape: TensorShape
     public var type: DataType
     public var kind: Kind
@@ -36,7 +38,37 @@ public struct Use {
         }
     }
 
-    public var definition: AnyDef? {
+}
+
+// MARK: - Factory methods
+public extension Use {
+
+    static func local(_ definition: Def<Operation>) -> Use {
+        return Use(kind: .local(definition))
+    }
+
+    static func global(_ definition: Def<GlobalValue>) -> Use {
+        return Use(kind: .global(definition))
+    }
+
+    static func argument(_ definition: Def<Argument>) -> Use {
+        return Use(kind: .argument(definition))
+    }
+
+    static func literal(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
+        return Use(kind: .literal(LiteralValue(shape: shape, type: type, literal: literal)))
+    }
+
+    static func literal(_ literalValue: LiteralValue) -> Use {
+        return Use(kind: .literal(literalValue))
+    }
+
+}
+
+// MARK: - Value properties
+public extension Use {
+
+    var definition: AnyDef? {
         switch kind {
         case let .global(def): return def
         case let .local(def): return def 
@@ -45,7 +77,7 @@ public struct Use {
         }
     }
 
-    public var value: Value {
+    var value: Value {
         switch kind {
         case let .global(def): return def
         case let .local(def): return def
@@ -54,7 +86,7 @@ public struct Use {
         }
     }
 
-    public var name: String? {
+    var name: String? {
         switch kind {
         case .local(let def as Named),
              .global(let def as Named),
@@ -113,16 +145,14 @@ public enum Operation {
     case shapeCast(Use, TensorShape)
     /// Subtensor addressing
     case subtensor(Use, TensorIndex)
+    /// Intrinsic
+    case intrinsic(TensorShape, DataType, Intrinsic, [Use])
     /// Element in the immediate dimension
     case element(Use, Int)
     /// Function call
     case call(TensorShape, DataType, Function, [Use])
     /// Differentiate
     case diff(TensorShape, DataType, Function, Use, wrt: Int)
-}
-
-public enum Intrinsic {
-    
 }
 
 extension Instruction {
@@ -207,6 +237,8 @@ extension Operation : Value {
         case let .element(op, _),
              let .subtensor(op, _):
             return op.type
+        case let .intrinsic(_, type, _, _):
+            return type
         }
     }
 
@@ -242,6 +274,8 @@ extension Operation : Value {
             return op.shape.dropFirst()
         case let .subtensor(op, idx):
             return op.shape[idx] ?? op.shape
+        case let .intrinsic(shape, _, _, _):
+            return shape
         }
     }
 
@@ -279,7 +313,8 @@ extension Operation : User {
             return [op]
         case let .phi(_, _, incomings):
             return incomings.map{$0.0}
-        case .call(_, _, _, let ops):
+        case .call(_, _, _, let ops),
+             .intrinsic(_, _, _, let ops):
             return ops
         case .pull, .get, .diff:
             return []

@@ -77,7 +77,7 @@ public extension OpKind {
         case .unary where args.count == 1:
             return args[0]
         case .binary where args.count == 2:
-            return args[0].broadcasted(to: args[1]) ?? args[1].broadcasted(to: args[0])
+            return args[0].mutuallyBroadcasted(with: args[1])
         case .scan, .reduce:
             return args[0]
         case .matMul:

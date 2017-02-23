@@ -31,11 +31,13 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case functionResultMismatch(TensorShape, DataType, Function, Node)
     case functionArgumentCountMismatch(Function, Node)
     case functionArgumentMismatch(Use, Def<Argument>, Function, Node)
-    case functionArgumentIndexInvalid(Int, Function, Node)
+    case functionDiffArgumentIndexInvalid(Int, Function, Node)
     case notAFunctionCall(Use, Function, Node)
     case functionDiffArgumentMismatch(TensorShape, DataType, Def<Argument>, Function, Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
     case invalidIndex(Use, Int, Node)
+    case intrinsicArgError(Intrinsic, [Use], Node)
+    case intrinsicResultMismatch(TensorShape, DataType, Intrinsic, Node)
 }
 
 public protocol SelfVerifiable {
@@ -256,7 +258,7 @@ extension Operation : SelfVerifiable {
 
         case let .diff(shape, type, fun, call, wrt: idx):
             guard fun.arguments.indices.contains(idx) else {
-                throw VerificationError.functionArgumentIndexInvalid(idx, fun, self)
+                throw VerificationError.functionDiffArgumentIndexInvalid(idx, fun, self)
             }
             guard case .local(let def) = call.kind,
                   case .call(_, _, fun, _) = def.value else {
@@ -275,6 +277,14 @@ extension Operation : SelfVerifiable {
         case let .element(use, i):
             guard let first = use.shape.first, i < first else {
                 throw VerificationError.invalidIndex(use, i, self)
+            }
+
+        case let .intrinsic(shape, type, intrin, uses):
+            guard let (rShape, rType) = intrin.result(forArguments: uses) else {
+                throw VerificationError.intrinsicArgError(intrin, uses, self)
+            }
+            guard rShape == shape, rType == type else {
+                throw VerificationError.intrinsicResultMismatch(shape, type, intrin, self)
             }
         }
     }
