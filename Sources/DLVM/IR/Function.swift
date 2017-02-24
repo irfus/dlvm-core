@@ -130,12 +130,16 @@ extension Function {
         return forwardPass.lazy.flatMap{$0.instructions}
     }
 
-    open var depthFirst: IteratorSequence<DepthFirstIterator<BasicBlock>> {
-        return IteratorSequence(DepthFirstIterator(root: entry))
+    open var preorder: IteratorSequence<GraphIterator<BasicBlock>> {
+        return IteratorSequence(GraphIterator(root: entry, order: .preorder))
     }
 
-    open var breathFirst: IteratorSequence<BreadthFirstIterator<BasicBlock>> {
-        return IteratorSequence(BreadthFirstIterator(root: entry))
+    open var postorder: IteratorSequence<GraphIterator<BasicBlock>> {
+        return IteratorSequence(GraphIterator(root: entry, order: .postorder))
+    }
+
+    open var breadthFirst: IteratorSequence<GraphIterator<BasicBlock>> {
+        return IteratorSequence(GraphIterator(root: entry, order: .breadthFirst))
     }
 
 }

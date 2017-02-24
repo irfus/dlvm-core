@@ -16,18 +16,16 @@ public struct Tree<Element> : GraphNode {
     }
 }
 
-extension Tree : Sequence {
-    public typealias Iterator = DepthFirstIterator<Tree<Element>>
-
-    public func makeIterator() -> Iterator {
-        return Iterator(root: self)
+extension Tree {
+    public var preorder: IteratorSequence<GraphIterator<Tree<Element>>> {
+        return IteratorSequence(GraphIterator(root: self, order: .preorder))
     }
 
-    public var preorder: IteratorSequence<DepthFirstIterator<Tree<Element>>> {
-        return IteratorSequence(DepthFirstIterator(root: self))
+    public var postorder: IteratorSequence<GraphIterator<Tree<Element>>> {
+        return IteratorSequence(GraphIterator(root: self, order: .postorder))
     }
 
-    public var levelOrder: IteratorSequence<BreadthFirstIterator<Tree<Element>>> {
-        return IteratorSequence(BreadthFirstIterator(root: self))
+    public var levelOrder: IteratorSequence<GraphIterator<Tree<Element>>> {
+        return IteratorSequence(GraphIterator(root: self, order: .breadthFirst))
     }
 }

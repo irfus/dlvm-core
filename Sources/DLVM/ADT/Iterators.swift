@@ -6,53 +6,55 @@
 //
 //
 
-public protocol WhateverFirstIterator : IteratorProtocol {
-    associatedtype Node : GraphNode
-    init(root: Node?)
-}
-
-public struct DepthFirstIterator<Node : GraphNode> : WhateverFirstIterator
+public struct GraphIterator<Node : GraphNode> : IteratorProtocol
     where Node.Children.Iterator.Element == Node {
 
-    private var stack: [Node] = []
+    public enum Order {
+        case preorder, postorder, breadthFirst
+    }
+
+    private var pre: [Node] = []
+    private var post: [Node] = []
     private var visited: Set<Node> = []
+    public let order: Order
 
-    public init(root: Node?) {
+    public init(root: Node?, order: Order) {
         if let root = root {
-            stack.append(root)
+            pre.append(root)
         }
-    }
-    
-    public mutating func next() -> Node? {
-        if stack.isEmpty { return nil }
-        let node = stack.removeLast()
-        for child in node.children.reversed() where !visited.contains(child) {
-            stack.append(child)
-        }
-        visited.insert(node)
-        return node
-    }
-}
-
-public struct BreadthFirstIterator<Node : GraphNode> : WhateverFirstIterator
-    where Node.Children.Iterator.Element == Node {
-    
-    private var stack: [Node] = []
-    private var visited: KVSet<Node> = []
-    
-    public init(root: Node?) {
-        if let root = root {
-            stack.append(root)
-        }
+        self.order = order
     }
 
     public mutating func next() -> Node? {
-        if stack.isEmpty { return nil }
-        let node = stack.removeFirst()
-        visited.insert(node)
-        for child in node.children where !visited.contains(child) {
-            stack.append(child)
+        switch order {
+        case .breadthFirst:
+            if pre.isEmpty { return nil }
+            let node = pre.removeFirst()
+            for child in node.children where !visited.contains(child) {
+                pre.append(child)
+            }
+            visited.insert(node)
+            return node
+
+        case .preorder:
+            if pre.isEmpty { return nil }
+            let node = pre.removeLast()
+            for child in node.children.reversed() where !visited.contains(child) {
+                pre.append(child)
+            }
+            visited.insert(node)
+            return node
+
+        case .postorder:
+            if pre.isEmpty { return post.popLast() }
+            let node = pre.removeLast()
+            for child in node.children where !visited.contains(child) {
+                pre.append(child)
+            }
+            post.append(node)
+            visited.insert(node)
+            return next()
         }
-        return node
     }
 }
+

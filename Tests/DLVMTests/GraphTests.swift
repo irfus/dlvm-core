@@ -26,6 +26,7 @@ class GraphTests: XCTestCase {
             ])
         ])
         XCTAssertEqual(tree.preorder.map{$0.value}, [1, 3, 2, 4, 5, 10, 11, 100, 110, 120])
+        XCTAssertEqual(tree.postorder.map{$0.value}, [2, 4, 3, 10, 11, 110, 120, 100, 5, 1])
         XCTAssertEqual(tree.levelOrder.map{$0.value}, [1, 3, 5, 2, 4, 10, 11, 100, 110, 120])
     }
 
