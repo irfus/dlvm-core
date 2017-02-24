@@ -233,7 +233,7 @@ extension Operation : TextOutputStreamable {
 
 extension Instruction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
+        switch kind {
         case let .control(control):
             control.write(to: &target)
         case let .operation(def):

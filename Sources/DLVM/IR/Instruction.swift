@@ -98,9 +98,26 @@ public extension Use {
     }
 }
 
-public enum Instruction {
-    case control(Control)
-    case operation(Def<Operation>)
+public class Instruction : IRObject {
+    public enum Kind {
+        case control(Control)
+        case operation(Def<Operation>)
+    }
+    public typealias Parent = BasicBlock
+    public weak internal(set) var parent: BasicBlock?
+    public var kind: Kind
+
+    public required init(kind: Kind) {
+        self.kind = kind
+    }
+
+    public static func control(_ control: Control) -> Instruction {
+        return self.init(kind: .control(control))
+    }
+
+    public static func operation(_ operation: Def<Operation>) -> Instruction {
+        return self.init(kind: .operation(operation))
+    }
 }
 
 public enum Control {
@@ -157,9 +174,7 @@ public enum Operation {
 
 extension Instruction {
     public var name: String? {
-        guard case let .operation(def) = self else {
-            return nil
-        }
+        guard case let .operation(def) = kind else { return nil }
         return def.name
     }
 }
@@ -175,7 +190,7 @@ extension Use : Equatable {
 
 public extension Instruction {
     var isTerminator: Bool {
-        switch self {
+        switch kind {
         case .control(let ctrl): return ctrl.isTerminator
         case .operation(let def): return def.value.isTerminator
         }
@@ -327,7 +342,7 @@ extension Operation : User {
 
 extension Instruction : User {
     public var operands: [Use] {
-        switch self {
+        switch kind {
         case .control(let ctrl): return ctrl.operands
         case .operation(let oper): return oper.operands
         }
@@ -342,7 +357,7 @@ public extension Def where ValueType : User {
 
 public extension Instruction {
     func substituting(_ actualUse: Use, for use: Use) -> Instruction {
-        switch self {
+        switch kind {
         case let .control(ctrl):
             return .control(ctrl.substituting(actualUse, for: use))
         case let .operation(def):
