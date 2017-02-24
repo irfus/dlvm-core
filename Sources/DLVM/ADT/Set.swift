@@ -10,17 +10,25 @@ public typealias HashSet = Swift.Set
 
 import Foundation
 
-public struct Set<Element> : ExpressibleByArrayLiteral {
-    fileprivate var set = NSMutableSet()
+internal protocol SetImplementation {
+    associatedtype Element
+    associatedtype Set : AnyObject
+    var set: Set { get set }
+}
 
-    var mutatingSet: NSMutableSet {
+internal extension SetImplementation where Set : NSMutableCopying {
+    var mutatingSet: Set {
         mutating get {
             if !isKnownUniquelyReferenced(&set) {
-                set = set.mutableCopy() as! NSMutableSet
+                set = set.mutableCopy() as! Set
             }
             return set
         }
     }
+}
+
+public struct Set<Element> : ExpressibleByArrayLiteral, SetImplementation {
+    internal var set = NSMutableSet()
 
     public init() {}
 

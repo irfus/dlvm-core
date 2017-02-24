@@ -8,9 +8,7 @@
 
 import Foundation
 
-fileprivate protocol KVSetImplementation {
-    associatedtype Element
-    associatedtype Set : AnyObject
+fileprivate protocol KVSetImplementation : SetImplementation {
     var set: Set { get set }
     var nameTable: [String : Element] { get set }
 }
@@ -30,19 +28,8 @@ public extension KVSetProtocol {
     }
 }
 
-fileprivate extension KVSetImplementation where Set : NSMutableCopying {
-    var mutatingSet: Set {
-        mutating get {
-            if !isKnownUniquelyReferenced(&set) {
-                set = set.mutableCopy() as! Set
-            }
-            return set
-        }
-    }
-}
-
 public struct KVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleByArrayLiteral {
-    fileprivate var set = NSMutableSet()
+    internal var set = NSMutableSet()
     fileprivate var nameTable: [String : Element] = [:]
 
     public init() {}
@@ -110,7 +97,7 @@ extension KVSet: Sequence {
 }
 
 public struct OrderedKVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleByArrayLiteral {
-    fileprivate var set = NSMutableOrderedSet()
+    internal var set = NSMutableOrderedSet()
     fileprivate var nameTable: [String : Element] = [:]
 
     public init() {}
