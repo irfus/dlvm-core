@@ -59,7 +59,7 @@ open class BasicBlock : IRCollection, IRObject, Named {
 
     private func updateInstructionTable() {
         for inst in instructionSet {
-            if case let .operation(oper) = inst as! Instruction {
+            if case let .operation(oper) = (inst as! Instruction).kind {
                 operationTable[oper.name] = oper
             }
         }
@@ -90,7 +90,8 @@ extension BasicBlock {
     /// Append the instruction to the basic block
     open func append(_ instruction: Instruction) {
         instructionSet.add(instruction)
-        if case let .operation(operation) = instruction {
+        instruction.parent = self
+        if case let .operation(operation) = instruction.kind {
             operationTable[operation.name] = operation
         }
     }
@@ -107,7 +108,8 @@ extension BasicBlock {
         precondition(contains(instruction),
                      "Instruction is not in the basic block")
         instructionSet.remove(instruction)
-        if case let .operation(operation) = instruction {
+        instruction.parent = nil
+        if case let .operation(operation) = instruction.kind {
             operationTable.removeValue(forKey: operation.name)
         }
     }
@@ -145,7 +147,7 @@ extension BasicBlock {
     /// Update user information
     private func updateUsers() {
         for inst in instructions {
-            if case let .operation(oper) = inst {
+            if case let .operation(oper) = inst.kind {
                 oper.removeAllUsers()
             }
         }
@@ -158,7 +160,7 @@ extension BasicBlock : GraphNode {
 
     public var children: [BasicBlock] {
         guard let terminator = self.terminator else { return [] }
-        switch terminator {
+        switch terminator.kind {
         case let .control(.br(dest)):
             return [dest]
         case let .control(.condBr(_, thenBB, elseBB)):

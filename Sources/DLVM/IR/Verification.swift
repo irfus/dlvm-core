@@ -89,7 +89,7 @@ extension BasicBlock : SelfVerifiable {
 
 extension Instruction : SelfVerifiable {
     public func verify() throws {
-        switch self {
+        switch kind {
         case let .control(ctrl):
             try ctrl.verify()
         case let .operation(def):
