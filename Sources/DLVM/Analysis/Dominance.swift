@@ -54,12 +54,16 @@ public extension DominatorNode {
 // MARK: - Traversal
 public extension DominatorNode {
 
-    public var depthFirst: IteratorSequence<DepthFirstIterator<DominatorNode<Body>>> {
-        return IteratorSequence(DepthFirstIterator(root: self))
+    public var preorder: IteratorSequence<GraphIterator<DominatorNode<Body>>> {
+        return IteratorSequence(GraphIterator(root: self, order: .preorder))
     }
 
-    public var breathFirst: IteratorSequence<BreadthFirstIterator<DominatorNode<Body>>> {
-        return IteratorSequence(BreadthFirstIterator(root: self))
+    public var postorder: IteratorSequence<GraphIterator<DominatorNode<Body>>> {
+        return IteratorSequence(GraphIterator(root: self, order: .postorder))
+    }
+
+    public var breathFirst: IteratorSequence<GraphIterator<DominatorNode<Body>>> {
+        return IteratorSequence(GraphIterator(root: self, order: .breadthFirst))
     }
     
 }
@@ -70,7 +74,7 @@ open class DominatorTree<Body : AnyObject> {
 
     init(root: DominatorNode<Body>) {
         self.root = root
-        for node in root.depthFirst {
+        for node in root.preorder {
             nodes[Unowned(node.body)] = node
         }
     }

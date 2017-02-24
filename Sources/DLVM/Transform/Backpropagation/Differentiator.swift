@@ -31,7 +31,7 @@ open class AutomaticDifferentiator : Differentiator {
         guard let builder = makeBuilder() else { return result }
         /// Search for differentiation variable from entry
         /// Return 0 if differentiation variable doesn't exist
-        let allOperands = entry.depthFirst.lazy.flatMap({$0.elements}).flatMap({$0.operands})
+        let allOperands = entry.preorder.lazy.flatMap({$0.elements}).flatMap({$0.operands})
         guard let foundVar = allOperands.first(where: { $0.definition === self.variable.definition }) else {
             let zero = variable.definition.makeZero()
             builder.buildControl(.ret(.literal(zero)))
