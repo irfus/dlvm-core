@@ -8,11 +8,11 @@
 
 public struct Tree<Element> : GraphNode {
     public var value: Element
-    public var children: [Tree]
+    public var successors: [Tree]
 
-    public init(value: Element, children: [Tree] = []) {
+    public init(value: Element, successors: [Tree] = []) {
         self.value = value
-        self.children = children
+        self.successors = successors
     }
 }
 
