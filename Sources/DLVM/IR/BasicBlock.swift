@@ -41,6 +41,7 @@ open class BasicBlock : IRCollection, IRObject, Named {
         #else
             return instructionSet.map { $0 as! Instruction }
         #endif
+
     }
 
     open var isEntry: Bool {
@@ -64,6 +65,9 @@ open class BasicBlock : IRCollection, IRObject, Named {
             }
         }
     }
+
+    /// ## Analysis information
+    public internal(set) var predecessors: Set<BasicBlock> = []
 
 }
 
@@ -94,6 +98,10 @@ extension BasicBlock {
         if case let .operation(operation) = instruction.kind {
             operationTable[operation.name] = operation
         }
+        /// If it's a branch instruction, update successor's predecessor set
+        for succ in instruction.successors {
+            succ.predecessors.insert(self)
+        }
     }
 
     /// Index of the instruction in the basic block
@@ -111,6 +119,10 @@ extension BasicBlock {
         instruction.parent = nil
         if case let .operation(operation) = instruction.kind {
             operationTable.removeValue(forKey: operation.name)
+        }
+        /// If it's a branch instruction, update sucessor's predecessor set
+        for succ in instruction.successors {
+            succ.predecessors.remove(self)
         }
     }
 
