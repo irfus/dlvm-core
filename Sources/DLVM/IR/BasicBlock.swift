@@ -147,23 +147,3 @@ extension BasicBlock {
     
 }
 
-// MARK: - Control Flow Graph
-extension BasicBlock : GraphNode {
-    public var children: [BasicBlock] {
-        guard let terminator = self.terminator else { return [] }
-        switch terminator.kind {
-        case let .control(.br(dest)):
-            return [dest]
-        case let .control(.condBr(_, thenBB, elseBB)):
-            return [thenBB, elseBB]
-        case let .operation(def):
-            if case let .pull(_, thenBB, elseBB) = def.value {
-                return [thenBB, elseBB]
-            }
-            fallthrough
-        default:
-            return []
-        }
-    }
-
-}

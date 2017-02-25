@@ -7,7 +7,7 @@
 //
 
 public struct GraphIterator<Node : GraphNode> : IteratorProtocol
-    where Node.Children.Iterator.Element == Node {
+    where Node.SuccessorSequence.Iterator.Element == Node {
 
     public enum Order {
         case preorder, postorder, breadthFirst
@@ -30,7 +30,7 @@ public struct GraphIterator<Node : GraphNode> : IteratorProtocol
         case .breadthFirst:
             if pre.isEmpty { return nil }
             let node = pre.removeFirst()
-            for child in node.children where !visited.contains(child) {
+            for child in node.successors where !visited.contains(child) {
                 pre.append(child)
             }
             visited.insert(node)
@@ -39,7 +39,7 @@ public struct GraphIterator<Node : GraphNode> : IteratorProtocol
         case .preorder:
             if pre.isEmpty { return nil }
             let node = pre.removeLast()
-            for child in node.children.reversed() where !visited.contains(child) {
+            for child in node.successors.reversed() where !visited.contains(child) {
                 pre.append(child)
             }
             visited.insert(node)
@@ -48,7 +48,7 @@ public struct GraphIterator<Node : GraphNode> : IteratorProtocol
         case .postorder:
             if pre.isEmpty { return post.popLast() }
             let node = pre.removeLast()
-            for child in node.children where !visited.contains(child) {
+            for child in node.successors where !visited.contains(child) {
                 pre.append(child)
             }
             post.append(node)

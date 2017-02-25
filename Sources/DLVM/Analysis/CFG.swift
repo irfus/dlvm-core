@@ -12,14 +12,30 @@ public extension BasicBlock {
         return terminator?.successorCount ?? 0
     }
 
-    var successors: [BasicBlock] {
-        return children
-    }
-
     var hasSuccessors: Bool {
         return successorCount > 0
     }
 
+}
+
+// MARK: - Basic block graph traits
+extension BasicBlock : BidirectionalGraphNode {
+    public var successors: Set<BasicBlock> {
+        guard let terminator = self.terminator else { return [] }
+        switch terminator.kind {
+        case let .control(.br(dest)):
+            return [dest]
+        case let .control(.condBr(_, thenBB, elseBB)):
+            return [thenBB, elseBB]
+        case let .operation(def):
+            if case let .pull(_, thenBB, elseBB) = def.value {
+                return [thenBB, elseBB]
+            }
+            fallthrough
+        default:
+            return []
+        }
+    }
 }
 
 // MARK: - Successors

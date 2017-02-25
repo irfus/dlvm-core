@@ -11,15 +11,15 @@ import XCTest
 
 class GraphTests: XCTestCase {
     func testTraversal() {
-        let tree = Tree<Int>(value: 1, children: [
-            Tree(value: 3, children: [
+        let tree = Tree<Int>(value: 1, successors: [
+            Tree(value: 3, successors: [
                 Tree(value: 2),
                 Tree(value: 4)
             ]),
-            Tree(value: 5, children: [
+            Tree(value: 5, successors: [
                 Tree(value: 10),
                 Tree(value: 11),
-                Tree(value: 100, children: [
+                Tree(value: 100, successors: [
                     Tree(value: 110),
                     Tree(value: 120)
                 ])
