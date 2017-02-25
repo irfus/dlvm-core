@@ -1,0 +1,42 @@
+#+TITLE: Tensor Type System Manifesto
+#+AUTHOR: Richard Wei
+#+TIME: <2017-02-15 Wed> 
+
+* Introduction
+
+  The unchanging goal for TEL is to provide a type-safe programming model for
+  neural network developers. TEL is designed to be typed in tensor shape, i.e.
+  an array of dimension sizes of the tensor, rather than an abstract data type.
+
+* Problem
+
+  Currently, both DLVM and TEL are using an ad-hoc "shape transformation
+  category" for each kind of tensor operation. Each DLVM value is typed by both
+  tensor shape (e.g. ~[1x2]~) and data type (e.g. ~f32~). Consequently the type
+  notation looks a bit verbose, for example, ~[1x2] f32~. To simplify the amount
+  of code that users have to write, we plan to use a global data type
+  declaration (e.g. ~type float32~) instead of making each value (namely
+  computation node) carry its own data type. Thus, TEL is a purely shape-typed
+  langauge. Our current, ad-hoc shape transformation categories include:
+  
+  - Monomorphic unary
+  - Monomorphic binary
+  - Reduction
+  - Matrix multiplication
+  - Tensor multiplication
+
+  Shape typing have been previously explored at the cost of fancy abstractions
+  using dependently typed programming languages. In TEL, we do not plan, nor
+  need, to build such unpractical (albeit elegant) model. Instead, the goal for
+  TEL is to be able to express generic tensor shape transformations. The purpose
+  of a generic tensor shape system is to 1) allow all internal functions
+  (intrinsics) and operators to be formally defined as functions, and 2) allow
+  users to define functions with custom shape transformation.
+
+* Design
+
+** Syntax
+
+** Semantics
+
+** Implementation
