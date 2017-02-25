@@ -6,50 +6,29 @@
 //
 //
 
-public protocol User {
-    var operands: [Use] { get }
-}
-
-public protocol Usee : class {
-    associatedtype UserType : User
-    var users: KVSet<UserType> { get }
-}
-
-internal protocol ManagedUsee : Usee {
-    var users: KVSet<UserType> { get set }
-}
-
-internal extension ManagedUsee {
-    func addUser(_ user: UserType) {
-        users.insert(user)
-    }
-
-    func removeUser(_ user: UserType) {
-        users.remove(user)
-    }
-
-    func removeAllUsers() {
-        users.removeAll()
-    }
-}
-
+/// Scope of value
 public enum Scope {
     case global
     case local
     case none
 }
 
+/// Value base
 public protocol Value {
     var shape: TensorShape { get }
     var type: DataType { get }
     static var scope: Scope { get }
 }
 
+/// Scalar or tensor literal, literally
+/// - Note: It has no type or shape, because a `Literal` is not a `Value`.
+/// But `LiteralValue`, that uses `Literal`, is a value.
 public enum Literal {
     case scalar(ScalarLiteral)
     case tensor(TensorLiteral)
 }
 
+/// Scalar literal
 public enum ScalarLiteral {
     case int(Int), float(Double), bool(Bool)
 
@@ -62,6 +41,7 @@ public enum ScalarLiteral {
     }
 }
 
+/// Tensor literal
 public enum TensorLiteral {
     case elements([ScalarLiteral])
     case random(from: ScalarLiteral, to: ScalarLiteral)
@@ -79,6 +59,7 @@ public enum TensorLiteral {
     }
 }
 
+/// Literal value. It wraps `Literal` into a value
 public struct LiteralValue : Value {
     public var shape: TensorShape
     public var type: DataType
@@ -92,39 +73,13 @@ public struct LiteralValue : Value {
     }
 }
 
+/// Anything that has a name
 public protocol Named {
     var name: String { get set }
 }
 
-public enum Global {
-    case value(Def<GlobalValue>)
-    case placeholder(Def<Placeholder>)
-    case output(Def<Output>)
-}
-
-public struct GlobalValue : Value {
-    public enum Kind {
-        case variable, constant
-    }
-    public var kind: Kind
-    public var shape: TensorShape
-    public var type: DataType
-    public var initializer: Literal
-    public static let scope: Scope = .global
-
-    public init(kind: Kind, shape: TensorShape, type: DataType, initializer: Literal) {
-        self.kind = kind
-        self.shape = shape
-        self.type = type
-        self.initializer = initializer
-    }
-}
-
-public protocol PotentiallyRecurrentValue : Value {
-    var isRecurrent: Bool { get }
-}
-
-public class Def<ValueType : Value> : ManagedUsee, Named, Value {
+/// When a value has a name, it's a unique Def!
+public class Def<ValueType : Value> : Usee, Named, Value {
     public typealias UserType = Instruction
     public var name: String
     public var shape: TensorShape
@@ -144,54 +99,23 @@ public class Def<ValueType : Value> : ManagedUsee, Named, Value {
     }
 }
 
+public typealias AnyDef = Value & Named & AnyObject
+
+/// A value is potentially recurrent if it's potentially recurrent
+public protocol PotentiallyRecurrentValue : Value {
+    var isRecurrent: Bool { get }
+}
+
+// MARK: - Recurrent value helper
 public extension Def where ValueType : PotentiallyRecurrentValue {
     public var isRecurrent: Bool {
         return value.isRecurrent
     }
 }
 
-public extension Global {
-    var isRecurrent: Bool {
-        switch self {
-        case let .placeholder(def):
-            return def.value.isRecurrent
-        case let .output(def):
-            return def.value.isRecurrent
-        default:
-            return false
-        }
-    }
-}
-
-public struct Placeholder : PotentiallyRecurrentValue {
-    public var shape: TensorShape
-    public var type: DataType
-    public var isRecurrent: Bool
-    public static var scope: Scope = .global
-
-    public init(shape: TensorShape, type: DataType, isRecurrent: Bool) {
-        self.shape = shape
-        self.type = type
-        self.isRecurrent = isRecurrent
-    }
-}
-
-public struct Output : PotentiallyRecurrentValue {
-    public var shape: TensorShape
-    public var type: DataType
-    public var isRecurrent: Bool
-    public static var scope: Scope = .global
-
-    public init(shape: TensorShape, type: DataType, isRecurrent: Bool) {
-        self.shape = shape
-        self.type = type
-        self.isRecurrent = isRecurrent
-    }
-}
-
-public typealias AnyDef = Value & Named & AnyObject
-
+// MARK: - Value helper factories
 public extension Value {
+    /// Returns a zero value of the same shape and the same data type
     func makeZero() -> LiteralValue {
         let literal: Literal
         switch (type.base, shape) {
@@ -212,8 +136,28 @@ public extension Value {
     }
 }
 
-public extension Use {
-    func makeZero() -> LiteralValue {
-        return value.makeZero()
+/// User, anything that can use a value
+public protocol User {
+    var operands: [Use] { get }
+}
+
+/// Usee, remembering all its users, always bearing a grudge.
+internal protocol Usee: class {
+    associatedtype UserType : User
+    var users: KVSet<UserType> { get set }
+}
+
+// MARK: - User accessors
+internal extension Value where Self : AnyObject & Usee {
+    func addUser(_ user: UserType) {
+        users.insert(user)
+    }
+
+    func removeUser(_ user: UserType) {
+        users.remove(user)
+    }
+
+    func removeAllUsers() {
+        users.removeAll()
     }
 }
