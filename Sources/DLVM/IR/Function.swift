@@ -130,16 +130,13 @@ extension Function {
         return forwardPass.lazy.flatMap{$0.instructions}
     }
 
-    open var preorder: IteratorSequence<GraphIterator<BasicBlock>> {
-        return IteratorSequence(GraphIterator(root: entry, order: .preorder))
-    }
+}
 
-    open var postorder: IteratorSequence<GraphIterator<BasicBlock>> {
-        return IteratorSequence(GraphIterator(root: entry, order: .postorder))
-    }
+// MARK: - Iterator of all forward and backward passes
+extension Function {
 
-    open var breadthFirst: IteratorSequence<GraphIterator<BasicBlock>> {
-        return IteratorSequence(GraphIterator(root: entry, order: .breadthFirst))
+    open var allBasicBlocks: FlattenBidirectionalCollection<[OrderedKVSet<BasicBlock>]> {
+        return ([forwardPass] + backwardPasses.values).joined()
     }
 
 }
