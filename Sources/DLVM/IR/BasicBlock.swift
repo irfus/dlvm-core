@@ -175,16 +175,4 @@ extension BasicBlock : GraphNode {
         }
     }
 
-    open var preorder: IteratorSequence<GraphIterator<BasicBlock>> {
-        return IteratorSequence(GraphIterator(root: self, order: .preorder))
-    }
-
-    open var postorder: IteratorSequence<GraphIterator<BasicBlock>> {
-        return IteratorSequence(GraphIterator(root: self, order: .postorder))
-    }
-
-    open var breadthFirst: IteratorSequence<GraphIterator<BasicBlock>> {
-        return IteratorSequence(GraphIterator(root: self, order: .breadthFirst))
-    }
-    
 }

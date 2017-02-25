@@ -16,3 +16,17 @@ public extension GraphNode where Children : Collection {
         return children.isEmpty
     }
 }
+
+public extension  GraphNode where Children : Collection, Children.Iterator.Element == Self {
+    var preorder: IteratorSequence<GraphIterator<Self>> {
+        return IteratorSequence(GraphIterator(root: self, order: .preorder))
+    }
+
+    var postorder: IteratorSequence<GraphIterator<Self>> {
+        return IteratorSequence(GraphIterator(root: self, order: .postorder))
+    }
+
+    var breadthFirst: IteratorSequence<GraphIterator<Self>> {
+        return IteratorSequence(GraphIterator(root: self, order: .breadthFirst))
+    }
+}
