@@ -147,29 +147,8 @@ extension BasicBlock {
     
 }
 
-// MARK: - Analysis information
-extension BasicBlock {
-
-    /// Update analysis information
-    func updateAnalysisInformation() {
-        /// Update users
-        updateUsers()
-    }
-
-    /// Update user information
-    private func updateUsers() {
-        for inst in instructions {
-            if case let .operation(oper) = inst.kind {
-                oper.removeAllUsers()
-            }
-        }
-    }
-
-}
-
 // MARK: - Control Flow Graph
 extension BasicBlock : GraphNode {
-
     public var children: [BasicBlock] {
         guard let terminator = self.terminator else { return [] }
         switch terminator.kind {
