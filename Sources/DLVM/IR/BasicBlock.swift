@@ -189,4 +189,12 @@ public extension BasicBlock {
         return terminator?.isReturn ?? false
     }
 
+    var isForward: Bool {
+        return parent?.forwardPass.contains(self) ?? false
+    }
+
+    var isBackward: Bool {
+        return parent?.backwardPasses.values.contains(where: {$0.contains(self)}) ?? false
+    }
+
 }

@@ -7,7 +7,7 @@
 
 // MARK: - Basic block graph traits
 extension BasicBlock : BidirectionalGraphNode {
-    public var successors: ObjectSet<BasicBlock> {
+    public var localSuccessors: ObjectSet<BasicBlock> {
         guard let terminator = self.terminator else { return [] }
         switch terminator.kind {
         case let .control(.br(dest)):
@@ -23,11 +23,28 @@ extension BasicBlock : BidirectionalGraphNode {
             return []
         }
     }
+
+    public var successors: ObjectSet<BasicBlock> {
+        /// If self is a return block in forward pass, include all 
+        /// backward pass as successors
+        /// - Note: no need to check for existence in forward pass, since
+        /// `returnBlock` always exists in forward pass 
+        if let parent = parent, parent.returnBlock === self {
+            var allSuccessors = localSuccessors
+            for backwardEntry in parent.backwardPasses.values.flatMap({$0.entry}) {
+                allSuccessors.insert(backwardEntry)
+            }
+            return allSuccessors
+        }
+        /// Otherwise just local successors
+        return localSuccessors
+    }
 }
 
 // MARK: - Successors
 public extension Control {
-    var successors: [BasicBlock] {
+    var successors: ObjectSet<BasicBlock> {
+        /// TODO: Include entries of backward passes as successors
         switch self {
         case let .br(bb): return [bb]
         case let .condBr(_, bb1, bb2): return [bb1, bb2]
@@ -46,7 +63,7 @@ public extension Control {
 
 // MARK: - Successors
 public extension Operation {
-    var successors: [BasicBlock] {
+    var successors: ObjectSet<BasicBlock> {
         switch self {
         case let .pull(_, bb1, bb2): return [bb1, bb2]
         default: return []
@@ -62,7 +79,7 @@ public extension Operation {
 // MARK: - Instruction successors
 public extension Instruction {
 
-    var successors: [BasicBlock] {
+    var successors: ObjectSet<BasicBlock> {
         switch kind {
         case let .control(ctrl): return ctrl.successors
         case let .operation(def): return def.value.successors
