@@ -5,19 +5,6 @@
 //  Created by Richard Wei on 2/24/17.
 //
 
-// MARK: - Basic block successors
-public extension BasicBlock {
-
-    var successorCount: Int {
-        return terminator?.successorCount ?? 0
-    }
-
-    var hasSuccessors: Bool {
-        return successorCount > 0
-    }
-
-}
-
 // MARK: - Basic block graph traits
 extension BasicBlock : BidirectionalGraphNode {
     public var successors: ObjectSet<BasicBlock> {
@@ -168,8 +155,7 @@ internal extension Instruction {
 // MARK: - Per-block analysis information
 internal extension BasicBlock {
 
-    /// Update user information
-    private func updateUsers() {
+    private func visitInstructions() {
         for inst in instructions {
             if case let .operation(oper) = inst.kind {
                 oper.removeAllUsers()
@@ -180,8 +166,7 @@ internal extension BasicBlock {
         }
     }
 
-    /// Update predecessor of successors
-    private func updateSuccessorPredecessors() {
+    private func visitSuccessors() {
         for succ in successors {
             succ.predecessors.removeAll()
         }
@@ -192,8 +177,8 @@ internal extension BasicBlock {
 
     /// Update analysis information
     func updateAnalysisInformation() {
-        updateSuccessorPredecessors()
-        updateUsers()
+        visitSuccessors()
+        visitInstructions()
     }
 
 }
@@ -204,6 +189,20 @@ internal extension Function {
     func updateAnalysisInformation() {
         for bb in allBasicBlocks {
             bb.updateAnalysisInformation()
+            if bb.isReturn {
+                returnBlock = bb
+            }
+        }
+    }
+
+}
+
+// MARK: - Per-module analysis information
+internal extension Module {
+
+    func updateAnalysisInformation() {
+        for function in functions {
+            function.updateAnalysisInformation()
         }
     }
 
