@@ -9,7 +9,6 @@
 import Foundation
 
 fileprivate protocol KVSetImplementation : SetImplementation {
-    var set: Set { get set }
     var nameTable: [String : Element] { get set }
 }
 
@@ -29,7 +28,7 @@ public extension KVSetProtocol {
 }
 
 public struct KVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleByArrayLiteral {
-    internal var set = NSMutableSet()
+    internal var elements = NSMutableSet()
     fileprivate var nameTable: [String : Element] = [:]
 
     public init() {}
@@ -56,7 +55,7 @@ public struct KVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleBy
     }
     
     public func contains(_ element: Element) -> Bool {
-        return set.contains(element)
+        return elements.contains(element)
     }
 
     public mutating func remove(_ element: Element) {
@@ -87,22 +86,22 @@ public struct KVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleBy
 extension KVSet: Sequence {
 
     public var count: Int {
-        return set.count
+        return elements.count
     }
 
     public func makeIterator() -> AnyIterator<Element> {
-        return AnyIterator((set.lazy.map {$0 as! Element}).makeIterator())
+        return AnyIterator((elements.lazy.map {$0 as! Element}).makeIterator())
     }
 
 }
 
 public struct OrderedKVSet<Element> : KVSetProtocol, KVSetImplementation, ExpressibleByArrayLiteral {
-    internal var set = NSMutableOrderedSet()
+    internal var elements = NSMutableOrderedSet()
     fileprivate var nameTable: [String : Element] = [:]
 
     public init() {}
 
-    public init<S: Sequence>(_ elements: S) where S.Iterator.Element == Element {
+    public init<S : Sequence>(_ elements: S) where S.Iterator.Element == Element {
         for element in elements {
             append(element)
         }
@@ -142,7 +141,7 @@ public struct OrderedKVSet<Element> : KVSetProtocol, KVSetImplementation, Expres
     }
 
     public func contains(_ element: Element) -> Bool {
-        return set.contains(element)
+        return elements.contains(element)
     }
 
     public mutating func remove(_ element: Element) {
@@ -167,11 +166,11 @@ public struct OrderedKVSet<Element> : KVSetProtocol, KVSetImplementation, Expres
     }
 
     public func index(of element: Element) -> Int? {
-        return set.index(of: element)
+        return elements.index(of: element)
     }
 
     public var array: [Element] {
-        return set.array as! [Element]
+        return elements.array as! [Element]
     }
 
 }
@@ -194,16 +193,16 @@ extension OrderedKVSet: RandomAccessCollection, BidirectionalCollection {
     }
 
     public var endIndex: Int {
-        return set.count
+        return elements.count
     }
 
     public var indices: CountableRange<Int> {
-        return 0..<set.count
+        return 0..<elements.count
     }
 
     public subscript(i: Int) -> Element {
         get {
-            return set[i] as! Element
+            return elements[i] as! Element
         }
     }
 
