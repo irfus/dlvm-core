@@ -161,3 +161,22 @@ internal extension Value where Self : AnyObject & Usee {
         users.removeAll()
     }
 }
+
+// MARK: - User analysis
+public extension Def {
+
+    func isUsed(in evalPass: OrderedKVSet<BasicBlock>) -> Bool {
+        return users.contains(where: { inst in
+            inst.parent.flatMap(evalPass.contains) ?? false
+        })
+    }
+
+    func isUsed(in basicBlock: BasicBlock) -> Bool {
+        return users.contains(where: {$0.parent === basicBlock})
+    }
+
+    func isUsed(in function: Function) -> Bool {
+        return users.contains(where: {$0.parent?.parent === function})
+    }
+    
+}
