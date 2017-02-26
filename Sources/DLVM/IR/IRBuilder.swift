@@ -10,7 +10,7 @@ open class IRBuilder {
     fileprivate let _module: Module
 
     open var module: Module {
-        // _module.updateAnalysisInformation()
+        _module.updateAnalysisInformation()
         return _module
     }
 
@@ -30,6 +30,13 @@ open class IRBuilder {
 
     public init(module: Module) {
         _module = module
+    }
+
+    public init?(basicBlock: BasicBlock) {
+        guard let module = basicBlock.parent?.parent
+            else { return nil }
+        _module = module
+        move(to: basicBlock)
     }
 }
 
