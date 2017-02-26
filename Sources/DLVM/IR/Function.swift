@@ -42,6 +42,8 @@ extension DifferentiationVariable : Hashable {
     }
 }
 
+/// TODO: Abstract backward pass to a struct instead of exposing an OrderedKVSet
+
 open class Function : Named, IRCollection, IRObject {
     public typealias Element = BasicBlock
 
@@ -67,11 +69,22 @@ open class Function : Named, IRCollection, IRObject {
 
 }
 
+// MARK: - Evaluation pass access helpers
+public extension OrderedKVSet where Element == BasicBlock {
+    var entry: Element? {
+        return element(named: "entry")
+    }
+}
+
 // MARK: - Argument accessors
 extension Function {
 
     open func argument(named name: String) -> Def<Argument>? {
         return arguments.element(named: name)
+    }
+
+    open func backwardPass(withRespectTo variable: DifferentiationVariable) -> OrderedKVSet<BasicBlock>? {
+        return backwardPasses[variable]
     }
     
 }
@@ -149,7 +162,7 @@ extension Function {
 extension Function {
 
     open weak var entry: BasicBlock? {
-        return forwardPass.element(named: "entry")
+        return forwardPass.entry
     }
 
     open var instructions: [Instruction] {
