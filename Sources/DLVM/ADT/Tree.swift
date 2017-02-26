@@ -6,7 +6,7 @@
 //
 //
 
-public struct Tree<Element> : GraphNode {
+public class Tree<Element> : GraphNode {
     public var value: Element
     public var successors: [Tree]
 

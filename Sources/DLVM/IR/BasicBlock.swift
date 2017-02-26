@@ -67,7 +67,7 @@ open class BasicBlock : IRCollection, IRObject, Named {
     }
 
     /// ## Analysis information
-    public internal(set) var predecessors: Set<BasicBlock> = []
+    public internal(set) var predecessors: ObjectSet<BasicBlock> = []
 
 }
 
