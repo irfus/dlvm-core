@@ -77,24 +77,24 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func declare(_ output: Output, name: String? = nil) -> Def<Output> {
-        let def = Def<Output>(name: name ?? makeVariableName(), value: output)
+    open func declare(_ output: Output, name: String) -> Def<Output> {
+        let def = Def<Output>(name: name, value: output)
         let global: Global = .output(def)
         _module.insert(global)
         return def
     }
 
     @discardableResult
-    open func declare(_ placeholder: Placeholder, name: String? = nil) -> Def<Placeholder> {
-        let def = Def<Placeholder>(name: name ?? makeVariableName(), value: placeholder)
+    open func declare(_ placeholder: Placeholder, name: String) -> Def<Placeholder> {
+        let def = Def<Placeholder>(name: name, value: placeholder)
         let global: Global = .placeholder(def)
         _module.insert(global)
         return def
     }
 
     @discardableResult
-    open func declare(_ value: GlobalValue, name: String? = nil) -> Use {
-        let def = Def<GlobalValue>(name: name ?? makeVariableName(), value: value)
+    open func declare(_ value: GlobalValue, name: String) -> Use {
+        let def = Def<GlobalValue>(name: name, value: value)
         _module.insert(.value(def))
         let use = Use(kind: .global(def))
         return use
