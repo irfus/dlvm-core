@@ -5,115 +5,131 @@
 //  Created by Richard Wei on 2/18/17.
 //
 
-open class DominatorNode<Body : AnyObject> : GraphNode {
-    open var body: Body
-    open var children: Set<DominatorNode> = []
+/// This file contains an implementation of the Cooper-Harvey-Kennedy dominance algorithm
+///
+/// K. D. Cooper, T. J. Harvey, and K. Kennedy. A simple, fast dominance algorithm.
+/// Rice University, 2000.
 
-    fileprivate var rpoNumber: UInt = 0
-    fileprivate var dfsInNumber = -1, dfsOutNumber = -1
+open class DominatorTree {
 
-    open weak var immediateDominator: DominatorNode? {
-        willSet {
-            immediateDominator?.children.remove(self)
-            newValue?.addChild(self)
-        }
-    }
+    public var immediateDominators: [Unowned<BasicBlock> : BasicBlock] = [:]
+    public unowned let root: BasicBlock
 
-    public init(body: Body, immediateDominator: DominatorNode? = nil) {
-        self.body = body
-        self.immediateDominator = immediateDominator
-    }
-
-    func isDominated(by other: DominatorNode) -> Bool {
-        return dfsInNumber >= other.dfsInNumber
-            && dfsOutNumber <= other.dfsOutNumber
-    }
-}
-
-// MARK: - Children
-public extension DominatorNode {
-
-    func addChild(_ node: DominatorNode) {
-        children.insert(node)
-    }
-
-    func removeChild(_ node: DominatorNode) {
-        children.remove(node)
-    }
-
-    func containsChild(_ node: DominatorNode) -> Bool {
-        return children.contains(node)
-    }
-
-    func removeAllChildren() {
-        children.removeAll()
-    }
-
-}
-
-// MARK: - Traversal
-public extension DominatorNode {
-
-    public var preorder: IteratorSequence<GraphIterator<DominatorNode<Body>>> {
-        return IteratorSequence(GraphIterator(root: self, order: .preorder))
-    }
-
-    public var postorder: IteratorSequence<GraphIterator<DominatorNode<Body>>> {
-        return IteratorSequence(GraphIterator(root: self, order: .postorder))
-    }
-
-    public var breathFirst: IteratorSequence<GraphIterator<DominatorNode<Body>>> {
-        return IteratorSequence(GraphIterator(root: self, order: .breadthFirst))
-    }
-    
-}
-
-open class DominatorTree<Body : AnyObject> {
-    fileprivate var nodes: [Unowned<Body> : DominatorNode<Body>] = [:]
-    fileprivate var root: DominatorNode<Body>
-
-    init(root: DominatorNode<Body>) {
+    internal init(root: BasicBlock, immediateDominators: [Unowned<BasicBlock> : BasicBlock]) {
         self.root = root
-        for node in root.preorder {
-            nodes[Unowned(node.body)] = node
-        }
+        self.immediateDominators = immediateDominators
+    }
+
+    /// Initialize from entry node using
+    public init(entry: BasicBlock) {
+        self.root = entry
+
+        /// Initialization of data flow analysis
+        immediateDominators[Unowned(root)] = root
+
+        /// Iteratively build tree
+        var changed = true
+        repeat {
+            changed = false
+            for node in root.postorder.reversed().dropFirst() {
+                let preds = node.predecessors
+                guard var newIDom = preds.first else {
+                    preconditionFailure("Successor node doesn't have any predecessor")
+                }
+                for p in preds.dropFirst() where !contains(p) {
+                    newIDom = nearestCommonDominator(p, newIDom)
+                }
+                if immediateDominator(of: node) !== newIDom {
+                    immediateDominators[Unowned(node)] = newIDom
+                    changed = true
+                }
+            }
+        } while changed
     }
 }
 
 public extension DominatorTree {
-    func isReachable(_ body: Body) -> Bool {
-        guard let node = nodes[Unowned(body)] else { return false }
-        return node.rpoNumber != 0
+
+    public func immediateDominator(of node: BasicBlock) -> BasicBlock {
+        return immediateDominators[Unowned(node)]!
     }
 
-    func immediateDominator(of body: Body) -> Body? {
-        return nodes[Unowned(body)]?.immediateDominator?.body
-    }
+    public func nearestCommonDominator(_ b1: BasicBlock, _ b2: BasicBlock) -> BasicBlock {
+        if dominates(b1, b2) { return b1 }
+        if dominates(b2, b1) { return b2 }
 
-    func dominates(_ block: Body, _ otherBlock: Body) -> Bool {
-        return nodes[Unowned(block)].flatMap { [unowned self] node1 in
-            self.nodes[Unowned(otherBlock)].flatMap { node2 in
-                return node1.rpoNumber < node2.rpoNumber
+        /// Collect all b1's dominators
+        var b1Dominators: ObjectSet<BasicBlock> = []
+        b1Dominators.insert(root)
+        var b1Dom = immediateDominator(of: b1)
+        while b1Dom !== root {
+            b1Dominators.insert(b1Dom)
+            b1Dom = immediateDominator(of: b1Dom)
+        }
+
+        /// Check all b2's dominators against b1Dominators
+        var b2Dom = immediateDominator(of: b2)
+        while b2Dom !== root {
+            if b1Dominators.contains(b2Dom) {
+                return b2Dom
             }
-        } ?? false
+            b2Dom = immediateDominator(of: b2Dom)
+        }
+
+        return root
     }
 
+    public func contains(_ node: BasicBlock) -> Bool {
+        return immediateDominators.keys.contains(Unowned(node))
+    }
+
+    func properlyDominates(_ block: BasicBlock, _ otherBlock: BasicBlock) -> Bool {
+        guard block !== otherBlock else { return false }
+        if block === root { return true }
+        var iDom = immediateDominator(of: otherBlock)
+        while iDom !== block && iDom !== root {
+            iDom = immediateDominator(of: iDom)
+        }
+        return iDom !== root
+    }
+
+    func dominates(_ block: BasicBlock, _ otherBlock: BasicBlock) -> Bool {
+        return block === otherBlock || properlyDominates(block, otherBlock)
+    }
 }
 
-public extension DominatorTree where Body == BasicBlock {
+public extension DominatorTree {
     func immediateDominatorInstruction(of body: BasicBlock) -> Instruction? {
-        return immediateDominator(of: body)?.terminator
+        return immediateDominator(of: body).terminator
+    }
+
+    func isReachable(_ block: BasicBlock) -> Bool {
+        return block !== root && immediateDominator(of: block) !== block
     }
 
     func dominates(_ instruction: Instruction, _ otherInstruction: Instruction) -> Bool {
-        // TODO: implement
-        return false
+        guard let bb1 = instruction.parent, let bb2 = otherInstruction.parent else { return false }
+        if bb1 === bb2 {
+            return bb1.index(of: instruction)! < bb1.index(of: otherInstruction)!
+        }
+        return dominates(bb1, bb2)
     }
 }
 
 public extension BasicBlock {
+    public func isReachable(in domTree: DominatorTree) -> Bool {
+        return domTree.isReachable(self)
+    }
+
     public func dominates(_ other: BasicBlock,
-                          in domTree: DominatorTree<BasicBlock>) -> Bool {
+                          in domTree: DominatorTree) -> Bool {
+        return domTree.dominates(self, other)
+    }
+}
+
+public extension Instruction {
+    public func dominates(_ other: Instruction,
+                          in domTree: DominatorTree) -> Bool {
         return domTree.dominates(self, other)
     }
 }
