@@ -9,7 +9,7 @@
 public enum VerificationError<Node : SelfVerifiable> : Error {
     case basicBlockRedeclared(BasicBlock, Node)
     case redeclaredInstruction(Instruction, Node)
-    case blockMissingModule(BasicBlock, Node)
+    case noParent(Node)
     case blockFunctionMismatch(BasicBlock, Node)
     case blockMissingTerminator(BasicBlock)
     case unbroadcastableMismatch(Use, Use, Node)
@@ -43,6 +43,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case noReturn(Node)
     case postdominanceUnreachable(BasicBlock, Node)
     case dominanceUnreachable(BasicBlock, Node)
+    case unknownDifferentiationVariable(DifferentiationVariable, Node)
 }
 
 public protocol SelfVerifiable {
@@ -63,6 +64,10 @@ extension Function: SelfVerifiable {
             throw VerificationError.noEntry(self)
         }
 
+        guard let module = parent else {
+            throw VerificationError.noParent(self)
+        }
+
         /// Exit blocks
         var returnBlocks: ObjectSet<BasicBlock> = []
 
@@ -70,7 +75,7 @@ extension Function: SelfVerifiable {
         for bb in forwardPass {
             /// Check module reference
             guard let bbFunction = bb.parent else {
-                throw VerificationError.blockMissingModule(bb, self)
+                throw VerificationError.noParent(bb)
             }
             guard self === bbFunction else {
                 throw VerificationError.blockFunctionMismatch(bb, self)
@@ -113,6 +118,19 @@ extension Function: SelfVerifiable {
             }
         }
 
+        /// Verify backward passes
+        for (variable, evalPass) in backwardPasses {
+            /// Check for unbound differentiation variables
+            switch variable {
+            case .argument(let arg) where !arguments.contains(arg):
+                throw VerificationError.unknownDifferentiationVariable(variable, self)
+            case .global(let arg) where !module.globals.contains(.placeholder(arg)):
+                throw VerificationError.unknownDifferentiationVariable(variable, self)
+            default: break
+            }
+
+            /// TODO: Check backward blocks (dominance etc)
+        }
     }
 }
 
