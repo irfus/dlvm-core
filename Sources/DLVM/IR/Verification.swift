@@ -38,6 +38,11 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case invalidIndex(Use, Int, Node)
     case intrinsicArgError(Intrinsic, [Use], Node)
     case intrinsicResultMismatch(TensorShape, DataType, Intrinsic, Node)
+    case multipleExits(ObjectSet<BasicBlock>, Node)
+    case noEntry(Node)
+    case noReturn(Node)
+    case postdominanceUnreachable(BasicBlock, Node)
+    case dominanceUnreachable(BasicBlock, Node)
 }
 
 public protocol SelfVerifiable {
@@ -54,6 +59,13 @@ extension Module : SelfVerifiable {
 
 extension Function: SelfVerifiable {
     public func verify() throws {
+        guard let entry = entry else {
+            throw VerificationError.noEntry(self)
+        }
+
+        /// Exit blocks
+        var returnBlocks: ObjectSet<BasicBlock> = []
+
         /// Check basic blocks
         for bb in forwardPass {
             /// Check module reference
@@ -63,8 +75,44 @@ extension Function: SelfVerifiable {
             guard self === bbFunction else {
                 throw VerificationError.blockFunctionMismatch(bb, self)
             }
+
+            /// Remember exit instruction
+            if let inst = bb.terminator, inst.isReturn {
+                returnBlocks.insert(bb)
+            }
+
+            /// Verify basic block
             try bb.verify()
         }
+
+        /// There cannot be more than one exit
+        guard returnBlocks.count <= 1 else {
+            throw VerificationError.multipleExits(returnBlocks, self)
+        }
+
+        /// There should be at least one exit
+        guard let foundReturn = returnBlocks.first else {
+            throw VerificationError.noReturn(self)
+        }
+
+        /// Now that we have our one and only exit from verification, it must
+        /// be the same as the `exit` stored in function. Otherwise something's
+        /// seriously wrong.
+        precondition(self.returnBlock === foundReturn)
+
+        /// Check for reachability in dominator tree and postdominator tree
+        let domTree = DominatorTree(entry: entry)
+        let postDomTree = PostdominatorTree(entry: foundReturn)
+
+        for bb in forwardPass {
+            guard bb.isReachable(in: domTree) else {
+                throw VerificationError.dominanceUnreachable(bb, self)
+            }
+            guard bb.isReachable(in: postDomTree) else {
+                throw VerificationError.postdominanceUnreachable(bb, self)
+            }
+        }
+
     }
 }
 
@@ -112,7 +160,7 @@ extension Control : SelfVerifiable {
     }
 
     private func verifySemantics() throws {
-        // TODO: add dominance check
+        // TODO:
         switch self {
 
         case let .condBr(use, _, _):
