@@ -30,10 +30,10 @@ public protocol ErrorFunctionBuilder : Pass {
     init(body: BasicBlock, output: Use, referenceOutput: Use)
 }
 
-open class MeanSquaredError : Pass {
-    open var body: BasicBlock
-    open var output: Use
-    open var referenceOutput: Use
+public class MeanSquaredError : Pass {
+    public var body: BasicBlock
+    public var output: Use
+    public var referenceOutput: Use
 
     public init(body: BasicBlock, output: Use, referenceOutput: Use) {
         self.body = body
@@ -41,7 +41,7 @@ open class MeanSquaredError : Pass {
         self.referenceOutput = referenceOutput
     }
 
-    open func run() -> ErrorFunctionBuilderResult {
+    public func run() -> ErrorFunctionBuilderResult {
         var result = Result()
         guard let builder = makeBuilder() else { return result }
         let diff = builder.buildOperation(.binary(.associative(.arithmetic(.subtract)), referenceOutput, output),

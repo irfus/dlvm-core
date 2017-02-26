@@ -16,7 +16,7 @@ public struct PassResult : PassResultProtocol {
     public init() {}
 }
 
-public protocol Pass : class {
+public protocol Pass {
     associatedtype Result : PassResultProtocol
     associatedtype Body : AnyObject
     var body: Body { get }
@@ -45,11 +45,7 @@ public extension Pass where Body : IRObject, Body.Parent == Function {
 
 public extension Pass where Body == BasicBlock {
     func makeBuilder() -> IRBuilder? {
-        return module.flatMap {
-            let builder = IRBuilder(module: $0)
-            builder.move(to: body)
-            return builder
-        }
+        return IRBuilder(basicBlock: body)
     }
 }
 

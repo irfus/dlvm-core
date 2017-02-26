@@ -13,19 +13,19 @@ public protocol Differentiator : Pass {
     init(body: Function, root: Use, variable: DifferentiationVariable)
 }
 
-open class AutomaticDifferentiator : Differentiator {
+public struct AutomaticDifferentiator : Differentiator {
 
-    open let body: Function
-    open let root: Use
-    open let variable: DifferentiationVariable
+    public let body: Function
+    public let root: Use
+    public let variable: DifferentiationVariable
 
-    public required init(body: Function, root: Use, variable: DifferentiationVariable) {
+    public init(body: Function, root: Use, variable: DifferentiationVariable) {
         self.body = body
         self.root = root
         self.variable = variable
     }
 
-    open func run() -> PassResult {
+    public func run() -> PassResult {
         var result = PassResult()
         guard let entry = body.entry else { return result }
         guard let builder = makeBuilder() else { return result }
