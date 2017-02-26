@@ -102,6 +102,17 @@ extension BasicBlock {
         for succ in instruction.successors {
             succ.predecessors.insert(self)
         }
+        if let parent = parent {
+            /// If it's an exit, update the exit remembered by parent function
+            if instruction.isReturn {
+                parent.returnBlock = self
+            }
+            /// Otherwise if parent currently remembers me as the exit,
+            /// make parent forget me
+            else if parent.returnBlock === self {
+                parent.returnBlock = nil
+            }
+        }
     }
 
     /// Index of the instruction in the basic block
@@ -120,30 +131,62 @@ extension BasicBlock {
         if case let .operation(operation) = instruction.kind {
             operationTable.removeValue(forKey: operation.name)
         }
-        /// If it's a branch instruction, update sucessor's predecessor set
+        /// If it's a branch instruction, update successor's predecessor set
         for succ in instruction.successors {
             succ.predecessors.remove(self)
         }
+        if let parent = parent {
+            /// If a terminator exit instruction is removed, make parent forget me
+            if parent.returnBlock === self {
+                if instruction.isReturn, instruction === last {
+                    parent.returnBlock = nil
+                }
+            }
+            /// If the last instruction after removal is exit, make parent remember
+            /// me as the exit
+            if let last = last, last.isReturn {
+                parent.returnBlock = self
+            }
+        }
     }
 
-    /// Returns the instruction having the specified name 
+    /// Returns the instruction having the specified name
     /// in the current basic block
     open func operation(named name: String) -> Def<Operation>? {
         return operationTable[name]
     }
 
+}
+
+
+// MARK: - Basic block successors
+public extension BasicBlock {
+
     /// Whether there exists a terminator instruction
-    open var hasTerminator: Bool {
+    /// - Note: a branching instruction in the middle of the basic block
+    /// is not considered a terminator
+    var hasTerminator: Bool {
         return instructions.last?.isTerminator ?? false
     }
 
     /// Terminator instruction
-    open var terminator: Instruction? {
+    var terminator: Instruction? {
         guard let last = instructions.last, last.isTerminator else {
             return nil
         }
         return last
     }
-    
-}
 
+    var successorCount: Int {
+        return terminator?.successorCount ?? 0
+    }
+
+    var hasSuccessors: Bool {
+        return successorCount > 0
+    }
+
+    var isReturn: Bool {
+        return terminator?.isReturn ?? false
+    }
+
+}

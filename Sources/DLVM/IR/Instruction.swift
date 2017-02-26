@@ -90,18 +90,23 @@ public enum Operation {
     case diff(TensorShape, DataType, Function, Use, wrt: Int)
 }
 
-extension Instruction {
-    public var name: String? {
+public extension Instruction {
+    var name: String? {
         guard case let .operation(def) = kind else { return nil }
         return def.name
     }
-}
 
-public extension Instruction {
     var isTerminator: Bool {
         switch kind {
         case .control(let ctrl): return ctrl.isTerminator
         case .operation(let def): return def.value.isTerminator
+        }
+    }
+
+    var isReturn: Bool {
+        switch kind {
+        case .control(.ret): return true
+        default: return false
         }
     }
 }
@@ -274,6 +279,14 @@ public extension Instruction {
             let newDef = Def<Operation>(name: def.name, value: oper)
             return .operation(newDef)
         }
+    }
+
+    var indexInParent: Int? {
+        return parent?.index(of: self)
+    }
+
+    func removeFromParent() {
+        parent?.remove(self)
     }
 }
 

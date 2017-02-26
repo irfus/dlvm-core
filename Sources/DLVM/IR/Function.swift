@@ -49,6 +49,7 @@ open class Function : Named, IRCollection, IRObject {
     public var arguments: [Def<Argument>]
     public var result: Argument?
     public var forwardPass = OrderedKVSet<BasicBlock>()
+    public internal(set) weak var returnBlock: BasicBlock?
 
     public var backwardPasses: [DifferentiationVariable : OrderedKVSet<BasicBlock>] = [:]
 
@@ -73,6 +74,11 @@ extension Function {
         }
         forwardPass.append(basicBlock)
         basicBlock.parent = self
+        /// If it contains an exit instruction, remember this block
+        /// as the exit
+        if basicBlock.isReturn {
+            returnBlock = basicBlock
+        }
     }
 
     open func insert(_ basicBlock: BasicBlock, after previous: BasicBlock) {
@@ -81,6 +87,11 @@ extension Function {
         }
         forwardPass.insert(basicBlock, after: previous)
         basicBlock.parent = self
+        /// If it contains an exit instruction, remember this block
+        /// as the exit
+        if basicBlock.isReturn {
+            returnBlock = basicBlock
+        }
     }
 
     open func index(of basicBlock: BasicBlock) -> Int? {
@@ -90,6 +101,10 @@ extension Function {
     open func remove(_ basicBlock: BasicBlock) {
         forwardPass.remove(basicBlock)
         basicBlock.parent = nil
+        /// If it's the currently remembered exit, forget it
+        if returnBlock === basicBlock {
+            returnBlock = nil
+        }
     }
 
     open func basicBlock(named name: String) -> BasicBlock? {
