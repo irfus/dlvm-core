@@ -5,22 +5,22 @@
 //  Created by Richard Wei on 2/7/17.
 //
 
-open class BackpropagationPass : Pass {
+public struct BackpropagationPass : Pass {
 
-    open let body: Function
+    public let body: Function
 
-    public required init(body: Function) {
+    public init(body: Function) {
         self.body = body
     }
 
-    open func run() -> PassResult {
+    public func run() -> PassResult {
         var result = Result()
         guard let module = module else { return result }
         let builder = IRBuilder(module: module)
 
         /// Generate reference placeholders
-        for ph in module.globals {
-            if case let .placeholder(def) = ph {
+        for global in module.globals {
+            if case let .placeholder(def) = global, def.isUsed(in: body.forwardPass) {
                 builder.declare(def.value, name: def.name + ".ref")
                 result.changed = true
                 /// Generate

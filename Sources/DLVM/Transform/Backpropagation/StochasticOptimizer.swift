@@ -14,12 +14,12 @@ public protocol StochasticOptimizer : Pass {
     init(body: BasicBlock, gradient: Use, target: Def<GlobalValue>, learningRate: Double)
 }
 
-open class StochasticGradientDescent : StochasticOptimizer {
+public class StochasticGradientDescent : StochasticOptimizer {
     public typealias Body = BasicBlock
-    open let gradient: Use
-    open let target: Def<GlobalValue>
-    open let learningRate: Double
-    open let body: BasicBlock
+    public let gradient: Use
+    public let target: Def<GlobalValue>
+    public let learningRate: Double
+    public let body: BasicBlock
 
     public required init(body: BasicBlock, gradient: Use, target: Def<GlobalValue>, learningRate: Double) {
         self.body = body
@@ -28,7 +28,7 @@ open class StochasticGradientDescent : StochasticOptimizer {
         self.learningRate = learningRate
     }
 
-    open func run() -> PassResult {
+    public func run() -> PassResult {
         var result = PassResult()
         guard let builder = makeBuilder() else { return result }
         builder.move(to: body)
