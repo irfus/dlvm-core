@@ -15,7 +15,7 @@ public struct GraphIterator<Node : GraphNode> : IteratorProtocol
 
     private var pre: [Node] = []
     private var post: [Node] = []
-    private var visited: Set<Node> = []
+    private var visited: ObjectSet<Node> = []
     public let order: Order
 
     public init(root: Node?, order: Order) {

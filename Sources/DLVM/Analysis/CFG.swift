@@ -20,7 +20,7 @@ public extension BasicBlock {
 
 // MARK: - Basic block graph traits
 extension BasicBlock : BidirectionalGraphNode {
-    public var successors: Set<BasicBlock> {
+    public var successors: ObjectSet<BasicBlock> {
         guard let terminator = self.terminator else { return [] }
         switch terminator.kind {
         case let .control(.br(dest)):
@@ -104,9 +104,9 @@ public extension Function {
     var backEdges: [(BasicBlock, BasicBlock)] {
         guard var bb = entry else { return [] }
 
-        var visited: Set<BasicBlock> = []
+        var visited: ObjectSet<BasicBlock> = []
         var visitStack: [BasicBlock] = []
-        var inStack: Set<BasicBlock> = []
+        var inStack: ObjectSet<BasicBlock> = []
         var result: [(BasicBlock, BasicBlock)] = []
 
         /// Initialization
