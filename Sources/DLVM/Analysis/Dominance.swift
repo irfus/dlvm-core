@@ -15,7 +15,8 @@ open class DominatorTree {
     public var immediateDominators: [Unowned<BasicBlock> : BasicBlock] = [:]
     public unowned let root: BasicBlock
 
-    internal init(root: BasicBlock, immediateDominators: [Unowned<BasicBlock> : BasicBlock]) {
+    internal init(root: BasicBlock,
+                  immediateDominators: [Unowned<BasicBlock> : BasicBlock] = [:]) {
         self.root = root
         self.immediateDominators = immediateDominators
     }
@@ -46,6 +47,37 @@ open class DominatorTree {
             }
         } while changed
     }
+}
+
+open class PostdominatorTree : DominatorTree {
+
+    /// Initialize from entry node using
+    public override init(entry: BasicBlock) {
+        super.init(root: entry)
+
+        /// Initialization of data flow analysis
+        immediateDominators[Unowned(root)] = root
+
+        /// Iteratively build tree
+        var changed = true
+        repeat {
+            changed = false
+            for node in root.transposeTraversed(in: .postorder).reversed().dropFirst() {
+                let preds = node.successors
+                guard var newIDom = preds.first else {
+                    preconditionFailure("Successor node doesn't have any predecessor")
+                }
+                for p in preds.dropFirst() where !contains(p) {
+                    newIDom = nearestCommonDominator(p, newIDom)
+                }
+                if immediateDominator(of: node) !== newIDom {
+                    immediateDominators[Unowned(node)] = newIDom
+                    changed = true
+                }
+            }
+        } while changed
+    }
+    
 }
 
 public extension DominatorTree {
@@ -103,10 +135,6 @@ public extension DominatorTree {
         return immediateDominator(of: body).terminator
     }
 
-    func isReachable(_ block: BasicBlock) -> Bool {
-        return block !== root && immediateDominator(of: block) !== block
-    }
-
     func dominates(_ instruction: Instruction, _ otherInstruction: Instruction) -> Bool {
         guard let bb1 = instruction.parent, let bb2 = otherInstruction.parent else { return false }
         if bb1 === bb2 {
@@ -118,7 +146,7 @@ public extension DominatorTree {
 
 public extension BasicBlock {
     public func isReachable(in domTree: DominatorTree) -> Bool {
-        return domTree.isReachable(self)
+        return domTree.contains(self)
     }
 
     public func dominates(_ other: BasicBlock,
