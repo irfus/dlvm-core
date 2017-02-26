@@ -46,7 +46,7 @@ open class Function : Named, IRCollection, IRObject {
     public typealias Element = BasicBlock
 
     public var name: String
-    public var arguments: [Def<Argument>]
+    public var arguments: OrderedKVSet<Def<Argument>>
     public var result: Argument?
     public var forwardPass = OrderedKVSet<BasicBlock>()
     public internal(set) weak var returnBlock: BasicBlock?
@@ -57,12 +57,23 @@ open class Function : Named, IRCollection, IRObject {
 
     public init(name: String, arguments: [(String, Argument)], result: Argument?) {
         self.name = name
-        self.arguments = arguments.map { name, arg in
-            Def<Argument>(name: name, value: arg)
+        self.arguments = []
+        for (name, arg) in arguments {
+            let def = Def<Argument>(name: name, value: arg)
+            self.arguments.append(def)
         }
         self.result = result
     }
 
+}
+
+// MARK: - Argument accessors
+extension Function {
+
+    open func argument(named name: String) -> Def<Argument>? {
+        return arguments.element(named: name)
+    }
+    
 }
 
 // MARK: - Forward basic block management
