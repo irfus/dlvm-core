@@ -17,7 +17,7 @@ public struct GraphIterator<Node : GraphNode> : IteratorProtocol
 
     private var pre: [Node] = []
     private var post: [Node] = []
-    private var visited: NSMutableSet = []
+    private var visited = NSMutableSet()
     public let order: TraversalOrder
 
     public init(root: Node?, order: TraversalOrder) {
@@ -66,7 +66,7 @@ public struct TransposeGraphIterator<Node : BidirectionalGraphNode> : IteratorPr
 
     private var pre: [Node] = []
     private var post: [Node] = []
-    private var visited: NSMutableSet = []
+    private var visited = NSMutableSet()
     public let order: TraversalOrder
 
     public init(root: Node?, order: TraversalOrder) {
