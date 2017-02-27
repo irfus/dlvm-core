@@ -13,8 +13,9 @@ internal protocol SetImplementation {
 }
 
 import protocol Foundation.NSMutableCopying
+import class Foundation.NSObject
 
-internal extension SetImplementation where Set : NSMutableCopying {
+internal extension SetImplementation where Set : NSObject, Set : NSMutableCopying {
     var mutatingSet: Set {
         mutating get {
             if !isKnownUniquelyReferenced(&elements) {
