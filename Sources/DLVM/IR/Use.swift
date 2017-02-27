@@ -94,12 +94,10 @@ public extension Use {
 
     var name: String? {
         switch kind {
-        case .local(let def as Named),
-             .global(let def as Named),
-             .argument(let def as Named):
-            return def.name
-        case .literal:
-            return nil
+        case let .global(def): return def.name
+        case let .local(def): return def.name
+        case let .argument(def): return def.name
+        case .literal: return nil
         }
     }
 }
