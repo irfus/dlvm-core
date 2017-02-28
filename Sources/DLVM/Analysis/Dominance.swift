@@ -12,7 +12,7 @@
 
 open class DominatorTree {
 
-    public var immediateDominators: [Unowned<BasicBlock> : BasicBlock] = [:]
+    fileprivate var immediateDominators: [Unowned<BasicBlock> : BasicBlock] = [:]
     public unowned let root: BasicBlock
 
     internal init(root: BasicBlock,

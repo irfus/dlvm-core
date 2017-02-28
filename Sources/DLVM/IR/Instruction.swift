@@ -16,13 +16,13 @@ public extension Instruction {
     }
 }
 
-public class Instruction : IRObject {
+public class Instruction : IRUnit {
     public enum Kind {
         case control(Control)
         case operation(Def<Operation>)
     }
     public typealias Parent = BasicBlock
-    public weak internal(set) var parent: BasicBlock?
+    public weak var parent: BasicBlock?
     public var kind: Kind
 
     public required init(kind: Kind) {

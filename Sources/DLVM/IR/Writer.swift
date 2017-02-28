@@ -362,7 +362,7 @@ extension Module : TextOutputStreamable {
             target.write("\n")
         }
         target.write("\n")
-        for fun in functions {
+        for fun in self {
             fun.write(to: &target)
             target.write("\n\n")
         }

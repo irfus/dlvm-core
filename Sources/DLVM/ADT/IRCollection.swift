@@ -3,49 +3,121 @@
 //
 
 public protocol IRCollection : class, RandomAccessCollection, HashableByReference {
-    associatedtype Element
-    var elements: [Element] { get }
-    func append(_: Element)
-    func index(of: Element) -> Int?
-    func remove(_: Element)
+    associatedtype ElementCollection : RandomAccessCollection
+    var elements: ElementCollection { get set }
 }
 
-// MARK: - RandomAccessCollection
+// MARK: - Mutation
+public extension IRCollection
+    where ElementCollection : OrderedMapSetProtocol,
+          ElementCollection.Element == ElementCollection.Iterator.Element {
+
+    public func append(_ element: Element) {
+        elements.append(element)
+    }
+
+    public func insert(_ element: Element, at index: ElementCollection.Index) {
+        elements.insert(element, at: index)
+    }
+
+    public func insert(_ element: Element, after other: Element) {
+        return elements.insert(element, after: other)
+    }
+
+    public func insert(_ element: Element, before other: Element) {
+        return elements.insert(element, before: other)
+    }
+    
+    public func index(of element: Element) -> Int? {
+        return elements.index(of: element)
+    }
+
+    public func remove(_ element: Element) {
+        elements.remove(element)
+    }
+
+    public func contains(_ element: Element) -> Bool {
+        return elements.contains(element)
+    }
+
+    public func element(named name: String) -> Element? {
+        return elements.element(named: name)
+    }
+
+    public func containsElement(named name: String) -> Bool {
+        return elements.containsElement(named: name)
+    }
+
+}
+
+// MARK: - Mutation
+public extension IRCollection
+    where ElementCollection.Iterator.Element : IRUnit,
+          ElementCollection.Iterator.Element.Parent == Self,
+          ElementCollection : OrderedMapSetProtocol,
+          ElementCollection.Element == ElementCollection.Iterator.Element {
+
+    public func append(_ element: Element) {
+        elements.append(element)
+        element.parent = self
+    }
+
+    public func insert(_ element: Element, at index: ElementCollection.Index) {
+        defer { element.parent = self }
+        elements.insert(element, at: index)
+    }
+
+    public func insert(_ element: Element, after other: Element) {
+        defer { element.parent = self }
+        return elements.insert(element, after: other)
+    }
+
+    public func insert(_ element: Element, before other: Element) {
+        defer { element.parent = self }
+        return elements.insert(element, before: other)
+    }
+
+    public func remove(_ element: Element) {
+        elements.remove(element)
+        element.parent = nil
+    }
+
+}
+
+// MARK: - RandomAccessCollection default implementation
 public extension IRCollection {
 
-    public typealias Index = Int
+    public typealias Element = ElementCollection.Iterator.Element
+//    public typealias Index = ElementCollection.Index // SILGen crasher
+    public typealias Indices = DefaultRandomAccessIndices<ElementCollection>
+    public typealias SubSequence = ElementCollection.SubSequence
 
-    public func index(after i: Int) -> Int {
+    public func makeIterator() -> ElementCollection.Iterator {
+        return elements.makeIterator()
+    }
+
+    public func index(after i: ElementCollection.Index) -> ElementCollection.Index {
         return elements.index(after: i)
     }
 
-    public func index(before i: Int) -> Int {
-        return elements.index(before: i)
-    }
-
-    public var indices: CountableRange<Int> {
+    public var indices: DefaultRandomAccessIndices<ElementCollection> {
         return elements.indices
     }
 
-    public var startIndex: Int {
+    public var startIndex: ElementCollection.Index {
         return elements.startIndex
     }
 
-    public var endIndex: Int {
-        return elements.endIndex
+    public var endIndex: ElementCollection.Index {
+        return elements.startIndex
     }
 
-    public subscript(i: Int) -> Element {
+    public subscript(i: ElementCollection.Index) -> Element {
         return elements[i]
     }
 
-}
-
-public extension IRObject where Parent : IRCollection, Parent.Element == Self {
-
-    /// Remove self from parent basic block (if any)
-    public func removeFromParent() {
-        parent?.remove(self)
+    public func index(before i: ElementCollection.Index) -> ElementCollection.Index {
+        return elements.index(before: i)
     }
 
 }

@@ -41,6 +41,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case multipleExits(ObjectSet<BasicBlock>, Node)
     case noEntry(Node)
     case noReturn(Node)
+    case noMainFunction(Node)
     case postdominanceUnreachable(BasicBlock, Node)
     case dominanceUnreachable(BasicBlock, Node)
     case unknownDifferentiationVariable(DifferentiationVariable, Node)
@@ -52,8 +53,11 @@ public protocol SelfVerifiable {
 
 extension Module : SelfVerifiable {
     open func verify() throws {
-        for fun in functions {
+        for fun in self {
             try fun.verify()
+        }
+        guard let _ = mainFunction else {
+            throw VerificationError.noMainFunction(self)
         }
     }
 }
@@ -138,10 +142,10 @@ extension BasicBlock : SelfVerifiable {
     open func verify() throws {
         /// Check instructions
         var instNames: Set<String> = []
-        guard let last = instructions.last, last.isTerminator else {
+        guard let last = last, last.isTerminator else {
             throw VerificationError<BasicBlock>.blockMissingTerminator(self)
         }
-        for inst in instructions {
+        for inst in self {
             if let name = inst.name {
                 guard !instNames.contains(name) else {
                     throw VerificationError.redeclaredInstruction(inst, self)
