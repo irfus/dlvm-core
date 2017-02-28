@@ -93,13 +93,6 @@ class CodeGenerator {
                 builder.buildControl(.yield(op, to: def))
             }
         }
-
-        /// Emit `endForward`
-        if let endBlock = environment.endBlock {
-            builder.buildControl(.br(endBlock))
-        } else {
-            builder.buildControl(.ret(nil))
-        }
         
         return builder.module
     }
@@ -117,10 +110,12 @@ class CodeGenerator {
             /// If it's a placeholder, emit a `pull` or `get` instruction
             if let ph = environment.placeholders[variable.name] {
                 if ph.isRecurrent {
-                    let currentBB = builder.currentBlock
-                    let thenBB = builder.buildBasicBlock(named: "then")
+                    guard let currentBB = builder.currentBlock else {
+                        preconditionFailure("Current basic block does not exist")
+                    }
+                    let thenBB = builder.buildBasicBlock(named: "then", in: currentBB.function)
                     let elseBB = environment.endBlock ?? {
-                        let end = builder.buildBasicBlock(named: "end")
+                        let end = builder.buildBasicBlock(named: "end", in: currentBB.function)
                         environment.endBlock = end
                         builder.move(to: end)
                         builder.buildControl(.ret(nil))

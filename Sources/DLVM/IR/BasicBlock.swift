@@ -15,40 +15,29 @@ open class BasicBlock : IRCollection, IRUnit, Named {
     /// Name of the basic block
     open var name: String
 
-    /// Parent function
-    open weak var parent: Function?
-
-    /// Module containing the parent function
-    open weak var module: Module? {
-        return parent?.parent
-    }
-
     /// Instruction list
     open var elements: OrderedMapSet<Instruction> = []
 
-    open var isEntry: Bool {
-        return parent?.entry === self
-    }
+    /// Parent function
+    open unowned var parent: Function.Section
 
-    public required init(name: String) {
-        self.name = name
-    }
-
-    public convenience init(name: String, instructions: [Instruction]) {
-        self.init(name: name)
-        self.elements.append(contentsOf: instructions)
-    }
-
-    /// ## Analysis information
     public internal(set) var predecessors: ObjectSet<BasicBlock> = []
 
+    public required init(name: String, parent: Function.Section) {
+        self.name = name
+        self.parent = parent
+    }
+
+    public convenience init(name: String, parent: Function) {
+        self.init(name: name, parent: parent.makeForwardPass())
+    }
 }
 
 // MARK: - IRCollection
 extension BasicBlock {
 
     open func containsOperation(_ operation: Def<Operation>) -> Bool {
-        return elements.contains(.operation(operation))
+        return elements.contains(where: { $0.definition === operation })
     }
 
     /// Append the instruction to the basic block
@@ -104,12 +93,28 @@ public extension BasicBlock {
         return terminator?.isReturn ?? false
     }
 
+    var isYielding: Bool {
+        return terminator?.isYield ?? false
+    }
+
     var isForward: Bool {
-        return parent?.forwardPass.contains(self) ?? false
+        return parent.isForward
     }
 
     var isBackward: Bool {
-        return parent?.backwardPasses.values.contains(where: {$0.contains(self)}) ?? false
+        return parent.isBackward
+    }
+
+    var function: Function {
+        return parent.parent
+    }
+
+    var module: Module {
+        return function.parent
+    }
+
+    var isEntry: Bool {
+        return parent.entry === self
     }
 
 }

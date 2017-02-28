@@ -23,9 +23,13 @@ public protocol Pass {
     func run() -> Result
 }
 
-public extension Pass where Body : IRUnit, Body.Parent == Module {
+public extension Pass where Body : IRUnit, Body == Function {
     var module: Module? {
         return body.parent
+    }
+
+    var forwardPass: Function.Section? {
+        return body.forwardPass
     }
 
     func makeBuilder() -> IRBuilder? {
@@ -33,32 +37,18 @@ public extension Pass where Body : IRUnit, Body.Parent == Module {
     }
 }
 
-public extension Pass where Body : IRUnit, Body.Parent == Function {
-    var module: Module? {
-        return body.parent?.parent
+public extension Pass where Body : IRUnit, Body == Function.Section {
+    var module: Module {
+        return body.parent.parent
     }
 
     func makeBuilder() -> IRBuilder? {
-        return module.flatMap { IRBuilder(module: $0) }
+        return IRBuilder(module: module)
     }
 }
 
 public extension Pass where Body == BasicBlock {
     func makeBuilder() -> IRBuilder? {
         return IRBuilder(basicBlock: body)
-    }
-}
-
-public extension Pass where Body : IRUnit, Body.Parent == BasicBlock {
-    var module: Module? {
-        return body.parent?.parent?.parent
-    }
-
-    func makeBuilder() -> IRBuilder? {
-        return module.flatMap {
-            let builder = IRBuilder(module: $0)
-            builder.move(to: body.parent)
-            return builder
-        }
     }
 }

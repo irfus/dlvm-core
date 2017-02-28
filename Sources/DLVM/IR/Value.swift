@@ -84,7 +84,7 @@ public protocol MaybeNamed {
 }
 
 /// When a value has a name, it's a unique Def!
-public class Def<ValueType : Value> : Usee, Named, Value {
+public class Def<ValueType : Value> : Usee, Named, Value, EquatableByReference {
     public typealias UserType = Instruction
     public var name: String
     public var shape: TensorShape
@@ -172,7 +172,7 @@ public extension Def {
 
     func isUsed(in section: Function.Section) -> Bool {
         return users.contains(where: { inst in
-            inst.parent.flatMap(section.contains) ?? false
+            section.contains(inst.parent)
         })
     }
 
@@ -181,7 +181,7 @@ public extension Def {
     }
 
     func isUsed(in function: Function) -> Bool {
-        return users.contains(where: {$0.parent?.parent === function})
+        return users.contains(where: {$0.parent.parent === function})
     }
     
 }

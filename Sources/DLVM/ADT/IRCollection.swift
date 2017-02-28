@@ -21,11 +21,11 @@ public extension IRCollection
     }
 
     public func insert(_ element: Element, after other: Element) {
-        return elements.insert(element, after: other)
+        elements.insert(element, after: other)
     }
 
     public func insert(_ element: Element, before other: Element) {
-        return elements.insert(element, before: other)
+        elements.insert(element, before: other)
     }
     
     public func index(of element: Element) -> Int? {
@@ -63,23 +63,22 @@ public extension IRCollection
     }
 
     public func insert(_ element: Element, at index: ElementCollection.Index) {
-        defer { element.parent = self }
         elements.insert(element, at: index)
+        element.parent = self
     }
 
     public func insert(_ element: Element, after other: Element) {
-        defer { element.parent = self }
-        return elements.insert(element, after: other)
+        elements.insert(element, after: other)
+        element.parent = self
     }
 
     public func insert(_ element: Element, before other: Element) {
-        defer { element.parent = self }
-        return elements.insert(element, before: other)
+        elements.insert(element, before: other)
+        element.parent = self
     }
 
     public func remove(_ element: Element) {
         elements.remove(element)
-        element.parent = nil
     }
 
 }

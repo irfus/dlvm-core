@@ -21,7 +21,7 @@ public extension HashableByReference {
     }
 }
 
-public protocol IRUnit: class, HashableByReference {
+public protocol IRUnit : class, HashableByReference {
     associatedtype Parent : AnyObject
-    weak var parent: Parent? { get set }
+    unowned var parent: Parent { get set }
 }

@@ -29,9 +29,10 @@ extension BasicBlock : BidirectionalGraphNode {
         /// backward pass as successors
         /// - Note: no need to check for existence in forward pass, since
         /// `returnBlock` always exists in forward pass 
-        if let parent = parent, parent.returnBlock === self {
+        if parent.endBlock === self {
             var allSuccessors = localSuccessors
-            for backwardEntry in parent.backwardPasses.values.flatMap({$0.entry}) {
+            let function = parent.parent
+            for backwardEntry in function.backwardPasses.values.flatMap({$0.entry}) {
                 allSuccessors.insert(backwardEntry)
             }
             return allSuccessors

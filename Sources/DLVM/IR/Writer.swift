@@ -331,11 +331,13 @@ extension Function : TextOutputStreamable {
         }
         target.write("{\n")
 
-        target.write("    forward {\n")
-        for bb in forwardPass {
-            bb.write(to: &target)
+        if let forwardPass = forwardPass {
+            target.write("    forward {\n")
+            for bb in forwardPass {
+                bb.write(to: &target)
+            }
+            target.write("    }\n")
         }
-        target.write("    }\n")
 
         /// Parametric backward passes (partial derivatives)
         for (variable, section) in backwardPasses  {

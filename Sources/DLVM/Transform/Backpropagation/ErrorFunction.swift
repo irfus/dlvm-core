@@ -30,12 +30,12 @@ public protocol ErrorFunctionBuilder : Pass {
     init(body: BasicBlock, output: Use, referenceOutput: Use)
 }
 
-public class MeanSquaredError : Pass {
+public class MeanSquaredError : ErrorFunctionBuilder {
     public var body: BasicBlock
     public var output: Use
     public var referenceOutput: Use
 
-    public init(body: BasicBlock, output: Use, referenceOutput: Use) {
+    public required init(body: BasicBlock, output: Use, referenceOutput: Use) {
         self.body = body
         self.output = output
         self.referenceOutput = referenceOutput

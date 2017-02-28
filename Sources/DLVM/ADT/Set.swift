@@ -119,6 +119,11 @@ extension ObjectSet : SetAlgebra {
         return elements.contains(Box(element))
     }
 
+    public func contains(_ element: AnyObject) -> Bool {
+        guard let element = element as? Element else { return false }
+        return contains(element)
+    }
+
     public mutating func formUnion(_ other: ObjectSet<Element>) {
         elements.formUnion(other.elements)
     }
