@@ -11,7 +11,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case redeclaredInstruction(Instruction, Node)
     case noParent(Node)
     case blockFunctionMismatch(BasicBlock, Node)
-    case blockMissingTerminator(BasicBlock)
+    case missingTerminator(BasicBlock)
     case unbroadcastableMismatch(Use, Use, Node)
     case typeMismatch(Use, Use, Node)
     case unexpectedShape(Use, TensorShape, Node)
@@ -40,8 +40,9 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case intrinsicResultMismatch(TensorShape, DataType, Intrinsic, Node)
     case multipleExits(ObjectSet<BasicBlock>, Node)
     case noEntry(Node)
-    case noReturn(Node)
+    case noExit(Node)
     case noMainFunction(Node)
+    case noForwardPass(Node)
     case postdominanceUnreachable(BasicBlock, Node)
     case dominanceUnreachable(BasicBlock, Node)
     case unknownDifferentiationVariable(DifferentiationVariable, Node)
@@ -68,25 +69,23 @@ extension Function: SelfVerifiable {
             throw VerificationError.noEntry(self)
         }
 
-        guard let module = parent else {
-            throw VerificationError.noParent(self)
-        }
-
         /// Exit blocks
         var returnBlocks: ObjectSet<BasicBlock> = []
+
+        let module = parent
+        guard let forwardPass = forwardPass else {
+            throw VerificationError.noForwardPass(self)
+        }
 
         /// Check basic blocks
         for bb in forwardPass {
             /// Check module reference
-            guard let bbFunction = bb.parent else {
-                throw VerificationError.noParent(bb)
-            }
-            guard self === bbFunction else {
+            guard self === bb.function else {
                 throw VerificationError.blockFunctionMismatch(bb, self)
             }
 
             /// Remember exit instruction
-            if let inst = bb.terminator, inst.isReturn {
+            if let inst = bb.terminator, inst.isExit {
                 returnBlocks.insert(bb)
             }
 
@@ -100,18 +99,18 @@ extension Function: SelfVerifiable {
         }
 
         /// There should be at least one exit
-        guard let foundReturn = returnBlocks.first else {
-            throw VerificationError.noReturn(self)
+        guard let foundExit = returnBlocks.first else {
+            throw VerificationError.noExit(self)
         }
 
         /// Now that we have our one and only exit from verification, it must
         /// be the same as the `exit` stored in function. Otherwise something's
         /// seriously wrong.
-        precondition(self.returnBlock === foundReturn)
+        precondition(self.endBlock === foundExit)
 
         /// Check for reachability in dominator tree and postdominator tree
         let domTree = DominatorTree(entry: entry)
-        let postDomTree = PostdominatorTree(entry: foundReturn)
+        let postDomTree = PostdominatorTree(entry: foundExit)
 
         for bb in forwardPass {
             guard bb.isReachable(in: domTree) else {
@@ -123,7 +122,7 @@ extension Function: SelfVerifiable {
         }
 
         /// Verify backward passes
-        for (variable, evalPass) in backwardPasses {
+        for (variable, _) in backwardPasses {
             /// Check for unbound differentiation variables
             switch variable {
             case .argument(let arg) where !arguments.contains(arg):
@@ -142,8 +141,8 @@ extension BasicBlock : SelfVerifiable {
     open func verify() throws {
         /// Check instructions
         var instNames: Set<String> = []
-        guard let last = last, last.isTerminator else {
-            throw VerificationError<BasicBlock>.blockMissingTerminator(self)
+        guard hasTerminator else {
+            throw VerificationError<BasicBlock>.missingTerminator(self)
         }
         for inst in self {
             if let name = inst.name {

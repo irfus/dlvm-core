@@ -136,7 +136,7 @@ public extension DominatorTree {
     }
 
     func dominates(_ instruction: Instruction, _ otherInstruction: Instruction) -> Bool {
-        guard let bb1 = instruction.parent, let bb2 = otherInstruction.parent else { return false }
+        let bb1 = instruction.parent, bb2 = otherInstruction.parent
         if bb1 === bb2 {
             return bb1.index(of: instruction)! < bb1.index(of: otherInstruction)!
         }

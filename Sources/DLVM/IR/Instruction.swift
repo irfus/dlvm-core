@@ -22,19 +22,20 @@ public class Instruction : IRUnit {
         case operation(Def<Operation>)
     }
     public typealias Parent = BasicBlock
-    public weak var parent: BasicBlock?
+    public unowned var parent: BasicBlock
     public var kind: Kind
 
-    public required init(kind: Kind) {
+    public required init(kind: Kind, parent: BasicBlock) {
         self.kind = kind
+        self.parent = parent
     }
 
-    public static func control(_ control: Control) -> Instruction {
-        return self.init(kind: .control(control))
+    public static func control(_ control: Control, parent: BasicBlock) -> Instruction {
+        return self.init(kind: .control(control), parent: parent)
     }
 
-    public static func operation(_ operation: Def<Operation>) -> Instruction {
-        return self.init(kind: .operation(operation))
+    public static func operation(_ operation: Def<Operation>, parent: BasicBlock) -> Instruction {
+        return self.init(kind: .operation(operation), parent: parent)
     }
 }
 
@@ -105,20 +106,49 @@ public extension Instruction {
 
     var isReturn: Bool {
         switch kind {
-        case .control(.ret): return true
+        case .control(let ctrl): return ctrl.isYield
         default: return false
         }
+    }
+
+    var isYield: Bool {
+        switch kind {
+        case .control(let ctrl): return ctrl.isYield
+        default: return false
+        }
+    }
+
+    var isExit: Bool {
+        return isReturn || isYield
     }
 }
 
 public extension Control {
     var isTerminator: Bool {
         switch self {
-        case .br, .condBr, .ret:
+        case .br, .condBr, .ret, .yield:
             return true
         default:
             return false
         }
+    }
+
+    var isReturn: Bool {
+        switch self {
+        case .ret: return true
+        default: return false
+        }
+    }
+
+    var isYield: Bool {
+        switch self {
+        case .yield: return true
+        default: return false
+        }
+    }
+
+    var isExit: Bool {
+        return isReturn || isYield
     }
 }
 
@@ -273,20 +303,20 @@ public extension Instruction {
     func substituting(_ actualUse: Use, for use: Use) -> Instruction {
         switch kind {
         case let .control(ctrl):
-            return .control(ctrl.substituting(actualUse, for: use))
+            return .control(ctrl.substituting(actualUse, for: use), parent: parent)
         case let .operation(def):
             let oper = def.value.substituting(actualUse, for: use)
             let newDef = Def<Operation>(name: def.name, value: oper)
-            return .operation(newDef)
+            return .operation(newDef, parent: parent)
         }
     }
 
     var indexInParent: Int? {
-        return parent?.index(of: self)
+        return parent.index(of: self)
     }
 
     func removeFromParent() {
-        parent?.remove(self)
+        parent.remove(self)
     }
 }
 
@@ -338,5 +368,66 @@ public extension Operation {
         default:
             return self
         }
+    }
+}
+
+public extension Control {
+    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
+        return []
+    }
+}
+
+public extension Operation {
+    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
+        switch self {
+        case .pull(let ph, _, _),
+             .get(let ph):
+            return [ph]
+        default:
+            return []
+        }
+    }
+
+    var usedArguments: ObjectSet<Def<Argument>> {
+        var arguments: ObjectSet<Def<Argument>> = []
+        for case let .argument(arg) in operands.map({$0.kind}) {
+            arguments.insert(arg)
+        }
+        return arguments
+    }
+}
+
+public extension Instruction {
+    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
+        switch kind {
+        case .control(let ctrl): return ctrl.usedPlaceholders
+        case .operation(let oper): return oper.value.usedPlaceholders
+        }
+    }
+
+    var usedArguments: ObjectSet<Def<Argument>> {
+        var arguments: ObjectSet<Def<Argument>> = []
+        for case let .argument(arg) in operands.map({$0.kind}) {
+            arguments.insert(arg)
+        }
+        return arguments
+    }
+}
+
+public extension BasicBlock {
+    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
+        var placeholders: ObjectSet<Def<Placeholder>> = []
+        for inst in self {
+            placeholders.formUnion(inst.usedPlaceholders)
+        }
+        return placeholders
+    }
+
+    var usedArguments: ObjectSet<Def<Argument>> {
+        var arguments: ObjectSet<Def<Argument>> = []
+        for inst in self {
+            arguments.formUnion(inst.usedArguments)
+        }
+        return arguments
     }
 }

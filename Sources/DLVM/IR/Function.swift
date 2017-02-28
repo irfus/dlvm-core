@@ -50,10 +50,11 @@ open class Function : Named, IRCollection, IRUnit {
 
         public var variable: DifferentiationVariable?
         public var elements: OrderedMapSet<BasicBlock> = []
-        public weak var parent: Function?
+        public unowned var parent: Function
         
-        public init(variable: DifferentiationVariable? = nil) {
+        public init(variable: DifferentiationVariable? = nil, parent: Function) {
             self.variable = variable
+            self.parent = parent
         }
         
     }
@@ -63,21 +64,16 @@ open class Function : Named, IRCollection, IRUnit {
     public var name: String
     public var arguments: OrderedMapSet<Def<Argument>>
     public var result: Argument?
-    public let forwardPass = Section()
+    public lazy var forwardPass: Section? = Section(parent: self)
     public var backwardPasses: [DifferentiationVariable : Section] = [:]
+    public unowned var parent: Module
 
     public var elements: OrderedMapSet<BasicBlock> {
-        get {
-            return forwardPass.elements
-        }
-        set {
-            return forwardPass.elements = newValue
-        }
+        get { return forwardPass?.elements ?? [] }
+        set { forwardPass?.elements = newValue }
     }
 
-    public weak var parent: Module?
-
-    public init(name: String, arguments: [(String, Argument)], result: Argument?) {
+    public init(name: String, arguments: [(String, Argument)], result: Argument?, parent: Module) {
         self.name = name
         self.arguments = []
         for (name, arg) in arguments {
@@ -85,6 +81,7 @@ open class Function : Named, IRCollection, IRUnit {
             self.arguments.append(def)
         }
         self.result = result
+        self.parent = parent
     }
 
 }
@@ -96,11 +93,23 @@ public extension OrderedMapSet where Element == BasicBlock {
     }
 }
 
-// MARK: - Argument accessors
+// MARK: - Accessors
 extension Function {
 
     open func argument(named name: String) -> Def<Argument>? {
         return arguments.element(named: name)
+    }
+
+    /// Returns forward pass if there's an existing one, o
+    /// otherwise create a new one
+    ///
+    /// - Returns: forward pass
+    open func makeForwardPass() -> Section {
+        return forwardPass ?? {
+            let forward = Section(parent: self)
+            forwardPass = forward
+            return forward
+        }()
     }
 
     open func backwardPass(withRespectTo variable: DifferentiationVariable) -> Section? {
@@ -113,6 +122,7 @@ extension Function {
 extension Function {
 
     open func localValue(named name: String) -> Use? {
+        guard let forwardPass = forwardPass else { return nil }
         for bb in forwardPass {
             if case let .operation(oper)? = bb.element(named: name)?.kind {
                 return Use(kind: .local(oper))
@@ -130,17 +140,36 @@ extension Function.Section {
         return elements.element(named: "entry")
     }
 
-    open weak var returnBlock: BasicBlock? {
-        return first(where: {$0.terminator?.isReturn ?? false})
+    open weak var endBlock: BasicBlock? {
+        return first(where: { block in
+            block.isReturn || block.isYielding
+        })
     }
-    
+
+    open var isForward: Bool {
+        return parent.forwardPass === self
+    }
+
+    open var isBackward: Bool {
+        return parent.backwardPasses.values.contains(self)
+    }
+
+    open var differentiationVariables: [DifferentiationVariable] {
+        var variables: [DifferentiationVariable] = []
+        for bb in self {
+            variables.append(contentsOf: bb.usedPlaceholders.map{.global($0)})
+            variables.append(contentsOf: bb.usedArguments.map{.argument($0)})
+        }
+        return variables
+    }
+
 }
 
 // MARK: - Control flow
 extension Function {
 
     open weak var entry: BasicBlock? {
-        return forwardPass.entry
+        return forwardPass?.entry
     }
 
     open var allInstructions: [Instruction] {
@@ -148,11 +177,11 @@ extension Function {
     }
 
     open var allBasicBlocks: FlattenBidirectionalCollection<[Section]> {
-        return ([forwardPass] + backwardPasses.values).joined()
+        return ([forwardPass].flatMap{$0} + backwardPasses.values).joined()
     }
 
-    open weak var returnBlock: BasicBlock? {
-        return forwardPass.returnBlock
+    open weak var endBlock: BasicBlock? {
+        return forwardPass?.endBlock
     }
 
 }

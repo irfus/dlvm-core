@@ -17,6 +17,10 @@ open class IRBuilder {
     open fileprivate(set) weak var currentBlock: BasicBlock?
 
     open weak var currentFunction: Function? {
+        return currentSection?.parent
+    }
+
+    open weak var currentSection: Function.Section? {
         return currentBlock?.parent
     }
 
@@ -32,10 +36,8 @@ open class IRBuilder {
         _module = module
     }
 
-    public init?(basicBlock: BasicBlock) {
-        guard let module = basicBlock.parent?.parent
-            else { return nil }
-        _module = module
+    public init(basicBlock: BasicBlock) {
+        _module = basicBlock.module
         move(to: basicBlock)
     }
 }
@@ -48,11 +50,6 @@ extension IRBuilder {
         return disambiguatedName(for: "v\(variableNameId)")
     }
 
-    func makeBlockName() -> String {
-        defer { blockNameId += 1 }
-        return disambiguatedName(for: "BB\(blockNameId)")
-    }
-    
     func disambiguatedName(for name: String) -> String {
         if let id = nameIdTable[name] {
             nameIdTable[name] = id + 1
@@ -72,7 +69,7 @@ extension IRBuilder {
             preconditionFailure("Current block doesn't exist")
         }
         let def = Def(name: name ?? makeVariableName(), value: operation)
-        block.append(.operation(def))
+        block.append(.operation(def, parent: block))
         return def
     }
 
@@ -106,26 +103,33 @@ extension IRBuilder {
 
     @discardableResult
     open func buildFunction(named name: String, 
-                            arguments: [(String, Argument)], result: Argument?) -> Function {
-        let fun = Function(name: name, arguments: arguments, result: result)
+                            arguments: [(String, Argument)],
+                            result: Argument?) -> Function {
+        let fun = Function(name: name, arguments: arguments, result: result, parent: module)
         _module.append(fun)
         return fun
-    }
-    
-    @discardableResult
-    open func buildBasicBlock(named name: String) -> BasicBlock {
-        let block = BasicBlock(name: disambiguatedName(for: name))
-        if let currentBlock = currentBlock, let function = currentBlock.parent {
-            function.insert(block, after: currentBlock)
-        }
-        return block
     }
 
     @discardableResult
     open func buildBasicBlock(named name: String, in function: Function) -> BasicBlock {
-        let block = BasicBlock(name: disambiguatedName(for: name))
+        let block = BasicBlock(name: disambiguatedName(for: name), parent: function)
         function.append(block)
         return block
+    }
+
+    @discardableResult
+    open func buildBasicBlock(named name: String, in section: Function.Section) -> BasicBlock {
+        let block = BasicBlock(name: disambiguatedName(for: name), parent: section)
+        section.append(block)
+        return block
+    }
+
+    @discardableResult
+    open func buildBackwardPass(withRespectTo variable: DifferentiationVariable,
+                                in function: Function) -> Function.Section {
+        let section = Function.Section(variable: variable, parent: function)
+        function.backwardPasses[variable] = section
+        return section
     }
 
     @discardableResult
@@ -136,9 +140,11 @@ extension IRBuilder {
     }
 
     open func buildControl(_ control: Control) {
-        currentBlock?.append(.control(control))
+        guard let block = currentBlock else {
+            preconditionFailure("Current block doesn't exist")
+        }
+        currentBlock?.append(.control(control, parent: block))
     }
-
 }
 
 // MARK: - Positioning
