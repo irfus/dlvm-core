@@ -23,7 +23,7 @@ public protocol Pass {
     func run() -> Result
 }
 
-public extension Pass where Body : IRObject, Body.Parent == Module {
+public extension Pass where Body : IRUnit, Body.Parent == Module {
     var module: Module? {
         return body.parent
     }
@@ -33,7 +33,7 @@ public extension Pass where Body : IRObject, Body.Parent == Module {
     }
 }
 
-public extension Pass where Body : IRObject, Body.Parent == Function {
+public extension Pass where Body : IRUnit, Body.Parent == Function {
     var module: Module? {
         return body.parent?.parent
     }
@@ -49,7 +49,7 @@ public extension Pass where Body == BasicBlock {
     }
 }
 
-public extension Pass where Body : IRObject, Body.Parent == BasicBlock {
+public extension Pass where Body : IRUnit, Body.Parent == BasicBlock {
     var module: Module? {
         return body.parent?.parent?.parent
     }

@@ -11,57 +11,20 @@ import Foundation
 /// Module representing a neural network
 open class Module : IRCollection {
     public typealias Element = Function
+    public typealias Index = Int
     
     open var name: String
 
-    public fileprivate(set) var functions = OrderedKVSet<Function>()
-    public fileprivate(set) var globals = OrderedKVSet<Global>()
+    public var elements: OrderedMapSet<Function> = []
+    public fileprivate(set) var globals: OrderedMapSet<Global> = []
 
     open weak var mainFunction: Function? {
-        return function(named: "main")
+        return element(named: "main")
     }
 
     public init(name: String) {
         self.name = name
     }
-}
-
-// MARK: - Functions
-extension Module {
-
-    open var elements: [Function] {
-        return functions.array
-    }
-    
-    open func append(_ function: Function) {
-        if let existingBlock = self.function(named: function.name) {
-            remove(existingBlock)
-        }
-        functions.append(function)
-        function.parent = self
-    }
-
-    open func index(of function: Function) -> Int? {
-        return functions.index(of: function)
-    }
-    
-    open func remove(_ function: Function) {
-        functions.remove(function)
-        function.parent = nil
-    }
-
-    open func function(named name: String) -> Function? {
-        return functions.element(named: name)
-    }
-
-    open func containsFunction(named name: String) -> Bool {
-        return functions.containsValue(named: name)
-    }
-
-    open func contains(_ function: Function) -> Bool {
-        return functions.contains(function)
-    }
-
 }
 
 // MARK: - Globals

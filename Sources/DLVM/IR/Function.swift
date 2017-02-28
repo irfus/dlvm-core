@@ -42,18 +42,38 @@ extension DifferentiationVariable : Hashable {
     }
 }
 
-/// TODO: Abstract backward pass to a struct instead of exposing an OrderedKVSet
+open class Function : Named, IRCollection, IRUnit {
+    
+    open class Section : IRCollection, IRUnit {
 
-open class Function : Named, IRCollection, IRObject {
+        public typealias Element = BasicBlock
+
+        public var variable: DifferentiationVariable?
+        public var elements: OrderedMapSet<BasicBlock> = []
+        public weak var parent: Function?
+        
+        public init(variable: DifferentiationVariable? = nil) {
+            self.variable = variable
+        }
+        
+    }
+
     public typealias Element = BasicBlock
 
     public var name: String
-    public var arguments: OrderedKVSet<Def<Argument>>
+    public var arguments: OrderedMapSet<Def<Argument>>
     public var result: Argument?
-    public var forwardPass = OrderedKVSet<BasicBlock>()
-    public internal(set) weak var returnBlock: BasicBlock?
+    public let forwardPass = Section()
+    public var backwardPasses: [DifferentiationVariable : Section] = [:]
 
-    public var backwardPasses: [DifferentiationVariable : OrderedKVSet<BasicBlock>] = [:]
+    public var elements: OrderedMapSet<BasicBlock> {
+        get {
+            return forwardPass.elements
+        }
+        set {
+            return forwardPass.elements = newValue
+        }
+    }
 
     public weak var parent: Module?
 
@@ -70,7 +90,7 @@ open class Function : Named, IRCollection, IRObject {
 }
 
 // MARK: - Evaluation pass access helpers
-public extension OrderedKVSet where Element == BasicBlock {
+public extension OrderedMapSet where Element == BasicBlock {
     var entry: Element? {
         return element(named: "entry")
     }
@@ -83,7 +103,7 @@ extension Function {
         return arguments.element(named: name)
     }
 
-    open func backwardPass(withRespectTo variable: DifferentiationVariable) -> OrderedKVSet<BasicBlock>? {
+    open func backwardPass(withRespectTo variable: DifferentiationVariable) -> Section? {
         return backwardPasses[variable]
     }
     
@@ -92,64 +112,9 @@ extension Function {
 // MARK: - Forward basic block management
 extension Function {
 
-    open func append(_ basicBlock: BasicBlock) {
-        if let existingBlock = self.basicBlock(named: basicBlock.name) {
-            remove(existingBlock)
-        }
-        forwardPass.append(basicBlock)
-        basicBlock.parent = self
-        /// If it contains an exit instruction, remember this block
-        /// as the exit
-        if basicBlock.isReturn {
-            returnBlock = basicBlock
-        }
-    }
-
-    open func insert(_ basicBlock: BasicBlock, after previous: BasicBlock) {
-        if let existingBlock = self.basicBlock(named: basicBlock.name) {
-            remove(existingBlock)
-        }
-        forwardPass.insert(basicBlock, after: previous)
-        basicBlock.parent = self
-        /// If it contains an exit instruction, remember this block
-        /// as the exit
-        if basicBlock.isReturn {
-            returnBlock = basicBlock
-        }
-    }
-
-    open func index(of basicBlock: BasicBlock) -> Int? {
-        return forwardPass.index(of: basicBlock)
-    }
-
-    open func remove(_ basicBlock: BasicBlock) {
-        forwardPass.remove(basicBlock)
-        basicBlock.parent = nil
-        /// If it's the currently remembered exit, forget it
-        if returnBlock === basicBlock {
-            returnBlock = nil
-        }
-    }
-
-    open func basicBlock(named name: String) -> BasicBlock? {
-        return forwardPass.element(named: name)
-    }
-
-    open func containsBasicBlock(named name: String) -> Bool {
-        return forwardPass.containsValue(named: name)
-    }
-
-    open func contains(_ basicBlock: BasicBlock) -> Bool {
-        return forwardPass.contains(basicBlock)
-    }
-
-    open var elements: [BasicBlock] {
-        return Array(forwardPass)
-    }
-
     open func localValue(named name: String) -> Use? {
         for bb in forwardPass {
-            if let oper = bb.operation(named: name) {
+            if case let .operation(oper)? = bb.element(named: name)?.kind {
                 return Use(kind: .local(oper))
             }
         }
@@ -158,24 +123,36 @@ extension Function {
     
 }
 
-// MARK: - Control Flow Graph
+// MARK: - Control flow
+extension Function.Section {
+
+    open weak var entry: BasicBlock? {
+        return elements.element(named: "entry")
+    }
+
+    open weak var returnBlock: BasicBlock? {
+        return first(where: {$0.terminator?.isReturn ?? false})
+    }
+    
+}
+
+// MARK: - Control flow
 extension Function {
 
     open weak var entry: BasicBlock? {
         return forwardPass.entry
     }
 
-    open var instructions: [Instruction] {
-        return forwardPass.lazy.flatMap{$0.instructions}
+    open var allInstructions: [Instruction] {
+        return allBasicBlocks.flatMap { $0 }
     }
 
-}
-
-// MARK: - Iterator of all forward and backward passes
-extension Function {
-
-    open var allBasicBlocks: FlattenBidirectionalCollection<[OrderedKVSet<BasicBlock>]> {
+    open var allBasicBlocks: FlattenBidirectionalCollection<[Section]> {
         return ([forwardPass] + backwardPasses.values).joined()
+    }
+
+    open weak var returnBlock: BasicBlock? {
+        return forwardPass.returnBlock
     }
 
 }

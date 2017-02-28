@@ -75,7 +75,12 @@ public struct LiteralValue : Value {
 
 /// Anything that has a name
 public protocol Named {
-    var name: String { get set }
+    var name: String { get }
+}
+
+/// Anything that may have a name
+public protocol MaybeNamed {
+    var name: String { get }
 }
 
 /// When a value has a name, it's a unique Def!
@@ -85,7 +90,7 @@ public class Def<ValueType : Value> : Usee, Named, Value {
     public var shape: TensorShape
     public var type: DataType
     public var value: ValueType
-    public var users: KVSet<Instruction> = []
+    public var users: ObjectSet<Instruction> = []
 
     public static var scope: Scope {
         return ValueType.scope
@@ -143,8 +148,8 @@ public protocol User {
 
 /// Usee, remembering all its users, always bearing a grudge.
 internal protocol Usee: class {
-    associatedtype UserType : User
-    var users: KVSet<UserType> { get set }
+    associatedtype UserType : AnyObject, User
+    var users: ObjectSet<UserType> { get set }
 }
 
 // MARK: - User accessors
@@ -165,9 +170,9 @@ internal extension Value where Self : AnyObject & Usee {
 // MARK: - User analysis
 public extension Def {
 
-    func isUsed(in evalPass: OrderedKVSet<BasicBlock>) -> Bool {
+    func isUsed(in section: Function.Section) -> Bool {
         return users.contains(where: { inst in
-            inst.parent.flatMap(evalPass.contains) ?? false
+            inst.parent.flatMap(section.contains) ?? false
         })
     }
 

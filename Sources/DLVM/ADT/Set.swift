@@ -16,7 +16,7 @@ import protocol Foundation.NSMutableCopying
 import class Foundation.NSObject
 
 internal extension SetImplementation where Set : NSObject, Set : NSMutableCopying {
-    var mutatingSet: Set {
+    var mutatingElements: Set {
         mutating get {
             if !isKnownUniquelyReferenced(&elements) {
                 elements = elements.mutableCopy() as! Set

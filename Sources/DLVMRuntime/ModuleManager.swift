@@ -10,7 +10,7 @@ import DLVM
 
 open class ModuleManager {
 
-    fileprivate var activeModules: KVSet<Module> = []
+    fileprivate var activeModules: ObjectSet<Module> = []
 
     public init() {
     }

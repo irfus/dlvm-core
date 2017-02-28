@@ -173,12 +173,12 @@ internal extension Instruction {
 internal extension BasicBlock {
 
     private func visitInstructions() {
-        for inst in instructions {
+        for inst in self {
             if case let .operation(oper) = inst.kind {
                 oper.removeAllUsers()
             }
         }
-        for inst in instructions {
+        for inst in self {
             inst.updateUsers()
         }
     }
@@ -206,9 +206,6 @@ internal extension Function {
     func updateAnalysisInformation() {
         for bb in allBasicBlocks {
             bb.updateAnalysisInformation()
-            if bb.isReturn {
-                returnBlock = bb
-            }
         }
     }
 
@@ -218,7 +215,7 @@ internal extension Function {
 internal extension Module {
 
     func updateAnalysisInformation() {
-        for function in functions {
+        for function in self {
             function.updateAnalysisInformation()
         }
     }
