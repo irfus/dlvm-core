@@ -14,9 +14,9 @@
 prefix operator *
 
 public struct Box<Object: AnyObject> {
-    public var object: Object
+    var object: Object
 
-    public init(_ object: Object) {
+    init(_ object: Object) {
         self.object = object
     }
 
@@ -25,10 +25,10 @@ public struct Box<Object: AnyObject> {
     }
 }
 
-public struct Unowned<Object: AnyObject> {
-    public unowned var object: Object
+struct Unowned<Object: AnyObject> {
+    unowned var object: Object
 
-    public init(_ object: Object) {
+    init(_ object: Object) {
         self.object = object
     }
 
@@ -37,10 +37,10 @@ public struct Unowned<Object: AnyObject> {
     }
 }
 
-public struct Weak<Object: AnyObject> {
-    public weak var object: Object?
+struct Weak<Object: AnyObject> {
+    weak var object: Object?
 
-    public init(_ object: Object) {
+    init(_ object: Object) {
         self.object = object
     }
 
@@ -63,11 +63,11 @@ extension Box : Hashable {
 
 extension Unowned : Hashable {
 
-    public static func ==(lhs: Unowned, rhs: Unowned) -> Bool {
+    static func ==(lhs: Unowned, rhs: Unowned) -> Bool {
         return lhs.object === rhs.object
     }
 
-    public var hashValue: Int {
+    var hashValue: Int {
         return ObjectIdentifier(object).hashValue
     }
     
@@ -75,12 +75,13 @@ extension Unowned : Hashable {
 
 extension Weak : Hashable {
 
-    public static func ==(lhs: Weak, rhs: Weak) -> Bool {
+    static func ==(lhs: Weak, rhs: Weak) -> Bool {
         return lhs.object === rhs.object
     }
 
-    public var hashValue: Int {
+    var hashValue: Int {
         return object.flatMap { ObjectIdentifier($0).hashValue } ?? 0
     }
     
 }
+
