@@ -33,7 +33,7 @@ extension DifferentiationVariable : Hashable {
         default: return false
         }
     }
-    
+
     public var hashValue: Int {
         switch self {
         case .argument(let def): return ObjectIdentifier(def).hashValue
@@ -43,7 +43,7 @@ extension DifferentiationVariable : Hashable {
 }
 
 open class Function : Named, IRCollection, IRUnit {
-    
+
     open class Section : IRCollection, IRUnit {
 
         public typealias Element = BasicBlock
@@ -51,12 +51,12 @@ open class Function : Named, IRCollection, IRUnit {
         public var variable: DifferentiationVariable?
         public var elements: OrderedMapSet<BasicBlock> = []
         public unowned var parent: Function
-        
+
         public init(variable: DifferentiationVariable? = nil, parent: Function) {
             self.variable = variable
             self.parent = parent
         }
-        
+
     }
 
     public typealias Element = BasicBlock
@@ -86,13 +86,6 @@ open class Function : Named, IRCollection, IRUnit {
 
 }
 
-// MARK: - Evaluation pass access helpers
-public extension OrderedMapSet where Element == BasicBlock {
-    var entry: Element? {
-        return element(named: "entry")
-    }
-}
-
 // MARK: - Accessors
 extension Function {
 
@@ -115,7 +108,7 @@ extension Function {
     open func backwardPass(withRespectTo variable: DifferentiationVariable) -> Section? {
         return backwardPasses[variable]
     }
-    
+
 }
 
 // MARK: - Forward basic block management
@@ -130,7 +123,7 @@ extension Function {
         }
         return nil
     }
-    
+
 }
 
 // MARK: - Control flow
@@ -182,6 +175,19 @@ extension Function {
 
     open weak var endBlock: BasicBlock? {
         return forwardPass?.endBlock
+    }
+
+    open func instruction(named name: String) -> Instruction? {
+        for bb in allBasicBlocks {
+            if let inst = bb.element(named: name) {
+                return inst
+            }
+        }
+        return nil
+    }
+
+    open func containsInstruction(named name: String) -> Bool {
+        return instruction(named: name) != nil
     }
 
 }

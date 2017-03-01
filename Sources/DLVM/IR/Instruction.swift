@@ -91,12 +91,14 @@ public enum Operation {
     case diff(TensorShape, DataType, Function, Use, wrt: Int)
 }
 
-public extension Instruction {
-    var name: String? {
+extension Instruction : MaybeNamed {
+    public var name: String? {
         guard case let .operation(def) = kind else { return nil }
         return def.name
     }
+}
 
+public extension Instruction {
     var isTerminator: Bool {
         switch kind {
         case .control(let ctrl): return ctrl.isTerminator
