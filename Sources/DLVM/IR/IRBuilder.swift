@@ -14,49 +14,54 @@ open class IRBuilder {
         return _module
     }
 
-    open fileprivate(set) weak var currentBlock: BasicBlock?
+    open fileprivate(set) weak var currentBlock: BasicBlock? {
+        didSet {
+            currentFunction = currentBlock?.function
+        }
+    }
 
     open weak var currentFunction: Function? {
-        return currentSection?.parent
+        didSet {
+            if oldValue !== currentFunction {
+                variableNameId = 0
+            }
+        }
     }
 
     open weak var currentSection: Function.Section? {
         return currentBlock?.parent
     }
 
-    fileprivate var variableNameId: Int = 0
-    fileprivate var blockNameId: Int = 0
-    fileprivate var nameIdTable: [String : Int] = [:]
-    
-    public init(moduleName: String) {
-        _module = Module(name: moduleName)
-    }
+    fileprivate var variableNameId = 0
 
     public init(module: Module) {
         _module = module
     }
 
-    public init(basicBlock: BasicBlock) {
-        _module = basicBlock.module
+    public convenience init(moduleName: String) {
+        self.init(module: Module(name: moduleName))
+    }
+
+    public convenience init(basicBlock: BasicBlock) {
+        self.init(module: basicBlock.module)
         move(to: basicBlock)
     }
+
 }
 
 // MARK: - Helpers
 extension IRBuilder {
-    
-    func makeVariableName() -> String {
+
+    func makeVariableName(in function: Function) -> String {
         defer { variableNameId += 1 }
-        return disambiguatedName(for: "v\(variableNameId)")
+        return disambiguatedName(for: "v\(variableNameId)", in: function)
     }
 
-    func disambiguatedName(for name: String) -> String {
-        if let id = nameIdTable[name] {
-            nameIdTable[name] = id + 1
-            return name + ".\(id)"
-        }
-        nameIdTable[name] = 1
-        return name
+    func disambiguatedName(for name: String, in function: Function, id: Int = 0) -> String {
+        let newName = id == 0 ? name : name + ".\(id)"
+        return function.containsInstruction(named: newName)
+             ? disambiguatedName(for: name, in: function, id: id + 1)
+             : newName
     }
 
 }
@@ -68,7 +73,7 @@ extension IRBuilder {
         guard let block = currentBlock else {
             preconditionFailure("Current block doesn't exist")
         }
-        let def = Def(name: name ?? makeVariableName(), value: operation)
+        let def = Def(name: name ?? makeVariableName(in: block.function), value: operation)
         block.append(.operation(def, parent: block))
         return def
     }
@@ -102,7 +107,7 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildFunction(named name: String, 
+    open func buildFunction(named name: String,
                             arguments: [(String, Argument)],
                             result: Argument?) -> Function {
         let fun = Function(name: name, arguments: arguments, result: result, parent: module)
@@ -112,14 +117,14 @@ extension IRBuilder {
 
     @discardableResult
     open func buildBasicBlock(named name: String, in function: Function) -> BasicBlock {
-        let block = BasicBlock(name: disambiguatedName(for: name), parent: function)
+        let block = BasicBlock(name: disambiguatedName(for: name, in: function), parent: function)
         function.append(block)
         return block
     }
 
     @discardableResult
     open func buildBasicBlock(named name: String, in section: Function.Section) -> BasicBlock {
-        let block = BasicBlock(name: disambiguatedName(for: name), parent: section)
+        let block = BasicBlock(name: disambiguatedName(for: name, in: section.parent), parent: section)
         section.append(block)
         return block
     }

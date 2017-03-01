@@ -5,6 +5,9 @@
 public protocol IRCollection : class, RandomAccessCollection, HashableByReference {
     associatedtype ElementCollection : RandomAccessCollection
     var elements: ElementCollection { get set }
+    func append(_ element: Element)
+    func insert(_ element: Element, at index: ElementCollection.Index)
+    func remove(_ element: Element)
 }
 
 // MARK: - Mutation

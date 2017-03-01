@@ -80,7 +80,7 @@ public protocol Named {
 
 /// Anything that may have a name
 public protocol MaybeNamed {
-    var name: String { get }
+    var name: String? { get }
 }
 
 /// When a value has a name, it's a unique Def!
