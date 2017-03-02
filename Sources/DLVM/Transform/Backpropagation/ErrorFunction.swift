@@ -1,49 +1,27 @@
 //
-//  ErrorFunction.swift
+//  CostFunctionGenerator.swift
 //  DLVM
 //
 //  Created by Richard Wei on 2/21/17.
 //
 //
 
-public enum ErrorFunctionBuilderResult: PassResultProtocol {
-    case changed(error: Use)
-    case unchanged
+/*
 
-    public init() {
-        self = .unchanged
+public struct CostFunctionGenerator : GenerationPass {
+
+    public typealias Body = (Use, BasicBlock)
+    public typealias Result = Use
+
+    public enum CostFunction {
+        case meanSquaredError
+        case custom((Use, BasicBlock) -> Result)
     }
 
-    public var changed: Bool {
-        switch self {
-            case .changed: return true
-            case .unchanged: return false
-        }
-    }
-}
+    public static func run(on input: (Use, BasicBlock)) -> Result {
+        let (output, bb) = input
+        let builder = IRBuilder(basicBlock: bb)
 
-public protocol ErrorFunctionBuilder : Pass {
-    typealias Body = BasicBlock
-    typealias Result = ErrorFunctionBuilderResult
-    var output: Use { get }
-    var referenceOutput: Use { get }
-    init(body: BasicBlock, output: Use, referenceOutput: Use)
-}
-
-public class MeanSquaredError : ErrorFunctionBuilder {
-    public var body: BasicBlock
-    public var output: Use
-    public var referenceOutput: Use
-
-    public required init(body: BasicBlock, output: Use, referenceOutput: Use) {
-        self.body = body
-        self.output = output
-        self.referenceOutput = referenceOutput
-    }
-
-    public func run() -> ErrorFunctionBuilderResult {
-        var result = Result()
-        guard let builder = makeBuilder() else { return result }
         let diff = builder.buildOperation(.binary(.associative(.arithmetic(.subtract)), referenceOutput, output),
                                           name: "difference")
         let squared = builder.buildOperation(.binary(.associative(.arithmetic(.multiply)), diff, diff),
@@ -52,6 +30,7 @@ public class MeanSquaredError : ErrorFunctionBuilder {
         result = .changed(error: mean)
         return result
     }
+
 }
 
-
+ */

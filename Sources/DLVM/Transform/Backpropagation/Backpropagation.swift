@@ -5,20 +5,16 @@
 //  Created by Richard Wei on 2/7/17.
 //
 
-public struct BackpropagationPass<E : ErrorFunctionBuilder, O : StochasticOptimizer> : Pass {
+public class BackpropagationPass : TransformationPass<Function> {
 
-    public let body: Function
+    public typealias Body = Function
 
-    public init(body: Function) {
-        self.body = body
-    }
-
-    public func run() -> PassResult {
-        var result = Result()
-        guard let module = module, let forwardPass = forwardPass else { return result }
+    @discardableResult
+    open override func run(on function: Function) -> Bool {
+        let module = function.parent
+        var changed = false
+        guard let forwardPass = function.forwardPass else { return false }
         let builder = IRBuilder(module: module)
-
-
         /// Generate reference placeholders
         for global in module.globals {
             guard case let .output(outDef) = global,
@@ -29,17 +25,17 @@ public struct BackpropagationPass<E : ErrorFunctionBuilder, O : StochasticOptimi
             }
 
             /// Emit a reference output placeholder for error computation
+            changed = true
             let refOutPh = Placeholder(shape: outDef.shape,
                                                 type: outDef.type,
                                                 isRecurrent: outDef.isRecurrent)
             let refOutDef = builder.declare(refOutPh, name: outDef.name + ".ref")
             
-            result.changed = true
-
             /// Generete a backward pass for each input (placeholder or function argument)
             for diffVar in forwardPass.differentiationVariables {
                 /// Run error function pass
-                let backwardPass = builder.buildBackwardPass(withRespectTo: diffVar, in: body)
+                let backwardPass = builder.buildSection(named: "backward", dependingOn: [forwardPass], in: function)
+                
                 let backwardEntry = builder.buildBasicBlock(named: "entry", in: backwardPass)
                 builder.move(to: backwardEntry)
 
@@ -52,16 +48,12 @@ public struct BackpropagationPass<E : ErrorFunctionBuilder, O : StochasticOptimi
                     fatalError("Recurrent placeholder is not supported yet")
 
                 case .global(let ph):
-                    let refVal = builder.buildOperation(.get(refOutDef))
-                    let efGen = E(body: backwardEntry,
-                                  output: outVal,
-                                  referenceOutput: refVal)
-                    _ = efGen.run()
+                    let _ = builder.buildOperation(.get(refOutDef))
                 }
             }
         }
 
-        return result
+        return changed
     }
     
 }
