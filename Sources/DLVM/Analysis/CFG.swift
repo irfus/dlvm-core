@@ -7,7 +7,7 @@
 
 // MARK: - Basic block graph traits
 extension BasicBlock : BidirectionalGraphNode {
-    public var localSuccessors: ObjectSet<BasicBlock> {
+    public var successors: ObjectSet<BasicBlock> {
         guard let terminator = self.terminator else { return [] }
         switch terminator.kind {
         case let .control(.br(dest)):
@@ -22,23 +22,6 @@ extension BasicBlock : BidirectionalGraphNode {
         default:
             return []
         }
-    }
-
-    public var successors: ObjectSet<BasicBlock> {
-        /// If self is a return block in forward pass, include all 
-        /// backward pass as successors
-        /// - Note: no need to check for existence in forward pass, since
-        /// `returnBlock` always exists in forward pass 
-        if parent.endBlock === self {
-            var allSuccessors = localSuccessors
-            let function = parent.parent
-            for backwardEntry in function.backwardPasses.values.flatMap({$0.entry}) {
-                allSuccessors.insert(backwardEntry)
-            }
-            return allSuccessors
-        }
-        /// Otherwise just local successors
-        return localSuccessors
     }
 }
 
