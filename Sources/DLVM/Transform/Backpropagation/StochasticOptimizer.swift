@@ -6,6 +6,8 @@
 //
 //
 
+/*
+
 public protocol StochasticOptimizer : Pass {
     typealias Body = BasicBlock
     var gradient: Use { get }
@@ -43,3 +45,5 @@ public class StochasticGradientDescent : StochasticOptimizer {
         return result
     }
 }
+
+ */

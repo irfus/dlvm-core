@@ -6,45 +6,37 @@
 //
 //
 
-public protocol Differentiator : Pass {
-    typealias Body = Function
-    var root: Use { get }
-    var variable: DifferentiationVariable { get }
-    init(body: Function, root: Use, variable: DifferentiationVariable)
-}
+public class AutomaticDifferentiator : TransformationPass<Section> {
 
-public struct AutomaticDifferentiator : Differentiator {
-
-    public let body: Function
     public let root: Use
     public let variable: DifferentiationVariable
 
-    public init(body: Function, root: Use, variable: DifferentiationVariable) {
-        self.body = body
+    public init(root: Use, variable: DifferentiationVariable) {
         self.root = root
         self.variable = variable
     }
 
-    public func run() -> PassResult {
-        var result = PassResult()
-        guard let entry = body.entry else { return result }
-        guard let builder = makeBuilder() else { return result }
+    open override func run(on section: Section) -> Bool {
+        var changed = false
+        guard let entry = section.entry else { return false }
+        let builder = IRBuilder(basicBlock: entry)
+
         /// Search for differentiation variable from entry
         /// Return 0 if differentiation variable doesn't exist
         let allOperands = entry.preorder.lazy.flatMap({$0.elements}).flatMap({$0.operands})
         guard let foundVar = allOperands.first(where: { $0.definition === self.variable.definition }) else {
             let zero = variable.definition.makeZero()
             builder.buildControl(.ret(.literal(zero)))
-            result.changed = true
-            return result
+            changed = true
+            return changed
         }
 
         /// Otherwise emit gradient
         /// TODO: differentiation!
         _ = foundVar
 
-        result.changed = true
-        return result
+        return changed
     }
 
 }
+
