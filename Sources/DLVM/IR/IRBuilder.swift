@@ -28,7 +28,7 @@ open class IRBuilder {
         }
     }
 
-    open weak var currentSection: Function.Section? {
+    open weak var currentSection: Section? {
         return currentBlock?.parent
     }
 
@@ -116,25 +116,17 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildBasicBlock(named name: String, in function: Function) -> BasicBlock {
-        let block = BasicBlock(name: disambiguatedName(for: name, in: function), parent: function)
-        function.append(block)
-        return block
+    open func buildSection(named name: String, dependingOn deps: ObjectSet<Section> = [], in function: Function) -> Section {
+        let section = Section(name: name, dependencies: deps, parent: function)
+        function.append(section)
+        return section
     }
 
     @discardableResult
-    open func buildBasicBlock(named name: String, in section: Function.Section) -> BasicBlock {
+    open func buildBasicBlock(named name: String, in section: Section) -> BasicBlock {
         let block = BasicBlock(name: disambiguatedName(for: name, in: section.parent), parent: section)
         section.append(block)
         return block
-    }
-
-    @discardableResult
-    open func buildBackwardPass(withRespectTo variable: DifferentiationVariable,
-                                in function: Function) -> Function.Section {
-        let section = Function.Section(variable: variable, parent: function)
-        function.backwardPasses[variable] = section
-        return section
     }
 
     @discardableResult

@@ -170,7 +170,7 @@ internal extension Value where Self : AnyObject & Usee {
 // MARK: - User analysis
 public extension Def {
 
-    func isUsed(in section: Function.Section) -> Bool {
+    func isUsed(in section: Section) -> Bool {
         return users.contains(where: { inst in
             section.contains(inst.parent)
         })

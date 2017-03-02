@@ -19,18 +19,15 @@ open class BasicBlock : IRCollection, IRUnit, Named {
     open var elements: OrderedMapSet<Instruction> = []
 
     /// Parent function
-    open unowned var parent: Function.Section
+    open unowned var parent: Section
 
     public internal(set) var predecessors: ObjectSet<BasicBlock> = []
 
-    public required init(name: String, parent: Function.Section) {
+    public required init(name: String, parent: Section) {
         self.name = name
         self.parent = parent
     }
 
-    public convenience init(name: String, parent: Function) {
-        self.init(name: name, parent: parent.makeForwardPass())
-    }
 }
 
 // MARK: - IRCollection
