@@ -42,13 +42,14 @@ extension DifferentiationVariable : Hashable {
     }
 }
 
-open class Section : IRCollection, IRUnit, Named {
+open class Section : IRCollection, IRUnit, Named, IncomingGraphNode {
     
     public typealias Element = BasicBlock
-    
+    public typealias PredecessorSequence = ObjectSet<Section>
+
     public var name: String
     public var destination: Def<Argument>?
-    public var dependencies: ObjectSet<Section>
+    public var predecessors: ObjectSet<Section>
     public var elements: OrderedMapSet<BasicBlock> = []
     public unowned var parent: Function
     
@@ -57,7 +58,7 @@ open class Section : IRCollection, IRUnit, Named {
                 destination: Def<Argument>? = nil,
                 parent: Function) {
         self.name = name
-        self.dependencies = dependencies
+        self.predecessors = dependencies
         self.destination = destination
         self.parent = parent
     }
@@ -71,7 +72,6 @@ open class Function : Named, IRCollection, IRUnit {
     public var name: String
     public var arguments: OrderedMapSet<Def<Argument>>
     public var result: Argument?
-    public var backwardPasses: [DifferentiationVariable : Section] = [:]
     public var elements: OrderedMapSet<Section> = []
     public unowned var parent: Module
     
@@ -111,10 +111,6 @@ extension Function {
         }()
     }
 
-    open func backwardPass(withRespectTo variable: DifferentiationVariable) -> Section? {
-        return backwardPasses[variable]
-    }
-
 }
 
 // MARK: - Forward basic block management
@@ -149,10 +145,6 @@ extension Section {
         return parent.forwardPass === self
     }
 
-    open var isBackward: Bool {
-        return parent.backwardPasses.values.contains(self)
-    }
-
     open var differentiationVariables: [DifferentiationVariable] {
         var variables: [DifferentiationVariable] = []
         for bb in self {
@@ -175,8 +167,8 @@ extension Function {
         return allBasicBlocks.flatMap { $0 }
     }
 
-    open var allBasicBlocks: FlattenBidirectionalCollection<[Section]> {
-        return ([forwardPass].flatMap{$0} + backwardPasses.values).joined()
+    open var allBasicBlocks: FlattenBidirectionalCollection<Function> {
+        return joined()
     }
 
     open weak var endBlock: BasicBlock? {

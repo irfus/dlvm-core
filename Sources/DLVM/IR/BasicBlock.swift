@@ -98,10 +98,6 @@ public extension BasicBlock {
         return parent.isForward
     }
 
-    var isBackward: Bool {
-        return parent.isBackward
-    }
-
     var function: Function {
         return parent.parent
     }

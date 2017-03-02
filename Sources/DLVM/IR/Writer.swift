@@ -320,6 +320,23 @@ extension DifferentiationVariable : TextOutputStreamable {
     }
 }
 
+extension Section : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write("    section \(name) ")
+        if !predecessors.isEmpty {
+            target.write("<- \(predecessors.map{$0.name}.joined(separator: ", ")) ")
+        }
+        if let dest = destination {
+            target.write("∂\(dest.name) ")
+        }
+        target.write("{\n")
+        for bb in self {
+            bb.write(to: &target)
+        }
+        target.write("    }\n")
+    }
+}
+
 extension Function : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("define ")
@@ -330,22 +347,8 @@ extension Function : TextOutputStreamable {
             target.write("-> \(result.shape) \(result.type) ")
         }
         target.write("{\n")
-
-        if let forwardPass = forwardPass {
-            target.write("    forward {\n")
-            for bb in forwardPass {
-                bb.write(to: &target)
-            }
-            target.write("    }\n")
-        }
-
-        /// Parametric backward passes (partial derivatives)
-        for (variable, section) in backwardPasses  {
-            target.write("    backward(\(variable)) {\n")
-            for bb in section {
-                bb.write(to: &target)
-            }
-            target.write("    }\n")
+        for section in self {
+            section.write(to: &target)
         }
         target.write("}")
     }

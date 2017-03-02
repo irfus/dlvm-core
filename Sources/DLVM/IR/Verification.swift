@@ -111,7 +111,9 @@ extension Function: SelfVerifiable {
         /// Check for reachability in dominator tree and postdominator tree
         let domTree = DominatorTree(entry: entry)
         let postDomTree = PostdominatorTree(entry: foundExit)
+        
 
+        /// TODO: check sections
         for bb in forwardPass {
             guard bb.isReachable(in: domTree) else {
                 throw VerificationError.dominanceUnreachable(bb, self)
@@ -119,20 +121,6 @@ extension Function: SelfVerifiable {
             guard bb.isReachable(in: postDomTree) else {
                 throw VerificationError.postdominanceUnreachable(bb, self)
             }
-        }
-
-        /// Verify backward passes
-        for (variable, _) in backwardPasses {
-            /// Check for unbound differentiation variables
-            switch variable {
-            case .argument(let arg) where !arguments.contains(arg):
-                throw VerificationError.unknownDifferentiationVariable(variable, self)
-            case .global(let arg) where !module.globals.contains(.placeholder(arg)):
-                throw VerificationError.unknownDifferentiationVariable(variable, self)
-            default: break
-            }
-
-            /// TODO: Check backward blocks (dominance etc)
         }
     }
 }
