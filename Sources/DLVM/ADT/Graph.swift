@@ -6,33 +6,42 @@
 //
 //
 
-public protocol GraphNode {
-    associatedtype SuccessorSequence: Sequence // where SuccessorSequence.Iterator.Element == Self
-    var successors: SuccessorSequence { get }
+public protocol OutgoingGraphNode {
+    associatedtype SuccessorCollection: Collection // where SuccessorCollection.Iterator.Element == Self
+    var successors: SuccessorCollection { get }
 }
 
-public protocol BidirectionalGraphNode : GraphNode {
-    associatedtype PredecessorSequence: Sequence // where PredecessorSequence.Iterator.Element == Self
-    var predecessors: PredecessorSequence { get }
+public protocol IncomingGraphNode {
+    associatedtype PredecessorCollection: Collection
+    var predecessors: PredecessorCollection { get }
 }
 
-public extension GraphNode where SuccessorSequence: Collection {
+public extension OutgoingGraphNode {
     var isLeaf: Bool {
         return successors.isEmpty
     }
 }
 
-public extension BidirectionalGraphNode
-    where SuccessorSequence.Iterator.Element == Self,
-          PredecessorSequence.Iterator.Element == Self {
+public extension IncomingGraphNode {
+    var isSource: Bool {
+        return predecessors.isEmpty
+    }
+}
+
+public typealias BidirectionalGraphNode = OutgoingGraphNode & IncomingGraphNode
+
+public extension OutgoingGraphNode
+    where Self : IncomingGraphNode,
+          SuccessorCollection.Iterator.Element == Self,
+          Self.PredecessorCollection.Iterator.Element == Self {
     func reversedGraphNode() -> ReversedGraphNode<Self> {
         return ReversedGraphNode(base: self)
     }
 }
 
 public class ReversedGraphNode<Base : BidirectionalGraphNode> : BidirectionalGraphNode
-    where Base.SuccessorSequence.Iterator.Element == Base,
-          Base.PredecessorSequence.Iterator.Element == Base
+    where Base.SuccessorCollection.Iterator.Element == Base,
+          Base.PredecessorCollection.Iterator.Element == Base
 {
     public let base: Base
 

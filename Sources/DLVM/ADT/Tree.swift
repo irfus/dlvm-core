@@ -6,7 +6,7 @@
 //
 //
 
-public class Tree<Element> : GraphNode {
+public class Tree<Element> : OutgoingGraphNode {
     public var value: Element
     public var successors: [Tree]
 
