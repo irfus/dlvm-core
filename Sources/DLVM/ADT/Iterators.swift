@@ -12,8 +12,8 @@ public enum TraversalOrder {
     case preorder, postorder, breadthFirst
 }
 
-public struct GraphIterator<Node : GraphNode> : IteratorProtocol
-    where Node.SuccessorSequence.Iterator.Element == Node {
+public struct GraphIterator<Node : OutgoingGraphNode> : IteratorProtocol
+    where Node.SuccessorCollection.Iterator.Element == Node {
 
     private var pre: [Node] = []
     private var post: [Node] = []
@@ -60,9 +60,8 @@ public struct GraphIterator<Node : GraphNode> : IteratorProtocol
     }
 }
 
-public struct TransposeGraphIterator<Node : BidirectionalGraphNode> : IteratorProtocol
-    where Node.SuccessorSequence.Iterator.Element == Node,
-          Node.PredecessorSequence.Iterator.Element == Node {
+public struct TransposeGraphIterator<Node : IncomingGraphNode> : IteratorProtocol
+    where Node.PredecessorCollection.Iterator.Element == Node {
 
     private var pre: [Node] = []
     private var post: [Node] = []
@@ -110,7 +109,7 @@ public struct TransposeGraphIterator<Node : BidirectionalGraphNode> : IteratorPr
     
 }
 
-public extension GraphNode where SuccessorSequence.Iterator.Element == Self {
+public extension OutgoingGraphNode where SuccessorCollection.Iterator.Element == Self {
     func traversed(in order: TraversalOrder) -> IteratorSequence<GraphIterator<Self>> {
         return IteratorSequence(GraphIterator(root: self, order: order))
     }
@@ -128,8 +127,8 @@ public extension GraphNode where SuccessorSequence.Iterator.Element == Self {
     }
 }
 
-public extension BidirectionalGraphNode where SuccessorSequence.Iterator.Element == Self,
-                                              PredecessorSequence.Iterator.Element == Self {
+public extension IncomingGraphNode
+    where PredecessorCollection.Iterator.Element == Self {
     func transposeTraversed(in order: TraversalOrder) -> IteratorSequence<TransposeGraphIterator<Self>> {
         return IteratorSequence(TransposeGraphIterator(root: self, order: order))
     }
