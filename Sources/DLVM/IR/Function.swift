@@ -42,35 +42,41 @@ extension DifferentiationVariable : Hashable {
     }
 }
 
+open class Section : IRCollection, IRUnit, Named {
+    
+    public typealias Element = BasicBlock
+    
+    public var name: String
+    public var destination: Def<Argument>?
+    public var dependencies: ObjectSet<Section>
+    public var elements: OrderedMapSet<BasicBlock> = []
+    public unowned var parent: Function
+    
+    public init(name: String,
+                dependencies: ObjectSet<Section>,
+                destination: Def<Argument>? = nil,
+                parent: Function) {
+        self.name = name
+        self.dependencies = dependencies
+        self.destination = destination
+        self.parent = parent
+    }
+    
+}
+
 open class Function : Named, IRCollection, IRUnit {
 
-    open class Section : IRCollection, IRUnit {
-
-        public typealias Element = BasicBlock
-
-        public var variable: DifferentiationVariable?
-        public var elements: OrderedMapSet<BasicBlock> = []
-        public unowned var parent: Function
-
-        public init(variable: DifferentiationVariable? = nil, parent: Function) {
-            self.variable = variable
-            self.parent = parent
-        }
-
-    }
-
-    public typealias Element = BasicBlock
+    public typealias Element = Section
 
     public var name: String
     public var arguments: OrderedMapSet<Def<Argument>>
     public var result: Argument?
-    public lazy var forwardPass: Section? = Section(parent: self)
     public var backwardPasses: [DifferentiationVariable : Section] = [:]
+    public var elements: OrderedMapSet<Section> = []
     public unowned var parent: Module
-
-    public var elements: OrderedMapSet<BasicBlock> {
-        get { return forwardPass?.elements ?? [] }
-        set { forwardPass?.elements = newValue }
+    
+    public weak var forwardPass: Section? {
+        return elements.element(named: "forward")
     }
 
     public init(name: String, arguments: [(String, Argument)], result: Argument?, parent: Module) {
@@ -97,10 +103,10 @@ extension Function {
     /// otherwise create a new one
     ///
     /// - Returns: forward pass
-    open func makeForwardPass() -> Section {
+    open func makeForwardPass(dependingOn dependencies: ObjectSet<Section>) -> Section {
         return forwardPass ?? {
-            let forward = Section(parent: self)
-            forwardPass = forward
+            let forward = Section(name: "forward", dependencies: dependencies, parent: self)
+            append(forward)
             return forward
         }()
     }
@@ -127,7 +133,7 @@ extension Function {
 }
 
 // MARK: - Control flow
-extension Function.Section {
+extension Section {
 
     open weak var entry: BasicBlock? {
         return elements.element(named: "entry")

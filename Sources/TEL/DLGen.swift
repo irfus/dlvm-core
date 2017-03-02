@@ -80,7 +80,8 @@ class CodeGenerator {
         
         /// Entry block
         let function = builder.buildFunction(named: "main", arguments: [], result: nil)
-        let entry = builder.buildBasicBlock(named: "entry", in: function)
+        let forward = builder.buildSection(named: "forward", dependingOn: [], in: function)
+        let entry = builder.buildBasicBlock(named: "entry", in: forward)
         builder.move(to: entry)
 
         /// Generate hidden layers
@@ -113,9 +114,9 @@ class CodeGenerator {
                     guard let currentBB = builder.currentBlock else {
                         preconditionFailure("Current basic block does not exist")
                     }
-                    let thenBB = builder.buildBasicBlock(named: "then", in: currentBB.function)
+                    let thenBB = builder.buildBasicBlock(named: "then", in: currentBB.parent)
                     let elseBB = environment.endBlock ?? {
-                        let end = builder.buildBasicBlock(named: "end", in: currentBB.function)
+                        let end = builder.buildBasicBlock(named: "end", in: currentBB.parent)
                         environment.endBlock = end
                         builder.move(to: end)
                         builder.buildControl(.ret(nil))
