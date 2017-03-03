@@ -7,12 +7,8 @@
 //
 
 open class IRBuilder {
-    fileprivate let _module: Module
 
-    open var module: Module {
-        _module.updateAnalysisInformation()
-        return _module
-    }
+    open let module: Module
 
     open fileprivate(set) weak var currentBlock: BasicBlock? {
         didSet {
@@ -35,7 +31,7 @@ open class IRBuilder {
     fileprivate var variableNameId = 0
 
     public init(module: Module) {
-        _module = module
+        self.module = module
     }
 
     public convenience init(moduleName: String) {
@@ -82,7 +78,7 @@ extension IRBuilder {
     open func declare(_ output: Output, name: String) -> Def<Output> {
         let def = Def<Output>(name: name, value: output)
         let global: Global = .output(def)
-        _module.insert(global)
+        module.insert(global)
         return def
     }
 
@@ -90,14 +86,14 @@ extension IRBuilder {
     open func declare(_ placeholder: Placeholder, name: String) -> Def<Placeholder> {
         let def = Def<Placeholder>(name: name, value: placeholder)
         let global: Global = .placeholder(def)
-        _module.insert(global)
+        module.insert(global)
         return def
     }
 
     @discardableResult
     open func declare(_ value: GlobalValue, name: String) -> Use {
         let def = Def<GlobalValue>(name: name, value: value)
-        _module.insert(.value(def))
+        module.insert(.value(def))
         let use = Use(kind: .global(def))
         return use
     }

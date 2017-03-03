@@ -30,38 +30,12 @@ open class BasicBlock : IRCollection, IRUnit, Named {
 
 }
 
-// MARK: - IRCollection
-extension BasicBlock {
-
-    open func containsOperation(_ operation: Def<Operation>) -> Bool {
+// MARK: - Predicates and accessors
+public extension BasicBlock {
+    
+    func containsOperation(_ operation: Def<Operation>) -> Bool {
         return elements.contains(where: { $0.definition === operation })
     }
-
-    /// Append the instruction to the basic block
-    open func append(_ instruction: Instruction) {
-        elements.append(instruction)
-        /// If it's a branch instruction, update successor's predecessor set
-        for succ in instruction.successors {
-            succ.predecessors.insert(self)
-        }
-    }
-
-    /// Remove the instruction from the basic block
-    ///
-    /// - Precondition: instruction is in the basic block
-    open func remove(_ instruction: Instruction) {
-        elements.remove(instruction)
-        /// If it's a branch instruction, update successor's predecessor set
-        for succ in instruction.successors {
-            succ.predecessors.remove(self)
-        }
-    }
-
-}
-
-
-// MARK: - Basic block successors
-public extension BasicBlock {
 
     /// Whether there exists a terminator instruction
     /// - Note: a branching instruction in the middle of the basic block
