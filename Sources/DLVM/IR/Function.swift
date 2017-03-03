@@ -13,7 +13,7 @@ public struct Argument : Value {
     public static var scope: Scope = .local
 }
 
-public final class Section : IRCollection, IRUnit, Named, BackwardGraphNode {
+public final class Section : IRCollection, IRSubUnit, Named, BackwardGraphNode {
     
     public typealias Element = BasicBlock
     public typealias PredecessorSequence = ObjectSet<Section>
@@ -49,8 +49,8 @@ public final class Function : Named, IRCollection, IRSubUnit {
     public unowned var parent: Module
     public var analysisManager: AnalysisManager<Function> = AnalysisManager()
     
-    public weak var forwardPass: Section? {
-        return elements.element(named: "forward")
+    public weak var top: Section? {
+        return elements.element(named: "top")
     }
 
     public init(name: String, arguments: [(String, Argument)], result: Argument?, isDifferentiable: Bool, parent: Module) {
@@ -79,7 +79,7 @@ extension Function {
     ///
     /// - Returns: forward pass
     open func makeForwardPass(dependingOn dependencies: ObjectSet<Section>) -> Section {
-        return forwardPass ?? {
+        return top ?? {
             let forward = Section(name: "forward", dependencies: dependencies, parent: self)
             append(forward)
             return forward
@@ -92,7 +92,7 @@ extension Function {
 extension Function {
 
     open func localValue(named name: String) -> Use? {
-        guard let forwardPass = forwardPass else { return nil }
+        guard let forwardPass = top else { return nil }
         for bb in forwardPass {
             if case let .operation(oper)? = bb.element(named: name)?.kind {
                 return Use(kind: .local(oper))
@@ -121,17 +121,13 @@ extension Section {
     }
 
     open var isForward: Bool {
-        return parent.forwardPass === self
+        return parent.top === self
     }
 
 }
 
 // MARK: - Control flow
 extension Function {
-
-    open weak var entry: BasicBlock? {
-        return forwardPass?.entry
-    }
 
     open var allInstructions: [Instruction] {
         return allBasicBlocks.flatMap { $0 }
@@ -142,7 +138,7 @@ extension Function {
     }
 
     open weak var endBlock: BasicBlock? {
-        return forwardPass?.endBlock
+        return top?.endBlock
     }
 
     open func instruction(named name: String) -> Instruction? {

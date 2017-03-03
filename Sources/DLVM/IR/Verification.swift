@@ -45,7 +45,6 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case noForwardPass(Node)
     case postdominanceUnreachable(BasicBlock, Node)
     case dominanceUnreachable(BasicBlock, Node)
-    case unknownDifferentiationVariable(DifferentiationVariable, Node)
 }
 
 public protocol SelfVerifiable {
@@ -65,15 +64,11 @@ extension Module : SelfVerifiable {
 
 extension Function: SelfVerifiable {
     public func verify() throws {
-        guard let entry = entry else {
-            throw VerificationError.noEntry(self)
-        }
-
         /// Exit blocks
         var returnBlocks: ObjectSet<BasicBlock> = []
 
         let module = parent
-        guard let forwardPass = forwardPass else {
+        guard let forwardPass = top else {
             throw VerificationError.noForwardPass(self)
         }
 
@@ -108,20 +103,7 @@ extension Function: SelfVerifiable {
         /// seriously wrong.
         precondition(self.endBlock === foundExit)
 
-        /// Check for reachability in dominator tree and postdominator tree
-        let domTree = DominatorTree(entry: entry)
-        let postDomTree = PostdominatorTree(entry: foundExit)
-        
-
-        /// TODO: check sections
-        for bb in forwardPass {
-            guard bb.isReachable(in: domTree) else {
-                throw VerificationError.dominanceUnreachable(bb, self)
-            }
-            guard bb.isReachable(in: postDomTree) else {
-                throw VerificationError.postdominanceUnreachable(bb, self)
-            }
-        }
+        /// TODO: Check for reachability in dominator tree and postdominator tree
     }
 }
 

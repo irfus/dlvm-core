@@ -9,7 +9,7 @@
 import Foundation
 
 /// Module representing a neural network
-open class Module : IRCollection {
+public final class Module : IRCollection, IRUnit {
     public typealias Element = Function
     public typealias Index = Int
     
@@ -17,6 +17,7 @@ open class Module : IRCollection {
 
     public var elements: OrderedMapSet<Function> = []
     public fileprivate(set) var globals: OrderedMapSet<Global> = []
+    public private(set) var analysisManager: AnalysisManager<Module> = AnalysisManager()
 
     open weak var mainFunction: Function? {
         return element(named: "main")

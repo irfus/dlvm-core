@@ -6,24 +6,15 @@
 //
 //
 
-// MARK: - Instruction properties
-public extension Instruction {
-    var definition: AnyDef? {
-        guard case let .operation(def) = kind else {
-            return nil
-        }
-        return def
-    }
-}
-
-public class Instruction : IRUnit {
+public final class Instruction : IRSubUnit {
     public enum Kind {
         case control(Control)
         case operation(Def<Operation>)
     }
     public typealias Parent = BasicBlock
-    public unowned var parent: BasicBlock
     public var kind: Kind
+    public unowned var parent: BasicBlock
+    public internal(set) var analysisManager: AnalysisManager<Instruction> = AnalysisManager()
 
     public required init(kind: Kind, parent: BasicBlock) {
         self.kind = kind

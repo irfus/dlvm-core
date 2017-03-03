@@ -86,7 +86,7 @@ public extension Instruction {
 }
 
 // MARK: - Control flow property computation
-public extension Function {
+public extension Section {
 
     /// Compute and returns back edges in function
     var backEdges: [(BasicBlock, BasicBlock)] {
