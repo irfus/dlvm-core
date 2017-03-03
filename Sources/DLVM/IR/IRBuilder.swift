@@ -105,9 +105,14 @@ extension IRBuilder {
     @discardableResult
     open func buildFunction(named name: String,
                             arguments: [(String, Argument)],
-                            result: Argument?) -> Function {
-        let fun = Function(name: name, arguments: arguments, result: result, parent: module)
-        _module.append(fun)
+                            result: Argument?,
+                            isDifferentiable: Bool) -> Function {
+        let fun = Function(name: name,
+                           arguments: arguments, 
+                           result: result,
+                           isDifferentiable: isDifferentiable,
+                           parent: module)
+        module.append(fun)
         return fun
     }
 

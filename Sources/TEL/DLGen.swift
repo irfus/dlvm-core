@@ -79,7 +79,7 @@ class CodeGenerator {
         }
         
         /// Entry block
-        let function = builder.buildFunction(named: "main", arguments: [], result: nil)
+        let function = builder.buildFunction(named: "main", arguments: [], result: nil, isDifferentiable: false)
         let forward = builder.buildSection(named: "forward", dependingOn: [], in: function)
         let entry = builder.buildBasicBlock(named: "entry", in: forward)
         builder.move(to: entry)
