@@ -55,7 +55,7 @@ public extension IRCollection
 
 // MARK: - Mutation
 public extension IRCollection
-    where ElementCollection.Iterator.Element : IRUnit,
+    where ElementCollection.Iterator.Element : IRSubUnit,
           ElementCollection.Iterator.Element.Parent == Self,
           ElementCollection : OrderedMapSetProtocol,
           ElementCollection.Element == ElementCollection.Iterator.Element {

@@ -8,20 +8,15 @@
 
 import Foundation
 
-open class BasicBlock : IRCollection, IRUnit, Named {
+public final class BasicBlock : IRCollection, IRSubUnit, Named {
 
     public typealias Element = Instruction
 
     /// Name of the basic block
     open var name: String
-
-    /// Instruction list
     open var elements: OrderedMapSet<Instruction> = []
-
-    /// Parent function
     open unowned var parent: Section
-
-    public internal(set) var predecessors: ObjectSet<BasicBlock> = []
+    public internal(set) var analysisManager: AnalysisManager<BasicBlock> = AnalysisManager()
 
     public required init(name: String, parent: Section) {
         self.name = name
