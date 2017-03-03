@@ -6,7 +6,7 @@
 //
 
 // MARK: - Basic block graph traits
-extension BasicBlock : BidirectionalGraphNode {
+extension BasicBlock : ForwardGraphNode {
     public var successors: ObjectSet<BasicBlock> {
         guard let terminator = self.terminator else { return [] }
         switch terminator.kind {
@@ -167,18 +167,8 @@ internal extension BasicBlock {
         }
     }
 
-    private func visitSuccessors() {
-        for succ in successors {
-            succ.predecessors.removeAll()
-        }
-        for succ in successors {
-            succ.predecessors.insert(self)
-        }
-    }
-
     /// Update analysis information
     func updateAnalysisInformation() {
-        visitSuccessors()
         visitInstructions()
     }
 
