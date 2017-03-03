@@ -10,88 +10,37 @@
 /// K. D. Cooper, T. J. Harvey, and K. Kennedy. A simple, fast dominance algorithm.
 /// Rice University, 2000.
 
-open class DominatorTree {
 
-    fileprivate var immediateDominators: [Unowned<BasicBlock> : BasicBlock] = [:]
-    public unowned let root: BasicBlock
-
-    internal init(root: BasicBlock,
-                  immediateDominators: [Unowned<BasicBlock> : BasicBlock] = [:]) {
-        self.root = root
-        self.immediateDominators = immediateDominators
-    }
-
-    /// Initialize from entry node using
-    public init(entry: BasicBlock) {
-        self.root = entry
-
-        /// Initialization of data flow analysis
-        immediateDominators[Unowned(root)] = root
-
-        /// Iteratively build tree
-        var changed = true
-        repeat {
-            changed = false
-            for node in root.postorder.reversed().dropFirst() {
-                let preds = node.predecessors
-                guard var newIDom = preds.first else {
-                    preconditionFailure("Successor node doesn't have any predecessor")
-                }
-                for p in preds.dropFirst() where !contains(p) {
-                    newIDom = nearestCommonDominator(p, newIDom)
-                }
-                if immediateDominator(of: node) !== newIDom {
-                    immediateDominators[Unowned(node)] = newIDom
-                    changed = true
-                }
-            }
-        } while changed
-    }
-}
-
-open class PostdominatorTree : DominatorTree {
-
-    /// Initialize from entry node using
-    public override init(entry: BasicBlock) {
-        super.init(root: entry)
-
-        /// Initialization of data flow analysis
-        immediateDominators[Unowned(root)] = root
-
-        /// Iteratively build tree
-        var changed = true
-        repeat {
-            changed = false
-            for node in root.transposeTraversed(in: .postorder).reversed().dropFirst() {
-                let preds = node.successors
-                guard var newIDom = preds.first else {
-                    preconditionFailure("Successor node doesn't have any predecessor")
-                }
-                for p in preds.dropFirst() where !contains(p) {
-                    newIDom = nearestCommonDominator(p, newIDom)
-                }
-                if immediateDominator(of: node) !== newIDom {
-                    immediateDominators[Unowned(node)] = newIDom
-                    changed = true
-                }
-            }
-        } while changed
-    }
-    
+public struct DominatorTree<Node : IRUnit> {
+    fileprivate var immediateDominators: [Node : Node] = [:]
+    public unowned let root: Node
 }
 
 public extension DominatorTree {
 
-    public func immediateDominator(of node: BasicBlock) -> BasicBlock {
-        return immediateDominators[Unowned(node)]!
+    public init(root: Node) {
+        self.root = root
+        self.immediateDominators[root] = root
     }
 
-    public func nearestCommonDominator(_ b1: BasicBlock, _ b2: BasicBlock) -> BasicBlock {
+    public mutating func updateImmediateDominator(_ dominator: Node, for node: Node) {
+        immediateDominators[node] = dominator
+    }
+
+}
+
+public extension DominatorTree {
+
+    public func immediateDominator(of node: Node) -> Node {
+        return immediateDominators[node]!
+    }
+
+    public func nearestCommonDominator(_ b1: Node, _ b2: Node) -> Node {
         if dominates(b1, b2) { return b1 }
         if dominates(b2, b1) { return b2 }
 
         /// Collect all b1's dominators
-        var b1Dominators: ObjectSet<BasicBlock> = []
+        var b1Dominators: ObjectSet<Node> = []
         b1Dominators.insert(root)
         var b1Dom = immediateDominator(of: b1)
         while b1Dom !== root {
@@ -111,11 +60,11 @@ public extension DominatorTree {
         return root
     }
 
-    public func contains(_ node: BasicBlock) -> Bool {
-        return immediateDominators.keys.contains(Unowned(node))
+    public func contains(_ node: Node) -> Bool {
+        return immediateDominators.keys.contains(node)
     }
 
-    func properlyDominates(_ block: BasicBlock, _ otherBlock: BasicBlock) -> Bool {
+    func properlyDominates(_ block: Node, _ otherBlock: Node) -> Bool {
         guard block !== otherBlock else { return false }
         if block === root { return true }
         var iDom = immediateDominator(of: otherBlock)
@@ -125,13 +74,13 @@ public extension DominatorTree {
         return iDom !== root
     }
 
-    func dominates(_ block: BasicBlock, _ otherBlock: BasicBlock) -> Bool {
+    func dominates(_ block: Node, _ otherBlock: Node) -> Bool {
         return block === otherBlock || properlyDominates(block, otherBlock)
     }
 }
 
-public extension DominatorTree {
-    func immediateDominatorInstruction(of body: BasicBlock) -> Instruction? {
+public extension DominatorTree where Node == BasicBlock {
+    func immediateDominatorInstruction(of body: Node) -> Instruction? {
         return immediateDominator(of: body).terminator
     }
 
@@ -144,20 +93,95 @@ public extension DominatorTree {
     }
 }
 
-public extension BasicBlock {
-    public func isReachable(in domTree: DominatorTree) -> Bool {
+public extension IRUnit {
+    public func isReachable(in domTree: DominatorTree<Self>) -> Bool {
         return domTree.contains(self)
     }
 
-    public func dominates(_ other: BasicBlock,
-                          in domTree: DominatorTree) -> Bool {
+    public func dominates(_ other: Self,
+                          in domTree: DominatorTree<Self>) -> Bool {
         return domTree.dominates(self, other)
     }
 }
 
 public extension Instruction {
     public func dominates(_ other: Instruction,
-                          in domTree: DominatorTree) -> Bool {
+                          in domTree: DominatorTree<BasicBlock>) -> Bool {
         return domTree.dominates(self, other)
+    }
+}
+
+
+open class DominanceAnalysis : AnalysisPass<Section, DominatorTree<BasicBlock>> {
+
+    open override class func run(on body: Section) -> DominatorTree<BasicBlock> {
+        let entry = body.entry!
+        var domTree = DominatorTree(root: entry)
+        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+
+        /// Initialization of data flow analysis
+        /// (done by the dom tree initializer)
+
+        /// Iteratively build tree
+        var changed = true
+        repeat {
+            changed = false
+            for node in entry.postorder.reversed().dropFirst() {
+                let preds = cfg.predecessors(of: node)
+                guard var newIDom = preds.first else {
+                    preconditionFailure("Successor node doesn't have any predecessor")
+                }
+                for p in preds.dropFirst() where !domTree.contains(p) {
+                    newIDom = domTree.nearestCommonDominator(p, newIDom)
+                }
+                if domTree.immediateDominator(of: node) !== newIDom {
+                    domTree.updateImmediateDominator(newIDom, for: node)
+                    changed = true
+                }
+            }
+        } while changed
+        return domTree
+    }
+}
+
+open class PostdominanceAnalysis : AnalysisPass<Section, [DominatorTree<BasicBlock>]> {
+
+    static func leaves(in section: Section) -> [BasicBlock] {
+        return section.filter { $0.isLeaf }
+    }
+
+    static func postdominatorTree(from leaf: BasicBlock,
+                                  controlFlowGraph cfg: DirectedGraph<BasicBlock>) -> DominatorTree<BasicBlock> {
+        var domTree = DominatorTree(root: leaf)
+        let transposeCFG = cfg.transpose
+
+        /// Initialization of data flow analysis
+        /// (done by the dom tree initializer)
+
+        /// Iteratively build tree
+        var changed = true
+        repeat {
+            changed = false
+            /// TODO: Need reverse postorder
+            for node in transposeCFG.traversed(from: leaf, in: .postorder).reversed().dropFirst() {
+                let preds = transposeCFG.predecessors(of: node)
+                guard var newIDom = preds.first else {
+                    preconditionFailure("Successor node doesn't have any predecessor")
+                }
+                for p in preds.dropFirst() where !domTree.contains(p) {
+                    newIDom = domTree.nearestCommonDominator(p, newIDom)
+                }
+                if domTree.immediateDominator(of: node) !== newIDom {
+                    domTree.updateImmediateDominator(newIDom, for: node)
+                    changed = true
+                }
+            }
+        } while changed
+        return domTree
+    }
+
+    open override class func run(on body: Section) -> [DominatorTree<BasicBlock>] {
+        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+        return leaves(in: body).map { postdominatorTree(from: $0, controlFlowGraph: cfg) }
     }
 }

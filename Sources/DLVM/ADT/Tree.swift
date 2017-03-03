@@ -6,26 +6,12 @@
 //
 //
 
-public class Tree<Element> : OutgoingGraphNode {
+public class TreeNode<Element> : ForwardGraphNode {
     public var value: Element
-    public var successors: [Tree]
+    public var successors: [TreeNode]
 
-    public init(value: Element, successors: [Tree] = []) {
+    public init(value: Element, successors: [TreeNode] = []) {
         self.value = value
         self.successors = successors
-    }
-}
-
-extension Tree {
-    public var preorder: IteratorSequence<GraphIterator<Tree<Element>>> {
-        return IteratorSequence(GraphIterator(root: self, order: .preorder))
-    }
-
-    public var postorder: IteratorSequence<GraphIterator<Tree<Element>>> {
-        return IteratorSequence(GraphIterator(root: self, order: .postorder))
-    }
-
-    public var levelOrder: IteratorSequence<GraphIterator<Tree<Element>>> {
-        return IteratorSequence(GraphIterator(root: self, order: .breadthFirst))
     }
 }
