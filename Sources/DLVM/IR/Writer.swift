@@ -309,17 +309,6 @@ extension BasicBlock : TextOutputStreamable {
     }
 }
 
-extension DifferentiationVariable : TextOutputStreamable {
-    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        switch self {
-        case let .argument(def):
-            def.write(to: &target)
-        case let .global(def):
-            def.write(to: &target)
-        }
-    }
-}
-
 extension Section : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("    section \(name) ")
@@ -339,7 +328,10 @@ extension Section : TextOutputStreamable {
 
 extension Function : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("define ")
+        if isDifferentiable {
+            target.write("differentiable ")
+        }
+        target.write("function ")
         target.write("@\(name)(")
         arguments.map{"\($0)"}.joined(separator: ", ").write(to: &target)
         target.write(") ")
