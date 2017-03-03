@@ -11,23 +11,23 @@ import XCTest
 
 class GraphTests: XCTestCase {
     func testTraversal() {
-        let tree = Tree<Int>(value: 1, successors: [
-            Tree(value: 3, successors: [
-                Tree(value: 2),
-                Tree(value: 4)
+        let tree = TreeNode<Int>(value: 1, successors: [
+            TreeNode(value: 3, successors: [
+                TreeNode(value: 2),
+                TreeNode(value: 4)
             ]),
-            Tree(value: 5, successors: [
-                Tree(value: 10),
-                Tree(value: 11),
-                Tree(value: 100, successors: [
-                    Tree(value: 110),
-                    Tree(value: 120)
+            TreeNode(value: 5, successors: [
+                TreeNode(value: 10),
+                TreeNode(value: 11),
+                TreeNode(value: 100, successors: [
+                    TreeNode(value: 110),
+                    TreeNode(value: 120)
                 ])
             ])
         ])
         XCTAssertEqual(tree.preorder.map{$0.value}, [1, 3, 2, 4, 5, 10, 11, 100, 110, 120])
         XCTAssertEqual(tree.postorder.map{$0.value}, [2, 4, 3, 10, 11, 110, 120, 100, 5, 1])
-        XCTAssertEqual(tree.levelOrder.map{$0.value}, [1, 3, 5, 2, 4, 10, 11, 100, 110, 120])
+        XCTAssertEqual(tree.breadthFirst.map{$0.value}, [1, 3, 5, 2, 4, 10, 11, 100, 110, 120])
     }
 
     static var allTests : [(String, (GraphTests) -> () throws -> Void)] {
