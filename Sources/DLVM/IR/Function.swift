@@ -13,36 +13,7 @@ public struct Argument : Value {
     public static var scope: Scope = .local
 }
 
-public enum DifferentiationVariable {
-    case argument(Def<Argument>)
-    case global(Def<Placeholder>)
-
-    public var definition: AnyDef {
-        switch self {
-            case .global(let def): return def
-            case .argument(let def): return def
-        }
-    }
-}
-
-extension DifferentiationVariable : Hashable {
-    public static func ==(lhs: DifferentiationVariable, rhs: DifferentiationVariable) -> Bool {
-        switch (lhs, rhs) {
-        case let (.argument(x), .argument(y)): return x === y
-        case let (.global(x), .global(y)): return x === y
-        default: return false
-        }
-    }
-
-    public var hashValue: Int {
-        switch self {
-        case .argument(let def): return ObjectIdentifier(def).hashValue
-        case .global(let def): return ObjectIdentifier(def).hashValue
-        }
-    }
-}
-
-open class Section : IRCollection, IRUnit, Named, IncomingGraphNode {
+public final class Section : IRCollection, IRUnit, Named, BackwardGraphNode {
     
     public typealias Element = BasicBlock
     public typealias PredecessorSequence = ObjectSet<Section>
@@ -52,6 +23,7 @@ open class Section : IRCollection, IRUnit, Named, IncomingGraphNode {
     public var predecessors: ObjectSet<Section>
     public var elements: OrderedMapSet<BasicBlock> = []
     public unowned var parent: Function
+    public internal(set) var analysisManager: AnalysisManager<Section> = AnalysisManager()
     
     public init(name: String,
                 dependencies: ObjectSet<Section>,
@@ -65,21 +37,23 @@ open class Section : IRCollection, IRUnit, Named, IncomingGraphNode {
     
 }
 
-open class Function : Named, IRCollection, IRUnit {
+public final class Function : Named, IRCollection, IRSubUnit {
 
     public typealias Element = Section
 
     public var name: String
     public var arguments: OrderedMapSet<Def<Argument>>
     public var result: Argument?
+    public var isDifferentiable: Bool
     public var elements: OrderedMapSet<Section> = []
     public unowned var parent: Module
+    public var analysisManager: AnalysisManager<Function> = AnalysisManager()
     
     public weak var forwardPass: Section? {
         return elements.element(named: "forward")
     }
 
-    public init(name: String, arguments: [(String, Argument)], result: Argument?, parent: Module) {
+    public init(name: String, arguments: [(String, Argument)], result: Argument?, isDifferentiable: Bool, parent: Module) {
         self.name = name
         self.arguments = []
         for (name, arg) in arguments {
@@ -87,6 +61,7 @@ open class Function : Named, IRCollection, IRUnit {
             self.arguments.append(def)
         }
         self.result = result
+        self.isDifferentiable = isDifferentiable
         self.parent = parent
     }
 
@@ -141,17 +116,12 @@ extension Section {
         })
     }
 
-    open var isForward: Bool {
-        return parent.forwardPass === self
+    open var module: Module {
+        return parent.parent
     }
 
-    open var differentiationVariables: [DifferentiationVariable] {
-        var variables: [DifferentiationVariable] = []
-        for bb in self {
-            variables.append(contentsOf: bb.usedPlaceholders.map{.global($0)})
-            variables.append(contentsOf: bb.usedArguments.map{.argument($0)})
-        }
-        return variables
+    open var isForward: Bool {
+        return parent.forwardPass === self
     }
 
 }

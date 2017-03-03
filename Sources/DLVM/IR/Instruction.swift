@@ -91,6 +91,16 @@ public enum Operation {
     case diff(TensorShape, DataType, Function, Use, wrt: Int)
 }
 
+// MARK: - Instruction properties
+public extension Instruction {
+    var definition: AnyDef? {
+        guard case let .operation(def) = kind else {
+            return nil
+        }
+        return def
+    }
+}
+
 extension Instruction : MaybeNamed {
     public var name: String? {
         guard case let .operation(def) = kind else { return nil }

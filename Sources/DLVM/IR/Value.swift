@@ -84,13 +84,12 @@ public protocol MaybeNamed {
 }
 
 /// When a value has a name, it's a unique Def!
-public class Def<ValueType : Value> : Usee, Named, Value, EquatableByReference {
+public class Def<ValueType : Value> : Named, Value, EquatableByReference {
     public typealias UserType = Instruction
     public var name: String
     public var shape: TensorShape
     public var type: DataType
     public var value: ValueType
-    public var users: ObjectSet<Instruction> = []
 
     public static var scope: Scope {
         return ValueType.scope
@@ -144,44 +143,4 @@ public extension Value {
 /// User, anything that can use a value
 public protocol User {
     var operands: [Use] { get }
-}
-
-/// Usee, remembering all its users, always bearing a grudge.
-internal protocol Usee: class {
-    associatedtype UserType : AnyObject, User
-    var users: ObjectSet<UserType> { get set }
-}
-
-// MARK: - User accessors
-internal extension Value where Self : AnyObject & Usee {
-    func addUser(_ user: UserType) {
-        users.insert(user)
-    }
-
-    func removeUser(_ user: UserType) {
-        users.remove(user)
-    }
-
-    func removeAllUsers() {
-        users.removeAll()
-    }
-}
-
-// MARK: - User analysis
-public extension Def {
-
-    func isUsed(in section: Section) -> Bool {
-        return users.contains(where: { inst in
-            section.contains(inst.parent)
-        })
-    }
-
-    func isUsed(in basicBlock: BasicBlock) -> Bool {
-        return users.contains(where: {$0.parent === basicBlock})
-    }
-
-    func isUsed(in function: Function) -> Bool {
-        return users.contains(where: {$0.parent.parent === function})
-    }
-    
 }
