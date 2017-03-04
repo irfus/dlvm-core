@@ -160,6 +160,14 @@ public extension DirectedGraph {
         return secondSuccs.contains(firstNode)
             || secondSuccs.contains(where: { succeeds(firstNode, $0) })
     }
+
+    func isSource(_ node: Node) -> Bool {
+        return predecessors(of: node).isEmpty
+    }
+
+    func isLeaf(_ node: Node) -> Bool {
+        return successors(of: node).isEmpty
+    }
     
 }
 

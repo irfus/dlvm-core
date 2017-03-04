@@ -23,10 +23,11 @@ public extension HashableByReference {
 
 public protocol IRUnit : class, HashableByReference {
     var analysisManager: AnalysisManager<Self> { get }
+    var transformManager: TransformManager<Self> { get }
     func invalidateAnalyses()
 }
 
 public protocol IRSubUnit : IRUnit {
-    associatedtype Parent : AnyObject
+    associatedtype Parent : IRCollection, IRUnit
     unowned var parent: Parent { get set }
 }
