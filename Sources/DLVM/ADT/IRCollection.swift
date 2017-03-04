@@ -2,7 +2,7 @@
 // Created by Richard Wei on 2/19/17.
 //
 
-public protocol IRCollection : class, RandomAccessCollection, HashableByReference {
+public protocol IRCollection : class, IRUnit, RandomAccessCollection, HashableByReference {
     associatedtype ElementCollection : RandomAccessCollection
     var elements: ElementCollection { get set }
     func append(_ element: Element)
@@ -63,25 +63,30 @@ public extension IRCollection
     public func append(_ element: Element) {
         elements.append(element)
         element.parent = self
+        invalidateAnalyses()
     }
 
     public func insert(_ element: Element, at index: ElementCollection.Index) {
         elements.insert(element, at: index)
         element.parent = self
+        invalidateAnalyses()
     }
 
     public func insert(_ element: Element, after other: Element) {
         elements.insert(element, after: other)
         element.parent = self
+        invalidateAnalyses()
     }
 
     public func insert(_ element: Element, before other: Element) {
         elements.insert(element, before: other)
         element.parent = self
+        invalidateAnalyses()
     }
 
     public func remove(_ element: Element) {
         elements.remove(element)
+        invalidateAnalyses()
     }
 
 }
