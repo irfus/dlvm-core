@@ -8,12 +8,12 @@ declare variable [8x8] f32 @W3 = random from 0.0 to 1.0
 declare variable [4x1] f32 @b1 = repeating 0.0
 declare variable [8x1] f32 @b2 = repeating 0.0
 declare variable [8x1] f32 @b3 = repeating 0.0
-declare output [1x8] f32 @v11
+declare output [1x8] f32 @o
 
 
-define @main() {
-    forward {
-    entry:
+function @main() {
+    section top {
+    entry():
         %v0 = get [4x1] f32 @i1
         %v1 = matmul [4x4] f32 @W1, [4x1] f32 %v0
         %v2 = add [4x1] f32 %v1, [4x1] f32 @b1
@@ -27,9 +27,8 @@ define @main() {
         %v8 = matmul [8x8] f32 @W3, [8x1] f32 %h2
         %v9 = add [8x1] f32 %v8, [8x1] f32 @b3
         %v10 = softmax [8x1] f32 %v9
-        %o = shapecast [8x1] f32 %v10 to [1x8]
-        yield [1x8] f32 %o to [1x8] f32 @v11
-        ret
+        %o = transpose [8x1] f32 %v10
+        yield [8x1] f32 %o to [1x8] f32 @o
     }
 }
 

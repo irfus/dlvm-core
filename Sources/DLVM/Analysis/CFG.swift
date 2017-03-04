@@ -10,15 +10,11 @@ extension BasicBlock : ForwardGraphNode {
     public var successors: ObjectSet<BasicBlock> {
         guard let terminator = self.terminator else { return [] }
         switch terminator.kind {
-        case let .control(.br(dest)):
+        case let .control(.br(dest, _)):
             return [dest]
-        case let .control(.condBr(_, thenBB, elseBB)):
+        case let .control(.condBr(_, thenBB, elseBB)),
+             let .control(.pull(_, thenBB, elseBB)):
             return [thenBB, elseBB]
-        case let .operation(def):
-            if case let .pull(_, thenBB, elseBB) = def.value {
-                return [thenBB, elseBB]
-            }
-            fallthrough
         default:
             return []
         }
@@ -30,7 +26,7 @@ public extension Control {
     var successors: ObjectSet<BasicBlock> {
         /// TODO: Include entries of backward passes as successors
         switch self {
-        case let .br(bb): return [bb]
+        case let .br(bb, _): return [bb]
         case let .condBr(_, bb1, bb2): return [bb1, bb2]
         default: return []
         }
@@ -39,24 +35,9 @@ public extension Control {
     var successorCount: Int {
         switch self {
         case .br: return 1
-        case .condBr: return 2
+        case .condBr, .pull: return 2
         default: return 0
         }
-    }
-}
-
-// MARK: - Successors
-public extension Operation {
-    var successors: ObjectSet<BasicBlock> {
-        switch self {
-        case let .pull(_, bb1, bb2): return [bb1, bb2]
-        default: return []
-        }
-    }
-
-    var successorCount: Int {
-        if case .pull = self { return 2 }
-        else { return 0 }
     }
 }
 
@@ -66,14 +47,14 @@ public extension Instruction {
     var successors: ObjectSet<BasicBlock> {
         switch kind {
         case let .control(ctrl): return ctrl.successors
-        case let .operation(def): return def.value.successors
+        default: return []
         }
     }
 
     var successorCount: Int {
         switch kind {
         case let .control(ctrl): return ctrl.successorCount
-        case let .operation(def): return def.value.successorCount
+        default: return 0
         }
     }
 
@@ -90,8 +71,7 @@ public extension Section {
 
     /// Compute and returns back edges in function
     var backEdges: [(BasicBlock, BasicBlock)] {
-        guard var bb = entry else { return [] }
-
+        var bb = entry
         var visited: ObjectSet<BasicBlock> = []
         var visitStack: [BasicBlock] = []
         var inStack: ObjectSet<BasicBlock> = []

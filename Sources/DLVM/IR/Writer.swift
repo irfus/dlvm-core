@@ -149,8 +149,8 @@ extension UnaryOp: TextOutputStreamable {
 extension Control : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .br(bb):
-            target.write("br %\(bb.name)")
+        case let .br(bb, args):
+            target.write("br %\(bb.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .condBr(op, thenBB, elseBB):
             target.write("condbr \(op), %\(thenBB.name), %\(elseBB.name)")
         case let .yield(op, v):
@@ -159,9 +159,11 @@ extension Control : TextOutputStreamable {
             target.write("store \(op) to \(v)")
         case let .ret(op):
             target.write("ret")
-            if let op = op {
-                target.write(" \(op)")
-            }
+            if let op = op { target.write(" \(op)") }
+        case .cont:
+            target.write("cont")
+        case let .pull(ph, thenBB, elseBB):
+            target.write("pull \(ph), %\(thenBB), %\(elseBB)")
         }
     }
 }
@@ -185,24 +187,18 @@ extension Operation : TextOutputStreamable {
             if let axis = axis {
                 target.write(" along \(axis)")
             }
-        case let .phi(shape, type, ops):
-            target.write("phi ")
-            if !shape.isScalar {
-                target.write("\(shape) ")
-            }
-            target.write("\(type) \(ops.map{"[\($0) \($1)]"}.joined(separator: ", "))")
         case let .concat(shape, type, ops, axis: axis):
             target.write("concat \(ops.map{"\($0)"}.joined(separator: ", ")) to ")
             if !shape.isScalar {
                 target.write("\(shape) ")
             }
             target.write("\(type) along \(axis)")
+        case let .transpose(op):
+            target.write("transpose \(op)")
         case let .typeCast(op, t):
             target.write("typecast \(op) to \(t)")
         case let .shapeCast(op, s):
             target.write("shapecast \(op) to \(s)")
-        case let .pull(def, thenBB, elseBB):
-            target.write("pull \(def), %\(thenBB.name), %\(elseBB.name)")
         case let .get(def):
             target.write("get \(def)")
         case let .call(shape, type, fun, args):
@@ -211,7 +207,7 @@ extension Operation : TextOutputStreamable {
                 target.write("\(shape) ")
             }
             target.write("\(type) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .diff(shape, type, fun, use, wrt: idx):
+        case let .diff(fun, use, wrt: idx):
             target.write("diff ")
             if shape.isScalar {
                 target.write("\(shape) ")

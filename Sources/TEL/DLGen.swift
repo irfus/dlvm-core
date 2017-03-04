@@ -80,9 +80,7 @@ class CodeGenerator {
         
         /// Entry block
         let function = builder.buildFunction(named: "main", arguments: [], result: nil, isDifferentiable: false)
-        let forward = builder.buildSection(named: "forward", dependingOn: [], in: function)
-        let entry = builder.buildBasicBlock(named: "entry", in: forward)
-        builder.move(to: entry)
+        builder.move(to: function.entry)
 
         /// Generate hidden layers
         for layer in program.layers {
@@ -110,29 +108,9 @@ class CodeGenerator {
             }
             /// If it's a placeholder, emit a `pull` or `get` instruction
             if let ph = environment.placeholders[variable.name] {
-                if ph.isRecurrent {
-                    guard let currentBB = builder.currentBlock else {
-                        preconditionFailure("Current basic block does not exist")
-                    }
-                    let thenBB = builder.buildBasicBlock(named: "then", in: currentBB.parent)
-                    let elseBB = environment.endBlock ?? {
-                        let end = builder.buildBasicBlock(named: "end", in: currentBB.parent)
-                        environment.endBlock = end
-                        builder.move(to: end)
-                        builder.buildControl(.ret(nil))
-                        return end
-                    }()
-                    builder.move(to: currentBB)
-                    let local = builder.buildOperation(.pull(ph, thenBB, elseBB), name: variable.name)
-                    builder.move(to: thenBB)
-                    environment[variable.name] = local
-                    return local
-                }
-                else {
-                    let val = builder.buildOperation(.get(ph))
-                    environment[variable.name] = val
-                    return val
-                }
+                let val = builder.buildOperation(.get(ph))
+                environment[variable.name] = val
+                return val
             }
             preconditionFailure("Unknown variable name. Something's wrong with DLGen")
         case let .call(funcName, args, _):
@@ -170,9 +148,7 @@ class CodeGenerator {
             return builder.buildOperation(operation, name: name)
         case let .transpose(expr, _):
             let exprOp = build(expr)
-            guard let targetShape = exprOp.shape.transpose else { fallthrough }
-            let operation: Operation = .shapeCast(exprOp, targetShape)
-            return builder.buildOperation(operation, name: name)
+            return builder.buildOperation(.transpose(exprOp), name: name)
         default:
             preconditionFailure("Unsupported expression \(expression). This shouldn't have passed Sema.")
         }
