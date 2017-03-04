@@ -84,7 +84,7 @@ public enum Operation {
 
 // MARK: - Instruction properties
 public extension Instruction {
-    var definition: AnyDef? {
+    var definition: Definition? {
         guard case let .operation(def) = kind else {
             return nil
         }

@@ -83,8 +83,13 @@ public protocol MaybeNamed {
     var name: String? { get }
 }
 
+public protocol Definition : class, Named, Value {
+    var name: String { get }
+    var shape: TensorShape { get }
+}
+
 /// When a value has a name, it's a unique Def!
-public class Def<ValueType : Value> : Named, Value, EquatableByReference {
+public class Def<ValueType : Value> : Named, Definition, Value, HashableByReference {
     public typealias UserType = Instruction
     public var name: String
     public var shape: TensorShape
@@ -102,8 +107,6 @@ public class Def<ValueType : Value> : Named, Value, EquatableByReference {
         self.value = value
     }
 }
-
-public typealias AnyDef = Value & Named & AnyObject
 
 /// A value is potentially recurrent if it's potentially recurrent
 public protocol PotentiallyRecurrentValue : Value {
