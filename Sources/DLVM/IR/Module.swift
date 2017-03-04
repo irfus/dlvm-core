@@ -18,10 +18,7 @@ public final class Module : IRCollection, IRUnit {
     public var elements: OrderedMapSet<Function> = []
     public fileprivate(set) var globals: OrderedMapSet<Global> = []
     public private(set) var analysisManager: AnalysisManager<Module> = AnalysisManager()
-
-    open weak var mainFunction: Function? {
-        return element(named: "main")
-    }
+    public internal(set) var transformManager: TransformManager<Module> = TransformManager()
 
     public init(name: String) {
         self.name = name

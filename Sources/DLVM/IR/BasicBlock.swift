@@ -6,21 +6,32 @@
 //
 //
 
-import Foundation
-
 public final class BasicBlock : IRCollection, IRSubUnit, Named {
 
     public typealias Element = Instruction
 
     /// Name of the basic block
     open var name: String
+    open var arguments: OrderedMapSet<Def<Argument>> = []
     open var elements: OrderedMapSet<Instruction> = []
     open unowned var parent: Section
     public internal(set) var analysisManager: AnalysisManager<BasicBlock> = AnalysisManager()
+    public internal(set) var transformManager: TransformManager<BasicBlock> = TransformManager()
 
-    public required init(name: String, parent: Section) {
+    internal init<C: Collection>(name: String, arguments: C, parent: Section)
+        where C.Iterator.Element == Def<Argument>
+    {
         self.name = name
+        self.arguments.append(contentsOf: arguments)
         self.parent = parent
+    }
+
+    internal convenience init(asEntryOf parent: Section) {
+        self.init(name: "entry", arguments: parent.parent.arguments, parent: parent)
+    }
+
+    public convenience init(name: String, arguments: [(String, Argument)], parent: Section) {
+        self.init(name: name, arguments: arguments.map(Def.init), parent: parent)
     }
 
 }

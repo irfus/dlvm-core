@@ -299,7 +299,7 @@ extension BasicBlock : TextOutputStreamable {
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
         /// Begin block
-        target.write("    \(name):\n")
+        target.write("    \(name)(\(arguments.map{"\($0)"}.joined(separator: ", "))):\n")
         for inst in elements {
             /// Write indentation
             makeIndentation().write(to: &target)
@@ -313,10 +313,10 @@ extension Section : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("    section \(name) ")
         if !predecessors.isEmpty {
-            target.write("<- \(predecessors.map{$0.name}.joined(separator: ", ")) ")
+            target.write("<- [\(predecessors.map{$0.name}.joined(separator: ", "))] ")
         }
-        if let dest = destination {
-            target.write("∂\(dest.name) ")
+        if let dest = derivation {
+            target.write("deriving %\(dest.name) ")
         }
         target.write("{\n")
         for bb in self {

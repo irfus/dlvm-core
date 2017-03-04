@@ -13,53 +13,37 @@ public struct Argument : Value {
     public static var scope: Scope = .local
 }
 
-public final class Section : IRCollection, IRSubUnit, Named, BackwardGraphNode {
-    
-    public typealias Element = BasicBlock
-    public typealias PredecessorSequence = ObjectSet<Section>
-
-    public var name: String
-    public var destination: Def<Argument>?
-    public var predecessors: ObjectSet<Section>
-    public var elements: OrderedMapSet<BasicBlock> = []
-    public unowned var parent: Function
-    public internal(set) var analysisManager: AnalysisManager<Section> = AnalysisManager()
-    
-    public init(name: String,
-                dependencies: ObjectSet<Section>,
-                destination: Def<Argument>? = nil,
-                parent: Function) {
-        self.name = name
-        self.predecessors = dependencies
-        self.destination = destination
-        self.parent = parent
-    }
-    
-}
-
 public final class Function : Named, IRCollection, IRSubUnit {
 
     public typealias Element = Section
 
     public var name: String
-    public var arguments: OrderedMapSet<Def<Argument>>
     public var result: Argument?
+    public var arguments: OrderedMapSet<Def<Argument>> = []
     public var isDifferentiable: Bool
-    public var elements: OrderedMapSet<Section> = []
     public unowned var parent: Module
-    public var analysisManager: AnalysisManager<Function> = AnalysisManager()
     
-    public weak var top: Section? {
-        return elements.element(named: "top")
+    public var elements: OrderedMapSet<Section> = []
+    public internal(set) var analysisManager: AnalysisManager<Function> = AnalysisManager()
+    public internal(set) var transformManager: TransformManager<Function> = TransformManager()
+    
+    public unowned var top: Section {
+        if let entry = elements["top"] {
+            return entry
+        }
+        let bb = Section(asTopOf: self)
+        elements.insert(bb, at: 0)
+        return bb
     }
 
-    public init(name: String, arguments: [(String, Argument)], result: Argument?, isDifferentiable: Bool, parent: Module) {
+    public unowned var entry: BasicBlock {
+        return top.entry
+    }
+
+    public init(name: String, arguments: [(String, Argument)], result: Argument?,
+                isDifferentiable: Bool, parent: Module) {
         self.name = name
-        self.arguments = []
-        for (name, arg) in arguments {
-            let def = Def<Argument>(name: name, value: arg)
-            self.arguments.append(def)
-        }
+        self.arguments.append(contentsOf: arguments.map(Def.init))
         self.result = result
         self.isDifferentiable = isDifferentiable
         self.parent = parent
@@ -74,71 +58,21 @@ extension Function {
         return arguments.element(named: name)
     }
 
-    /// Returns forward pass if there's an existing one, o
-    /// otherwise create a new one
-    ///
-    /// - Returns: forward pass
-    open func makeForwardPass(dependingOn dependencies: ObjectSet<Section>) -> Section {
-        return top ?? {
-            let forward = Section(name: "forward", dependencies: dependencies, parent: self)
-            append(forward)
-            return forward
-        }()
-    }
-
-}
-
-// MARK: - Forward basic block management
-extension Function {
-
-    open func localValue(named name: String) -> Use? {
-        guard let forwardPass = top else { return nil }
-        for bb in forwardPass {
-            if case let .operation(oper)? = bb.element(named: name)?.kind {
-                return Use(kind: .local(oper))
-            }
-        }
-        return nil
-    }
-
-}
-
-// MARK: - Control flow
-extension Section {
-
-    open weak var entry: BasicBlock? {
-        return elements.element(named: "entry")
-    }
-
-    open weak var endBlock: BasicBlock? {
-        return first(where: { block in
-            block.isReturn || block.isYielding
-        })
-    }
-
-    open var module: Module {
-        return parent.parent
-    }
-
-    open var isForward: Bool {
-        return parent.top === self
-    }
-
 }
 
 // MARK: - Control flow
 extension Function {
 
-    open var allInstructions: [Instruction] {
-        return allBasicBlocks.flatMap { $0 }
+    open var allInstructions: LazyCollection<FlattenCollection<FlattenBidirectionalCollection<Function>>> {
+        return allBasicBlocks.joined()
     }
 
-    open var allBasicBlocks: FlattenBidirectionalCollection<Function> {
-        return joined()
+    open var allBasicBlocks: LazyCollection<FlattenBidirectionalCollection<Function>> {
+        return lazy.joined()
     }
 
     open weak var endBlock: BasicBlock? {
-        return top?.endBlock
+        return top.endBlock
     }
 
     open func instruction(named name: String) -> Instruction? {

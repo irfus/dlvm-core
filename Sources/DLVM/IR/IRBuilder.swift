@@ -117,15 +117,20 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildSection(named name: String, dependingOn deps: ObjectSet<Section> = [], in function: Function) -> Section {
+    open func buildSection(named name: String,
+                           dependencies deps: ObjectSet<Section> = [],
+                           in function: Function) -> Section {
         let section = Section(name: name, dependencies: deps, parent: function)
         function.append(section)
         return section
     }
 
     @discardableResult
-    open func buildBasicBlock(named name: String, in section: Section) -> BasicBlock {
-        let block = BasicBlock(name: disambiguatedName(for: name, in: section.parent), parent: section)
+    open func buildBasicBlock(named name: String,
+                              arguments: [(String, Argument)],
+                              in section: Section) -> BasicBlock {
+        let newName = disambiguatedName(for: name, in: section.parent)
+        let block = BasicBlock(name: newName, arguments: arguments, parent: section)
         section.append(block)
         return block
     }
