@@ -266,13 +266,8 @@ public extension TensorShape {
         return matrixMultiplied(with: other) != nil
     }
 
-    /// Matrix/vector transpose
-    public var transpose: TensorShape? {
-        let shape = simplified()
-        guard rank <= 2 else { return nil }
-        if rank == 2 { return [shape[1], shape[0]] }
-        else if rank == 1 { return [shape[1], 1] }
-        return shape
+    public var transpose: TensorShape {
+        return TensorShape(reversed())
     }
 
     public func broadcasted(to other: TensorShape) -> TensorShape? {

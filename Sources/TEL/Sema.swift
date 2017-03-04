@@ -520,11 +520,7 @@ public class Program {
             }
 
         case let .transpose(expr, _):
-            let exprShape = try shape(of: expr, in: &env)
-            guard let transpose = exprShape.transpose else {
-                throw SemanticError.cannotTranspose(expr, exprShape)
-            }
-            return transpose
+            return try shape(of: expr, in: &env).transpose
 
         default:
             throw SemanticError.cannotInferShape(expression)

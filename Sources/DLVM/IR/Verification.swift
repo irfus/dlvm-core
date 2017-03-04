@@ -11,7 +11,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case redeclaredInstruction(Instruction, Node)
     case noParent(Node)
     case blockFunctionMismatch(BasicBlock, Node)
-    case missingTerminator(BasicBlock)
+    case missingTerminator(Node)
     case unbroadcastableMismatch(Use, Use, Node)
     case typeMismatch(Use, Use, Node)
     case unexpectedShape(Use, TensorShape, Node)
@@ -21,9 +21,10 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case cannotMatrixMultiply(Use, Use, Node)
     case cannotConcatenate(Use, Node)
     case concatenationShapeMismatch([Use], TensorShape, Node)
-    case useShapeMismatch(Use)
-    case useTypeMismatch(Use)
+    case useShapeMismatch(Node)
+    case useTypeMismatch(Node)
     case noOperands(Node)
+    case noTopSection(Node)
     case noDimensions(Use, Node)
     case noSpecifiedDimension(Use, Int, Node)
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
@@ -31,20 +32,20 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case functionResultMismatch(TensorShape, DataType, Function, Node)
     case functionArgumentCountMismatch(Function, Node)
     case functionArgumentMismatch(Use, Def<Argument>, Function, Node)
-    case functionDiffArgumentIndexInvalid(Int, Function, Node)
     case notAFunctionCall(Use, Function, Node)
-    case functionDiffArgumentMismatch(TensorShape, DataType, Def<Argument>, Function, Node)
+    case functionDiffArgumentMismatch(Use, Def<Argument>, Function, Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
     case invalidIndex(Use, Int, Node)
     case intrinsicArgError(Intrinsic, [Use], Node)
     case intrinsicResultMismatch(TensorShape, DataType, Intrinsic, Node)
-    case multipleExits(ObjectSet<BasicBlock>, Node)
+    case multipleExits([BasicBlock], Node)
     case noEntry(Node)
     case noExit(Node)
-    case noMainFunction(Node)
     case noForwardPass(Node)
     case postdominanceUnreachable(BasicBlock, Node)
     case dominanceUnreachable(BasicBlock, Node)
+    case basicBlockArgumentMismatch([Use], BasicBlock, Node)
+    case unexpectedBasicBlockType(BasicBlock, Node)
 }
 
 public protocol SelfVerifiable {
@@ -56,54 +57,18 @@ extension Module : SelfVerifiable {
         for fun in self {
             try fun.verify()
         }
-        guard let _ = mainFunction else {
-            throw VerificationError.noMainFunction(self)
-        }
     }
 }
 
 extension Function: SelfVerifiable {
     public func verify() throws {
-        /// Exit blocks
-        var returnBlocks: ObjectSet<BasicBlock> = []
-
-        let module = parent
-        guard let forwardPass = top else {
-            throw VerificationError.noForwardPass(self)
-        }
-
-        /// Check basic blocks
-        for bb in forwardPass {
-            /// Check module reference
-            guard self === bb.function else {
-                throw VerificationError.blockFunctionMismatch(bb, self)
-            }
-
-            /// Remember exit instruction
-            if let inst = bb.terminator, inst.isExit {
-                returnBlocks.insert(bb)
-            }
-
-            /// Verify basic block
-            try bb.verify()
-        }
-
-        /// There cannot be more than one exit
-        guard returnBlocks.count <= 1 else {
-            throw VerificationError.multipleExits(returnBlocks, self)
-        }
-
-        /// There should be at least one exit
-        guard let foundExit = returnBlocks.first else {
-            throw VerificationError.noExit(self)
-        }
-
-        /// Now that we have our one and only exit from verification, it must
-        /// be the same as the `exit` stored in function. Otherwise something's
-        /// seriously wrong.
-        precondition(self.endBlock === foundExit)
-
         /// TODO: Check for reachability in dominator tree and postdominator tree
+    }
+}
+
+extension Section : SelfVerifiable {
+    public func verify() throws {
+        
     }
 }
 
@@ -151,11 +116,9 @@ extension Control : SelfVerifiable {
     }
 
     private func verifySemantics() throws {
-        // TODO:
         switch self {
 
         case let .condBr(use, _, _):
-            // TODO: add dominance check
             /// Check bool use
             guard use.type == .bool else {
                 throw VerificationError.unexpectedType(use, .bool, self)
@@ -164,15 +127,20 @@ extension Control : SelfVerifiable {
                 throw VerificationError.unexpectedShape(use, .scalar, self)
             }
 
-        case let .yield(use, to: out):
-            guard use.type == out.type else {
-                throw VerificationError.unexpectedType(use, out.type, self)
+        case let .pull(ph, thenBB, elseBB):
+            /// `thenBB` must have one argument of the same type of `use`
+            guard thenBB.arguments.count == 1,
+                ph.type == thenBB.arguments[0].type,
+                ph.shape == thenBB.arguments[0].shape else {
+                throw VerificationError.unexpectedBasicBlockType(thenBB, self)
             }
-            guard use.shape == out.shape else {
-                throw VerificationError.unexpectedShape(use, out.shape, self)
+            /// `elseBB` cannot take arguments
+            guard elseBB.arguments.isEmpty else {
+                throw VerificationError.unexpectedBasicBlockType(elseBB, self)
             }
 
-        case let .store(use, to: global):
+        case let .yield(use, to: global as Definition),
+             let .store(use, to: global as Definition):
             guard use.type == global.type else {
                 throw VerificationError.unexpectedType(use, global.type, self)
             }
@@ -180,8 +148,15 @@ extension Control : SelfVerifiable {
                 throw VerificationError.unexpectedShape(use, global.shape, self)
             }
 
-        case .br: break
+        case let .br(bb, args):
+            for (formal, arg) in zip(bb.arguments, args) {
+                guard formal.shape == arg.shape, formal.type == arg.type else {
+                    throw VerificationError.basicBlockArgumentMismatch(args, bb, self)
+                }
+            }
+            
         case .ret: break
+        case .cont: break
 
         }
     }
@@ -253,27 +228,6 @@ extension Operation : SelfVerifiable {
             guard use.type.size <= type.size else {
                 throw VerificationError.cannotTypeCast(use, type, self)
             }
-            
-        case let .phi(shape, type, args):
-            for (use, bb) in args {
-                guard use.type == type else {
-                    throw VerificationError.unexpectedType(use, type, self)
-                }
-                guard use.shape == shape else {
-                    throw VerificationError.unexpectedShape(use, shape, self)
-                }
-                if let def = use.definition as? Def<Operation> {
-                    guard bb.containsOperation(def) else {
-                        throw VerificationError.definitionNotInBasicBlock(use, bb, self)
-                    }
-                }
-            }
-            break
-
-        case let .pull(ph, _, _):
-            guard ph.isRecurrent else {
-                throw VerificationError.placeholderError(ph, shouldBeRecurrent: true, self)
-            }
 
         case let .get(ph):
             guard !ph.isRecurrent else {
@@ -281,6 +235,7 @@ extension Operation : SelfVerifiable {
             }
 
         case .unary: break
+        case .transpose: break
 
         case let .call(shape, type, fun, ops):
             guard shape == fun.result?.shape else {
@@ -295,17 +250,13 @@ extension Operation : SelfVerifiable {
                 }
             }
 
-        case let .diff(shape, type, fun, call, wrt: idx):
-            guard fun.arguments.indices.contains(idx) else {
-                throw VerificationError.functionDiffArgumentIndexInvalid(idx, fun, self)
+        case let .diff(fun, call, wrt: arg):
+            guard fun.arguments.contains(arg) else {
+                throw VerificationError.functionDiffArgumentMismatch(call, arg, fun, self)
             }
             guard case .local(let def) = call.kind,
                   case .call(_, _, fun, _) = def.value else {
                 throw VerificationError.notAFunctionCall(call, fun, self)
-            }
-            let arg = fun.arguments[idx]
-            guard shape == arg.shape, type == arg.type else {
-                throw VerificationError.functionDiffArgumentMismatch(shape, type, arg, fun, self)
             }
 
         case let .subtensor(use, idx):
@@ -337,5 +288,11 @@ extension Use : SelfVerifiable {
         guard value.type == self.type else {
             throw VerificationError<Use>.useTypeMismatch(self)
         }
+    }
+}
+
+public class Verifier<Body : IRUnit & SelfVerifiable> : AnalysisPass<Body, Void> {
+    public override class func run(on body: Body) throws {
+        try body.verify()
     }
 }

@@ -12,9 +12,10 @@ public final class Instruction : IRSubUnit {
         case operation(Def<Operation>)
     }
     public typealias Parent = BasicBlock
-    public var kind: Kind
+    public let kind: Kind
     public unowned var parent: BasicBlock
     public internal(set) var analysisManager: AnalysisManager<Instruction> = AnalysisManager()
+    public internal(set) var transformManager: TransformManager<Instruction> = TransformManager()
 
     public required init(kind: Kind, parent: BasicBlock) {
         self.kind = kind
@@ -36,17 +37,19 @@ public enum Control {
     /// Yield value to output
     case yield(Use, to: Def<Output>)
     /// Unconditionally branch to basic block
-    case br(BasicBlock)
+    case br(BasicBlock, [Use])
     /// Conditional branch depending on the value
     case condBr(Use, BasicBlock, BasicBlock)
     /// Return
     case ret(Use?)
+    /// Continue to successor sections
+    case cont
+    /// Pull a value from the recurrent input batch in the current epoch
+    /// and pass the value as an argument to the first basic block argument
+    case pull(Def<Placeholder>, BasicBlock, BasicBlock)
 }
 
 public enum Operation {
-    /// Pull a value from the recurrent input batch in the current epoch
-    /// - Precondition: placeholder must be recurrent
-    case pull(Def<Placeholder>, BasicBlock, BasicBlock)
     /// Get the value of the non-recurrent input
     /// - Precondition: placeholder must **not** be recurrent
     case get(Def<Placeholder>)
@@ -64,8 +67,8 @@ public enum Operation {
     case matMul(Use, Use)
     /// Concatenation operation
     case concat(TensorShape, DataType, [Use], axis: Int)
-    /// Phi node of SSA form
-    case phi(TensorShape, DataType, [(Use, BasicBlock)])
+    /// Transpose
+    case transpose(Use)
     /// Type cast operation
     case typeCast(Use, DataType)
     /// Shape cast operation
@@ -79,7 +82,7 @@ public enum Operation {
     /// Function call
     case call(TensorShape, DataType, Function, [Use])
     /// Differentiate
-    case diff(TensorShape, DataType, Function, Use, wrt: Int)
+    case diff(Function, Use, wrt: Def<Argument>)
 }
 
 // MARK: - Instruction properties
@@ -99,17 +102,35 @@ extension Instruction : MaybeNamed {
     }
 }
 
+// MARK: - Control flow predicates
 public extension Instruction {
+    var isOperation: Bool {
+        if case .operation = kind { return true }
+        return false
+    }
+    
+    var isControl: Bool {
+        if case .control = kind { return true }
+        return false
+    }
+    
     var isTerminator: Bool {
         switch kind {
         case .control(let ctrl): return ctrl.isTerminator
-        case .operation(let def): return def.value.isTerminator
+        default: return false
         }
     }
 
     var isReturn: Bool {
         switch kind {
-        case .control(let ctrl): return ctrl.isYield
+        case .control(let ctrl): return ctrl.isReturn
+        default: return false
+        }
+    }
+
+    var isContinue: Bool {
+        switch kind {
+        case .control(let ctrl): return ctrl.isContinue
         default: return false
         }
     }
@@ -122,14 +143,17 @@ public extension Instruction {
     }
 
     var isExit: Bool {
-        return isReturn || isYield
+        switch kind {
+        case .control(let ctrl): return ctrl.isExit
+        default: return false
+        }
     }
 }
 
 public extension Control {
     var isTerminator: Bool {
         switch self {
-        case .br, .condBr, .ret, .yield:
+        case .br, .condBr, .ret, .pull, .cont:
             return true
         default:
             return false
@@ -143,6 +167,13 @@ public extension Control {
         }
     }
 
+    var isContinue: Bool {
+        switch self {
+        case .cont: return true
+        default: return false
+        }
+    }
+
     var isYield: Bool {
         switch self {
         case .yield: return true
@@ -151,18 +182,7 @@ public extension Control {
     }
 
     var isExit: Bool {
-        return isReturn || isYield
-    }
-}
-
-public extension Operation {
-    var isTerminator: Bool {
-        switch self {
-        case .pull:
-            return true
-        default:
-            return false
-        }
+        return isReturn || isContinue
     }
 }
 
@@ -181,26 +201,25 @@ extension Operation : Value {
              let .reduce(_, op, _),
              let .scan(_, op, _):
             return op.type
-        case let .phi(_, type, _):
-            return type
         case let .concat(_, type, _, _):
             return type
+        case let .transpose(op):
+            return op.type
         case let .typeCast(_, t):
             return t
         case let .shapeCast(op, _):
             return op.type
-        case let .pull(ph, _, _):
-            return ph.type
         case let .get(ph):
             return ph.type
-        case let .call(_, type, _, _),
-             let .diff(_, type, _, _, _):
+        case let .call(_, type, _, _):
             return type
         case let .element(op, _),
              let .subtensor(op, _):
             return op.type
         case let .intrinsic(_, type, _, _):
             return type
+        case let .diff(_, use, wrt: _):
+            return use.type
         }
     }
 
@@ -217,20 +236,17 @@ extension Operation : Value {
             return .scalar
         case let .reduce(_, op, axis: axis?):
             return op.shape.droppingDimension(axis)
-        case let .phi(shape, _, _):
-            return shape
         case let .concat(shape, _, _, _):
             return shape
+        case let .transpose(op):
+            return op.shape
         case let .typeCast(op, _):
             return op.shape
         case let .shapeCast(_, s):
             return s
-        case let .pull(ph, _, _):
-            return ph.shape
         case let .get(ph):
             return ph.shape
-        case let .call(shape, _, _, _),
-             let .diff(shape, _, _, _, _):
+        case let .call(shape, _, _, _):
             return shape
         case let .element(op, _):
             return op.shape.dropFirst()
@@ -238,6 +254,8 @@ extension Operation : Value {
             return op.shape[idx] ?? op.shape
         case let .intrinsic(shape, _, _, _):
             return shape
+        case let .diff(_, use, wrt: _):
+            return use.shape
         }
     }
 
@@ -267,18 +285,18 @@ extension Operation : User {
             return [op1, op2]
         case .concat(_, _, let uses, axis: _):
             return uses
+        case let .transpose(op):
+            return [op]
         case let .unary(_, op),
              let .reduce(_, op, _),
              let .scan(_, op, _),
              let .shapeCast(op, _),
              let .typeCast(op, _):
             return [op]
-        case let .phi(_, _, incomings):
-            return incomings.map{$0.0}
         case .call(_, _, _, let ops),
              .intrinsic(_, _, _, let ops):
             return ops
-        case .pull, .get, .diff:
+        case .get, .diff:
             return []
         case let .subtensor(op, _),
              let .element(op, _):
@@ -324,16 +342,16 @@ public extension Instruction {
 }
 
 public extension Control {
-    func substituting(_ actualUse: Use, for use: Use) -> Control {
+    func substituting(_ newUse: Use, for use: Use) -> Control {
         switch self {
         case .store(use, to: let dest):
-            return .store(actualUse, to: dest)
+            return .store(newUse, to: dest)
         case .condBr(use, let thenBB, let elseBB):
-            return .condBr(actualUse, thenBB, elseBB)
+            return .condBr(newUse, thenBB, elseBB)
         case .yield(use, to: let dest):
-            return .yield(actualUse, to: dest)
+            return .yield(newUse, to: dest)
         case .ret(use?):
-            return .ret(actualUse)
+            return .ret(newUse)
         default:
             return self
         }
@@ -341,33 +359,35 @@ public extension Control {
 }
 
 public extension Operation {
-    func substituting(_ actualUse: Use, for use: Use) -> Operation {
-        let condSubst = {$0 == use ? actualUse : $0}
+    func substituting(_ newUse: Use, for use: Use) -> Operation {
+        let condSubst = {$0 == use ? newUse : $0}
         switch self {
         case .unary(let fun, use):
-            return .unary(fun, actualUse)
+            return .unary(fun, newUse)
         case .binary(let fun, use, let use2):
-            return .binary(fun, actualUse, use2)
+            return .binary(fun, newUse, use2)
         case .binary(let fun, let use1, use):
-            return .binary(fun, use1, actualUse)
+            return .binary(fun, use1, newUse)
         case .binary(let fun, use, use):
-            return .binary(fun, actualUse, actualUse)
+            return .binary(fun, newUse, newUse)
         case let .concat(shape, type, uses, axis: axis):
             return .concat(shape, type, uses.map(condSubst), axis: axis)
-        case let .phi(shape, type, uses):
-            return .phi(shape, type, uses.map{(condSubst($0), $1)})
+        case .transpose(use):
+            return .transpose(newUse)
         case .reduce(let fun, use, axis: let axis):
-            return .reduce(fun, actualUse, axis: axis)
+            return .reduce(fun, newUse, axis: axis)
         case .matMul(use, let use2):
-            return .matMul(actualUse, use2)
+            return .matMul(newUse, use2)
         case .matMul(let use1, use):
-            return .matMul(use1, actualUse)
+            return .matMul(use1, newUse)
         case .matMul(use, use):
-            return .matMul(actualUse, actualUse)
+            return .matMul(newUse, newUse)
         case .shapeCast(use, let shape):
-            return .shapeCast(actualUse, shape)
+            return .shapeCast(newUse, shape)
         case .typeCast(use, let type):
-            return .typeCast(actualUse, type)
+            return .typeCast(newUse, type)
+        case .diff(let fun, use, wrt: let arg):
+            return .diff(fun, newUse, wrt: arg)
         default:
             return self
         }
@@ -383,8 +403,7 @@ public extension Control {
 public extension Operation {
     var usedPlaceholders: ObjectSet<Def<Placeholder>> {
         switch self {
-        case .pull(let ph, _, _),
-             .get(let ph):
+        case .get(let ph):
             return [ph]
         default:
             return []

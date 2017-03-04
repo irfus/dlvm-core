@@ -6,4 +6,4 @@ x: in[1x784]
 W: param[784x10] = 0.0
 b: param[1x10] = 0.0
 
-y: out[1x10] = x . W + b
+y: out[1x10] = tanh(x . W + b)
