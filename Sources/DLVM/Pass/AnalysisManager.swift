@@ -66,30 +66,47 @@ public extension AnalysisManager {
 }
 
 public extension IRUnit {
-
-    public func analysis<Pass, Result>(from pass: Pass.Type) -> Result
+    public func analysis<Pass, Result>(from pass: Pass.Type) throws -> Result
         where Pass : AnalysisManager<Self>.PassType<Result> {
         if let result = analysisManager.analysis(from: pass) {
             return result
         }
-        let result = Pass.run(on: self)
+        let result = try Pass.run(on: self)
         analysisManager.updateAnalysis(result, from: pass)
         return result
     }
-
 }
 
 public extension IRUnit {
-    func invalidateAnalyses() {
+    internal func invalidateLocalAnalyses() {
         analysisManager.invalidateAll()
     }
 }
 
-public extension IRUnit where Self : IRCollection, Self.Iterator.Element : IRSubUnit {
+public extension IRSubUnit {
     func invalidateAnalyses() {
+        parent.invalidateLocalAnalyses()
         analysisManager.invalidateAll()
-        for element in self {
-            element.invalidateAnalyses()
+    }
+    
+    internal func invalidateLocalAnalyses() {
+        parent.invalidateLocalAnalyses()
+    }
+}
+
+public extension IRUnit where Self : IRCollection, Self.Iterator.Element : IRUnit {
+    func invalidateAnalyses() {
+        for section in self {
+            section.invalidateAnalyses()
+        }
+    }
+}
+
+public extension IRSubUnit where Self : IRCollection, Self.Iterator.Element : IRUnit {
+    func invalidateAnalyses() {
+        parent.invalidateLocalAnalyses()
+        for section in self {
+            section.invalidateAnalyses()
         }
     }
 }

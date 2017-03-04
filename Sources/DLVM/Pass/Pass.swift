@@ -14,7 +14,7 @@ public protocol PassProtocol : class {
     associatedtype Body : IRUnit
     associatedtype Result
     static var name: String { get }
-    static func run(on body: Body) -> Result
+    static func run(on body: Body) throws -> Result
     static var shouldInvalidateAnalyses: Bool { get }
 }
 
@@ -24,7 +24,7 @@ open class Pass<Body : IRUnit, Result> : PassProtocol {
         return String(describing: type(of: self))
     }
 
-    open class func run(on body: Body) -> Result {
+    open class func run(on body: Body) throws -> Result {
         fatalError("Unimplemented")
     }
 
@@ -42,7 +42,7 @@ open class AnalysisPass<Body : IRUnit, Result> : Pass<Body, Result> {
     }
 }
 
-open class TransformationPass<Body : IRUnit> : Pass<Body, Bool> {
+open class TransformPass<Body : IRUnit> : Pass<Body, Bool> {
     open override class var shouldInvalidateAnalyses: Bool {
         return true
     }
