@@ -74,7 +74,7 @@ public extension Use {
 // MARK: - Value properties
 public extension Use {
 
-    var definition: AnyDef? {
+    var definition: Definition? {
         switch kind {
         case let .global(def): return def
         case let .local(def): return def
