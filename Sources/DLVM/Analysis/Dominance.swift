@@ -114,10 +114,9 @@ public extension Instruction {
 
 open class DominanceAnalysis : AnalysisPass<Section, DominatorTree<BasicBlock>> {
 
-    open override class func run(on body: Section) -> DominatorTree<BasicBlock> {
-        let entry = body.entry!
-        var domTree = DominatorTree(root: entry)
-        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+    open override class func run(on body: Section) throws -> DominatorTree<BasicBlock> {
+        var domTree = DominatorTree(root: body.entry)
+        let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
 
         /// Initialization of data flow analysis
         /// (done by the dom tree initializer)
@@ -126,7 +125,7 @@ open class DominanceAnalysis : AnalysisPass<Section, DominatorTree<BasicBlock>> 
         var changed = true
         repeat {
             changed = false
-            for node in entry.postorder.reversed().dropFirst() {
+            for node in body.entry.postorder.reversed().dropFirst() {
                 let preds = cfg.predecessors(of: node)
                 guard var newIDom = preds.first else {
                     preconditionFailure("Successor node doesn't have any predecessor")
@@ -144,15 +143,12 @@ open class DominanceAnalysis : AnalysisPass<Section, DominatorTree<BasicBlock>> 
     }
 }
 
-open class PostdominanceAnalysis : AnalysisPass<Section, [DominatorTree<BasicBlock>]> {
+open class PostdominanceAnalysis : AnalysisPass<Section, DominatorTree<BasicBlock>> {
 
-    static func leaves(in section: Section) -> [BasicBlock] {
-        return section.filter { $0.isLeaf }
-    }
-
-    static func postdominatorTree(from leaf: BasicBlock,
-                                  controlFlowGraph cfg: DirectedGraph<BasicBlock>) -> DominatorTree<BasicBlock> {
-        var domTree = DominatorTree(root: leaf)
+    open override class func run(on body: Section) throws -> DominatorTree<BasicBlock> {
+        let exit = try body.premise().exit
+        let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
+        var domTree = DominatorTree(root: exit)
         let transposeCFG = cfg.transpose
 
         /// Initialization of data flow analysis
@@ -163,7 +159,7 @@ open class PostdominanceAnalysis : AnalysisPass<Section, [DominatorTree<BasicBlo
         repeat {
             changed = false
             /// TODO: Need reverse postorder
-            for node in transposeCFG.traversed(from: leaf, in: .postorder).reversed().dropFirst() {
+            for node in transposeCFG.traversed(from: exit, in: .postorder).reversed().dropFirst() {
                 let preds = transposeCFG.predecessors(of: node)
                 guard var newIDom = preds.first else {
                     preconditionFailure("Successor node doesn't have any predecessor")
@@ -178,10 +174,5 @@ open class PostdominanceAnalysis : AnalysisPass<Section, [DominatorTree<BasicBlo
             }
         } while changed
         return domTree
-    }
-
-    open override class func run(on body: Section) -> [DominatorTree<BasicBlock>] {
-        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
-        return leaves(in: body).map { postdominatorTree(from: $0, controlFlowGraph: cfg) }
     }
 }
