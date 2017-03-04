@@ -82,72 +82,77 @@ fileprivate extension OrderedMapSet {
 // MARK: - Mutation
 public extension OrderedMapSet {
 
-    public mutating func append(_ element: Element) {
+    mutating func append(_ element: Element) {
         removeDuplicate(of: element)
         mutatingElements.add(element)
         insertName(of: element)
     }
 
-    public mutating func append<S: Sequence>(contentsOf elements: S) where S.Iterator.Element == Element {
+    mutating func append<S: Sequence>(contentsOf elements: S) where S.Iterator.Element == Element {
         for element in elements {
             append(element)
         }
     }
 
-    public mutating func insert(_ element: Element, at index: Int) {
+    mutating func insert(_ element: Element, at index: Int) {
         removeDuplicate(of: element)
         mutatingElements.insert(element, at: index)
         insertName(of: element)
     }
 
-    public mutating func insert(_ element: Element, after other: Element) {
+    mutating func insert(_ element: Element, after other: Element) {
         guard let previousIndex = index(of: other) else {
             preconditionFailure("Element to insert after is not in the set")
         }
         insert(element, at: previousIndex + 1)
     }
 
-    public mutating func insert(_ element: Element, before other: Element) {
+    mutating func insert(_ element: Element, before other: Element) {
         guard let nextIndex = index(of: other) else {
             preconditionFailure("Element to insert before is not in the set")
         }
         insert(element, at: nextIndex - 1)
     }
 
-    public func contains(_ element: Element) -> Bool {
-        return elements.contains(element)
-    }
-
-    public mutating func remove(_ element: Element) {
+    mutating func remove(_ element: Element) {
         mutatingElements.remove(element)
         removeName(of: element)
     }
 
-    public mutating func removeAll() {
+    mutating func removeAll() {
         mutatingElements.removeAllObjects()
         nameTable.removeAll()
     }
 
-    public func element(named name: String) -> Element? {
-        return nameTable[name]
-    }
-
-    public subscript(name: String) -> Element? {
-        return element(named: name)
-    }
-
     @discardableResult
-    public mutating func removeElement(named name: String) -> Element? {
+    mutating func removeElement(named name: String) -> Element? {
         guard let element = element(named: name) else { return nil }
         remove(element)
         return element
     }
 
-    public func index(of element: Element) -> Int? {
+}
+
+
+public extension OrderedMapSet {
+
+    func contains(_ element: Element) -> Bool {
+        return elements.contains(element)
+    }
+
+    func element(named name: String) -> Element? {
+        return nameTable[name]
+    }
+
+    subscript(name: String) -> Element? {
+        return element(named: name)
+    }
+
+    func index(of element: Element) -> Int? {
         return elements.index(of: element)
     }
 
-    public var array: [Element] {
+    var array: [Element] {
         return elements.array as! [Element]
     }
 
