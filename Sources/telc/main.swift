@@ -1,5 +1,6 @@
 import TEL
 import Foundation
+import DLVM
 //import DLVMReader
 import CommandLineKit
 
@@ -68,11 +69,15 @@ func main() throws {
         let module = program.makeModule()
         try module.verify()
 
+        for f in module {
+            try f.applyTransform(Differentiator.self)
+        }
+
         /// Print IR if needed
         if Options.shouldPrintIR.wasSet {
             print(module)
         }
-        
+
         /// Write IR
         try module.write(toFile: outputPath)
         print("DLVM module \"\(module.name)\" written to \(outputPath)")

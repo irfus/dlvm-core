@@ -116,7 +116,7 @@ public extension IRCollection {
     }
 
     public var endIndex: ElementCollection.Index {
-        return elements.startIndex
+        return elements.endIndex
     }
 
     public subscript(i: ElementCollection.Index) -> Element {
