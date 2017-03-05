@@ -360,3 +360,22 @@ public extension Tensor {
     }
     
 }
+
+// MARK: - Unsafe access
+public extension Tensor {
+
+    func withUnsafeBufferPointer<Result>
+        (_ body: (UnsafeBufferPointer<ItemType>) throws -> Result) rethrows -> Result {
+        return try items.withUnsafeBufferPointer { ptr in
+            try body(ptr)
+        }
+    }
+
+    mutating func withUnsafeMutableBufferPointer<Result>
+        (_ body: (inout UnsafeMutableBufferPointer<ItemType>) throws -> Result) rethrows -> Result {
+        return try items.withUnsafeMutableBufferPointer { ptr in
+            try body(&ptr)
+        }
+    }
+    
+}
