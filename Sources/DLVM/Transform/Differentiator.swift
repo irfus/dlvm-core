@@ -6,14 +6,108 @@
 //
 //
 
-public class AutomaticDifferentiator : TransformationPass<Section> {
+public class Differentiator : TransformPass<Function> {
 
-    open override class func run(on section: Section) -> Bool {
+    open override class func run(on function: Function) throws -> Bool {
         var changed = false
-        guard let entry = section.entry else { return false }
-        let builder = IRBuilder(basicBlock: entry)
+        guard function.isDifferentiable else { return false }
+
+        let entry = function.entry
+        guard function.derivative.entry.isEmpty else { return false }
+
+        guard entry.isExit else {
+            fatalError("Control flow not supported")
+        }
+
+        let builder = IRBuilder(function: function)
+        function.derivative.predecessors.insert(function.top)
+        builder.move(to: function.derivative.entry)
+
+        /// Traverse from return
+        let retVal = try function.premise().topReturnValue
+
+        guard let y = retVal else {
+            throw VerificationError.noReturn(function)
+        }
+
+        changed = true
+        differentiate(y, using: builder, in: function)
 
         return changed
     }
 
+    @discardableResult
+    private static func differentiate(_ use: Use, using builder: IRBuilder, in function: Function) -> Use {
+        
+        switch use.kind {
+            
+        case .literal(let v):
+            return builder.makeLiteral(v.makeScalarLiteral(0))
+        case .global(let v):
+            return builder.makeLiteral(v.makeScalarLiteral(0))
+            
+        case .argument(let argDef):
+            let lit = builder.makeLiteral(argDef.makeScalarLiteral(1))
+            builder.currentSection!.derivation = argDef
+            let sec = builder.buildSection(named: "grad",
+                                           dependencies: [builder.currentSection!],
+                                           in: function)
+            builder.move(to: sec.entry)
+            return lit
+
+        case let .local(def):
+            let oper = def.value
+            let result: Use
+            switch oper {
+            case .unary(.elementwise(.sigmoid), let arg):
+                let sigmoidx = use
+                let one = builder.makeLiteral(sigmoidx.value.makeScalarLiteral(1))
+                let oneminus = builder.buildOperation(.binary(.associative(.arithmetic(.subtract)), one, sigmoidx))
+                let dsig = builder.buildOperation(.binary(.associative(.arithmetic(.multiply)), oneminus, sigmoidx))
+                let dg = differentiate(arg, using: builder, in: function)
+                result = builder.buildOperation(.binary(.associative(.arithmetic(.multiply)), dsig, dg))
+
+            case let .binary(.associative(.arithmetic(.multiply)), L, R):
+                let dL = differentiate(L, using: builder, in: function)
+                let dR = differentiate(R, using: builder, in: function)
+                let dLxR = builder.buildOperation(.binary(.associative(.arithmetic(.multiply)), dL, R))
+                let LxdR = builder.buildOperation(.binary(.associative(.arithmetic(.multiply)), L, dR))
+                result = builder.buildOperation(.binary(.associative(.arithmetic(.add)), dLxR, LxdR))
+                
+            case let .binary(.associative(.arithmetic(.add)), L, R):
+                let dL = differentiate(L, using: builder, in: function)
+                let dR = differentiate(R, using: builder, in: function)
+                result = builder.buildOperation(.binary(.associative(.arithmetic(.add)), dL, dR))
+
+            case let .binary(.associative(.arithmetic(.subtract)), L, R):
+                let dL = differentiate(L, using: builder, in: function)
+                let dR = differentiate(R, using: builder, in: function)
+                result = builder.buildOperation(.binary(.associative(.arithmetic(.subtract)), dL, dR))
+                
+            case let .binary(.associative(.arithmetic(.divide)), L, R):
+                let dL = differentiate(L, using: builder, in: function)
+                let dR = differentiate(R, using: builder, in: function)
+                let dLxR = builder.buildOperation(.binary(.associative(.arithmetic(.multiply)), dL, R))
+                let LxdR = builder.buildOperation(.binary(.associative(.arithmetic(.multiply)), L, dR))
+                let ddiff = builder.buildOperation(.binary(.associative(.arithmetic(.divide)), dLxR, LxdR))
+                let two = builder.makeLiteral(dR.value.makeScalarLiteral(2))
+                let sqr = builder.buildOperation(.binary(.associative(.arithmetic(.power)), dR, two))
+                result = builder.buildOperation(.binary(.associative(.arithmetic(.divide)), ddiff, sqr))
+                
+            case let .matMul(L, R):
+                let dL = differentiate(L, using: builder, in: function)
+                let dR = differentiate(R, using: builder, in: function)
+                let dLxR = builder.buildOperation(.matMul(dL, R))
+                let LxdR = builder.buildOperation(.matMul(L, dR))
+                result = builder.buildOperation(.binary(.associative(.arithmetic(.add)), dLxR, LxdR))
+                
+            default:
+                fatalError("Unhandled term \(def)")
+                
+            }
+
+            return result
+        }
+    }
+    
 }

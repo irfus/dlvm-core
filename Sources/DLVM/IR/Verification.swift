@@ -42,6 +42,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case noEntry(Node)
     case noExit(Node)
     case noForwardPass(Node)
+    case noReturn(Node)
     case postdominanceUnreachable(BasicBlock, Node)
     case dominanceUnreachable(BasicBlock, Node)
     case basicBlockArgumentMismatch([Use], BasicBlock, Node)

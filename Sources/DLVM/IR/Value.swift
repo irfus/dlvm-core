@@ -123,23 +123,37 @@ public extension Def where ValueType : PotentiallyRecurrentValue {
 // MARK: - Value helper factories
 public extension Value {
     /// Returns a zero value of the same shape and the same data type
-    func makeZero() -> LiteralValue {
+    func makeLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
         let literal: Literal
         switch (type.base, shape) {
         case (.bool, []):
-            literal = .scalar(.bool(false))
+            literal = .scalar(.bool(integerLiteral != 0))
         case (.float, []):
-            literal = .scalar(.float(0))
+            literal = .scalar(.float(Double(integerLiteral)))
         case (.int, []):
-            literal = .scalar(.int(0))
+            literal = .scalar(.int(integerLiteral))
         case (.bool, _):
-            literal = .tensor(.repeating(.bool(false)))
+            literal = .tensor(.repeating(.bool(integerLiteral != 0)))
         case (.float, _):
-            literal = .tensor(.repeating(.float(0)))
+            literal = .tensor(.repeating(.float(Double(integerLiteral))))
         case (.int, _):
-            literal = .tensor(.repeating(.int(0)))
+            literal = .tensor(.repeating(.int(integerLiteral)))
         }
         return LiteralValue(shape: shape, type: type, literal: literal)
+    }
+
+    /// Returns a zero value of the same shape and the same data type
+    func makeScalarLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
+        let literal: Literal
+        switch type.base {
+        case .bool:
+            literal = .scalar(.bool(integerLiteral != 0))
+        case .float:
+            literal = .scalar(.float(Double(integerLiteral)))
+        case .int:
+            literal = .scalar(.int(integerLiteral))
+        }
+        return LiteralValue(shape: .scalar, type: type, literal: literal)
     }
 }
 

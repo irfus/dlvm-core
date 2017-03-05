@@ -77,21 +77,52 @@ class CodeGenerator {
             let use = builder.declare(variable, name: param.name)
             environment[param.name] = use
         }
-        
-        /// Entry block
-        let function = builder.buildFunction(named: "main", arguments: [], result: nil, isDifferentiable: false)
+
+        /// Build pure inference function
+        var args: [(String, DLVM.Argument)] = []
+        for input in program.inputs {
+            let arg = Argument(shape: input.shape, type: program.dataType)
+            args.append((input.name, arg))
+        }
+        for param in program.parameters {
+            let arg = Argument(shape: param.shape, type: program.dataType)
+            args.append((param.name, arg))
+        }
+        let output = program.layers.first(where: {$0.isOutput})! // BAD!
+        let resultType = Argument(shape: output.shape, type: program.dataType)
+        let function = builder.buildFunction(named: "inference", arguments: args,
+                                             result: resultType, isDifferentiable: true)
         builder.move(to: function.entry)
 
+        /// Add all args into env
+        for argDef in function.arguments {
+            let use = Use(kind: .argument(argDef))
+            environment[argDef.name] = use
+        }
+
         /// Generate hidden layers
+        var result: Use?
         for layer in program.layers {
             let op = build(layer.expression, named: layer.name)
+            result = op
             environment[layer.name] = op
-            if layer.isOutput {
-                let out = Output(shape: layer.shape, type: program.dataType, isRecurrent: false)
-                let def = builder.declare(out, name: layer.name)
-                builder.buildControl(.yield(op, to: def))
-            }
         }
+        builder.buildControl(.ret(result))
+
+
+        /// Main function
+//        let function = builder.buildFunction(named: "main", arguments: [], result: nil, isDifferentiable: false)
+//        /// Entry block
+//        builder.move(to: function.entry)
+//        /// Load all inputs in and call pure inference function
+//        builder.buildFunction(named: "inference",
+//                              arguments: <#T##[(String, Argument)]#>, result: <#T##Argument?#>, isDifferentiable: <#T##Bool#>)
+        
+//            if layer.isOutput {
+//                let out = Output(shape: layer.shape, type: program.dataType, isRecurrent: false)
+//                let def = builder.declare(out, name: layer.name)
+//                builder.buildControl(.yield(op, to: def))
+//            }
         
         return builder.module
     }
@@ -105,12 +136,6 @@ class CodeGenerator {
         case let .variable(variable, _):
             if environment.containsValue(named: variable.name) {
                 return environment[variable.name]
-            }
-            /// If it's a placeholder, emit a `pull` or `get` instruction
-            if let ph = environment.placeholders[variable.name] {
-                let val = builder.buildOperation(.get(ph))
-                environment[variable.name] = val
-                return val
             }
             preconditionFailure("Unknown variable name. Something's wrong with DLGen")
         case let .call(funcName, args, _):

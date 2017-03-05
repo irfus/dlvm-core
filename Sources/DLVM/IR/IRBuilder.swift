@@ -34,11 +34,23 @@ open class IRBuilder {
         self.module = module
     }
 
-    public convenience init(moduleName: String) {
+}
+
+public extension IRBuilder {
+
+    convenience init(moduleName: String) {
         self.init(module: Module(name: moduleName))
     }
 
-    public convenience init(basicBlock: BasicBlock) {
+    convenience init(function: Function) {
+        self.init(module: function.parent)
+    }
+
+    convenience init(section: Section) {
+        self.init(module: section.parent.parent)
+    }
+
+    convenience init(basicBlock: BasicBlock) {
         self.init(module: basicBlock.module)
         move(to: basicBlock)
     }
@@ -55,7 +67,7 @@ extension IRBuilder {
 
     func disambiguatedName(for name: String, in function: Function, id: Int = 0) -> String {
         let newName = id == 0 ? name : name + ".\(id)"
-        return function.containsInstruction(named: newName)
+        return function.containsName(newName)
              ? disambiguatedName(for: name, in: function, id: id + 1)
              : newName
     }
@@ -99,7 +111,11 @@ extension IRBuilder {
     }
 
     open func makeLiteral(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
-        return Use(kind: .literal(LiteralValue(shape: shape, type: type, literal: literal)))
+        return makeLiteral(LiteralValue(shape: shape, type: type, literal: literal))
+    }
+
+    open func makeLiteral(_ literalValue: LiteralValue) -> Use {
+        return Use(kind: .literal(literalValue))
     }
 
     @discardableResult
@@ -119,8 +135,10 @@ extension IRBuilder {
     @discardableResult
     open func buildSection(named name: String,
                            dependencies deps: ObjectSet<Section> = [],
+                           derivation: Def<Argument>? = nil,
                            in function: Function) -> Section {
-        let section = Section(name: name, dependencies: deps, parent: function)
+        let section = Section(name: disambiguatedName(for: name, in: function),
+                              dependencies: deps, derivation: derivation, parent: function)
         function.append(section)
         return section
     }
