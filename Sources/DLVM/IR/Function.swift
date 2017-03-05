@@ -9,8 +9,13 @@
 public struct Argument : Value {
     public var shape: TensorShape
     public var type: DataType
-    public var broadcasting: Bool
+    public var broadcasting: Bool = false
     public static var scope: Scope = .local
+
+    public init(shape: TensorShape, type: DataType) {
+        self.shape = shape
+        self.type = type
+    }
 }
 
 public final class Function : Named, IRCollection, IRSubUnit {
@@ -33,6 +38,15 @@ public final class Function : Named, IRCollection, IRSubUnit {
         }
         let bb = Section(asTopOf: self)
         elements.insert(bb, at: 0)
+        return bb
+    }
+    
+    public unowned var derivative: Section {
+        if let entry = elements["derivative"] {
+            return entry
+        }
+        let bb = Section(asDerivativeOf: self)
+        elements.append(bb)
         return bb
     }
 
@@ -86,6 +100,16 @@ extension Function {
 
     open func containsInstruction(named name: String) -> Bool {
         return instruction(named: name) != nil
+    }
+
+    open func containsName(_ name: String) -> Bool {
+        return containsElement(named: name)
+            || contains(where: {
+                $0.containsElement(named: name)
+                || $0.contains(where: {
+                    $0.containsElement(named: name)
+                })
+            })
     }
 
 }

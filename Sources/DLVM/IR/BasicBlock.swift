@@ -90,4 +90,8 @@ public extension BasicBlock {
         return parent.entry === self
     }
 
+    var isExit: Bool {
+        return terminator?.isExit ?? false
+    }
+
 }

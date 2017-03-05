@@ -41,6 +41,10 @@ public final class Section : IRCollection, IRSubUnit, Named, BackwardGraphNode {
     internal convenience init(asTopOf parent: Function) {
         self.init(name: "top", dependencies: [], parent: parent)
     }
+
+    internal convenience init(asDerivativeOf parent: Function) {
+        self.init(name: "derivative", dependencies: [], parent: parent)
+    }
     
 }
 

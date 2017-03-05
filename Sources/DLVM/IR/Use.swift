@@ -104,7 +104,7 @@ public extension Use {
 
 // MARK: - Value helper factories
 public extension Use {
-    func makeZero() -> LiteralValue {
-        return value.makeZero()
+    func makeLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
+        return value.makeLiteral(integerLiteral)
     }
 }
