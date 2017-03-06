@@ -6,6 +6,8 @@
 //
 //
 
+@_exported import DLVMTensor
+
 /// Scope of value
 public enum Scope {
     case global
