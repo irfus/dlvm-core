@@ -20,7 +20,7 @@ public struct Argument : Value {
 
 public final class Function : Named, IRCollection, IRSubUnit {
 
-    public typealias Element = Section
+    public typealias Element = BasicBlock
 
     public var name: String
     public var result: Argument?
@@ -28,30 +28,17 @@ public final class Function : Named, IRCollection, IRSubUnit {
     public var isDifferentiable: Bool
     public unowned var parent: Module
     
-    public var elements: OrderedMapSet<Section> = []
+    public var elements: OrderedMapSet<BasicBlock> = []
     public internal(set) var analysisManager: AnalysisManager<Function> = AnalysisManager()
     public internal(set) var transformManager: TransformManager<Function> = TransformManager()
-    
-    public unowned var top: Section {
-        if let entry = elements["top"] {
-            return entry
-        }
-        let bb = Section(asTopOf: self)
-        elements.insert(bb, at: 0)
-        return bb
-    }
-    
-    public unowned var derivative: Section {
-        if let entry = elements["derivative"] {
-            return entry
-        }
-        let bb = Section(asDerivativeOf: self)
-        elements.append(bb)
-        return bb
-    }
 
     public unowned var entry: BasicBlock {
-        return top.entry
+        if let entry = elements["entry"] {
+            return entry
+        }
+        let bb = BasicBlock(asEntryOf: self)
+        elements.insert(bb, at: 0)
+        return bb
     }
 
     public init(name: String, arguments: [(String, Argument)], result: Argument?,
@@ -77,20 +64,12 @@ extension Function {
 // MARK: - Control flow
 extension Function {
 
-    open var allInstructions: LazyCollection<FlattenCollection<FlattenBidirectionalCollection<Function>>> {
-        return allBasicBlocks.joined()
-    }
-
-    open var allBasicBlocks: LazyCollection<FlattenBidirectionalCollection<Function>> {
+    open var instructions: LazyCollection<FlattenBidirectionalCollection<Function>> {
         return lazy.joined()
     }
 
-    open weak var endBlock: BasicBlock? {
-        return top.endBlock
-    }
-
     open func instruction(named name: String) -> Instruction? {
-        for bb in allBasicBlocks {
+        for bb in self {
             if let inst = bb.element(named: name) {
                 return inst
             }
@@ -104,12 +83,7 @@ extension Function {
 
     open func containsName(_ name: String) -> Bool {
         return containsElement(named: name)
-            || contains(where: {
-                $0.containsElement(named: name)
-                || $0.contains(where: {
-                    $0.containsElement(named: name)
-                })
-            })
+            || contains(where: { $0.containsElement(named: name) })
     }
 
 }

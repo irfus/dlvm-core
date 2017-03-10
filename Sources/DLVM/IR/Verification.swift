@@ -67,12 +67,6 @@ extension Function: SelfVerifiable {
     }
 }
 
-extension Section : SelfVerifiable {
-    public func verify() throws {
-        
-    }
-}
-
 extension BasicBlock : SelfVerifiable {
     open func verify() throws {
         /// Check instructions

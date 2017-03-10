@@ -12,7 +12,7 @@ open class IRBuilder {
 
     open fileprivate(set) weak var currentBlock: BasicBlock? {
         didSet {
-            currentFunction = currentBlock?.function
+            currentFunction = currentBlock?.parent
         }
     }
 
@@ -22,10 +22,6 @@ open class IRBuilder {
                 variableNameId = 0
             }
         }
-    }
-
-    open weak var currentSection: Section? {
-        return currentBlock?.parent
     }
 
     fileprivate var variableNameId = 0
@@ -44,10 +40,6 @@ public extension IRBuilder {
 
     convenience init(function: Function) {
         self.init(module: function.parent)
-    }
-
-    convenience init(section: Section) {
-        self.init(module: section.parent.parent)
     }
 
     convenience init(basicBlock: BasicBlock) {
@@ -81,7 +73,7 @@ extension IRBuilder {
         guard let block = currentBlock else {
             preconditionFailure("Current block doesn't exist")
         }
-        let def = Def(name: name ?? makeVariableName(in: block.function), value: operation)
+        let def = Def(name: name ?? makeVariableName(in: block.parent), value: operation)
         block.append(.operation(def, parent: block))
         return def
     }
@@ -133,23 +125,12 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildSection(named name: String,
-                           dependencies deps: ObjectSet<Section> = [],
-                           derivation: Def<Argument>? = nil,
-                           in function: Function) -> Section {
-        let section = Section(name: disambiguatedName(for: name, in: function),
-                              dependencies: deps, derivation: derivation, parent: function)
-        function.append(section)
-        return section
-    }
-
-    @discardableResult
     open func buildBasicBlock(named name: String,
                               arguments: [(String, Argument)],
-                              in section: Section) -> BasicBlock {
-        let newName = disambiguatedName(for: name, in: section.parent)
-        let block = BasicBlock(name: newName, arguments: arguments, parent: section)
-        section.append(block)
+                              in function: Function) -> BasicBlock {
+        let newName = disambiguatedName(for: name, in: function)
+        let block = BasicBlock(name: newName, arguments: arguments, parent: function)
+        function.append(block)
         return block
     }
 
