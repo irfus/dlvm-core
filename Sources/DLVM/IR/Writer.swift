@@ -2,6 +2,8 @@
 // Created by Richard Wei on 12/25/16.
 //
 
+import DLVMTensor
+
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         type.write(to: &target)
@@ -58,6 +60,23 @@ extension TensorIndex : TextOutputStreamable {
         target.write("(")
         map{"\($0)"}.joined(separator: ", ").write(to: &target)
         target.write(")")
+    }
+}
+
+extension Type : TextOutputStreamable {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        switch self {
+        case let .simple(shape, dType):
+            if !shape.isScalar {
+                target.write("\(shape) ")
+            }
+            target.write("\(dType)")
+            
+        case let .tuple(components):
+            target.write("(")
+            target.write(components.map{"\($0)"}.joined(separator: ", "))
+            target.write(")")
+        }
     }
 }
 
@@ -290,35 +309,18 @@ extension Def : TextOutputStreamable {
 
 extension BasicBlock : TextOutputStreamable {
     private func makeIndentation() -> String {
-        return "        "
+        return "    "
     }
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
         /// Begin block
-        target.write("    \(name)(\(arguments.map{"\($0)"}.joined(separator: ", "))):\n")
+        target.write("\(name)(\(arguments.map{"\($0)"}.joined(separator: ", "))):\n")
         for inst in elements {
             /// Write indentation
             makeIndentation().write(to: &target)
             inst.write(to: &target)
             target.write("\n")
         }
-    }
-}
-
-extension Section : TextOutputStreamable {
-    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("    section \(name) ")
-        if !predecessors.isEmpty {
-            target.write("<- [\(predecessors.map{$0.name}.joined(separator: ", "))] ")
-        }
-        if let dest = derivation {
-            target.write("deriving %\(dest.name) ")
-        }
-        target.write("{\n")
-        for bb in self {
-            bb.write(to: &target)
-        }
-        target.write("    }\n")
     }
 }
 
@@ -335,8 +337,8 @@ extension Function : TextOutputStreamable {
             target.write("-> \(result.shape) \(result.type) ")
         }
         target.write("{\n")
-        for section in self {
-            section.write(to: &target)
+        for bb in self {
+            bb.write(to: &target)
         }
         target.write("}")
     }

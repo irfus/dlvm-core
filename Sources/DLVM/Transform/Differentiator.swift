@@ -13,25 +13,16 @@ public class Differentiator : TransformPass<Function> {
         guard function.isDifferentiable else { return false }
 
         let entry = function.entry
-        guard function.derivative.entry.isEmpty else { return false }
 
         guard entry.isExit else {
             fatalError("Control flow not supported")
         }
 
-        let builder = IRBuilder(function: function)
-        function.derivative.predecessors.insert(function.top)
-        builder.move(to: function.derivative.entry)
-
-        /// Traverse from return
-        let retVal = try function.premise().topReturnValue
-
-        guard let y = retVal else {
-            throw VerificationError.noReturn(function)
-        }
+        let builder = IRBuilder(module: function.parent)
+//        builder.buildFunction(named: function.name + "_grad",
+//                              arguments: <#T##[(String, Argument)]#>, result: <#T##Argument?#>, isDifferentiable: <#T##Bool#>)
 
         changed = true
-        differentiate(y, using: builder, in: function)
 
         return changed
     }
@@ -48,11 +39,6 @@ public class Differentiator : TransformPass<Function> {
             
         case .argument(let argDef):
             let lit = builder.makeLiteral(argDef.makeScalarLiteral(1))
-            builder.currentSection!.derivation = argDef
-            let sec = builder.buildSection(named: "grad",
-                                           dependencies: [builder.currentSection!],
-                                           in: function)
-            builder.move(to: sec.entry)
             return lit
 
         case let .local(def):

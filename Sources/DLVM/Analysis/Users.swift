@@ -39,7 +39,7 @@ open class UserAnalysis : AnalysisPass<Function, UserGraph> {
 
     open override class func run(on body: Function) throws -> UserGraph {
         var userGraph = UserGraph()
-        for inst in body.allInstructions {
+        for inst in body.instructions {
             for use in inst.operands {
                 if let def = use.definition {
                     userGraph.insert(inst, for: def)

@@ -33,12 +33,12 @@ extension BasicBlock : PremiseHolder {
 
 }
 
-extension Section : PremiseHolder {
+extension Function : PremiseHolder {
 
     public struct Premise { let exit: BasicBlock }
 
-    public class PremiseVerifier : AnalysisPass<Section, Premise> {
-        public override class func run(on body: Section) throws -> Premise {
+    public class PremiseVerifier : AnalysisPass<Function, Premise> {
+        public override class func run(on body: Function) throws -> Premise {
             var exits: [BasicBlock] = []
             for bb in body {
                 let terminator = try bb.premise().terminator
@@ -54,21 +54,4 @@ extension Section : PremiseHolder {
         }
     }
     
-}
-
-extension Function : PremiseHolder {
-
-    public struct Premise { let topReturn: Control, topReturnValue: Use? }
-
-    public class PremiseVerifier : AnalysisPass<Function, Premise> {
-        public override class func run(on body: Function) throws -> Function.Premise {
-            let exit = try body.top.premise().exit
-            let terminator = try exit.premise().terminator
-            guard case .ret(let use) = terminator else {
-                throw VerificationError.noReturn(body)
-            }
-            return Premise(topReturn: terminator, topReturnValue: use)
-        }
-    }
-
 }

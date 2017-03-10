@@ -14,11 +14,11 @@ public final class BasicBlock : IRCollection, IRSubUnit, Named {
     open var name: String
     open var arguments: OrderedMapSet<Def<Argument>> = []
     open var elements: OrderedMapSet<Instruction> = []
-    open unowned var parent: Section
+    open unowned var parent: Function
     public internal(set) var analysisManager: AnalysisManager<BasicBlock> = AnalysisManager()
     public internal(set) var transformManager: TransformManager<BasicBlock> = TransformManager()
 
-    internal init<C: Collection>(name: String, arguments: C, parent: Section)
+    internal init<C: Collection>(name: String, arguments: C, parent: Function)
         where C.Iterator.Element == Def<Argument>
     {
         self.name = name
@@ -26,11 +26,11 @@ public final class BasicBlock : IRCollection, IRSubUnit, Named {
         self.parent = parent
     }
 
-    internal convenience init(asEntryOf parent: Section) {
-        self.init(name: "entry", arguments: parent.parent.arguments, parent: parent)
+    internal convenience init(asEntryOf parent: Function) {
+        self.init(name: "entry", arguments: parent.arguments, parent: parent)
     }
 
-    public convenience init(name: String, arguments: [(String, Argument)], parent: Section) {
+    public convenience init(name: String, arguments: [(String, Argument)], parent: Function) {
         self.init(name: name, arguments: arguments.map(Def.init), parent: parent)
     }
 
@@ -74,16 +74,8 @@ public extension BasicBlock {
         return terminator?.isYield ?? false
     }
 
-    var isForward: Bool {
-        return parent.isForward
-    }
-
-    var function: Function {
-        return parent.parent
-    }
-
     var module: Module {
-        return function.parent
+        return parent.parent
     }
 
     var isEntry: Bool {
