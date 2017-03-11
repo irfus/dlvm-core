@@ -59,7 +59,7 @@ However, this design has many problems:
 
 ** Remove ~Section~
 
-   In [[http://www.sciencedirect.com/science/article/pii/S0377042700004222][Automatic differentiation of algorithms]], the source code transformation of
+   In [[http://www.sciencedirect.com/science/article/pii/S0377042700004222][Automatic Differentiation of Algorithms]], the source code transformation of
    automatic differentiation is to define a new function that computes the
    partial derivatives with respect to every argument of the original function. The
    new function returns multiple values as a tuple. Formally, a function of type
@@ -157,7 +157,7 @@ However, this design has many problems:
 
   1. How do we, for example, only compute $\frac{\partial f(x, y)}{\partial x}$
      without computing $\frac{\partial f(x, y)}{\partial y}$? This was possible,
-     though ad-hoc, using the section graph approach, but is not possible using
+     though ad-hoc, through the section graph approach, but is not possible through
      the new approach (source code transformation with multiple returns) on the
      DLVM IR level. Perhaps a global optimization pass on HPVM/LLVM can nail
      this?
