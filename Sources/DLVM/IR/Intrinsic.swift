@@ -6,6 +6,8 @@
 //
 //
 
+/*
+
 public struct Intrinsic {
     public var name: String
     public var kind: OpKind
@@ -47,3 +49,5 @@ public extension Intrinsic {
         }
     }
 }
+
+ */

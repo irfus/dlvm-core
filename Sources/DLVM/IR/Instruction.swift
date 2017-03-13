@@ -37,13 +37,11 @@ public enum Control {
     /// Yield value to output
     case yield(Use, to: Def<Output>)
     /// Unconditionally branch to basic block
-    case br(BasicBlock, [Use])
+    case branch(BasicBlock, [Use])
     /// Conditional branch depending on the value
-    case condBr(Use, BasicBlock, BasicBlock)
+    case conditional(Use, BasicBlock, BasicBlock)
     /// Return
-    case ret(Use?)
-    /// Continue to successor sections
-    case cont
+    case `return`(Use?)
     /// Pull a value from the recurrent input batch in the current epoch
     /// and pass the value as an argument to the first basic block argument
     case pull(Def<Placeholder>, BasicBlock, BasicBlock)
@@ -64,25 +62,25 @@ public enum Operation {
     /// Monomorphic binary operation
     case binary(BinaryOp, Use, Use)
     /// Matrix multiplication operation
-    case matMul(Use, Use)
+    case matrixMultiply(Use, Use)
     /// Concatenation operation
-    case concat(TensorShape, DataType, [Use], axis: Int)
+    case concatenate([Use], axis: Int)
     /// Transpose
     case transpose(Use)
     /// Type cast operation
-    case typeCast(Use, DataType)
+    case dataTypeCast(Use, DataType)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
     /// Subtensor addressing
     case subtensor(Use, TensorIndex)
-    /// Intrinsic
-    case intrinsic(TensorShape, DataType, Intrinsic, [Use])
     /// Element in the immediate dimension
-    case element(Use, Int)
+    case tupleElement(Use, Int)
+    /// Create tuple
+    case tuple([Use])
     /// Function call
-    case call(TensorShape, DataType, Function, [Use])
-    /// Differentiate
-    case diff(Function, Use, wrt: Def<Argument>)
+    case call(Function, [Use])
+    /// Gradient call
+    case gradient(Function, [Use])
 }
 
 // MARK: - Instruction properties
@@ -128,13 +126,6 @@ public extension Instruction {
         }
     }
 
-    var isContinue: Bool {
-        switch kind {
-        case .control(let ctrl): return ctrl.isContinue
-        default: return false
-        }
-    }
-
     var isYield: Bool {
         switch kind {
         case .control(let ctrl): return ctrl.isYield
@@ -153,7 +144,7 @@ public extension Instruction {
 public extension Control {
     var isTerminator: Bool {
         switch self {
-        case .br, .condBr, .ret, .pull, .cont:
+        case .branch, .conditional, .`return`, .pull:
             return true
         default:
             return false
@@ -162,14 +153,7 @@ public extension Control {
 
     var isReturn: Bool {
         switch self {
-        case .ret: return true
-        default: return false
-        }
-    }
-
-    var isContinue: Bool {
-        switch self {
-        case .cont: return true
+        case .`return`: return true
         default: return false
         }
     }
@@ -182,80 +166,121 @@ public extension Control {
     }
 
     var isExit: Bool {
-        return isReturn || isContinue
+        return isReturn
+    }
+}
+
+infix operator <>
+
+extension TensorShape {
+    public static func <> (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
+        return lhs.mutuallyBroadcasted(with: rhs)
     }
 }
 
 extension Operation : Value {
 
-    public var type: DataType {
+    public var type: Type {
         switch self {
-        case let .binary(.associative(.arithmetic), op1, _):
-            return op1.type
-        case .binary(.associative(.boolean), _, _),
-             .binary(.comparison, _, _):
-            return .bool
-        case let .matMul(op1, _):
-            return op1.type
-        case let .unary(_, op),
-             let .reduce(_, op, _),
-             let .scan(_, op, _):
-            return op.type
-        case let .concat(_, type, _, _):
-            return type
-        case let .transpose(op):
-            return op.type
-        case let .typeCast(_, t):
-            return t
-        case let .shapeCast(op, _):
-            return op.type
+        case let .binary(.associative(.arithmetic), v1, v2):
+            guard case let .tensor(s1, t1) = v1.type,
+                  case let .tensor(s2, t2) = v2.type,
+                let shape = s1 <> s2, t1 == t2
+                else { return .invalid }
+            return .tensor(shape, t1)
+
+        case let .binary(.associative(.boolean), v1, v2),
+             let .binary(.comparison, v1, v2):
+            guard case let .tensor(s1, t1) = v1.type,
+                  case let .tensor(s2, t2) = v2.type,
+                  let shape = s1 <> s2, t1 == t2
+                else { return .invalid }
+            return .tensor(shape, .bool)
+            
+        case let .matrixMultiply(v1, v2):
+            guard case let .tensor(s1, t1) = v1.type,
+                  case let .tensor(s2, t2) = v2.type,
+                  let newShape = s1.matrixMultiplied(with: s2),
+                  t1 == t2 else { return .invalid }
+            return .tensor(newShape, t1)
+
+        case let .unary(_, v1):
+            return v1.type.isTensor ? v1.type : .invalid
+
+        case let .reduce(_, v1, nil):
+            guard case let .tensor(s1, t1) = v1.type else { return .invalid }
+            return .tensor(s1.dropFirst(), t1)
+
+        case let .reduce(_, v1, axis: axis?):
+            guard case let .tensor(s1, t1) = v1.type,
+                  axis < s1.rank
+                else { return .invalid }
+            return .tensor(s1.droppingDimension(axis), t1)
+
+        case let .scan(_, v1, _):
+            return v1.type.isTensor ? v1.type : .invalid
+
+        case let .concatenate(vv, axis):
+            guard let first = vv.first,
+                  case let .tensor(s1, t1) = first.type
+                else { return .invalid }
+            /// Check simple, data type equality, and concatenability
+            var accShape: TensorShape = s1
+            for v in vv.dropFirst() {
+                guard case let .tensor(shape, type) = v.type, type == t1,
+                      let newShape = accShape.concatenating(with: shape,
+                                                            alongDimension: axis)
+                    else { return .invalid }
+                accShape = newShape
+            }
+            return .tensor(accShape, t1)
+
+        case let .transpose(v1):
+            guard case let .tensor(s1, t1) = v1.type else { return .invalid }
+            return .tensor(s1.transpose, t1)
+            
+        case let .dataTypeCast(v1, dt):
+            guard case let .tensor(s1, t1) = v1.type,
+                  t1.canCast(to: dt)
+                else { return .invalid }
+            return .tensor(s1, dt)
+            
+        case let .shapeCast(v1, s):
+            guard case let .tensor(s1, t1) = v1.type,
+                  s1.contiguousSize == s.contiguousSize
+                else { return .invalid }
+            return .tensor(s, t1)
+            
         case let .get(ph):
             return ph.type
-        case let .call(_, type, _, _):
-            return type
-        case let .element(op, _),
-             let .subtensor(op, _):
-            return op.type
-        case let .intrinsic(_, type, _, _):
-            return type
-        case let .diff(_, use, wrt: _):
-            return use.type
-        }
-    }
 
-    public var shape: TensorShape {
-        switch self {
-        case let .matMul(op1, op2):
-            return op1.shape.matrixMultiplied(with: op2.shape) ?? op1.shape
-        case let .binary(_, op1, op2):
-            return op1.shape.mutuallyBroadcasted(with: op2.shape) ?? op1.shape
-        case let .unary(_, op),
-             let .scan(_, op, axis: _):
-            return op.shape
-        case .reduce(_, _, axis: nil):
-            return .scalar
-        case let .reduce(_, op, axis: axis?):
-            return op.shape.droppingDimension(axis)
-        case let .concat(shape, _, _, _):
-            return shape
-        case let .transpose(op):
-            return op.shape
-        case let .typeCast(op, _):
-            return op.shape
-        case let .shapeCast(_, s):
-            return s
-        case let .get(ph):
-            return ph.shape
-        case let .call(shape, _, _, _):
-            return shape
-        case let .element(op, _):
-            return op.shape.dropFirst()
-        case let .subtensor(op, idx):
-            return op.shape[idx] ?? op.shape
-        case let .intrinsic(shape, _, _, _):
-            return shape
-        case let .diff(_, use, wrt: _):
-            return use.shape
+        case let .call(f, vv):
+            guard f.acceptsArguments(vv.map{$0.type})
+                else { return .invalid }
+            return f.result
+
+        case let .gradient(f, vv):
+            guard f.isDifferentiable, f.acceptsArguments(vv.map{$0.type})
+                else { return .invalid }
+            if f.arguments.isEmpty { return .void }
+            if f.arguments.count == 1 { return f.arguments[0].type }
+            return .tuple(vv.map{$0.type})
+
+        case let .tuple(vv):
+            return .tuple(vv.map{$0.type})
+            
+        case let .tupleElement(v, i):
+            guard case let .tuple(subtypes) = v.type,
+                  subtypes.indices.contains(i)
+                else { return .invalid }
+            return subtypes[i]
+
+        case let .subtensor(v, index):
+            guard case let .tensor(s1, t1) = v.type,
+                  index.count < s1.rank
+                else { return .invalid }
+            return .tensor(s1.dropFirst(index.count), t1)
+            
         }
     }
 
@@ -266,10 +291,10 @@ extension Operation : Value {
 extension Control : User {
     public var operands: [Use] {
         switch self {
-        case .condBr(let op, _, _),
+        case .conditional(let op, _, _),
              .yield(let op, _),
              .store(let op, _),
-             .ret(let op?):
+             .`return`(let op?):
             return [op]
         default:
             return []
@@ -281,9 +306,9 @@ extension Operation : User {
     public var operands: [Use] {
         switch self {
         case let .binary(_, op1, op2),
-             let .matMul(op1, op2):
+             let .matrixMultiply(op1, op2):
             return [op1, op2]
-        case .concat(_, _, let uses, axis: _):
+        case .concatenate(let uses, _):
             return uses
         case let .transpose(op):
             return [op]
@@ -291,15 +316,14 @@ extension Operation : User {
              let .reduce(_, op, _),
              let .scan(_, op, _),
              let .shapeCast(op, _),
-             let .typeCast(op, _):
+             let .dataTypeCast(op, _):
             return [op]
-        case .call(_, _, _, let ops),
-             .intrinsic(_, _, _, let ops):
+        case .call(_, let ops), .gradient(_, let ops), .tuple(let ops):
             return ops
-        case .get, .diff:
+        case .get:
             return []
         case let .subtensor(op, _),
-             let .element(op, _):
+             let .tupleElement(op, _):
             return [op]
         }
     }
@@ -346,12 +370,12 @@ public extension Control {
         switch self {
         case .store(use, to: let dest):
             return .store(newUse, to: dest)
-        case .condBr(use, let thenBB, let elseBB):
-            return .condBr(newUse, thenBB, elseBB)
+        case .conditional(use, let thenBB, let elseBB):
+            return .conditional(newUse, thenBB, elseBB)
         case .yield(use, to: let dest):
             return .yield(newUse, to: dest)
-        case .ret(use?):
-            return .ret(newUse)
+        case .`return`(use?):
+            return .return(newUse)
         default:
             return self
         }
@@ -359,57 +383,50 @@ public extension Control {
 }
 
 public extension Operation {
-    func substituting(_ newUse: Use, for use: Use) -> Operation {
-        let condSubst = {$0 == use ? newUse : $0}
+    func substituting(_ newUse: Use, for old: Use) -> Operation {
+        let condSubst = {$0 == old ? newUse : $0}
         switch self {
-        case .unary(let fun, use):
+        case .unary(let fun, old):
             return .unary(fun, newUse)
-        case .binary(let fun, use, let use2):
+        case .binary(let fun, old, let use2):
             return .binary(fun, newUse, use2)
-        case .binary(let fun, let use1, use):
+        case .binary(let fun, let use1, old):
             return .binary(fun, use1, newUse)
-        case .binary(let fun, use, use):
+        case .binary(let fun, old, old):
             return .binary(fun, newUse, newUse)
-        case let .concat(shape, type, uses, axis: axis):
-            return .concat(shape, type, uses.map(condSubst), axis: axis)
-        case .transpose(use):
+        case let .concatenate(uses, axis: axis):
+            return .concatenate(uses.map(condSubst), axis: axis)
+        case .transpose(old):
             return .transpose(newUse)
-        case .reduce(let fun, use, axis: let axis):
+        case .reduce(let fun, old, axis: let axis):
             return .reduce(fun, newUse, axis: axis)
-        case .matMul(use, let use2):
-            return .matMul(newUse, use2)
-        case .matMul(let use1, use):
-            return .matMul(use1, newUse)
-        case .matMul(use, use):
-            return .matMul(newUse, newUse)
-        case .shapeCast(use, let shape):
+        case .matrixMultiply(old, let use2):
+            return .matrixMultiply(newUse, use2)
+        case .matrixMultiply(let use1, old):
+            return .matrixMultiply(use1, newUse)
+        case .matrixMultiply(old, old):
+            return .matrixMultiply(newUse, newUse)
+        case .shapeCast(old, let shape):
             return .shapeCast(newUse, shape)
-        case .typeCast(use, let type):
-            return .typeCast(newUse, type)
-        case .diff(let fun, use, wrt: let arg):
-            return .diff(fun, newUse, wrt: arg)
+        case .dataTypeCast(old, let type):
+            return .dataTypeCast(newUse, type)
+        case let .call(f, uses):
+            return .call(f, uses.map(condSubst))
+        case let .gradient(f, uses):
+            return .gradient(f, uses.map(condSubst))
+        case let .tuple(uses):
+            return .tuple(uses.map(condSubst))
+        case .tupleElement(old, let i):
+            return .tupleElement(newUse, i)
+        case .subtensor(old, let index):
+            return .subtensor(newUse, index)
         default:
             return self
         }
     }
 }
 
-public extension Control {
-    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
-        return []
-    }
-}
-
 public extension Operation {
-    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
-        switch self {
-        case .get(let ph):
-            return [ph]
-        default:
-            return []
-        }
-    }
-
     var usedArguments: ObjectSet<Def<Argument>> {
         var arguments: ObjectSet<Def<Argument>> = []
         for case let .argument(arg) in operands.map({$0.kind}) {
@@ -420,13 +437,6 @@ public extension Operation {
 }
 
 public extension Instruction {
-    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
-        switch kind {
-        case .control(let ctrl): return ctrl.usedPlaceholders
-        case .operation(let oper): return oper.value.usedPlaceholders
-        }
-    }
-
     var usedArguments: ObjectSet<Def<Argument>> {
         var arguments: ObjectSet<Def<Argument>> = []
         for case let .argument(arg) in operands.map({$0.kind}) {
@@ -437,14 +447,6 @@ public extension Instruction {
 }
 
 public extension BasicBlock {
-    var usedPlaceholders: ObjectSet<Def<Placeholder>> {
-        var placeholders: ObjectSet<Def<Placeholder>> = []
-        for inst in self {
-            placeholders.formUnion(inst.usedPlaceholders)
-        }
-        return placeholders
-    }
-
     var usedArguments: ObjectSet<Def<Argument>> {
         var arguments: ObjectSet<Def<Argument>> = []
         for inst in self {

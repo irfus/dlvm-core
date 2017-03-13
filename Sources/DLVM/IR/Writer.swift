@@ -6,7 +6,7 @@ import DLVMTensor
 
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        type.write(to: &target)
+        dataType.write(to: &target)
         target.write(shape.isScalar ? " " : " \(shape) ")
         literal.write(to: &target)
     }
@@ -64,18 +64,20 @@ extension TensorIndex : TextOutputStreamable {
 }
 
 extension Type : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
-        case let .simple(shape, dType):
-            if !shape.isScalar {
-                target.write("\(shape) ")
-            }
-            target.write("\(dType)")
-            
-        case let .tuple(components):
-            target.write("(")
-            target.write(components.map{"\($0)"}.joined(separator: ", "))
-            target.write(")")
+        case .invalid:
+            target.write("<<error>>")
+        case let .tensor([], t):
+            t.write(to: &target)
+        case let .tensor(s, t):
+            target.write("\(s) \(t)")
+        case let .tuple(subtypes):
+            target.write("(\(subtypes.map{"\($0)"}.joined(separator: ", ")))")
+        case .void:
+            target.write("Void")
+        case let .array(subtype):
+            target.write("Array<\(subtype)>")
         }
     }
 }
@@ -101,15 +103,15 @@ extension ArithmeticOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case .add: target.write("add")
-        case .subtract: target.write("sub")
-        case .multiply: target.write("mul")
-        case .divide: target.write("div")
+        case .subtract: target.write("subtract")
+        case .multiply: target.write("multiply")
+        case .divide: target.write("divide")
         case .min: target.write("min")
         case .max: target.write("max")
-        case .truncateDivide: target.write("truncdiv")
-        case .floorDivide: target.write("floordiv")
-        case .modulo: target.write("mod")
-        case .power: target.write("pow")
+        case .truncateDivide: target.write("truncateDivide")
+        case .floorDivide: target.write("floorDivide")
+        case .modulo: target.write("modulo")
+        case .power: target.write("power")
         case .mean: target.write("mean")
         }
     }
@@ -137,12 +139,12 @@ extension AssociativeOp: TextOutputStreamable {
 extension ComparisonOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case .equalTo: target.write("eq")
-        case .notEqualTo: target.write("neq")
-        case .greaterThanOrEqualTo: target.write("geq")
-        case .lessThanOrEqualTo: target.write("leq")
-        case .greaterThan: target.write("gt")
-        case .lessThan: target.write("lt")
+        case .equalTo: target.write("equal")
+        case .notEqualTo: target.write("notEqual")
+        case .greaterThanOrEqualTo: target.write("greaterThanOrEqual")
+        case .lessThanOrEqualTo: target.write("lessThanOrEqual")
+        case .greaterThan: target.write("greaterThan")
+        case .lessThan: target.write("lessThan")
         }
     }
 }
@@ -168,19 +170,17 @@ extension UnaryOp: TextOutputStreamable {
 extension Control : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .br(bb, args):
-            target.write("br %\(bb.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .condBr(op, thenBB, elseBB):
-            target.write("condbr \(op), %\(thenBB.name), %\(elseBB.name)")
+        case let .branch(bb, args):
+            target.write("branch %\(bb.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+        case let .conditional(op, thenBB, elseBB):
+            target.write("conditional \(op), %\(thenBB.name), %\(elseBB.name)")
         case let .yield(op, v):
             target.write("yield \(op) to \(v)")
         case let .store(op, v):
             target.write("store \(op) to \(v)")
-        case let .ret(op):
-            target.write("ret")
+        case let .`return`(op):
+            target.write("return")
             if let op = op { target.write(" \(op)") }
-        case .cont:
-            target.write("cont")
         case let .pull(ph, thenBB, elseBB):
             target.write("pull \(ph), %\(thenBB), %\(elseBB)")
         }
@@ -192,8 +192,8 @@ extension Operation : TextOutputStreamable {
         switch self {
         case let .binary(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
-        case let .matMul(op1, op2):
-            target.write("matmul \(op1), \(op2)")
+        case let .matrixMultiply(op1, op2):
+            target.write("matrixMultiply \(op1), \(op2)")
         case let .unary(f, op):
             target.write("\(f) \(op)")
         case let .reduce(f, op, axis: axis):
@@ -206,42 +206,26 @@ extension Operation : TextOutputStreamable {
             if let axis = axis {
                 target.write(" along \(axis)")
             }
-        case let .concat(shape, type, ops, axis: axis):
-            target.write("concat \(ops.map{"\($0)"}.joined(separator: ", ")) to ")
-            if !shape.isScalar {
-                target.write("\(shape) ")
-            }
-            target.write("\(type) along \(axis)")
+        case let .concatenate(ops, axis: axis):
+            target.write("concatenate \(ops.map{"\($0)"}.joined(separator: ", ")) along \(axis)")
         case let .transpose(op):
             target.write("transpose \(op)")
-        case let .typeCast(op, t):
-            target.write("typecast \(op) to \(t)")
+        case let .dataTypeCast(op, t):
+            target.write("dataTypeCast \(op) to \(t)")
         case let .shapeCast(op, s):
-            target.write("shapecast \(op) to \(s)")
+            target.write("shapeCast \(op) to \(s)")
         case let .get(def):
             target.write("get \(def)")
-        case let .call(shape, type, fun, args):
-            target.write("call ")
-            if shape.isScalar {
-                target.write("\(shape) ")
-            }
-            target.write("\(type) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .diff(fun, use, wrt: idx):
-            target.write("diff ")
-            if shape.isScalar {
-                target.write("\(shape) ")
-            }
-            target.write("\(type) @\(fun.name) wrt #\(idx) from \(use)")
+        case let .call(fun, args):
+            target.write("call \(fun.result) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+        case let .gradient(fun, args):
+            target.write("gradient \(fun.result) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .subtensor(use, idx):
             target.write("subtensor \(idx) of \(use)")
-        case let .element(use, i):
+        case let .tupleElement(use, i):
             target.write("element \(i) of \(use)")
-        case let .intrinsic(shape, type, intrin, args):
-            target.write("intrin ")
-            if shape.isScalar {
-                target.write("\(shape) ")
-            }
-            target.write("\(type) @\(intrin.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+        case let .tuple(uses):
+            target.write("tuple \(uses.map{"\($0)"}.joined(separator: ", "))")
         }
     }
 }
@@ -260,9 +244,6 @@ extension Instruction : TextOutputStreamable {
 extension Global : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("declare ")
-        if isRecurrent {
-            target.write("recurrent ")
-        }
         switch self {
         case let .placeholder(def):
             target.write("placeholder \(def)")
@@ -279,9 +260,6 @@ extension Global : TextOutputStreamable {
 
 extension Use : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if !shape.isScalar {
-            target.write("\(shape) ")
-        }
         target.write("\(type) ")
         switch kind {
         case let .global(ref):      target.write("@\(ref.name)")
@@ -294,9 +272,6 @@ extension Use : TextOutputStreamable {
 
 extension Def : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if !shape.isScalar {
-            target.write("\(shape) ")
-        }
         target.write("\(type) ")
         switch ValueType.scope {
         case .global: target.write("@")
@@ -329,12 +304,12 @@ extension Function : TextOutputStreamable {
         if isDifferentiable {
             target.write("differentiable ")
         }
-        target.write("function ")
+        target.write("func ")
         target.write("@\(name)(")
         arguments.map{"\($0)"}.joined(separator: ", ").write(to: &target)
         target.write(") ")
-        if let result = result {
-            target.write("-> \(result.shape) \(result.type) ")
+        if !result.isVoid {
+            target.write("-> \(result) ")
         }
         target.write("{\n")
         for bb in self {

@@ -81,17 +81,17 @@ class CodeGenerator {
         /// Build pure inference function
         var args: [(String, DLVM.Argument)] = []
         for input in program.inputs {
-            let arg = Argument(shape: input.shape, type: program.dataType)
+            let arg = Argument(type: .tensor(input.shape, program.dataType))
             args.append((input.name, arg))
         }
         for param in program.parameters {
-            let arg = Argument(shape: param.shape, type: program.dataType)
+            let arg = Argument(type: .tensor(param.shape, program.dataType))
             args.append((param.name, arg))
         }
         let output = program.layers.first(where: {$0.isOutput})! // BAD!
-        let resultType = Argument(shape: output.shape, type: program.dataType)
         let function = builder.buildFunction(named: "inference", arguments: args,
-                                             result: resultType, isDifferentiable: true)
+                                             result: .tensor(output.shape, program.dataType),
+                                             isDifferentiable: true)
         builder.move(to: function.entry)
 
         /// Add all args into env
@@ -107,7 +107,7 @@ class CodeGenerator {
             result = op
             environment[layer.name] = op
         }
-        builder.buildControl(.ret(result))
+        builder.buildControl(.`return`(result))
 
 
         /// Main function
@@ -155,16 +155,11 @@ class CodeGenerator {
             return builder.buildOperation(operation, name: name)
         case let .product(lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
-            let operation: Operation = .matMul(lhsOp, rhsOp)
+            let operation: Operation = .matrixMultiply(lhsOp, rhsOp)
             return builder.buildOperation(operation, name: name)
         case let .concat(exprs, dimension: dim, _):
             let exprOps = exprs.map { [unowned self] in self.build($0) }
-            guard let shape = exprOps.dropFirst().reduce(exprOps.first?.shape, { acc, x in
-                return acc?.concatenating(with: x.shape, alongDimension: dim)
-            }) else {
-                preconditionFailure("Concatenation shape not available. Should not have passed Sema.")
-            }
-            let operation: Operation = .concat(shape, exprOps[0].type, exprOps, axis: dim)
+            let operation: Operation = .concatenate(exprOps, axis: dim)
             return builder.buildOperation(operation, name: name)
         case let .reshape(expr, shape: dims, _):
             let exprOp = build(expr)
@@ -192,7 +187,7 @@ fileprivate extension Constant {
         case let .float(f, _):
             literal = .scalar(.float(f))
         }
-        return Use(kind: .literal(LiteralValue(shape: .scalar, type: dataType, literal: literal)))
+        return Use(kind: .literal(LiteralValue(shape: .scalar, dataType: dataType, literal: literal)))
     }
 }
 

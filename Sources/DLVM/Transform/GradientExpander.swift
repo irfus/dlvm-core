@@ -1,35 +1,43 @@
 //
-//  Differentiator.swift
+//  GradientExpander.swift
 //  DLVM
 //
 //  Created by Richard Wei on 2/21/17.
 //
 //
 
-public class Differentiator : TransformPass<Function> {
+public class GradientExpander: TransformPass<Module> {
 
-    open override class func run(on function: Function) throws -> Bool {
+    public override class func run(on module: Module) throws -> Bool {
         var changed = false
-        guard function.isDifferentiable else { return false }
 
-        let entry = function.entry
-
-        guard entry.isExit else {
-            fatalError("Control flow not supported")
+        for function in module {
+            /// If function is not differentiable, do nothing
+            guard function.isDifferentiable else { return false }
+            /// If gradient function exists, do nothing
+            let globalGradInfo: GlobalGradientInfo = try function.parent.analysis(from: GlobalGradientAnalysis.self)
+            if let _ = globalGradInfo.gradient(of: function) { return false }
+            /// Expand this function
+            expand(function)
         }
 
-        let builder = IRBuilder(module: function.parent)
-//        builder.buildFunction(named: function.name + "_grad",
-//                              arguments: <#T##[(String, Argument)]#>, result: <#T##Argument?#>, isDifferentiable: <#T##Bool#>)
-
         changed = true
-
         return changed
     }
 
+    private static func expand(_ function: Function) {
+        let builder = IRBuilder(module: function.parent)
+        /// Build gradient function
+        builder.buildFunction(named: "∇" + function.name,
+                              arguments: function.arguments.map { ($0.name, $0.value) },
+                              result: .tuple(function.arguments.map { ($0.type) }),
+                              isDifferentiable: true)
+    }
+
+    /*
     @discardableResult
     private static func differentiate(_ use: Use, using builder: IRBuilder, in function: Function) -> Use {
-        
+
         switch use.kind {
             
         case .literal(let v):
@@ -37,9 +45,9 @@ public class Differentiator : TransformPass<Function> {
         case .global(let v):
             return builder.makeLiteral(v.makeScalarLiteral(0))
             
-        case .argument(let argDef):
-            let lit = builder.makeLiteral(argDef.makeScalarLiteral(1))
-            return lit
+//        case .argument(let argDef):
+//            let lit = builder.makeLiteral(argDef.makeScalarLiteral(1))
+//            return lit
 
         case let .local(def):
             let oper = def.value
@@ -95,5 +103,6 @@ public class Differentiator : TransformPass<Function> {
             return result
         }
     }
+ */
     
 }

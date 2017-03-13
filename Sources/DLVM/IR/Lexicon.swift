@@ -23,28 +23,28 @@ extension IntegrationOp: LexicallyConvertible {
 
 extension ComparisonOp: LexicallyConvertible {
     public static let lexicon: [String : ComparisonOp] = [
-        "lt"  : .lessThan,
-        "leq" : .lessThanOrEqualTo,
-        "gt"  : .greaterThan,
-        "geq" : .greaterThanOrEqualTo,
-        "eq"  : .equalTo,
-        "neq" : .notEqualTo
+        "lessThan"           : .lessThan,
+        "lessThanOrEqual"    : .lessThanOrEqualTo,
+        "greaterThan"        : .greaterThan,
+        "greaterThanOrEqual" : .greaterThanOrEqualTo,
+        "equal"              : .equalTo,
+        "notEqual"           : .notEqualTo
     ]
 }
 
 extension ArithmeticOp: LexicallyConvertible {
     public static let lexicon: [String : ArithmeticOp] = [
-        "add"      : .add,
-        "sub"      : .subtract,
-        "mul"      : .multiply,
-        "div"      : .divide,
-        "min"      : .min,
-        "max"      : .max,
-        "truncdiv" : .truncateDivide,
-        "floordiv" : .floorDivide,
-        "mod"      : .modulo,
-        "pow"      : .power,
-        "mean"     : .mean
+        "add"            : .add,
+        "subtract"       : .subtract,
+        "multiply"       : .multiply,
+        "divide"         : .divide,
+        "min"            : .min,
+        "max"            : .max,
+        "truncateDivide" : .truncateDivide,
+        "floorDivide"    : .floorDivide,
+        "modulo"         : .modulo,
+        "power"          : .power,
+        "mean"           : .mean
     ]
 }
 

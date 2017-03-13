@@ -103,7 +103,7 @@ extension IRBuilder {
     }
 
     open func makeLiteral(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
-        return makeLiteral(LiteralValue(shape: shape, type: type, literal: literal))
+        return makeLiteral(LiteralValue(shape: shape, dataType: type, literal: literal))
     }
 
     open func makeLiteral(_ literalValue: LiteralValue) -> Use {
@@ -113,7 +113,7 @@ extension IRBuilder {
     @discardableResult
     open func buildFunction(named name: String,
                             arguments: [(String, Argument)],
-                            result: Argument?,
+                            result: Type = .void,
                             isDifferentiable: Bool) -> Function {
         let fun = Function(name: name,
                            arguments: arguments, 

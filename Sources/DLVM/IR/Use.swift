@@ -3,7 +3,6 @@
 //
 
 public struct Use {
-
     public enum Kind {
         case argument(Def<Argument>)
         case local(Def<Operation>)
@@ -11,12 +10,10 @@ public struct Use {
         case literal(LiteralValue)
     }
 
-    public var shape: TensorShape
-    public var type: DataType
+    public var type: Type
     public var kind: Kind
 
-    public init(shape: TensorShape, type: DataType, kind: Kind) {
-        self.shape = shape
+    public init(type: Type, kind: Kind) {
         self.type = type
         self.kind = kind
     }
@@ -24,16 +21,15 @@ public struct Use {
     public init(kind: Kind) {
         switch kind {
         case .local(let def):
-            self.init(shape: def.shape, type: def.type, kind: kind)
+            self.init(type: def.type, kind: kind)
         case .global(let def):
-            self.init(shape: def.shape, type: def.type, kind: kind)
+            self.init(type: def.type, kind: kind)
         case .argument(let def):
-            self.init(shape: def.shape, type: def.type, kind: kind)
+            self.init(type: def.type, kind: kind)
         case .literal(let lit):
-            self.init(shape: lit.shape, type: lit.type, kind: kind)
+            self.init(type: lit.type, kind: kind)
         }
     }
-
 }
 
 // MARK: - Equatable
@@ -41,7 +37,6 @@ extension Use : Equatable {
     public static func ==(lhs: Use, rhs: Use) -> Bool {
         return lhs.definition === rhs.definition
                && lhs.name == rhs.name
-               && lhs.shape == rhs.shape
                && lhs.type == rhs.type
     }
 }
@@ -62,7 +57,7 @@ public extension Use {
     }
 
     static func literal(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
-        return Use(kind: .literal(LiteralValue(shape: shape, type: type, literal: literal)))
+        return Use(kind: .literal(LiteralValue(shape: shape, dataType: type, literal: literal)))
     }
 
     static func literal(_ literalValue: LiteralValue) -> Use {
@@ -99,12 +94,5 @@ public extension Use {
         case let .argument(def): return def.name
         case .literal: return nil
         }
-    }
-}
-
-// MARK: - Value helper factories
-public extension Use {
-    func makeLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
-        return value.makeLiteral(integerLiteral)
     }
 }

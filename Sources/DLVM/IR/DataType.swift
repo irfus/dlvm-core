@@ -6,45 +6,55 @@
 //
 //
 
-public struct DataType : Equatable {
-    public enum Base {
-        case bool, int, float
-
-        public var isNumeric: Bool {
-            return self != .bool
-        }
-    }
-
+public struct DataType {
+    public enum Base : Int { case bool, int, float }
     public var base: Base
     public var size: Int
+}
 
-    public init(base: Base, size: Int) {
-        self.base = base
-        self.size = size
+public extension DataType.Base {
+    var isNumeric: Bool {
+        return self != .bool
     }
+}
+
+public extension DataType {
     
-    public static var bool: DataType {
+    static var bool: DataType {
         return self.init(base: .bool, size: 1)
     }
     
-    public static func int(_ size: Int) -> DataType {
+    static func int(_ size: Int) -> DataType {
         return self.init(base: .int, size: size)
     }
 
-    public static func float(_ size: Int) -> DataType {
+    static func float(_ size: Int) -> DataType {
         return self.init(base: .float, size: size)
     }
 
-    public static func ~(lhs: DataType, rhs: DataType) -> Bool {
+    static func ~(lhs: DataType, rhs: DataType) -> Bool {
         return lhs.base == rhs.base
     }
 
-    public static func ==(lhs: DataType, rhs: DataType) -> Bool {
-        return lhs.base == rhs.base && lhs.size == rhs.size
-    }
-
-    public var isNumeric: Bool {
+    var isNumeric: Bool {
         return base.isNumeric
     }
 
+    var isBool: Bool {
+        return base == .bool
+    }
+
+}
+
+extension DataType : Equatable {
+    public static func ==(lhs: DataType, rhs: DataType) -> Bool {
+        return lhs.base == rhs.base && lhs.size == rhs.size
+    }
+}
+
+public extension DataType {
+    func canCast(to other: DataType) -> Bool {
+        return size <= other.size
+            && base.rawValue <= other.base.rawValue
+    }
 }
