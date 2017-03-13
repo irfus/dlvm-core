@@ -89,3 +89,94 @@ extension DLVM.OpKind {
     }
 
 }
+
+///
+/// ## Experimental: type system
+/// 
+
+public typealias DimensionVariable = String
+
+public enum MetaDimension {
+    case concrete(Int)
+    case one(DimensionVariable)
+    case many(DimensionVariable)
+    case manyOrNone(DimensionVariable)
+    case optional(DimensionVariable)
+    case transpose(DimensionVariable)
+}
+
+public struct MetaShape {
+    let dimensions: [MetaDimension]
+}
+
+public struct FunctionType {
+    public let generics: Set<DimensionVariable>
+    public let arguments: [MetaShape]
+    public let result: MetaShape
+}
+
+extension MetaDimension : Equatable {
+    public static func == (lhs: MetaDimension, rhs: MetaDimension) -> Bool {
+        switch (lhs, rhs) {
+        case let (.concrete(i1), .concrete(i2)):
+            return i1 == i2
+        case let (.one(d1), .one(d2)),
+             let (.many(d1), .many(d2)),
+             let (.manyOrNone(d1), .manyOrNone(d2)),
+             let (.optional(d1), .optional(d2)),
+             let (.transpose(d1), .transpose(d2)):
+            return d1 == d2
+        default:
+            return false
+        }
+    }
+}
+
+extension MetaShape : Equatable {
+    public static func == (lhs: MetaShape, rhs: MetaShape) -> Bool {
+        return lhs.dimensions == rhs.dimensions
+    }
+}
+
+extension FunctionType : Equatable {
+    public static func == (lhs: FunctionType, rhs: FunctionType) -> Bool {
+        /// Alpha equivalence
+        /// 1. If they have different generic count or argument count, fail bigly
+        guard lhs.generics.count == rhs.generics.count,
+              lhs.arguments.count == rhs.arguments.count
+            else { return false }
+        /// TODO
+        fatalError("TODO")
+    }
+}
+
+public extension MetaDimension {
+    func contains(_ variable: DimensionVariable) -> Bool {
+        switch self {
+        case .one(variable),
+             .many(variable),
+             .manyOrNone(variable),
+             .optional(variable),
+             .transpose(variable):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+public extension MetaShape {
+    func contains(_ variable: DimensionVariable) -> Bool {
+        return dimensions.contains(where: {$0.contains(variable)})
+    }
+}
+
+public extension FunctionType {
+    var isValid: Bool {
+        /// TODO: Invalid cases
+        /// 1. Generics exist but not occur in arguments
+        /// 2. Undeclared generic variable
+        /// 3. Nondeterministic position of dimension
+        fatalError("TODO")
+    }
+}
