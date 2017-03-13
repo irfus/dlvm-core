@@ -355,14 +355,6 @@ public extension Instruction {
             return .operation(newDef, parent: parent)
         }
     }
-
-    var indexInParent: Int? {
-        return parent.index(of: self)
-    }
-
-    func removeFromParent() {
-        parent.remove(self)
-    }
 }
 
 public extension Control {
