@@ -17,9 +17,19 @@ public enum Scope {
 
 /// Value base
 public protocol Value {
-    var shape: TensorShape { get }
-    var type: DataType { get }
+    var type: Type { get }
     static var scope: Scope { get }
+}
+
+public protocol SimpleValue : Value {
+    var shape: TensorShape { get }
+    var dataType: DataType { get }
+}
+
+public extension SimpleValue {
+    var type: Type {
+        return .tensor(shape, dataType)
+    }
 }
 
 /// Scalar or tensor literal, literally
@@ -62,15 +72,15 @@ public enum TensorLiteral {
 }
 
 /// Literal value. It wraps `Literal` into a value
-public struct LiteralValue : Value {
+public struct LiteralValue : SimpleValue {
     public var shape: TensorShape
-    public var type: DataType
+    public var dataType: DataType
     public var literal: Literal
     public static let scope: Scope = .none
 
-    public init(shape: TensorShape, type: DataType, literal: Literal) {
+    public init(shape: TensorShape, dataType: DataType, literal: Literal) {
         self.shape = shape
-        self.type = type
+        self.dataType = dataType
         self.literal = literal
     }
 }
@@ -87,15 +97,14 @@ public protocol MaybeNamed {
 
 public protocol Definition : class, Named, Value {
     var name: String { get }
-    var shape: TensorShape { get }
+    var type: Type { get }
 }
 
 /// When a value has a name, it's a unique Def!
 public class Def<ValueType : Value> : Named, Definition, Value, HashableByReference {
     public typealias UserType = Instruction
     public var name: String
-    public var shape: TensorShape
-    public var type: DataType
+    public var type: Type
     public var value: ValueType
 
     public static var scope: Scope {
@@ -104,7 +113,6 @@ public class Def<ValueType : Value> : Named, Definition, Value, HashableByRefere
     
     public init(name: String, value: ValueType) {
         self.name = name
-        self.shape = value.shape
         self.type = value.type
         self.value = value
     }
@@ -117,17 +125,17 @@ public protocol PotentiallyRecurrentValue : Value {
 
 // MARK: - Recurrent value helper
 public extension Def where ValueType : PotentiallyRecurrentValue {
-    public var isRecurrent: Bool {
+    var isRecurrent: Bool {
         return value.isRecurrent
     }
 }
 
 // MARK: - Value helper factories
-public extension Value {
+public extension SimpleValue {
     /// Returns a zero value of the same shape and the same data type
     func makeLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
         let literal: Literal
-        switch (type.base, shape) {
+        switch (dataType.base, shape) {
         case (.bool, []):
             literal = .scalar(.bool(integerLiteral != 0))
         case (.float, []):
@@ -141,13 +149,13 @@ public extension Value {
         case (.int, _):
             literal = .tensor(.repeating(.int(integerLiteral)))
         }
-        return LiteralValue(shape: shape, type: type, literal: literal)
+        return LiteralValue(shape: shape, dataType: dataType, literal: literal)
     }
 
     /// Returns a zero value of the same shape and the same data type
     func makeScalarLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
         let literal: Literal
-        switch type.base {
+        switch dataType.base {
         case .bool:
             literal = .scalar(.bool(integerLiteral != 0))
         case .float:
@@ -155,7 +163,26 @@ public extension Value {
         case .int:
             literal = .scalar(.int(integerLiteral))
         }
-        return LiteralValue(shape: .scalar, type: type, literal: literal)
+        return LiteralValue(shape: .scalar, dataType: dataType, literal: literal)
+    }
+}
+
+// MARK: - Simple value accessor
+public extension Def where ValueType : SimpleValue {
+    var shape: TensorShape {
+        return value.shape
+    }
+
+    var dataType: DataType {
+        return value.dataType
+    }
+
+    func makeLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
+        return value.makeLiteral(integerLiteral)
+    }
+
+    func makeScalarLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
+        return value.makeScalarLiteral(integerLiteral)
     }
 }
 

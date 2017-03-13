@@ -3,17 +3,16 @@ module mnist
 declare placeholder [1x784] f32 @x
 declare variable [784x10] f32 @W = repeating 0.0
 declare variable [1x10] f32 @b = repeating 0.0
-declare output [1x10] f32 @y
 
 
-function @main() {
-    section top {
-    entry():
-        %v0 = get [1x784] f32 @x
-        %v1 = matmul [1x784] f32 %v0, [784x10] f32 @W
-        %v2 = add [1x10] f32 %v1, [1x10] f32 @b
-        %y = tanh [1x10] f32 %v2
-        yield [1x10] f32 %y to [1x10] f32 @y
-    }
+differentiable function @inference([1x784] f32 %x, [784x10] f32 %W, [1x10] f32 %b) -> [1x10] f32 {
+entry([1x784] f32 %x, [784x10] f32 %W, [1x10] f32 %b):
+    %v0 = matrixMultiply [1x784] f32 %x, [784x10] f32 %W
+    %v1 = add [1x10] f32 %v0, [1x10] f32 %b
+    %y = tanh [1x10] f32 %v1
+    ret [1x10] f32 %y
+}
+
+differentiable function @∇inference([1x784] f32 %x, [784x10] f32 %W, [1x10] f32 %b) -> ([1x784] f32, [784x10] f32, [1x10] f32) {
 }
 

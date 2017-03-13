@@ -143,36 +143,35 @@ open class DominanceAnalysis : AnalysisPass<Function, DominatorTree<BasicBlock>>
     }
 }
 
-open class PostdominanceAnalysis : AnalysisPass<Function, DominatorTree<BasicBlock>> {
+open class PostdominanceAnalysis : AnalysisPass<Function, [DominatorTree<BasicBlock>]> {
 
-    open override class func run(on body: Function) throws -> DominatorTree<BasicBlock> {
-        let exit = try body.premise().exit
+    open override class func run(on body: Function) throws -> [DominatorTree<BasicBlock>] {
+        let exits = try body.premise().exits
         let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
-        var domTree = DominatorTree(root: exit)
         let transposeCFG = cfg.transpose
-
-        /// Initialization of data flow analysis
-        /// (done by the dom tree initializer)
-
-        /// Iteratively build tree
-        var changed = true
-        repeat {
-            changed = false
-            /// TODO: Need reverse postorder
-            for node in transposeCFG.traversed(from: exit, in: .postorder).reversed().dropFirst() {
-                let preds = transposeCFG.predecessors(of: node)
-                guard var newIDom = preds.first else {
-                    preconditionFailure("Successor node doesn't have any predecessor")
+        var domTrees: [DominatorTree<BasicBlock>] = []
+        for exit in exits {
+            var domTree = DominatorTree(root: exit)
+            /// Iteratively build tree
+            var changed = true
+            repeat {
+                changed = false
+                for node in transposeCFG.traversed(from: exit, in: .postorder).reversed().dropFirst() {
+                    let preds = transposeCFG.predecessors(of: node)
+                    guard var newIDom = preds.first else {
+                        preconditionFailure("Successor node doesn't have any predecessor")
+                    }
+                    for p in preds.dropFirst() where !domTree.contains(p) {
+                        newIDom = domTree.nearestCommonDominator(p, newIDom)
+                    }
+                    if domTree.immediateDominator(of: node) !== newIDom {
+                        domTree.updateImmediateDominator(newIDom, for: node)
+                        changed = true
+                    }
                 }
-                for p in preds.dropFirst() where !domTree.contains(p) {
-                    newIDom = domTree.nearestCommonDominator(p, newIDom)
-                }
-                if domTree.immediateDominator(of: node) !== newIDom {
-                    domTree.updateImmediateDominator(newIDom, for: node)
-                    changed = true
-                }
-            }
-        } while changed
-        return domTree
+            } while changed
+            domTrees.append(domTree)
+        }
+        return domTrees
     }
 }

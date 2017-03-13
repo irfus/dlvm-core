@@ -68,10 +68,7 @@ func main() throws {
         /// Generate IR
         let module = program.makeModule()
         try module.verify()
-
-        for f in module {
-            try f.applyTransform(Differentiator.self)
-        }
+        try module.applyTransform(GradientExpander.self)
 
         /// Print IR if needed
         if Options.shouldPrintIR.wasSet {

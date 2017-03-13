@@ -8,27 +8,25 @@ declare variable [8x8] f32 @W3 = random from 0.0 to 1.0
 declare variable [4x1] f32 @b1 = repeating 0.0
 declare variable [8x1] f32 @b2 = repeating 0.0
 declare variable [8x1] f32 @b3 = repeating 0.0
-declare output [1x8] f32 @o
 
 
-function @main() {
-    section top {
-    entry():
-        %v0 = get [4x1] f32 @i1
-        %v1 = matmul [4x4] f32 @W1, [4x1] f32 %v0
-        %v2 = add [4x1] f32 %v1, [4x1] f32 @b1
-        %h1 = sigmoid [4x1] f32 %v2
-        %v3 = get [4x1] f32 @i2
-        %v4 = concat [4x1] f32 %h1, [4x1] f32 %v3 to [8x1] f32 along 0
-        %v5 = sub f32 1.0, [8x1] f32 %v4
-        %v6 = matmul [8x8] f32 @W2, [8x1] f32 %v5
-        %v7 = add [8x1] f32 %v6, [8x1] f32 @b2
-        %h2 = max f32 0.0, [8x1] f32 %v7
-        %v8 = matmul [8x8] f32 @W3, [8x1] f32 %h2
-        %v9 = add [8x1] f32 %v8, [8x1] f32 @b3
-        %v10 = softmax [8x1] f32 %v9
-        %o = transpose [8x1] f32 %v10
-        yield [8x1] f32 %o to [1x8] f32 @o
-    }
+differentiable func @inference([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3) -> [1x8] f32 {
+entry([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3):
+    %v0 = matrixMultiply [4x4] f32 %W1, [4x1] f32 %i1
+    %v1 = add [4x1] f32 %v0, [4x1] f32 %b1
+    %h1 = sigmoid [4x1] f32 %v1
+    %v2 = concatenate [4x1] f32 %h1, [4x1] f32 %i2 along 0
+    %v3 = subtract f32 1.0, [8x1] f32 %v2
+    %v4 = matrixMultiply [8x8] f32 %W2, [8x1] f32 %v3
+    %v5 = add [8x1] f32 %v4, [8x1] f32 %b2
+    %h2 = max f32 0.0, [8x1] f32 %v5
+    %v6 = matrixMultiply [8x8] f32 %W3, [8x1] f32 %h2
+    %v7 = add [8x1] f32 %v6, [8x1] f32 %b3
+    %v8 = softmax [8x1] f32 %v7
+    %o = transpose [8x1] f32 %v8
+    return [1x8] f32 %o
+}
+
+differentiable func @∇inference([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3) -> ([4x1] f32, [4x1] f32, [4x4] f32, [8x8] f32, [8x8] f32, [4x1] f32, [8x1] f32, [8x1] f32) {
 }
 

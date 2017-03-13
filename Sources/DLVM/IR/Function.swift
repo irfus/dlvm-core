@@ -7,13 +7,10 @@
 //
 
 public struct Argument : Value {
-    public var shape: TensorShape
-    public var type: DataType
-    public var broadcasting: Bool = false
+    public var type: Type
     public static var scope: Scope = .local
 
-    public init(shape: TensorShape, type: DataType) {
-        self.shape = shape
+    public init(type: Type) {
         self.type = type
     }
 }
@@ -23,7 +20,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
     public typealias Element = BasicBlock
 
     public var name: String
-    public var result: Argument?
+    public var result: Type
     public var arguments: OrderedMapSet<Def<Argument>> = []
     public var isDifferentiable: Bool
     public unowned var parent: Module
@@ -41,8 +38,8 @@ public final class Function : Named, IRCollection, IRSubUnit {
         return bb
     }
 
-    public init(name: String, arguments: [(String, Argument)], result: Argument?,
-                isDifferentiable: Bool, parent: Module) {
+    public init(name: String, arguments: [(String, Argument)],
+                result: Type, isDifferentiable: Bool, parent: Module) {
         self.name = name
         self.arguments.append(contentsOf: arguments.map(Def.init))
         self.result = result
@@ -54,6 +51,12 @@ public final class Function : Named, IRCollection, IRSubUnit {
 
 // MARK: - Accessors
 extension Function {
+
+    open func acceptsArguments<C : Collection>(_ types: C) -> Bool
+        where C.Iterator.Element == Type
+    {
+        return types.elementsEqual(arguments.map{$0.type})
+    }
 
     open func argument(named name: String) -> Def<Argument>? {
         return arguments.element(named: name)

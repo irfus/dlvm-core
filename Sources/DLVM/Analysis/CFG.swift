@@ -10,9 +10,9 @@ extension BasicBlock : ForwardGraphNode {
     public var successors: ObjectSet<BasicBlock> {
         guard let terminator = self.terminator else { return [] }
         switch terminator.kind {
-        case let .control(.br(dest, _)):
+        case let .control(.branch(dest, _)):
             return [dest]
-        case let .control(.condBr(_, thenBB, elseBB)),
+        case let .control(.conditional(_, thenBB, elseBB)),
              let .control(.pull(_, thenBB, elseBB)):
             return [thenBB, elseBB]
         default:
@@ -26,16 +26,16 @@ public extension Control {
     var successors: ObjectSet<BasicBlock> {
         /// TODO: Include entries of backward passes as successors
         switch self {
-        case let .br(bb, _): return [bb]
-        case let .condBr(_, bb1, bb2): return [bb1, bb2]
+        case let .branch(bb, _): return [bb]
+        case let .conditional(_, bb1, bb2): return [bb1, bb2]
         default: return []
         }
     }
 
     var successorCount: Int {
         switch self {
-        case .br: return 1
-        case .condBr, .pull: return 2
+        case .branch: return 1
+        case .conditional, .pull: return 2
         default: return 0
         }
     }

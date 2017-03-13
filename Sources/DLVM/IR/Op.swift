@@ -50,10 +50,10 @@ public enum BinaryOp {
 public enum OpKind {
     case unary(UnaryOp)        /// Monomorphic
     case binary(BinaryOp)      /// Monomorphic
-    case matMul                /// Matrix multiplication
+    case matrixMultiply        /// Matrix multiplication
     case scan(AssociativeOp)   /// Scan
     case reduce(AssociativeOp) /// Reduce
-    case concat                /// Concatenation
+    case concatenate           /// Concatenation
 }
 
 public extension OpKind {
@@ -62,17 +62,17 @@ public extension OpKind {
         switch self {
         case .unary: return 1
         case .binary: return 2
-        case .matMul: return 2
+        case .matrixMultiply: return 2
         case .reduce: return 1
         case .scan: return 1
-        case .concat: return Int.max
+        case .concatenate: return Int.max
         }
     }
 
     func resultShape(forArguments args: [TensorShape]) -> TensorShape? {
         guard !args.isEmpty else { return nil }
         switch self {
-        case .concat:
+        case .concatenate:
             return args.dropFirst().reduce(args[0], { acc, x in acc?.concatenating(with: x) })
         case .unary where args.count == 1:
             return args[0]
@@ -80,7 +80,7 @@ public extension OpKind {
             return args[0].mutuallyBroadcasted(with: args[1])
         case .scan, .reduce:
             return args[0]
-        case .matMul:
+        case .matrixMultiply:
             return args[0].matrixMultiplied(with: args[1])
         default:
             return nil

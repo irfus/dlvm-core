@@ -51,8 +51,8 @@ extension DLVM.OpKind {
             return .unary(op, arguments[0])
         case let .binary(op):
             return .binary(op, arguments[0], arguments[1])
-        case .matMul:
-            return .matMul(arguments[0], arguments[1])
+        case .matrixMultiply:
+            return .matrixMultiply(arguments[0], arguments[1])
         default:
             throw FunctionTypeError.notSupported
         }
@@ -63,9 +63,9 @@ extension DLVM.OpKind {
             throw FunctionTypeError.argumentCountMismatch(expected: argumentCount, actual: args.count)
         }
         switch self {
-        case .concat where args.isEmpty:
+        case .concatenate where args.isEmpty:
             throw FunctionTypeError.concatEmpty
-        case .concat:
+        case .concatenate:
             return try args.dropFirst().reduce(args[0], { acc, x in
                 guard let shape = acc.concatenating(with: x) else {
                     throw FunctionTypeError.shapeMismatch(acc, x)
@@ -80,7 +80,7 @@ extension DLVM.OpKind {
             return shape
         case .unary, .scan, .reduce:
             return args[0]
-        case .matMul:
+        case .matrixMultiply:
             guard let shape = args[0].matrixMultiplied(with: args[1]) else {
                 throw FunctionTypeError.shapeMismatch(args[0], args[1])
             }
