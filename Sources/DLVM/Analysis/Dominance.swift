@@ -18,24 +18,20 @@ public struct DominatorTree<Node : IRUnit> {
 
 public extension DominatorTree {
 
-    public init(root: Node) {
+    init(root: Node) {
         self.root = root
         self.immediateDominators[root] = root
     }
 
-    public mutating func updateImmediateDominator(_ dominator: Node, for node: Node) {
+    mutating func updateImmediateDominator(_ dominator: Node, for node: Node) {
         immediateDominators[node] = dominator
     }
 
-}
-
-public extension DominatorTree {
-
-    public func immediateDominator(of node: Node) -> Node {
+    func immediateDominator(of node: Node) -> Node {
         return immediateDominators[node]!
     }
 
-    public func nearestCommonDominator(_ b1: Node, _ b2: Node) -> Node {
+    func nearestCommonDominator(_ b1: Node, _ b2: Node) -> Node {
         if dominates(b1, b2) { return b1 }
         if dominates(b2, b1) { return b2 }
 
@@ -60,7 +56,7 @@ public extension DominatorTree {
         return root
     }
 
-    public func contains(_ node: Node) -> Bool {
+    func contains(_ node: Node) -> Bool {
         return immediateDominators.keys.contains(node)
     }
 
@@ -77,41 +73,43 @@ public extension DominatorTree {
     func dominates(_ block: Node, _ otherBlock: Node) -> Bool {
         return block === otherBlock || properlyDominates(block, otherBlock)
     }
+
 }
 
+// MARK: - IRSubUnit dominance in IRCollection
+// SILGen crasher: public extension DominatorTree where Node : IRCollection, Node.Element : IRSubUnit {
 public extension DominatorTree where Node == BasicBlock {
-    func immediateDominatorInstruction(of body: Node) -> Instruction? {
-        return immediateDominator(of: body).terminator
-    }
-
-    func dominates(_ instruction: Instruction, _ otherInstruction: Instruction) -> Bool {
+    func properlyDominates(_ instruction: Instruction, _ otherInstruction: Instruction) -> Bool {
         let bb1 = instruction.parent, bb2 = otherInstruction.parent
-        if bb1 === bb2 {
-            return bb1.index(of: instruction)! < bb1.index(of: otherInstruction)!
+        if bb1 !== bb2 {
+            return properlyDominates(bb1, bb2)
         }
-        return dominates(bb1, bb2)
+        return instruction.indexInParent < otherInstruction.indexInParent
     }
 }
 
+// MARK: - IRUnit dominance
 public extension IRUnit {
-    public func isReachable(in domTree: DominatorTree<Self>) -> Bool {
-        return domTree.contains(self)
-    }
-
     public func dominates(_ other: Self,
                           in domTree: DominatorTree<Self>) -> Bool {
         return domTree.dominates(self, other)
     }
-}
 
-public extension Instruction {
-    public func dominates(_ other: Instruction,
-                          in domTree: DominatorTree<BasicBlock>) -> Bool {
-        return domTree.dominates(self, other)
+    public func properlyDominates(_ other: Self,
+                                  in domTree: DominatorTree<Self>) -> Bool {
+        return domTree.properlyDominates(self, other)
     }
 }
 
+// MARK: - IRSubUnit dominance
+public extension Instruction {
+    public func properlyDominates(_ other: Instruction,
+                                  in domTree: DominatorTree<BasicBlock>) -> Bool {
+        return domTree.properlyDominates(self, other)
+    }
+}
 
+/// Dominance analysis on a function
 open class DominanceAnalysis : AnalysisPass<Function, DominatorTree<BasicBlock>> {
 
     open override class func run(on body: Function) throws -> DominatorTree<BasicBlock> {
@@ -143,6 +141,7 @@ open class DominanceAnalysis : AnalysisPass<Function, DominatorTree<BasicBlock>>
     }
 }
 
+/// Post-dominance analysis on a function
 open class PostdominanceAnalysis : AnalysisPass<Function, [DominatorTree<BasicBlock>]> {
 
     open override class func run(on body: Function) throws -> [DominatorTree<BasicBlock>] {

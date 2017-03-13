@@ -108,6 +108,10 @@ public extension Function {
         return result
     }
 
+}
 
-
+open class ControlFlowGraphAnalysis : AnalysisPass<Function, DirectedGraph<BasicBlock>> {
+    open override class func run(on body: Function) -> DirectedGraph<BasicBlock> {
+        return DirectedGraph(nodes: body)
+    }
 }
