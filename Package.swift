@@ -30,5 +30,6 @@ let package = Package(
         "Sources/DLVMReader",
         "Sources/dlc",
         "Sources/dli",
+        "Kernels"
     ]
 )
