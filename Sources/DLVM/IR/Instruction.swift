@@ -47,7 +47,7 @@ public enum InstructionKind {
     case gradient(Function, [Use])
 }
 
-public final class Instruction : IRSubUnit, Value {
+public final class Instruction : IRSubUnit, Value, Definition {
     public typealias Parent = BasicBlock
     public var name: String?
     public var kind: InstructionKind

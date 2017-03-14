@@ -1,13 +1,11 @@
 module ffnn
 
-declare placeholder [4x1] f32 @i1
-declare placeholder [4x1] f32 @i2
-declare variable [4x4] f32 @W1 = random from 0.0 to 1.0
-declare variable [8x8] f32 @W2 = random from 0.0 to 1.0
-declare variable [8x8] f32 @W3 = random from 0.0 to 1.0
-declare variable [4x1] f32 @b1 = repeating 0.0
-declare variable [8x1] f32 @b2 = repeating 0.0
-declare variable [8x1] f32 @b3 = repeating 0.0
+define variable [4x4] f32 @W1 = random from 0.0 to 1.0
+define variable [8x8] f32 @W2 = random from 0.0 to 1.0
+define variable [8x8] f32 @W3 = random from 0.0 to 1.0
+define variable [4x1] f32 @b1 = repeating 0.0
+define variable [8x1] f32 @b2 = repeating 0.0
+define variable [8x1] f32 @b3 = repeating 0.0
 
 
 differentiable func @inference([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3) -> [1x8] f32 {
@@ -28,5 +26,6 @@ entry([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3,
 }
 
 differentiable func @∇inference([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3) -> ([4x1] f32, [4x1] f32, [4x4] f32, [8x8] f32, [8x8] f32, [4x1] f32, [8x1] f32, [8x1] f32) {
+entry([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3):
 }
 

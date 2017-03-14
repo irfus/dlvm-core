@@ -6,17 +6,6 @@
 //
 //
 
-public class Argument : Value, Named, Definition, EquatableByReference {
-    public var name: String
-    public var type: Type
-    public static var scope: Scope = .local
-
-    public init(name: String, type: Type) {
-        self.name = name
-        self.type = type
-    }
-}
-
 public final class Function : Named, IRCollection, IRSubUnit {
 
     public typealias Element = BasicBlock
@@ -40,30 +29,33 @@ public final class Function : Named, IRCollection, IRSubUnit {
         return bb
     }
 
-    public init(name: String, arguments: [(String, Type)],
+    public init(name: String, arguments: [(String?, Type)],
                 result: Type, isDifferentiable: Bool, parent: Module) {
         self.name = name
         self.arguments.append(contentsOf: arguments.map(Argument.init))
         self.result = result
         self.isDifferentiable = isDifferentiable
         self.parent = parent
+        _ = entry
     }
 
 }
 
-// MARK: - Accessors
-extension Function {
+// MARK: - Arguments
+public extension Function {
 
-    open func acceptsArguments<C : Collection>(_ types: C) -> Bool
-        where C.Iterator.Element == Type
-    {
+    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type {
         return types.elementsEqual(arguments.map{$0.type})
     }
 
-    open func argument(named name: String) -> Argument? {
+    func argument(named name: String) -> Argument? {
         return arguments.element(named: name)
     }
 
+    func containsArgument(named name: String) -> Bool {
+        return arguments.containsElement(named: name)
+    }
+    
 }
 
 // MARK: - Control flow
@@ -87,8 +79,9 @@ extension Function {
     }
 
     open func containsName(_ name: String) -> Bool {
-        return containsElement(named: name)
-            || contains(where: { $0.containsElement(named: name) })
+        return containsElement(named: name) || contains(where: {
+            $0.containsArgument(named: name) || $0.containsElement(named: name)
+        })
     }
 
 }
