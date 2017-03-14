@@ -40,7 +40,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case noExit(Node)
     case noForwardPass(Node)
     case noReturn(Node)
-    case unreachable(Instruction, from: Instruction, Node)
+    case useBeforeDef(user: Instruction, usee: Value, Node)
     case basicBlockArgumentMismatch([Use], BasicBlock, Node)
     case unexpectedBasicBlockType(BasicBlock, Node)
     case axisOutOfBounds(Int, Use, Node)
@@ -96,10 +96,8 @@ extension Function: SelfVerifiable {
             /// Check dominance
             for user in bb {
                 for use in user.operands {
-                    if case let .local(usee) = use.kind {
-                        guard usee.properlyDominates(user, in: domTree) else {
-                            throw VerificationError.unreachable(user, from: usee, self)
-                        }
+                    guard domTree.properlyDominates(use, user) else {
+                        throw VerificationError.useBeforeDef(user: user, usee: use.value, bb)
                     }
                 }
             }
