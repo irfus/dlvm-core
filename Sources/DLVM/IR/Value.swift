@@ -18,7 +18,6 @@ public enum Scope {
 /// Value base
 public protocol Value {
     var type: Type { get }
-    static var scope: Scope { get }
 }
 
 public protocol SimpleValue : Value {
@@ -100,36 +99,6 @@ public protocol Definition : class, Named, Value {
     var type: Type { get }
 }
 
-/// When a value has a name, it's a unique Def!
-public class Def<ValueType : Value> : Named, Definition, Value, HashableByReference {
-    public typealias UserType = Instruction
-    public var name: String
-    public var type: Type
-    public var value: ValueType
-
-    public static var scope: Scope {
-        return ValueType.scope
-    }
-    
-    public init(name: String, value: ValueType) {
-        self.name = name
-        self.type = value.type
-        self.value = value
-    }
-}
-
-/// A value is potentially recurrent if it's potentially recurrent
-public protocol PotentiallyRecurrentValue : Value {
-    var isRecurrent: Bool { get }
-}
-
-// MARK: - Recurrent value helper
-public extension Def where ValueType : PotentiallyRecurrentValue {
-    var isRecurrent: Bool {
-        return value.isRecurrent
-    }
-}
-
 // MARK: - Value helper factories
 public extension SimpleValue {
     /// Returns a zero value of the same shape and the same data type
@@ -167,22 +136,9 @@ public extension SimpleValue {
     }
 }
 
-// MARK: - Simple value accessor
-public extension Def where ValueType : SimpleValue {
-    var shape: TensorShape {
-        return value.shape
-    }
-
-    var dataType: DataType {
-        return value.dataType
-    }
-
-    func makeLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
-        return value.makeLiteral(integerLiteral)
-    }
-
-    func makeScalarLiteral(_ integerLiteral: IntegerLiteralType) -> LiteralValue {
-        return value.makeScalarLiteral(integerLiteral)
+public extension Definition where Self : SimpleValue {
+    public var type: Type {
+        return .tensor(shape, dataType)
     }
 }
 

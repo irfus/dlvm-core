@@ -29,11 +29,10 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case noDimensions(Use, Node)
     case noSpecifiedDimension(Use, Int, Node)
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
-    case invalidPlaceholder(Def<Placeholder>, Node)
     case functionArgumentCountMismatch(Function, Node)
-    case functionArgumentMismatch(Use, Def<Argument>, Function, Node)
+    case functionArgumentMismatch(Use, Argument, Function, Node)
     case notAFunctionCall(Use, Function, Node)
-    case functionDiffArgumentMismatch(Use, Def<Argument>, Function, Node)
+    case functionDiffArgumentMismatch(Use, Argument, Function, Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
     case invalidIndex(Use, Int, Node)
     case multipleExits([BasicBlock], Node)
@@ -41,8 +40,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case noExit(Node)
     case noForwardPass(Node)
     case noReturn(Node)
-    case postdominanceUnreachable(BasicBlock, Node)
-    case dominanceUnreachable(BasicBlock, Node)
+    case unreachable(Instruction, from: Instruction, Node)
     case basicBlockArgumentMismatch([Use], BasicBlock, Node)
     case unexpectedBasicBlockType(BasicBlock, Node)
     case axisOutOfBounds(Int, Use, Node)
@@ -64,7 +62,7 @@ extension Module : SelfVerifiable {
 
 extension Function: SelfVerifiable {
     public func verify() throws {
-        /// TODO: Check for reachability in dominator tree and postdominator tree
+        let domTree = try analysis(from: DominanceAnalysis.self)
 
         /// Check entry block arguments
         guard entry.arguments.elementsEqual(arguments) else {
@@ -84,14 +82,25 @@ extension Function: SelfVerifiable {
 
             /// Check return type
             let bbPremise = try bb.premise()
-            if case let .return(retVal) = bbPremise.terminator {
+            if case let .return(retVal) = bbPremise.terminator.kind {
                 switch retVal {
                 case let use? where use.type != result:
-                    throw VerificationError.returnTypeMismatch(bbPremise.terminatorInstruction, self)
+                    throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
                 case nil where !result.isVoid:
-                    throw VerificationError.returnTypeMismatch(bbPremise.terminatorInstruction, self)
+                    throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
                 default:
                     break
+                }
+            }
+
+            /// Check dominance
+            for user in bb {
+                for use in user.operands {
+                    if case let .local(usee) = use.kind {
+                        guard usee.properlyDominates(user, in: domTree) else {
+                            throw VerificationError.unreachable(user, from: usee, self)
+                        }
+                    }
                 }
             }
         }
@@ -119,29 +128,15 @@ extension BasicBlock : SelfVerifiable {
 
 extension Instruction : SelfVerifiable {
     public func verify() throws {
-        switch kind {
-        case let .control(ctrl):
-            try ctrl.verify()
-        case let .operation(def):
-            try def.verify()
-        }
-    }
-}
-
-public extension Def where ValueType : SelfVerifiable {
-    public func verify() throws {
-        try value.verify()
-    }
-}
-
-extension Control : SelfVerifiable {
-    public func verify() throws {
         for operand in operands {
             try operand.verify()
         }
+        try kind.verify()
     }
+}
 
-    private func verifySemantics() throws {
+extension InstructionKind : SelfVerifiable {
+    public func verify() throws {
         switch self {
 
         case let .conditional(use, _, _):
@@ -149,19 +144,7 @@ extension Control : SelfVerifiable {
                 throw VerificationError.unexpectedType(use, .tensor(.scalar, .bool), self)
             }
 
-        case let .pull(ph, thenBB, elseBB):
-            /// `thenBB` must have one argument of the same type of `use`
-            guard thenBB.arguments.count == 1,
-                ph.type == thenBB.arguments[0].type else {
-                throw VerificationError.unexpectedBasicBlockType(thenBB, self)
-            }
-            /// `elseBB` cannot take arguments
-            guard elseBB.arguments.isEmpty else {
-                throw VerificationError.unexpectedBasicBlockType(elseBB, self)
-            }
-
-        case let .yield(use, to: global as Definition),
-             let .store(use, to: global as Definition):
+        case let .store(use, to: global):
             guard use.type == global.type else {
                 throw VerificationError.unexpectedType(use, global.type, self)
             }
@@ -172,20 +155,7 @@ extension Control : SelfVerifiable {
             }
 
         case .return: break /// Verified at Function
-        }
-    }
-}
 
-extension Operation : SelfVerifiable {
-    public func verify() throws {
-        for operand in operands {
-            try operand.verify()
-        }
-        try verifySemantics()
-    }
-
-    private func verifySemantics() throws {
-        switch self {
         case let .binary(_, lhs, rhs):
             guard case let .tensor(s1, t1) = lhs.type,
                   case let .tensor(s2, t2) = rhs.type,
@@ -234,11 +204,6 @@ extension Operation : SelfVerifiable {
             }
             guard t1.canCast(to: target) else {
                 throw VerificationError.cannotTypeCast(v1, target, self)
-            }
-
-        case let .get(ph):
-            guard !ph.isRecurrent else {
-                throw VerificationError.invalidPlaceholder(ph, self)
             }
 
         case let .call(fun, vv):

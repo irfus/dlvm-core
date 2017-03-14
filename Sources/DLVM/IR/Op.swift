@@ -7,9 +7,9 @@
 //
 
 public enum ComparisonOp {
-    case lessThan, lessThanOrEqualTo
-    case greaterThan, greaterThanOrEqualTo
-    case equalTo, notEqualTo
+    case lessThan, lessThanOrEqual
+    case greaterThan, greaterThanOrEqual
+    case equal, notEqual
 }
 
 public enum BooleanOp {

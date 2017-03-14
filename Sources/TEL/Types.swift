@@ -44,7 +44,7 @@ extension DLVM.OpKind {
         }
     }
 
-    func makeOperation(with arguments: [Use]) throws -> Operation {
+    func makeInstruction(with arguments: [Use]) throws -> InstructionKind {
         try checkArgumentCount(with: arguments)
         switch self {
         case let .unary(op):

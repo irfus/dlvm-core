@@ -69,36 +69,10 @@ extension IRBuilder {
 // MARK: - Main builder API
 extension IRBuilder {
 
-    private func build(_ operation: Operation, name: String?) -> Def<Operation> {
-        guard let block = currentBlock else {
-            preconditionFailure("Current block doesn't exist")
-        }
-        let def = Def(name: name ?? makeVariableName(in: block.parent), value: operation)
-        block.append(.operation(def, parent: block))
-        return def
-    }
-
     @discardableResult
-    open func declare(_ output: Output, name: String) -> Def<Output> {
-        let def = Def<Output>(name: name, value: output)
-        let global: Global = .output(def)
-        module.insert(global)
-        return def
-    }
-
-    @discardableResult
-    open func declare(_ placeholder: Placeholder, name: String) -> Def<Placeholder> {
-        let def = Def<Placeholder>(name: name, value: placeholder)
-        let global: Global = .placeholder(def)
-        module.insert(global)
-        return def
-    }
-
-    @discardableResult
-    open func declare(_ value: GlobalValue, name: String) -> Use {
-        let def = Def<GlobalValue>(name: name, value: value)
-        module.insert(.value(def))
-        let use = Use(kind: .global(def))
+    open func define(_ value: GlobalValue) -> Use {
+        module.insert(value)
+        let use = Use(kind: .global(value))
         return use
     }
 
@@ -112,7 +86,7 @@ extension IRBuilder {
 
     @discardableResult
     open func buildFunction(named name: String,
-                            arguments: [(String, Argument)],
+                            arguments: [(String, Type)],
                             result: Type = .void,
                             isDifferentiable: Bool) -> Function {
         let fun = Function(name: name,
@@ -126,7 +100,7 @@ extension IRBuilder {
 
     @discardableResult
     open func buildBasicBlock(named name: String,
-                              arguments: [(String, Argument)],
+                              arguments: [(String, Type)],
                               in function: Function) -> BasicBlock {
         let newName = disambiguatedName(for: name, in: function)
         let block = BasicBlock(name: newName, arguments: arguments, parent: function)
@@ -135,17 +109,13 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildOperation(_ operation: Operation, name: String? = nil) -> Use {
-        let def = build(operation, name: name)
-        let use = Use(kind: .local(def))
+    open func buildInstruction(_ kind: InstructionKind, name: String? = nil) -> Use {
+        let block = currentBlock!
+        let function = block.parent
+        let inst = Instruction(name: kind.type.isVoid ? nil : (name ?? makeVariableName(in: function)),
+                               kind: kind, parent: block)
+        let use = Use(kind: .local(inst))
         return use
-    }
-
-    open func buildControl(_ control: Control) {
-        guard let block = currentBlock else {
-            preconditionFailure("Current block doesn't exist")
-        }
-        currentBlock?.append(.control(control, parent: block))
     }
 }
 

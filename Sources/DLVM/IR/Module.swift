@@ -16,7 +16,7 @@ public final class Module : IRCollection, IRUnit {
     open var name: String
 
     public var elements: OrderedMapSet<Function> = []
-    public fileprivate(set) var globals: OrderedMapSet<Global> = []
+    public fileprivate(set) var globals: OrderedMapSet<GlobalValue> = []
     public private(set) var analysisManager: AnalysisManager<Module> = AnalysisManager()
     public internal(set) var transformManager: TransformManager<Module> = TransformManager()
 
@@ -28,23 +28,23 @@ public final class Module : IRCollection, IRUnit {
 // MARK: - Globals
 extension Module {
 
-    open func insert(_ global: Global) {
+    open func insert(_ global: GlobalValue) {
         globals.append(global)
     }
 
-    open func index(of global: Global) -> Int? {
+    open func index(of global: GlobalValue) -> Int? {
         return globals.index(of: global)
     }
     
-    open func remove(_ global: Global) {
+    open func remove(_ global: GlobalValue) {
         globals.remove(global)
     }
     
-    open func global(named name: String) -> Global? {
+    open func global(named name: String) -> GlobalValue? {
         return globals.element(named: name)
     }
 
-    open func contains(_ global: Global) -> Bool {
+    open func contains(_ global: GlobalValue) -> Bool {
         return globals.contains(global)
     }
 

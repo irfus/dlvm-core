@@ -29,7 +29,7 @@ public class GradientExpander: TransformPass<Module> {
         let builder = IRBuilder(module: function.parent)
         /// Build gradient function
         builder.buildFunction(named: "∇" + function.name,
-                              arguments: function.arguments.map { ($0.name, $0.value) },
+                              arguments: function.arguments.map { ($0.name, $0.type) },
                               result: .tuple(function.arguments.map { ($0.type) }),
                               isDifferentiable: true)
     }

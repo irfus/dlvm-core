@@ -139,10 +139,10 @@ extension AssociativeOp: TextOutputStreamable {
 extension ComparisonOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case .equalTo: target.write("equal")
-        case .notEqualTo: target.write("notEqual")
-        case .greaterThanOrEqualTo: target.write("greaterThanOrEqual")
-        case .lessThanOrEqualTo: target.write("lessThanOrEqual")
+        case .equal: target.write("equal")
+        case .notEqual: target.write("notEqual")
+        case .greaterThanOrEqual: target.write("greaterThanOrEqual")
+        case .lessThanOrEqual: target.write("lessThanOrEqual")
         case .greaterThan: target.write("greaterThan")
         case .lessThan: target.write("lessThan")
         }
@@ -167,29 +167,18 @@ extension UnaryOp: TextOutputStreamable {
     }
 }
 
-extension Control : TextOutputStreamable {
+extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .branch(bb, args):
             target.write("branch %\(bb.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .conditional(op, thenBB, elseBB):
             target.write("conditional \(op), %\(thenBB.name), %\(elseBB.name)")
-        case let .yield(op, v):
-            target.write("yield \(op) to \(v)")
         case let .store(op, v):
             target.write("store \(op) to \(v)")
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }
-        case let .pull(ph, thenBB, elseBB):
-            target.write("pull \(ph), %\(thenBB), %\(elseBB)")
-        }
-    }
-}
-
-extension Operation : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
         case let .binary(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
         case let .matrixMultiply(op1, op2):
@@ -214,8 +203,6 @@ extension Operation : TextOutputStreamable {
             target.write("dataTypeCast \(op) to \(t)")
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
-        case let .get(def):
-            target.write("get \(def)")
         case let .call(fun, args):
             target.write("call \(fun.result) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .gradient(fun, args):
@@ -232,29 +219,16 @@ extension Operation : TextOutputStreamable {
 
 extension Instruction : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch kind {
-        case let .control(control):
-            control.write(to: &target)
-        case let .operation(def):
-            target.write("%\(def.name) = \(def.value)")
+        if let name = name {
+            target.write("%\(name) = ")
         }
+        kind.write(to: &target)
     }
 }
 
-extension Global : TextOutputStreamable {
+extension GlobalValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("declare ")
-        switch self {
-        case let .placeholder(def):
-            target.write("placeholder \(def)")
-        case let .value(def):
-            target.write("\(def.value.kind) ")
-            def.write(to: &target)
-            target.write(" = \(def.value.initializer)")
-        case let .output(def):
-            target.write("output \(def)")
-        }
-        target.write("\n")
+        target.write("define \(kind) \(type) @\(name) = \(initializer)\n")
     }
 }
 
@@ -263,22 +237,10 @@ extension Use : TextOutputStreamable {
         target.write("\(type) ")
         switch kind {
         case let .global(ref):      target.write("@\(ref.name)")
-        case let .local(ref):       target.write("%\(ref.name)")
+        case let .local(ref):       target.write(ref.name.flatMap{"%\($0)"} ?? "_")
         case let .argument(ref):    target.write("%\(ref.name)")
         case let .literal(lit):     lit.literal.write(to: &target)
         }
-    }
-}
-
-extension Def : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) ")
-        switch ValueType.scope {
-        case .global: target.write("@")
-        case .local: target.write("%")
-        default: break
-        }
-        name.write(to: &target)
     }
 }
 

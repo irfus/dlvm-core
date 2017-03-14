@@ -2,6 +2,7 @@
 // Created by Richard Wei on 2/19/17.
 //
 
+/// IRCollection
 public protocol IRCollection : class, IRUnit, RandomAccessCollection, HashableByReference {
     associatedtype ElementCollection : RandomAccessCollection
     var elements: ElementCollection { get set }
