@@ -6,51 +6,15 @@
 //
 //
 
-public final class Instruction : IRSubUnit {
-    public enum Kind {
-        case control(Control)
-        case operation(Def<Operation>)
-    }
-    public typealias Parent = BasicBlock
-    public let kind: Kind
-    public unowned var parent: BasicBlock
-    public internal(set) var analysisManager: AnalysisManager<Instruction> = AnalysisManager()
-    public internal(set) var transformManager: TransformManager<Instruction> = TransformManager()
-
-    public required init(kind: Kind, parent: BasicBlock) {
-        self.kind = kind
-        self.parent = parent
-    }
-
-    public static func control(_ control: Control, parent: BasicBlock) -> Instruction {
-        return self.init(kind: .control(control), parent: parent)
-    }
-
-    public static func operation(_ operation: Def<Operation>, parent: BasicBlock) -> Instruction {
-        return self.init(kind: .operation(operation), parent: parent)
-    }
-}
-
-public enum Control {
+public enum InstructionKind {
     /// Store use to global value
-    case store(Use, to: Def<GlobalValue>)
-    /// Yield value to output
-    case yield(Use, to: Def<Output>)
+    case store(Use, to: GlobalValue)
     /// Unconditionally branch to basic block
     case branch(BasicBlock, [Use])
     /// Conditional branch depending on the value
     case conditional(Use, BasicBlock, BasicBlock)
     /// Return
     case `return`(Use?)
-    /// Pull a value from the recurrent input batch in the current epoch
-    /// and pass the value as an argument to the first basic block argument
-    case pull(Def<Placeholder>, BasicBlock, BasicBlock)
-}
-
-public enum Operation {
-    /// Get the value of the non-recurrent input
-    /// - Precondition: placeholder must **not** be recurrent
-    case get(Def<Placeholder>)
     /// Scan operation with optional axis
     /// If axis is not given, scan is performed on contiguous elements
     case scan(AssociativeOp, Use, axis: Int?)
@@ -83,68 +47,30 @@ public enum Operation {
     case gradient(Function, [Use])
 }
 
-// MARK: - Instruction properties
-public extension Instruction {
-    var definition: Definition? {
-        guard case let .operation(def) = kind else {
-            return nil
-        }
-        return def
-    }
-}
+public final class Instruction : IRSubUnit, Value {
+    public typealias Parent = BasicBlock
+    public var name: String?
+    public var kind: InstructionKind
+    public unowned var parent: BasicBlock
+    public internal(set) var analysisManager: AnalysisManager<Instruction> = AnalysisManager()
+    public internal(set) var transformManager: TransformManager<Instruction> = TransformManager()
 
-extension Instruction : MaybeNamed {
-    public var name: String? {
-        guard case let .operation(def) = kind else { return nil }
-        return def.name
+    public required init(name: String?, kind: InstructionKind, parent: BasicBlock) {
+        self.name = name
+        self.kind = kind
+        self.parent = parent
+    }
+    
+    public var type: Type {
+        return kind.type
     }
 }
 
 // MARK: - Control flow predicates
-public extension Instruction {
-    var isOperation: Bool {
-        if case .operation = kind { return true }
-        return false
-    }
-    
-    var isControl: Bool {
-        if case .control = kind { return true }
-        return false
-    }
-    
-    var isTerminator: Bool {
-        switch kind {
-        case .control(let ctrl): return ctrl.isTerminator
-        default: return false
-        }
-    }
-
-    var isReturn: Bool {
-        switch kind {
-        case .control(let ctrl): return ctrl.isReturn
-        default: return false
-        }
-    }
-
-    var isYield: Bool {
-        switch kind {
-        case .control(let ctrl): return ctrl.isYield
-        default: return false
-        }
-    }
-
-    var isExit: Bool {
-        switch kind {
-        case .control(let ctrl): return ctrl.isExit
-        default: return false
-        }
-    }
-}
-
-public extension Control {
+public extension InstructionKind {
     var isTerminator: Bool {
         switch self {
-        case .branch, .conditional, .`return`, .pull:
+        case .branch, .conditional, .`return`:
             return true
         default:
             return false
@@ -157,17 +83,6 @@ public extension Control {
         default: return false
         }
     }
-
-    var isYield: Bool {
-        switch self {
-        case .yield: return true
-        default: return false
-        }
-    }
-
-    var isExit: Bool {
-        return isReturn
-    }
 }
 
 infix operator <>
@@ -178,7 +93,7 @@ extension TensorShape {
     }
 }
 
-extension Operation : Value {
+extension InstructionKind : Value {
 
     public var type: Type {
         switch self {
@@ -250,9 +165,6 @@ extension Operation : Value {
                   s1.contiguousSize == s.contiguousSize
                 else { return .invalid }
             return .tensor(s, t1)
-            
-        case let .get(ph):
-            return ph.type
 
         case let .call(f, vv):
             guard f.acceptsArguments(vv.map{$0.type})
@@ -280,7 +192,9 @@ extension Operation : Value {
                   index.count < s1.rank
                 else { return .invalid }
             return .tensor(s1.dropFirst(index.count), t1)
-            
+
+        case .store, .branch, .conditional, .return:
+            return .void
         }
     }
 
@@ -288,96 +202,52 @@ extension Operation : Value {
 
 }
 
-extension Control : User {
+extension Instruction : User {
     public var operands: [Use] {
-        switch self {
-        case .conditional(let op, _, _),
-             .yield(let op, _),
-             .store(let op, _),
-             .`return`(let op?):
-            return [op]
-        default:
-            return []
-        }
-    }
-}
-
-extension Operation : User {
-    public var operands: [Use] {
-        switch self {
+        switch kind {
         case let .binary(_, op1, op2),
              let .matrixMultiply(op1, op2):
             return [op1, op2]
-        case .concatenate(let uses, _):
-            return uses
-        case let .transpose(op):
-            return [op]
         case let .unary(_, op),
              let .reduce(_, op, _),
              let .scan(_, op, _),
              let .shapeCast(op, _),
-             let .dataTypeCast(op, _):
+             let .dataTypeCast(op, _),
+             let .conditional(op, _, _),
+             let .store(op, _),
+             let .return(op?),
+             let .subtensor(op, _),
+             let .tupleElement(op, _),
+             let .transpose(op):
             return [op]
-        case .call(_, let ops), .gradient(_, let ops), .tuple(let ops):
+        case .concatenate(let ops, _),
+             .call(_, let ops),
+             .gradient(_, let ops),
+             .tuple(let ops),
+             .branch(_, let ops):
             return ops
-        case .get:
+        case .return(nil):
             return []
-        case let .subtensor(op, _),
-             let .tupleElement(op, _):
-            return [op]
         }
-    }
-}
-
-extension Instruction : User {
-    public var operands: [Use] {
-        switch kind {
-        case .control(let ctrl): return ctrl.operands
-        case .operation(let oper): return oper.operands
-        }
-    }
-}
-
-public extension Def where ValueType : User {
-    public var operands: [Use] {
-        return value.operands
     }
 }
 
 public extension Instruction {
-    func substituting(_ actualUse: Use, for use: Use) -> Instruction {
-        switch kind {
-        case let .control(ctrl):
-            return .control(ctrl.substituting(actualUse, for: use), parent: parent)
-        case let .operation(def):
-            let oper = def.value.substituting(actualUse, for: use)
-            let newDef = Def<Operation>(name: def.name, value: oper)
-            return .operation(newDef, parent: parent)
-        }
+    func substitute(_ newUse: Use, for use: Use) {
+        kind = kind.substituting(newUse, for: use)
     }
 }
 
-public extension Control {
-    func substituting(_ newUse: Use, for use: Use) -> Control {
-        switch self {
-        case .store(use, to: let dest):
-            return .store(newUse, to: dest)
-        case .conditional(use, let thenBB, let elseBB):
-            return .conditional(newUse, thenBB, elseBB)
-        case .yield(use, to: let dest):
-            return .yield(newUse, to: dest)
-        case .`return`(use?):
-            return .return(newUse)
-        default:
-            return self
-        }
-    }
-}
-
-public extension Operation {
-    func substituting(_ newUse: Use, for old: Use) -> Operation {
+public extension InstructionKind {
+    func substituting(_ newUse: Use, for old: Use) -> InstructionKind {
         let condSubst = {$0 == old ? newUse : $0}
         switch self {
+        case .store(old, to: let dest):
+            return .store(newUse, to: dest)
+        case .conditional(old, let thenBB, let elseBB):
+            return .conditional(newUse, thenBB, elseBB)
+        case .return(old?):
+            return .return(newUse)
         case .unary(let fun, old):
             return .unary(fun, newUse)
         case .binary(let fun, old, let use2):
@@ -415,35 +285,5 @@ public extension Operation {
         default:
             return self
         }
-    }
-}
-
-public extension Operation {
-    var usedArguments: ObjectSet<Def<Argument>> {
-        var arguments: ObjectSet<Def<Argument>> = []
-        for case let .argument(arg) in operands.map({$0.kind}) {
-            arguments.insert(arg)
-        }
-        return arguments
-    }
-}
-
-public extension Instruction {
-    var usedArguments: ObjectSet<Def<Argument>> {
-        var arguments: ObjectSet<Def<Argument>> = []
-        for case let .argument(arg) in operands.map({$0.kind}) {
-            arguments.insert(arg)
-        }
-        return arguments
-    }
-}
-
-public extension BasicBlock {
-    var usedArguments: ObjectSet<Def<Argument>> {
-        var arguments: ObjectSet<Def<Argument>> = []
-        for inst in self {
-            arguments.formUnion(inst.usedArguments)
-        }
-        return arguments
     }
 }

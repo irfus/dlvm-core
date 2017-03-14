@@ -4,9 +4,9 @@
 
 public struct Use {
     public enum Kind {
-        case argument(Def<Argument>)
-        case local(Def<Operation>)
-        case global(Def<GlobalValue>)
+        case argument(Argument)
+        case local(Instruction)
+        case global(GlobalValue)
         case literal(LiteralValue)
     }
 
@@ -44,15 +44,15 @@ extension Use : Equatable {
 // MARK: - Factory methods
 public extension Use {
 
-    static func local(_ definition: Def<Operation>) -> Use {
+    static func local(_ definition: Instruction) -> Use {
         return Use(kind: .local(definition))
     }
 
-    static func global(_ definition: Def<GlobalValue>) -> Use {
+    static func global(_ definition: GlobalValue) -> Use {
         return Use(kind: .global(definition))
     }
 
-    static func argument(_ definition: Def<Argument>) -> Use {
+    static func argument(_ definition: Argument) -> Use {
         return Use(kind: .argument(definition))
     }
 
@@ -69,21 +69,20 @@ public extension Use {
 // MARK: - Value properties
 public extension Use {
 
-    var definition: Definition? {
+    var value: Value {
         switch kind {
-        case let .global(def): return def
-        case let .local(def): return def
-        case let .argument(def): return def
-        case .literal: return nil
+        case let .argument(val): return val
+        case let .global(val): return val
+        case let .literal(val): return val
+        case let .local(val): return val
         }
     }
 
-    var value: Value {
+    var definition: Definition? {
         switch kind {
         case let .global(def): return def
-        case let .local(def): return def
         case let .argument(def): return def
-        case let .literal(lit): return lit
+        case .literal, .local: return nil
         }
     }
 

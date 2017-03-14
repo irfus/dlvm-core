@@ -20,14 +20,14 @@ public extension PremiseHolder where Self : IRUnit, PremiseVerifier: AnalysisPas
 
 extension BasicBlock : PremiseHolder {
 
-    public struct Premise { let terminator: Control, terminatorInstruction: Instruction }
+    public struct Premise { let terminator: Instruction }
 
     public class PremiseVerifier : AnalysisPass<BasicBlock, Premise> {
         public override class func run(on body: BasicBlock) throws -> Premise {
-            guard let last = body.last, case .control(let ctrl) = last.kind else {
+            guard let last = body.last, last.kind.isTerminator else {
                 throw VerificationError.missingTerminator(body)
             }
-            return Premise(terminator: ctrl, terminatorInstruction: last)
+            return Premise(terminator: last)
         }
     }
 
@@ -42,7 +42,7 @@ extension Function : PremiseHolder {
             var exits: [BasicBlock] = []
             for bb in body {
                 let terminator = try bb.premise().terminator
-                if terminator.isExit { exits.append(bb) }
+                if terminator.kind.isReturn { exits.append(bb) }
             }
             return Premise(exits: exits)
         }

@@ -8,36 +8,7 @@
 // MARK: - Basic block graph traits
 extension BasicBlock : ForwardGraphNode {
     public var successors: ObjectSet<BasicBlock> {
-        guard let terminator = self.terminator else { return [] }
-        switch terminator.kind {
-        case let .control(.branch(dest, _)):
-            return [dest]
-        case let .control(.conditional(_, thenBB, elseBB)),
-             let .control(.pull(_, thenBB, elseBB)):
-            return [thenBB, elseBB]
-        default:
-            return []
-        }
-    }
-}
-
-// MARK: - Successors
-public extension Control {
-    var successors: ObjectSet<BasicBlock> {
-        /// TODO: Include entries of backward passes as successors
-        switch self {
-        case let .branch(bb, _): return [bb]
-        case let .conditional(_, bb1, bb2): return [bb1, bb2]
-        default: return []
-        }
-    }
-
-    var successorCount: Int {
-        switch self {
-        case .branch: return 1
-        case .conditional, .pull: return 2
-        default: return 0
-        }
+        return terminator?.successors ?? []
     }
 }
 
@@ -46,14 +17,18 @@ public extension Instruction {
 
     var successors: ObjectSet<BasicBlock> {
         switch kind {
-        case let .control(ctrl): return ctrl.successors
+        case let .branch(bb, _):
+            return [bb]
+        case let .conditional(_, bb1, bb2):
+            return [bb1, bb2]
         default: return []
         }
     }
 
     var successorCount: Int {
         switch kind {
-        case let .control(ctrl): return ctrl.successorCount
+        case .branch: return 1
+        case .conditional: return 2
         default: return 0
         }
     }

@@ -29,8 +29,7 @@ public extension UserGraph {
     }
 
     func users(of inst: Instruction) -> ObjectSet<Instruction> {
-        guard let def = inst.definition else { return [] }
-        return users(of: def)
+        return users[ObjectIdentifier(inst)] ?? []
     }
 
 }

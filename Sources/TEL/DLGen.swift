@@ -20,8 +20,6 @@ public extension Program {
 struct CodeGenEnvironment {
     var variables: [String : DLVM.Use] = [:]
 
-    var outputs: [String : DLVM.Def<Output>] = [:]
-    var placeholders: [String : DLVM.Def<Placeholder>] = [:]
     weak var endBlock: BasicBlock?
 
     func containsValue(named name: String) -> Bool {
@@ -48,14 +46,6 @@ class CodeGenerator {
     }
 
     func makeModule() -> Module {
-        /// Declare input
-        for input in program.inputs {
-            let placeholder = Placeholder(shape: input.shape,
-                                          type: program.dataType,
-                                          isRecurrent: false)
-            let ph = builder.declare(placeholder, name: input.name)
-            environment.placeholders[input.name] = ph
-        }
         /// Define globals
         for param in program.parameters {
             let initializer: TensorLiteral
@@ -71,21 +61,23 @@ class CodeGenerator {
             default:
                 preconditionFailure("This should not have passed Sema")
             }
-            let variable = GlobalValue(kind: .variable,
-                                       shape: param.shape, type: program.dataType,
+            let variable = GlobalValue(name: param.name,
+                                       kind: .variable,
+                                       shape: param.shape,
+                                       dataType: program.dataType,
                                        initializer: .tensor(initializer))
-            let use = builder.declare(variable, name: param.name)
+            let use = builder.define(variable)
             environment[param.name] = use
         }
 
         /// Build pure inference function
-        var args: [(String, DLVM.Argument)] = []
+        var args: [(String, Type)] = []
         for input in program.inputs {
-            let arg = Argument(type: .tensor(input.shape, program.dataType))
+            let arg: Type = .tensor(input.shape, program.dataType)
             args.append((input.name, arg))
         }
         for param in program.parameters {
-            let arg = Argument(type: .tensor(param.shape, program.dataType))
+            let arg: Type = .tensor(param.shape, program.dataType)
             args.append((param.name, arg))
         }
         let output = program.layers.first(where: {$0.isOutput})! // BAD!
@@ -107,23 +99,8 @@ class CodeGenerator {
             result = op
             environment[layer.name] = op
         }
-        builder.buildControl(.`return`(result))
+        builder.buildInstruction(.`return`(result))
 
-
-        /// Main function
-//        let function = builder.buildFunction(named: "main", arguments: [], result: nil, isDifferentiable: false)
-//        /// Entry block
-//        builder.move(to: function.entry)
-//        /// Load all inputs in and call pure inference function
-//        builder.buildFunction(named: "inference",
-//                              arguments: <#T##[(String, Argument)]#>, result: <#T##Argument?#>, isDifferentiable: <#T##Bool#>)
-        
-//            if layer.isOutput {
-//                let out = Output(shape: layer.shape, type: program.dataType, isRecurrent: false)
-//                let def = builder.declare(out, name: layer.name)
-//                builder.buildControl(.yield(op, to: def))
-//            }
-        
         return builder.module
     }
     
@@ -137,38 +114,38 @@ class CodeGenerator {
             if environment.containsValue(named: variable.name) {
                 return environment[variable.name]
             }
-            preconditionFailure("Unknown variable name. Something's wrong with DLGen")
+            preconditionFailure("Unknown variable name \(variable.name). Something's wrong with DLGen")
         case let .call(funcName, args, _):
             guard let opKind = intrinsicTable[funcName] else {
                 preconditionFailure("Unknown function name. This shouldn't have passed Sema.")
             }
             let argOps = args.map { [unowned self] in self.build($0) }
-            let operation = try! opKind.makeOperation(with: argOps)
-            return builder.buildOperation(operation, name: name)
+            let kind = try! opKind.makeInstruction(with: argOps)
+            return builder.buildInstruction(kind, name: name)
         case let .infixOp(op, lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
-            let operation: Operation = .binary(.associative(.arithmetic(op.instructionOperator)), lhsOp, rhsOp)
-            return builder.buildOperation(operation, name: name)
+            let operation: InstructionKind = .binary(.associative(.arithmetic(op.instructionOperator)), lhsOp, rhsOp)
+            return builder.buildInstruction(operation, name: name)
         case let .negate(expr, _):
             let exprOp = build(expr)
-            let operation: Operation = .unary(.elementwise(.neg), exprOp)
-            return builder.buildOperation(operation, name: name)
+            let operation: InstructionKind = .unary(.elementwise(.neg), exprOp)
+            return builder.buildInstruction(operation, name: name)
         case let .product(lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
-            let operation: Operation = .matrixMultiply(lhsOp, rhsOp)
-            return builder.buildOperation(operation, name: name)
+            let operation: InstructionKind = .matrixMultiply(lhsOp, rhsOp)
+            return builder.buildInstruction(operation, name: name)
         case let .concat(exprs, dimension: dim, _):
             let exprOps = exprs.map { [unowned self] in self.build($0) }
-            let operation: Operation = .concatenate(exprOps, axis: dim)
-            return builder.buildOperation(operation, name: name)
+            let operation: InstructionKind = .concatenate(exprOps, axis: dim)
+            return builder.buildInstruction(operation, name: name)
         case let .reshape(expr, shape: dims, _):
             let exprOp = build(expr)
             let targetShape = TensorShape(dims)
-            let operation: Operation = .shapeCast(exprOp, targetShape)
-            return builder.buildOperation(operation, name: name)
+            let operation: InstructionKind = .shapeCast(exprOp, targetShape)
+            return builder.buildInstruction(operation, name: name)
         case let .transpose(expr, _):
             let exprOp = build(expr)
-            return builder.buildOperation(.transpose(exprOp), name: name)
+            return builder.buildInstruction(.transpose(exprOp), name: name)
         default:
             preconditionFailure("Unsupported expression \(expression). This shouldn't have passed Sema.")
         }

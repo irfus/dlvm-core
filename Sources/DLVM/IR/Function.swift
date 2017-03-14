@@ -6,11 +6,13 @@
 //
 //
 
-public struct Argument : Value {
+public class Argument : Value, Named, Definition, EquatableByReference {
+    public var name: String
     public var type: Type
     public static var scope: Scope = .local
 
-    public init(type: Type) {
+    public init(name: String, type: Type) {
+        self.name = name
         self.type = type
     }
 }
@@ -21,7 +23,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
 
     public var name: String
     public var result: Type
-    public var arguments: OrderedMapSet<Def<Argument>> = []
+    public var arguments: OrderedMapSet<Argument> = []
     public var isDifferentiable: Bool
     public unowned var parent: Module
     
@@ -38,10 +40,10 @@ public final class Function : Named, IRCollection, IRSubUnit {
         return bb
     }
 
-    public init(name: String, arguments: [(String, Argument)],
+    public init(name: String, arguments: [(String, Type)],
                 result: Type, isDifferentiable: Bool, parent: Module) {
         self.name = name
-        self.arguments.append(contentsOf: arguments.map(Def.init))
+        self.arguments.append(contentsOf: arguments.map(Argument.init))
         self.result = result
         self.isDifferentiable = isDifferentiable
         self.parent = parent
@@ -58,7 +60,7 @@ extension Function {
         return types.elementsEqual(arguments.map{$0.type})
     }
 
-    open func argument(named name: String) -> Def<Argument>? {
+    open func argument(named name: String) -> Argument? {
         return arguments.element(named: name)
     }
 
