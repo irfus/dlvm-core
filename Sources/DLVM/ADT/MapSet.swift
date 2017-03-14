@@ -190,7 +190,7 @@ extension OrderedMapSet : MutableCollection {
             return elements[position] as! Element
         }
         set {
-            elements[position] = newValue
+            elements.replaceObject(at: position, with: newValue)
         }
     }
 }
