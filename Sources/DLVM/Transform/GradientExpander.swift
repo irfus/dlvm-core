@@ -6,12 +6,18 @@
 //
 //
 
+/// Replace every `gradient` instruction to a `call` to a function that
+/// produces the gradient
 public class GradientExpander: TransformPass<Module> {
 
     public override class func run(on module: Module) throws -> Bool {
         var changed = false
 
         for function in module {
+            /// NOTE: For testing purposes, we are differentiating every diff'able function
+            /// instead of expanding `gradient` instructions. We'll move to that later when
+            /// AD is working
+
             /// If function is not differentiable, do nothing
             guard function.isDifferentiable else { return false }
             /// If gradient function exists, do nothing
@@ -19,19 +25,20 @@ public class GradientExpander: TransformPass<Module> {
             if let _ = globalGradInfo.gradient(of: function) { return false }
             /// Expand this function
             expand(function)
+            changed = true
         }
 
-        changed = true
         return changed
     }
 
     private static func expand(_ function: Function) {
         let builder = IRBuilder(module: function.parent)
         /// Build gradient function
-        builder.buildFunction(named: "∇" + function.name,
-                              arguments: function.arguments.map { ($0.name, $0.type) },
-                              result: .tuple(function.arguments.map { ($0.type) }),
-                              isDifferentiable: true)
+        let grad = builder.buildFunction(named: "∇" + function.name,
+                                         arguments: function.arguments.map { ($0.name, $0.type) },
+                                         result: .tuple(function.arguments.map { ($0.type) }),
+                                         isDifferentiable: true)
+        builder.move(to: grad.entry)
     }
 
     /*

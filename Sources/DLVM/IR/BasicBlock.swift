@@ -6,6 +6,17 @@
 //
 //
 
+public class Argument : Value, Definition, HashableByReference {
+    public var name: String?
+    public var type: Type
+    public weak var parent: BasicBlock?
+
+    public init(name: String?, type: Type) {
+        self.name = name
+        self.type = type
+    }
+}
+
 public final class BasicBlock : IRCollection, IRSubUnit, Named {
 
     public typealias Element = Instruction
@@ -24,13 +35,17 @@ public final class BasicBlock : IRCollection, IRSubUnit, Named {
         self.name = name
         self.arguments.append(contentsOf: arguments)
         self.parent = parent
+        /// Set parent of each arg to self
+        for arg in arguments {
+            arg.parent = self
+        }
     }
 
     internal convenience init(asEntryOf parent: Function) {
         self.init(name: "entry", arguments: parent.arguments, parent: parent)
     }
 
-    public convenience init(name: String, arguments: [(String, Type)], parent: Function) {
+    public convenience init(name: String, arguments: [(String?, Type)], parent: Function) {
         self.init(name: name, arguments: arguments.map(Argument.init), parent: parent)
     }
 
@@ -74,4 +89,21 @@ public extension BasicBlock {
         return parent.entry === self
     }
 
+}
+
+// MARK: - Arguments
+public extension BasicBlock {
+
+    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type {
+        return types.elementsEqual(arguments.map{$0.type})
+    }
+
+    func argument(named name: String) -> Argument? {
+        return arguments.element(named: name)
+    }
+
+    func containsArgument(named name: String) -> Bool {
+        return arguments.containsElement(named: name)
+    }
+    
 }

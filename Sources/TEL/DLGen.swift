@@ -71,7 +71,7 @@ class CodeGenerator {
         }
 
         /// Build pure inference function
-        var args: [(String, Type)] = []
+        var args: [(String?, Type)] = []
         for input in program.inputs {
             let arg: Type = .tensor(input.shape, program.dataType)
             args.append((input.name, arg))
@@ -88,8 +88,10 @@ class CodeGenerator {
 
         /// Add all args into env
         for argDef in function.arguments {
-            let use = Use(kind: .argument(argDef))
-            environment[argDef.name] = use
+            let use = Use.argument(argDef.type, argDef)
+            if let argName = argDef.name {
+                environment[argName] = use
+            }
         }
 
         /// Generate hidden layers
@@ -164,7 +166,8 @@ fileprivate extension Constant {
         case let .float(f, _):
             literal = .scalar(.float(f))
         }
-        return Use(kind: .literal(LiteralValue(shape: .scalar, dataType: dataType, literal: literal)))
+        let litVal = LiteralValue(shape: .scalar, dataType: dataType, literal: literal)
+        return .literal(litVal.type, litVal)
     }
 }
 

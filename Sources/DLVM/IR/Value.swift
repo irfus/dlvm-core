@@ -31,14 +31,6 @@ public extension SimpleValue {
     }
 }
 
-/// Scalar or tensor literal, literally
-/// - Note: It has no type or shape, because a `Literal` is not a `Value`.
-/// But `LiteralValue`, that uses `Literal`, is a value.
-public enum Literal {
-    case scalar(ScalarLiteral)
-    case tensor(TensorLiteral)
-}
-
 /// Scalar literal
 public enum ScalarLiteral {
     case int(Int), float(Double), bool(Bool)
@@ -48,6 +40,17 @@ public enum ScalarLiteral {
         case .bool: return .bool
         case .int: return .int
         case .float: return .float
+        }
+    }
+}
+
+extension ScalarLiteral : Equatable {
+    public static func == (lhs: ScalarLiteral, rhs: ScalarLiteral) -> Bool {
+        switch (lhs, rhs) {
+        case let (.int(i1), .int(i2)): return i1 == i2
+        case let (.float(f1), .float(f2)): return f1 == f2
+        case let (.bool(b1), .bool(b2)): return b1 == b2
+        default: return false
         }
     }
 }
@@ -70,17 +73,57 @@ public enum TensorLiteral {
     }
 }
 
+extension TensorLiteral : Equatable {
+    public static func == (lhs: TensorLiteral, rhs: TensorLiteral) -> Bool {
+        switch (lhs, rhs) {
+        case let (.elements(ll1), .elements(ll2)):
+            return ll1 == ll2
+        case let (.random(from: lo1, to: hi1), .random(from: lo2, to: hi2)):
+            return lo1 == lo2 && hi1 == hi2
+        case let (.repeating(l1), .repeating(l2)):
+            return l1 == l2
+        default:
+            return false
+        }
+    }
+}
+
+/// Scalar or tensor literal, literally
+/// - Note: It has no type or shape, because a `Literal` is not a `Value`.
+/// But `LiteralValue`, that uses `Literal`, is a value.
+public enum Literal {
+    case scalar(ScalarLiteral)
+    case tensor(TensorLiteral)
+}
+
+extension Literal : Equatable {
+    public static func == (lhs: Literal, rhs: Literal) -> Bool {
+        switch (lhs, rhs) {
+        case let (.scalar(s1), .scalar(s2)): return s1 == s2
+        case let (.tensor(t1), .tensor(t2)): return t1 == t2
+        default: return false
+        }
+    }
+}
+
 /// Literal value. It wraps `Literal` into a value
 public struct LiteralValue : SimpleValue {
     public var shape: TensorShape
     public var dataType: DataType
     public var literal: Literal
-    public static let scope: Scope = .none
 
     public init(shape: TensorShape, dataType: DataType, literal: Literal) {
         self.shape = shape
         self.dataType = dataType
         self.literal = literal
+    }
+}
+
+extension LiteralValue : Equatable {
+    public static func == (lhs: LiteralValue, rhs: LiteralValue) -> Bool {
+        return lhs.shape == rhs.shape
+            && lhs.dataType == rhs.dataType
+            && lhs.literal == rhs.literal
     }
 }
 
@@ -94,9 +137,7 @@ public protocol MaybeNamed {
     var name: String? { get }
 }
 
-public protocol Definition : class, Named, Value {
-    var name: String { get }
-    var type: Type { get }
+public protocol Definition : class, MaybeNamed, Value {
 }
 
 // MARK: - Value helper factories
@@ -133,12 +174,6 @@ public extension SimpleValue {
             literal = .scalar(.int(integerLiteral))
         }
         return LiteralValue(shape: .scalar, dataType: dataType, literal: literal)
-    }
-}
-
-public extension Definition where Self : SimpleValue {
-    public var type: Type {
-        return .tensor(shape, dataType)
     }
 }
 

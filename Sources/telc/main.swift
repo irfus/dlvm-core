@@ -67,7 +67,7 @@ func main() throws {
         print("TEL module \"\(program.moduleName)\"")
         /// Generate IR
         let module = program.makeModule()
-        try module.verify()
+        try module.analysis(from: Verifier.self)
         try module.applyTransform(GradientExpander.self)
 
         /// Print IR if needed

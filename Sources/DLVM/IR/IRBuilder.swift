@@ -72,8 +72,7 @@ extension IRBuilder {
     @discardableResult
     open func define(_ value: GlobalValue) -> Use {
         module.insert(value)
-        let use = Use(kind: .global(value))
-        return use
+        return .global(value.type, value)
     }
 
     open func makeLiteral(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
@@ -81,12 +80,12 @@ extension IRBuilder {
     }
 
     open func makeLiteral(_ literalValue: LiteralValue) -> Use {
-        return Use(kind: .literal(literalValue))
+        return .literal(literalValue.type, literalValue)
     }
 
     @discardableResult
     open func buildFunction(named name: String,
-                            arguments: [(String, Type)],
+                            arguments: [(String?, Type)],
                             result: Type = .void,
                             isDifferentiable: Bool) -> Function {
         let fun = Function(name: name,
@@ -100,7 +99,7 @@ extension IRBuilder {
 
     @discardableResult
     open func buildBasicBlock(named name: String,
-                              arguments: [(String, Type)],
+                              arguments: [(String?, Type)],
                               in function: Function) -> BasicBlock {
         let newName = disambiguatedName(for: name, in: function)
         let block = BasicBlock(name: newName, arguments: arguments, parent: function)
@@ -110,12 +109,14 @@ extension IRBuilder {
 
     @discardableResult
     open func buildInstruction(_ kind: InstructionKind, name: String? = nil) -> Use {
-        let block = currentBlock!
+        guard let block = currentBlock else {
+            preconditionFailure("Builder isn't positioned at a basic block")
+        }
         let function = block.parent
         let inst = Instruction(name: kind.type.isVoid ? nil : (name ?? makeVariableName(in: function)),
                                kind: kind, parent: block)
-        let use = Use(kind: .local(inst))
-        return use
+        block.append(inst)
+        return .instruction(inst.type, inst)
     }
 }
 

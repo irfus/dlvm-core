@@ -46,6 +46,9 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case axisOutOfBounds(Int, Use, Node)
     case functionEntryArgumentMismatch(BasicBlock, Node)
     case returnTypeMismatch(Instruction, Node)
+    case invalidType(Node)
+    case namedVoidValue(Node)
+    case unnamedUse(Node)
 }
 
 public protocol SelfVerifiable {
@@ -126,17 +129,31 @@ extension BasicBlock : SelfVerifiable {
 
 extension Instruction : SelfVerifiable {
     public func verify() throws {
-        for operand in operands {
-            try operand.verify()
+        /// Use type must match usee type
+        for use in operands {
+            try use.verify()
         }
+
+        /// Visit kind
         try kind.verify()
+        
+        /// Check type
+        switch type {
+        case .void where name != nil:
+            /// If void, it cannot have a name
+            throw VerificationError.namedVoidValue(self)
+        case .invalid:
+            /// Cannot be invalid
+            throw VerificationError.invalidType(self)
+        default:
+            break
+        }
     }
 }
 
 extension InstructionKind : SelfVerifiable {
     public func verify() throws {
         switch self {
-
         case let .conditional(use, _, _):
             guard case let .tensor(s, t) = use.type, s.isScalar, t.isBool else {
                 throw VerificationError.unexpectedType(use, .tensor(.scalar, .bool), self)
@@ -252,8 +269,17 @@ extension InstructionKind : SelfVerifiable {
 
 extension Use : SelfVerifiable {
     public func verify() throws {
-        guard value.type == self.type else {
-            throw VerificationError<Use>.useTypeMismatch(self)
+        /// Type must be valid
+        guard type.isValid else {
+            throw VerificationError.invalidType(self)
+        }
+        /// Value type must match use type
+        guard value.type == type else {
+            throw VerificationError.useTypeMismatch(self)
+        }
+        /// If using a def, the def must have a name
+        if let definition = definition, definition.name == nil {
+            throw VerificationError.unnamedUse(self)
         }
     }
 }

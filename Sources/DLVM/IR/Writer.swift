@@ -228,18 +228,24 @@ extension Instruction : TextOutputStreamable {
 
 extension GlobalValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("define \(kind) \(type) @\(name) = \(initializer)\n")
+        target.write("define \(kind) \(type) ")
+        if let name = name {
+            target.write("@\(name)")
+        } else {
+            target.write("_")
+        }
+        target.write(" = \(initializer)\n")
     }
 }
 
 extension Use : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("\(type) ")
-        switch kind {
-        case let .global(ref):      target.write("@\(ref.name)")
-        case let .local(ref):       target.write(ref.name.flatMap{"%\($0)"} ?? "_")
-        case let .argument(ref):    target.write("%\(ref.name)")
-        case let .literal(lit):     lit.literal.write(to: &target)
+        switch self {
+        case let .global(_, ref):      target.write("\(ref.name.flatMap{"@\($0)"} ?? "@_")")
+        case let .instruction(_, ref): target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
+        case let .argument(_, ref):    target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
+        case let .literal(_, lit):     lit.literal.write(to: &target)
         }
     }
 }
@@ -258,6 +264,13 @@ extension BasicBlock : TextOutputStreamable {
             inst.write(to: &target)
             target.write("\n")
         }
+    }
+}
+
+extension Argument : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write("\(type) ")
+        target.write(name.flatMap{"%\($0)"} ?? "%_")
     }
 }
 
