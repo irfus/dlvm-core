@@ -11,6 +11,7 @@ public indirect enum Type {
     case pointer(Type)
     case void
     case invalid
+    case `struct`(StructType)
 }
 
 public extension Type {
@@ -62,6 +63,8 @@ public extension Type {
             return subtype.isValid
         case let .tuple(subtypes):
             return subtypes.reduce(true, { $0 && $1.isValid })
+        case let .struct(st):
+            return st.fields.reduce(true, { $0 && $1.isValid })
         }
     }
 }

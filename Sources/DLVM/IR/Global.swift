@@ -2,6 +2,13 @@
 // Created by Richard Wei on 2/24/17.
 //
 
+/// TODO: Sum types for module's elements
+public enum TopLevelItem {
+    case value(GlobalValue)
+    case function(Function)
+    case `struct`(StructType)
+}
+
 /// Global value
 public class GlobalValue : SimpleValue, Definition {
     public enum Kind {
@@ -20,4 +27,10 @@ public class GlobalValue : SimpleValue, Definition {
         self.dataType = dataType
         self.initializer = initializer
     }
+}
+
+/// Struct type
+public struct StructType : Named {
+    public var name: String
+    public var fields: [Type]
 }
