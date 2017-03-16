@@ -1,0 +1,21 @@
+@type(float)
+trainable XOR {
+    var W1: [2x5]
+    var b1: [1x5]
+    var W2: [5x1]
+    var b2: [1x1]
+
+    inference(x: [1x2]) -> [1x1] {
+        let h1 = sigmoid(x . W1 + b1)
+        return softmax(h1 . W2 + b2)
+    }
+
+    cost<k*>(reference: [k], actual: [k]) -> [] {
+        return reduce (reference - actual)^2 using mean
+    }
+
+    /// Stochastic gradient descent
+    optimize<k*>(weight: [k], gradient: [k], learningRate: []) -> [k] {
+        return weight - gradient * learningRate
+    }
+}
