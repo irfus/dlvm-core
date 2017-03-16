@@ -1,31 +1,31 @@
 module ffnn
 
-define variable [4x4] f32 @W1 = random from 0.0 to 1.0
-define variable [8x8] f32 @W2 = random from 0.0 to 1.0
-define variable [8x8] f32 @W3 = random from 0.0 to 1.0
-define variable [4x1] f32 @b1 = repeating 0.0
-define variable [8x1] f32 @b2 = repeating 0.0
-define variable [8x1] f32 @b3 = repeating 0.0
+define variable [4x4:f32] @W1 = random from 0.0 to 1.0
+define variable [8x8:f32] @W2 = random from 0.0 to 1.0
+define variable [8x8:f32] @W3 = random from 0.0 to 1.0
+define variable [4x1:f32] @b1 = repeating 0.0
+define variable [8x1:f32] @b2 = repeating 0.0
+define variable [8x1:f32] @b3 = repeating 0.0
 
 
-differentiable func @inference([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3) -> [1x8] f32 {
-entry([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3):
-    %v0 = matrixMultiply [4x4] f32 %W1, [4x1] f32 %i1
-    %v1 = add [4x1] f32 %v0, [4x1] f32 %b1
-    %h1 = sigmoid [4x1] f32 %v1
-    %v2 = concatenate [4x1] f32 %h1, [4x1] f32 %i2 along 0
-    %v3 = subtract f32 1.0, [8x1] f32 %v2
-    %v4 = matrixMultiply [8x8] f32 %W2, [8x1] f32 %v3
-    %v5 = add [8x1] f32 %v4, [8x1] f32 %b2
-    %h2 = max f32 0.0, [8x1] f32 %v5
-    %v6 = matrixMultiply [8x8] f32 %W3, [8x1] f32 %h2
-    %v7 = add [8x1] f32 %v6, [8x1] f32 %b3
-    %v8 = softmax [8x1] f32 %v7
-    %o = transpose [8x1] f32 %v8
-    return [1x8] f32 %o
+differentiable func @inference([4x1:f32] %i1, [4x1:f32] %i2, [4x4:f32] %W1, [8x8:f32] %W2, [8x8:f32] %W3, [4x1:f32] %b1, [8x1:f32] %b2, [8x1:f32] %b3) -> [1x8:f32] {
+entry([4x1:f32] %i1, [4x1:f32] %i2, [4x4:f32] %W1, [8x8:f32] %W2, [8x8:f32] %W3, [4x1:f32] %b1, [8x1:f32] %b2, [8x1:f32] %b3):
+    %v0 = matrixMultiply [4x4:f32] %W1, [4x1:f32] %i1
+    %v1 = add [4x1:f32] %v0, [4x1:f32] %b1
+    %h1 = sigmoid [4x1:f32] %v1
+    %v2 = concatenate [4x1:f32] %h1, [4x1:f32] %i2 along 0
+    %v3 = subtract f32 1.0, [8x1:f32] %v2
+    %v4 = matrixMultiply [8x8:f32] %W2, [8x1:f32] %v3
+    %v5 = add [8x1:f32] %v4, [8x1:f32] %b2
+    %h2 = max f32 0.0, [8x1:f32] %v5
+    %v6 = matrixMultiply [8x8:f32] %W3, [8x1:f32] %h2
+    %v7 = add [8x1:f32] %v6, [8x1:f32] %b3
+    %v8 = softmax [8x1:f32] %v7
+    %o = transpose [8x1:f32] %v8
+    return [1x8:f32] %o
 }
 
-differentiable func @∇inference([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3) -> ([4x1] f32, [4x1] f32, [4x4] f32, [8x8] f32, [8x8] f32, [4x1] f32, [8x1] f32, [8x1] f32) {
-entry([4x1] f32 %i1, [4x1] f32 %i2, [4x4] f32 %W1, [8x8] f32 %W2, [8x8] f32 %W3, [4x1] f32 %b1, [8x1] f32 %b2, [8x1] f32 %b3):
+differentiable func @∇inference([4x1:f32] %i1, [4x1:f32] %i2, [4x4:f32] %W1, [8x8:f32] %W2, [8x8:f32] %W3, [4x1:f32] %b1, [8x1:f32] %b2, [8x1:f32] %b3) -> ([4x1:f32], [4x1:f32], [4x4:f32], [8x8:f32], [8x8:f32], [4x1:f32], [8x1:f32], [8x1:f32]) {
+entry([4x1:f32] %i1, [4x1:f32] %i2, [4x4:f32] %W1, [8x8:f32] %W2, [8x8:f32] %W3, [4x1:f32] %b1, [8x1:f32] %b2, [8x1:f32] %b3):
 }
 

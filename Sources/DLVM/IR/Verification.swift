@@ -6,6 +6,8 @@
 //
 //
 
+import DLVMTensor
+
 public enum VerificationError<Node : SelfVerifiable> : Error {
     case redeclared(Node)
     case noParent(Node)
@@ -49,6 +51,8 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case invalidType(Node)
     case namedVoidValue(Node)
     case unnamedUse(Node)
+    case notPointer(Use, Node)
+    case invalidIndices(Use, [Int], Node)
 }
 
 public protocol SelfVerifiable {
@@ -159,11 +163,6 @@ extension InstructionKind : SelfVerifiable {
                 throw VerificationError.unexpectedType(use, .tensor(.scalar, .bool), self)
             }
 
-        case let .store(use, to: global):
-            guard use.type == global.type else {
-                throw VerificationError.unexpectedType(use, global.type, self)
-            }
-
         case let .branch(bb, args):
             for (formal, arg) in zip(bb.arguments, args) where formal.type != arg.type {
                 throw VerificationError.basicBlockArgumentMismatch(args, bb, self)
@@ -262,7 +261,38 @@ extension InstructionKind : SelfVerifiable {
                 throw VerificationError.notTensor(v1, self)
             }
 
-        case .tuple: break
+        case let .load(v1):
+            guard case .pointer = v1.type else {
+                throw VerificationError.notPointer(v1, self)
+            }
+
+        case let .store(v1, to: v2):
+            guard case let .pointer(subtype) = v2.type else {
+                throw VerificationError.notPointer(v2, self)
+            }
+            guard v1.type == subtype else {
+                throw VerificationError.typeMismatch(v1, v2, self)
+            }
+
+        case let .elementPointer(v, ii):
+            func gepCheck<C: Collection>(type: Type, indices: C) throws where C.Iterator.Element == Int {
+                guard let first = indices.first else { return }
+                switch type {
+                /// Can be a pointer
+                case let .pointer(t):
+                    try gepCheck(type: t, indices: ii.dropFirst())
+
+                /// OR an array of pointers
+                case let .array(.pointer(t), n) where first < n:
+                    try gepCheck(type: t, indices: ii.dropFirst())
+
+                default:
+                    throw VerificationError.invalidIndices(v, ii, self)
+                }
+            }
+            try gepCheck(type: v.type, indices: ii)
+
+        case .tuple, .allocate, .bitCast: break
         }
     }
 }
