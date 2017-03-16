@@ -67,6 +67,8 @@ extension Type : TextOutputStreamable {
         switch self {
         case .invalid:
             target.write("<<error>>")
+        case let .struct(ty):
+            ty.name.write(to: &target)
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
