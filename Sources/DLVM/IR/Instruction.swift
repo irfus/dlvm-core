@@ -7,44 +7,68 @@
 //
 
 public enum InstructionKind {
-    /// Store use to global value
-    case store(Use, to: GlobalValue)
+    /** Control flow **/
     /// Unconditionally branch to basic block
     case branch(BasicBlock, [Use])
     /// Conditional branch depending on the value
     case conditional(Use, BasicBlock, BasicBlock)
     /// Return
     case `return`(Use?)
+
+    /** Tensor integration **/
     /// Scan operation with optional axis
     /// If axis is not given, scan is performed on contiguous elements
     case scan(AssociativeOp, Use, axis: Int?)
     /// Reduction operation with optional axis
     /// If axis is not given, reduction is performed on contiguous elements
     case reduce(AssociativeOp, Use, axis: Int?)
+    /// Matrix multiplication operation
+    case matrixMultiply(Use, Use)
+
+    /** Tensor monomorphic transfer **/
     /// Monomorphic unary operation
     case unary(UnaryOp, Use)
     /// Monomorphic binary operation
     case binary(BinaryOp, Use, Use)
-    /// Matrix multiplication operation
-    case matrixMultiply(Use, Use)
+
+    /** Tensor manipulation **/
     /// Concatenation operation
     case concatenate([Use], axis: Int)
     /// Transpose
     case transpose(Use)
+
+    /** Cast **/
     /// Type cast operation
     case dataTypeCast(Use, DataType)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
+
+    /** Subtensor **/
     /// Subtensor addressing
     case subtensor(Use, TensorIndex)
-    /// Element in the immediate dimension
+    /// Extract an element from tuple
     case tupleElement(Use, Int)
-    /// Create tuple
+    /// Form a tuple
     case tuple([Use])
+
+    /** Function invocation **/
     /// Function call
     case call(Function, [Use])
-    /// Gradient call
+    /// Gradient call, using implicit automatic differentiation
+    /// Will be replaced by `call` through GradientExpansion transform pass
     case gradient(Function, [Use])
+
+    /** Memory **/
+    /// Allocate stack memory, returning a pointer
+    case allocate(Type, Int)
+    /// Load value from pointer
+    case load(Use)
+    /// Store value to pointer
+    case store(Use, to: Use)
+    /// GEP
+    case elementPointer(Use, [Int])
+    /// Bitcast
+    case bitCast(Use, Type)
 }
 
 public final class Instruction : IRSubUnit, Value, Definition {
@@ -193,6 +217,34 @@ extension InstructionKind : Value {
                 else { return .invalid }
             return .tensor(s1.dropFirst(index.count), t1)
 
+        case let .allocate(type, _):
+            return .pointer(type)
+
+        case let .load(v):
+            guard case let .pointer(t) = v.type else { return .invalid }
+            return t
+
+        case let .elementPointer(v, ii):
+            func gepType<C: Collection>(type: Type, indices: C) -> Type where C.Iterator.Element == Int {
+                guard let first = indices.first else { return type }
+                switch type {
+                /// Can be a pointer
+                case let .pointer(t):
+                    return gepType(type: t, indices: ii.dropFirst())
+
+                /// OR an array of pointers
+                case let .array(.pointer(t), n) where first < n:
+                    return gepType(type: t, indices: ii.dropFirst())
+
+                default:
+                    return .invalid
+                }
+            }
+            return gepType(type: v.type, indices: ii)
+
+        case let .bitCast(_, t):
+            return t
+
         case .store, .branch, .conditional, .return:
             return .void
         }
@@ -214,11 +266,14 @@ extension Instruction : User {
              let .shapeCast(op, _),
              let .dataTypeCast(op, _),
              let .conditional(op, _, _),
-             let .store(op, _),
              let .return(op?),
              let .subtensor(op, _),
              let .tupleElement(op, _),
-             let .transpose(op):
+             let .transpose(op),
+             let .store(op, _),
+             let .load(op),
+             let .elementPointer(op, _),
+             let .bitCast(op, _):
             return [op]
         case .concatenate(let ops, _),
              .call(_, let ops),
@@ -226,7 +281,7 @@ extension Instruction : User {
              .tuple(let ops),
              .branch(_, let ops):
             return ops
-        case .return(nil):
+        case .return(nil), .allocate:
             return []
         }
     }
@@ -242,8 +297,6 @@ public extension InstructionKind {
     func substituting(_ newUse: Use, for old: Use) -> InstructionKind {
         let condSubst = {$0 == old ? newUse : $0}
         switch self {
-        case .store(old, to: let dest):
-            return .store(newUse, to: dest)
         case .conditional(old, let thenBB, let elseBB):
             return .conditional(newUse, thenBB, elseBB)
         case .return(old?):
@@ -282,6 +335,16 @@ public extension InstructionKind {
             return .tupleElement(newUse, i)
         case .subtensor(old, let index):
             return .subtensor(newUse, index)
+        case .bitCast(old, let targetT):
+            return .bitCast(newUse, targetT)
+        case .elementPointer(old, let indices):
+            return .elementPointer(newUse, indices)
+        case .store(old, to: let dest):
+            return .store(newUse, to: dest)
+        case .store(let val, to: old):
+            return .store(val, to: newUse)
+        case .load(old):
+            return .load(newUse)
         default:
             return self
         }
