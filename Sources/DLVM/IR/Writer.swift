@@ -6,8 +6,7 @@ import DLVMTensor
 
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        dataType.write(to: &target)
-        target.write(shape.isScalar ? " " : " \(shape) ")
+        type.write(to: &target)
         literal.write(to: &target)
     }
 }
@@ -51,7 +50,7 @@ extension Literal : TextOutputStreamable {
 
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("[\(map{String($0)}.joined(separator: "x"))]")
+        target.write("\(map{String($0)}.joined(separator: "x"))")
     }
 }
 
@@ -71,13 +70,15 @@ extension Type : TextOutputStreamable {
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("\(s) \(t)")
+            target.write("[\(s):\(t)]")
         case let .tuple(subtypes):
             target.write("(\(subtypes.map{"\($0)"}.joined(separator: ", ")))")
         case .void:
-            target.write("Void")
-        case let .array(subtype):
-            target.write("Array<\(subtype)>")
+            target.write("void")
+        case let .array(subtype, n):
+            target.write("<\(n) x \(subtype)>")
+        case let .pointer(subtype):
+            target.write("\(subtype)*")
         }
     }
 }
@@ -99,52 +100,11 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension ArithmeticOp: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case .add: target.write("add")
-        case .subtract: target.write("subtract")
-        case .multiply: target.write("multiply")
-        case .divide: target.write("divide")
-        case .min: target.write("min")
-        case .max: target.write("max")
-        case .truncateDivide: target.write("truncateDivide")
-        case .floorDivide: target.write("floorDivide")
-        case .modulo: target.write("modulo")
-        case .power: target.write("power")
-        case .mean: target.write("mean")
-        }
-    }
-}
-
-extension BooleanOp: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case .and: target.write("and")
-        case .or: target.write("or")
-        case .xor: target.write("xor")
-        }
-    }
-}
-
 extension AssociativeOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .arithmetic(fun): fun.write(to: &target)
-        case let .boolean(fun): fun.write(to: &target)
-        }
-    }
-}
-
-extension ComparisonOp: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case .equal: target.write("equal")
-        case .notEqual: target.write("notEqual")
-        case .greaterThanOrEqual: target.write("greaterThanOrEqual")
-        case .lessThanOrEqual: target.write("lessThanOrEqual")
-        case .greaterThan: target.write("greaterThan")
-        case .lessThan: target.write("lessThan")
+        case let .arithmetic(fun): String(describing: fun).write(to: &target)
+        case let .boolean(fun): String(describing: fun).write(to: &target)
         }
     }
 }
@@ -153,7 +113,7 @@ extension BinaryOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .associative(fun): fun.write(to: &target)
-        case let .comparison(fun): fun.write(to: &target)
+        case let .comparison(fun): String(describing: fun).write(to: &target)
         }
     }
 }
@@ -161,8 +121,8 @@ extension BinaryOp: TextOutputStreamable {
 extension UnaryOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .elementwise(fun): target.write("\(fun)")
-        case let .integration(fun): target.write("\(fun)")
+        case let .elementwise(fun): String(describing: fun).write(to: &target)
+        case let .integration(fun): String(describing: fun).write(to: &target)
         }
     }
 }
@@ -174,8 +134,6 @@ extension InstructionKind : TextOutputStreamable {
             target.write("branch %\(bb.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .conditional(op, thenBB, elseBB):
             target.write("conditional \(op), %\(thenBB.name), %\(elseBB.name)")
-        case let .store(op, v):
-            target.write("store \(op) to \(v)")
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }
@@ -213,6 +171,16 @@ extension InstructionKind : TextOutputStreamable {
             target.write("element \(i) of \(use)")
         case let .tuple(uses):
             target.write("tuple \(uses.map{"\($0)"}.joined(separator: ", "))")
+        case let .allocate(t, n):
+            target.write("allocate \(t), \(n)")
+        case let .store(v, p):
+            target.write("store \(v) to \(p)")
+        case let .load(v):
+            target.write("load \(v)")
+        case let .elementPointer(v, i):
+            target.write("elementPointer \(v), \(i)")
+        case let .bitCast(v, t):
+            target.write("bitCast \(v) to \(t)")
         }
     }
 }
