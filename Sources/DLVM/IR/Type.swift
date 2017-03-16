@@ -6,8 +6,9 @@ import DLVMTensor
 
 public indirect enum Type {
     case tensor(TensorShape, DataType)
-    case array(Type)
+    case array(Type, Int)
     case tuple([Type])
+    case pointer(Type)
     case void
     case invalid
 }
@@ -16,6 +17,13 @@ public extension Type {
     var isTensor: Bool {
         switch self {
         case .tensor: return true
+        default: return false
+        }
+    }
+
+    var isScalar: Bool {
+        switch self {
+        case .tensor([], _): return true
         default: return false
         }
     }
@@ -49,7 +57,8 @@ public extension Type {
             return false
         case .tensor, .void:
             return true
-        case let .array(subtype):
+        case let .array(subtype, _),
+             let .pointer(subtype):
             return subtype.isValid
         case let .tuple(subtypes):
             return subtypes.reduce(true, { $0 && $1.isValid })

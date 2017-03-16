@@ -71,13 +71,15 @@ extension Type : TextOutputStreamable {
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("\(s) \(t)")
+            target.write("[\(s):\(t)]")
         case let .tuple(subtypes):
             target.write("(\(subtypes.map{"\($0)"}.joined(separator: ", ")))")
         case .void:
-            target.write("Void")
-        case let .array(subtype):
-            target.write("Array<\(subtype)>")
+            target.write("void")
+        case let .array(subtype, n):
+            target.write("<\(n) x \(subtype)>")
+        case let .pointer(subtype):
+            target.write("\(subtype)*")
         }
     }
 }
@@ -174,8 +176,6 @@ extension InstructionKind : TextOutputStreamable {
             target.write("branch %\(bb.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .conditional(op, thenBB, elseBB):
             target.write("conditional \(op), %\(thenBB.name), %\(elseBB.name)")
-        case let .store(op, v):
-            target.write("store \(op) to \(v)")
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }
@@ -213,6 +213,16 @@ extension InstructionKind : TextOutputStreamable {
             target.write("element \(i) of \(use)")
         case let .tuple(uses):
             target.write("tuple \(uses.map{"\($0)"}.joined(separator: ", "))")
+        case let .allocate(t, n):
+            target.write("allocate \(t), \(n)")
+        case let .store(v, p):
+            target.write("store \(v) to \(p)")
+        case let .load(v):
+            target.write("load \(v)")
+        case let .elementPointer(v, i):
+            target.write("elementPointer \(v), \(i)")
+        case let .bitCast(v, t):
+            target.write("bitCast \(v) to \(t)")
         }
     }
 }
