@@ -6,8 +6,7 @@ import DLVMTensor
 
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        type.write(to: &target)
-        literal.write(to: &target)
+        target.write("\(literal) : \(type)")
     }
 }
 
@@ -67,12 +66,10 @@ extension Type : TextOutputStreamable {
         switch self {
         case .invalid:
             target.write("<<error>>")
-        case let .struct(ty):
-            ty.name.write(to: &target)
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("[\(s):\(t)]")
+            target.write("[\(s) x \(t)]")
         case let .tuple(subtypes):
             target.write("(\(subtypes.map{"\($0)"}.joined(separator: ", ")))")
         case .void:
@@ -81,6 +78,10 @@ extension Type : TextOutputStreamable {
             target.write("<\(n) x \(subtype)>")
         case let .pointer(subtype):
             target.write("\(subtype)*")
+        case let .function(args, ret):
+            target.write("(\(args.map{"\($0)"}.joined(separator: ", ")) -> \(ret))")
+        case let .alias(a):
+            a.name.write(to: &target)
         }
     }
 }
@@ -163,10 +164,10 @@ extension InstructionKind : TextOutputStreamable {
             target.write("dataTypeCast \(op) to \(t)")
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
-        case let .call(fun, args):
-            target.write("call \(fun.result) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .gradient(fun, args):
-            target.write("gradient \(fun.result) @\(fun.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+        case let .call(f, args):
+            target.write("call \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+        case let .gradient(f, args):
+            target.write("gradient \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .subtensor(use, idx):
             target.write("subtensor \(idx) of \(use)")
         case let .tupleElement(use, i):
@@ -198,25 +199,41 @@ extension Instruction : TextOutputStreamable {
 
 extension GlobalValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("define \(kind) \(type) ")
+        switch kind {
+        case .variable: target.write("var ")
+        case .constant: target.write("const ")
+        }
+        target.write("\(kind) ")
         if let name = name {
             target.write("@\(name)")
         } else {
             target.write("_")
         }
-        target.write(" = \(initializer)\n")
+        target.write(" : \(type) = \(initializer)\n")
+    }
+}
+
+extension TypeAlias : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        switch self {
+        case let .opaque(name):
+            target.write("type \(name) = opaque")
+        case let .transparent(name, ty):
+            target.write("type \(name) = \(ty)")
+        }
     }
 }
 
 extension Use : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(type) ")
         switch self {
         case let .global(_, ref):      target.write("\(ref.name.flatMap{"@\($0)"} ?? "@_")")
         case let .instruction(_, ref): target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
         case let .argument(_, ref):    target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
         case let .literal(_, lit):     lit.literal.write(to: &target)
+        case let .function(_, ref):    target.write("@\(ref.name)")
         }
+        target.write(" : \(type)")
     }
 }
 
@@ -239,15 +256,25 @@ extension BasicBlock : TextOutputStreamable {
 
 extension Argument : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("\(type) ")
         target.write(name.flatMap{"%\($0)"} ?? "%_")
+        target.write(" : \(type)")
     }
 }
 
 extension Function : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if isDifferentiable {
-            target.write("differentiable ")
+        for attr in attributes {
+            target.write("@")
+            /// TODO: Use reflection to clean this up
+            switch attr {
+            case Attributes.differentiable:
+                target.write("differentiable")
+            case Attributes.inline:
+                target.write("inline")
+            default:
+                target.write("<<unknown attribuet>>")
+            }
+            target.write("\n")
         }
         target.write("func ")
         target.write("@\(name)(")
@@ -268,14 +295,9 @@ extension Module : TextOutputStreamable {
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n\n")
-        /// Need add an empty line between different kinds of globals
-        /// We check for non-emptiness, which looks crappy but works :)
-        if !globals.isEmpty {
-            for global in globals {
-                global.write(to: &target)
-            }
-            target.write("\n")
-        }
+        target.write(typeAliases.map{"\($0)"}.joined(separator: "\n"))
+        target.write("\n")
+        target.write(globalValues.map{"\($0)"}.joined(separator: "\n"))
         target.write("\n")
         for fun in self {
             fun.write(to: &target)

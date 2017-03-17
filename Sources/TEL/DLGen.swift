@@ -47,28 +47,27 @@ class CodeGenerator {
 
     func makeModule() -> Module {
         /// Define globals
-        for param in program.parameters {
-            let initializer: TensorLiteral
-            switch param.initializer {
-            case let .constant(.int(i)):
-                initializer = .repeating(.int(i))
-            case let .constant(.float(f)):
-                initializer = .repeating(.float(f))
-            case let .random(.int(i1), .int(i2)):
-                initializer = .random(from: .int(i1), to: .int(i2))
-            case let .random(.float(f1), .float(f2)):
-                initializer = .random(from: .float(f1), to: .float(f2))
-            default:
-                preconditionFailure("This should not have passed Sema")
-            }
-            let variable = GlobalValue(name: param.name,
-                                       kind: .variable,
-                                       shape: param.shape,
-                                       dataType: program.dataType,
-                                       initializer: .tensor(initializer))
-            let use = builder.define(variable)
-            environment[param.name] = use
-        }
+//        for param in program.parameters {
+//            let initializer: TensorLiteral
+//            switch param.initializer {
+//            case let .constant(.int(i)):
+//                initializer = .repeating(.int(i))
+//            case let .constant(.float(f)):
+//                initializer = .repeating(.float(f))
+//            case let .random(.int(i1), .int(i2)):
+//                initializer = .random(from: .int(i1), to: .int(i2))
+//            case let .random(.float(f1), .float(f2)):
+//                initializer = .random(from: .float(f1), to: .float(f2))
+//            default:
+//                preconditionFailure("This should not have passed Sema")
+//            }
+//            let variable = GlobalValue(name: param.name,
+//                                       kind: .variable,
+//                                       type: .tensor(param.shape, program.dataType),
+//                                       initializer: .tensor(initializer))
+//            let use = builder.buildGlobalValue(variable)
+//            environment[param.name] = use
+//        }
 
         /// Build pure inference function
         var args: [(String?, Type)] = []
@@ -76,14 +75,21 @@ class CodeGenerator {
             let arg: Type = .tensor(input.shape, program.dataType)
             args.append((input.name, arg))
         }
-        for param in program.parameters {
-            let arg: Type = .tensor(param.shape, program.dataType)
-            args.append((param.name, arg))
-        }
+        
+        /// Generate a struct for parameters
+        let paramStructType = builder.buildTypeAlias(
+            .transparent("\(program.moduleName)_params",
+                .tuple(program.parameters.map {
+                    .tensor($0.shape, self.program.dataType)
+                })
+            )
+        )
+        args.append(("params", paramStructType))
+
         let output = program.layers.first(where: {$0.isOutput})! // BAD!
         let function = builder.buildFunction(named: "inference", arguments: args,
                                              result: .tensor(output.shape, program.dataType),
-                                             isDifferentiable: true)
+                                             attributes: [ .differentiable ])
         builder.move(to: function.entry)
 
         /// Add all args into env
@@ -92,6 +98,13 @@ class CodeGenerator {
             if let argName = argDef.name {
                 environment[argName] = use
             }
+        }
+
+        /// Emit tuple extraction
+        let paramsVal = function.argumentValue(named: "params")!
+        for (i, param) in program.parameters.enumerated() {
+            let val = builder.buildInstruction(.tupleElement(paramsVal, i))
+            environment[param.name] = val
         }
 
         /// Generate hidden layers

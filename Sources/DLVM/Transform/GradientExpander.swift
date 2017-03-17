@@ -37,7 +37,7 @@ public class GradientExpander: TransformPass<Module> {
         let grad = builder.buildFunction(named: "∇" + function.name,
                                          arguments: function.arguments.map { ($0.name, $0.type) },
                                          result: .tuple(function.arguments.map { ($0.type) }),
-                                         isDifferentiable: true)
+                                         attributes: [ .differentiable ])
         builder.move(to: grad.entry)
     }
 
