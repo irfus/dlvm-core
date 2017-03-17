@@ -46,9 +46,10 @@ public extension Use {
         switch self {
         case .argument(_, let def as Definition),
              .global(_, let def as Definition),
-             .instruction(_, let def as Definition):
+             .instruction(_, let def as Definition),
+             .function(_, let def as Definition):
             return def
-        case .literal, .function:
+        case .literal:
             return nil
         }
     }

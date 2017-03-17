@@ -49,7 +49,6 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case returnTypeMismatch(Instruction, Node)
     case invalidType(Node)
     case namedVoidValue(Node)
-    case unnamedUse(Node)
     case notPointer(Use, Node)
     case invalidIndices(Use, [Int], Node)
 }
@@ -294,10 +293,6 @@ extension Use : SelfVerifiable {
         /// Value type must match use type
         guard value.type == type else {
             throw VerificationError.useTypeMismatch(self)
-        }
-        /// If using a def, the def must have a name
-        if let definition = definition, definition.name == nil {
-            throw VerificationError.unnamedUse(self)
         }
     }
 }

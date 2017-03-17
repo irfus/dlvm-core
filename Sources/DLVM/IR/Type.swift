@@ -15,6 +15,7 @@ public indirect enum Type {
     case invalid
 }
 
+// MARK: - Predicates
 public extension Type {
     var isTensor: Bool {
         switch self {
@@ -36,7 +37,10 @@ public extension Type {
         default: return false
         }
     }
+}
 
+// MARK: - Alias resolution and canonicalization
+public extension Type {
     var canonical: Type {
         switch self {
         case let .array(subT, i): return .array(subT.canonical, i)
@@ -57,6 +61,7 @@ public extension Type {
     }
 }
 
+// MARK: - Equatable
 extension Type : Equatable {
     public static func ==(lhs: Type, rhs: Type) -> Bool {
         switch (lhs.canonical, rhs.canonical) {

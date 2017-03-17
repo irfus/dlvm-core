@@ -81,10 +81,6 @@ extension IRBuilder {
         return .alias(alias)
     }
 
-    open func makeLiteral(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
-        return makeLiteral(LiteralValue(shape: shape, dataType: type, literal: literal))
-    }
-
     open func makeLiteral(_ literalValue: LiteralValue) -> Use {
         return .literal(literalValue.type, literalValue)
     }
