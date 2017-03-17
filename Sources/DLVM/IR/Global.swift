@@ -7,7 +7,7 @@ public class GlobalValue : Value, Definition {
     public enum Kind {
         case variable, constant
     }
-    public var name: String?
+    public var name: String
     public var kind: Kind
     public var type: Type
     public var initializer: Literal

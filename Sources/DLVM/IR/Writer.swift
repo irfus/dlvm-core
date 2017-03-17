@@ -24,16 +24,11 @@ extension TensorLiteral : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .elements(elements):
-            target.write("elements [")
-            for elem in elements {
-                elem.write(to: &target)
-                target.write(", ")
-            }
-            target.write("]")
-        case let .repeating(immediate):
-            target.write("repeating \(immediate)")
-        case let .random(from: lowerBound, to: upperBound):
-            target.write("random from \(lowerBound) to \(upperBound)")
+            target.write("[\(elements.map{"\($0)"}.joined(separator: ", "))]")
+        case let .repeating(lit):
+            target.write("repeating \(lit)")
+        case let .item(lit):
+            lit.write(to: &target)
         }
     }
 }
@@ -41,8 +36,14 @@ extension TensorLiteral : TextOutputStreamable {
 extension Literal : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case .scalar(let lit): lit.write(to: &target)
-        case .tensor(let lit): lit.write(to: &target)
+        case let .scalar(lit): lit.write(to: &target)
+        case let .tensor(lit): lit.write(to: &target)
+        case let .tuple(vals): target.write("(\(vals.map{"\($0)"}.joined(separator: ", ")))")
+        case let .array(vals): target.write("<\(vals.map{"\($0)"}.joined(separator: ", "))>")
+        case let .globalValue(gv): target.write("@\(gv.name)")
+        case let .function(f): target.write("@\(f.name)")
+        case .zero: target.write("zero")
+        case .undefined: target.write("undefined")
         }
     }
 }
@@ -203,13 +204,8 @@ extension GlobalValue : TextOutputStreamable {
         case .variable: target.write("var ")
         case .constant: target.write("const ")
         }
-        target.write("\(kind) ")
-        if let name = name {
-            target.write("@\(name)")
-        } else {
-            target.write("_")
-        }
-        target.write(" : \(type) = \(initializer)\n")
+        target.write("\(kind) @\(name) ")
+        target.write(": \(type) = \(initializer)\n")
     }
 }
 
@@ -227,7 +223,7 @@ extension TypeAlias : TextOutputStreamable {
 extension Use : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .global(_, ref):      target.write("\(ref.name.flatMap{"@\($0)"} ?? "@_")")
+        case let .global(_, ref):      target.write("@\(ref.name)")
         case let .instruction(_, ref): target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
         case let .argument(_, ref):    target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
         case let .literal(_, lit):     lit.literal.write(to: &target)

@@ -64,7 +64,7 @@ extension Function {
 }
 
 // MARK: - Value
-extension Function : Value {
+extension Function : Value, Definition {
     public var type: Type {
         return .function(arguments.map{$0.type}, result)
     }
