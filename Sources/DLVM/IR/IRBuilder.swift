@@ -70,9 +70,15 @@ extension IRBuilder {
 extension IRBuilder {
 
     @discardableResult
-    open func define(_ value: GlobalValue) -> Use {
-        module.insert(value)
+    open func buildGlobalValue(_ value: GlobalValue) -> Use {
+        module.globalValues.append(value)
         return .global(value.type, value)
+    }
+
+    @discardableResult
+    open func buildTypeAlias(_ alias: TypeAlias) -> Type {
+        module.typeAliases.append(alias)
+        return .alias(alias)
     }
 
     open func makeLiteral(_ literal: Literal, shape: TensorShape, type: DataType) -> Use {
@@ -87,11 +93,11 @@ extension IRBuilder {
     open func buildFunction(named name: String,
                             arguments: [(String?, Type)],
                             result: Type = .void,
-                            isDifferentiable: Bool) -> Function {
+                            attributes: Function.Attributes) -> Function {
         let fun = Function(name: name,
                            arguments: arguments, 
                            result: result,
-                           isDifferentiable: isDifferentiable,
+                           attributes: attributes,
                            parent: module)
         module.append(fun)
         return fun

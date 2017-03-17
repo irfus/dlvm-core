@@ -91,7 +91,7 @@ public extension DominatorTree where Node == BasicBlock {
 public extension DominatorTree where Node == BasicBlock {
     func properlyDominates(_ use: Use, _ instruction: Instruction) -> Bool {
         switch use {
-        case .global, .literal: return true
+        case .global, .literal, .function: return true
             
         case let .argument(_, arg):
             return arg.parent.flatMap { bb in dominates(bb, instruction.parent) } ?? false

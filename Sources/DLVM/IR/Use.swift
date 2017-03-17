@@ -7,6 +7,7 @@ public enum Use {
     case instruction(Type, Instruction)
     case global(Type, GlobalValue)
     case literal(Type, LiteralValue)
+    case function(Type, Function)
 }
 
 // MARK: - Equatable
@@ -35,7 +36,8 @@ public extension Use {
         case .argument(let t, _),
              .instruction(let t, _),
              .global(let t, _),
-             .literal(let t, _):
+             .literal(let t, _),
+             .function(let t, _):
             return t
         }
     }
@@ -46,7 +48,7 @@ public extension Use {
              .global(_, let def as Definition),
              .instruction(_, let def as Definition):
             return def
-        case .literal:
+        case .literal, .function:
             return nil
         }
     }
@@ -57,6 +59,7 @@ public extension Use {
         case let .global(_, val): return val
         case let .literal(_, val): return val
         case let .instruction(_, val): return val
+        case let .function(_, val): return val
         }
     }
 
@@ -66,6 +69,7 @@ public extension Use {
         case let .instruction(_, def): return def.name
         case let .argument(_, def): return def.name
         case .literal: return nil
+        case let .function(_, def): return def.name
         }
     }
 

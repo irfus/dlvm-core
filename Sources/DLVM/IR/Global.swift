@@ -2,35 +2,54 @@
 // Created by Richard Wei on 2/24/17.
 //
 
-/// TODO: Sum types for module's elements
-public enum TopLevelItem {
-    case value(GlobalValue)
-    case function(Function)
-    case `struct`(StructType)
-}
-
 /// Global value
-public class GlobalValue : SimpleValue, Definition {
+public class GlobalValue : Value, Definition {
     public enum Kind {
         case variable, constant
     }
     public var name: String?
     public var kind: Kind
-    public var shape: TensorShape
-    public var dataType: DataType
+    public var type: Type
     public var initializer: Literal
 
-    public init(name: String?, kind: Kind, shape: TensorShape, dataType: DataType, initializer: Literal) {
+    public init(name: String, kind: Kind, type: Type, initializer: Literal) {
         self.name = name
         self.kind = kind
-        self.shape = shape
-        self.dataType = dataType
+        self.type = type
         self.initializer = initializer
     }
 }
 
-/// Struct type
-public struct StructType : Named {
-    public var name: String
-    public var fields: [Type]
+/// Type alias
+public enum TypeAlias {
+    case transparent(String, Type)
+    case opaque(String)
+}
+
+// MARK: - Named
+extension TypeAlias : Named {
+    public var name: String {
+        switch self {
+        case .transparent(let name, _): return name
+        case .opaque(let name): return name
+        }
+    }
+}
+
+// MARK: - Hashable
+extension TypeAlias : Hashable {
+    public static func ==(lhs: TypeAlias, rhs: TypeAlias) -> Bool {
+        switch (lhs, rhs) {
+        case let (.transparent(n1, t1), .transparent(n2, t2)):
+            return n1 == n2 && t1 == t2
+        case let (.opaque(n1), .opaque(n2)):
+            return n1 == n2
+        default:
+            return false
+        }
+    }
+
+    public var hashValue: Int {
+        return name.hashValue
+    }
 }

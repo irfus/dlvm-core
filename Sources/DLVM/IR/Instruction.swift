@@ -53,10 +53,10 @@ public enum InstructionKind {
 
     /** Function invocation **/
     /// Function call
-    case call(Function, [Use])
+    case call(Use, [Use])
     /// Gradient call, using implicit automatic differentiation
     /// Will be replaced by `call` through GradientExpansion transform pass
-    case gradient(Function, [Use])
+    case gradient(Use, [Use])
 
     /** Memory **/
     /// Allocate stack memory, returning a pointer
@@ -122,23 +122,23 @@ extension InstructionKind : Value {
     public var type: Type {
         switch self {
         case let .binary(.associative(.arithmetic), v1, v2):
-            guard case let .tensor(s1, t1) = v1.type,
-                  case let .tensor(s2, t2) = v2.type,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
                 let shape = s1 <> s2, t1 == t2
                 else { return .invalid }
             return .tensor(shape, t1)
 
         case let .binary(.associative(.boolean), v1, v2),
              let .binary(.comparison, v1, v2):
-            guard case let .tensor(s1, t1) = v1.type,
-                  case let .tensor(s2, t2) = v2.type,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
                   let shape = s1 <> s2, t1 == t2
                 else { return .invalid }
             return .tensor(shape, .bool)
             
         case let .matrixMultiply(v1, v2):
-            guard case let .tensor(s1, t1) = v1.type,
-                  case let .tensor(s2, t2) = v2.type,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
                   let newShape = s1.matrixMultiplied(with: s2),
                   t1 == t2 else { return .invalid }
             return .tensor(newShape, t1)
@@ -147,26 +147,27 @@ extension InstructionKind : Value {
             return v1.type.isTensor ? v1.type : .invalid
 
         case let .reduce(_, v1, nil):
-            guard case let .tensor(s1, t1) = v1.type else { return .invalid }
+            guard case let .tensor(s1, t1) = v1.type.unaliased else { return .invalid }
             return .tensor(s1.dropFirst(), t1)
 
         case let .reduce(_, v1, axis: axis?):
-            guard case let .tensor(s1, t1) = v1.type,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
                   axis < s1.rank
                 else { return .invalid }
             return .tensor(s1.droppingDimension(axis), t1)
 
         case let .scan(_, v1, _):
-            return v1.type.isTensor ? v1.type : .invalid
+            return v1.type.unaliased.isTensor ? v1.type : .invalid
 
         case let .concatenate(vv, axis):
             guard let first = vv.first,
-                  case let .tensor(s1, t1) = first.type
+                  case let .tensor(s1, t1) = first.type.unaliased
                 else { return .invalid }
             /// Check simple, data type equality, and concatenability
             var accShape: TensorShape = s1
             for v in vv.dropFirst() {
-                guard case let .tensor(shape, type) = v.type, type == t1,
+                guard case let .tensor(shape, type) = v.type.unaliased,
+                      type == t1,
                       let newShape = accShape.concatenating(with: shape,
                                                             alongDimension: axis)
                     else { return .invalid }
@@ -175,44 +176,53 @@ extension InstructionKind : Value {
             return .tensor(accShape, t1)
 
         case let .transpose(v1):
-            guard case let .tensor(s1, t1) = v1.type else { return .invalid }
+            guard case let .tensor(s1, t1) = v1.type.unaliased else { return .invalid }
             return .tensor(s1.transpose, t1)
             
         case let .dataTypeCast(v1, dt):
-            guard case let .tensor(s1, t1) = v1.type,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
                   t1.canCast(to: dt)
                 else { return .invalid }
             return .tensor(s1, dt)
             
         case let .shapeCast(v1, s):
-            guard case let .tensor(s1, t1) = v1.type,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
                   s1.contiguousSize == s.contiguousSize
                 else { return .invalid }
             return .tensor(s, t1)
 
         case let .call(f, vv):
-            guard f.acceptsArguments(vv.map{$0.type})
-                else { return .invalid }
-            return f.result
+            let actual = vv.map{$0.type}
+            switch f.type.unaliased {
+            case let .function(actual, ret), let .pointer(.function(actual, ret)):
+                return ret
+            default:
+                return .invalid
+            }
 
         case let .gradient(f, vv):
-            guard f.isDifferentiable, f.acceptsArguments(vv.map{$0.type})
-                else { return .invalid }
-            if f.arguments.isEmpty { return .void }
-            if f.arguments.count == 1 { return f.arguments[0].type }
-            return .tuple(vv.map{$0.type})
+            let actual = vv.map{$0.type}
+            switch f {
+            case let .function(ty, funDef)
+                where ty == funDef.type
+                   && funDef.isDifferentiable
+                   && funDef.acceptsArguments(actual):
+                return funDef.result
+            default:
+                return .invalid
+            }
 
         case let .tuple(vv):
             return .tuple(vv.map{$0.type})
             
         case let .tupleElement(v, i):
-            guard case let .tuple(subtypes) = v.type,
+            guard case let .tuple(subtypes) = v.type.unaliased,
                   subtypes.indices.contains(i)
                 else { return .invalid }
             return subtypes[i]
 
         case let .subtensor(v, index):
-            guard case let .tensor(s1, t1) = v.type,
+            guard case let .tensor(s1, t1) = v.type.unaliased,
                   index.count < s1.rank
                 else { return .invalid }
             return .tensor(s1.dropFirst(index.count), t1)
@@ -221,13 +231,13 @@ extension InstructionKind : Value {
             return .pointer(type)
 
         case let .load(v):
-            guard case let .pointer(t) = v.type else { return .invalid }
+            guard case let .pointer(t) = v.type.unaliased else { return .invalid }
             return t
 
         case let .elementPointer(v, ii):
             func gepType<C: Collection>(type: Type, indices: C) -> Type where C.Iterator.Element == Int {
                 guard let first = indices.first else { return type }
-                switch type {
+                switch type.unaliased {
                 /// Can be a pointer
                 case let .pointer(t):
                     return gepType(type: t, indices: ii.dropFirst())

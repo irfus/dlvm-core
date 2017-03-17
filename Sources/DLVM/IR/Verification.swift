@@ -31,8 +31,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case noDimensions(Use, Node)
     case noSpecifiedDimension(Use, Int, Node)
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
-    case functionArgumentCountMismatch(Function, Node)
-    case functionArgumentMismatch(Use, Argument, Function, Node)
+    case functionArgumentMismatch([Use], Type, Node)
     case notAFunctionCall(Use, Function, Node)
     case functionDiffArgumentMismatch(Use, Argument, Function, Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
@@ -159,7 +158,7 @@ extension InstructionKind : SelfVerifiable {
     public func verify() throws {
         switch self {
         case let .conditional(use, _, _):
-            guard case let .tensor(s, t) = use.type, s.isScalar, t.isBool else {
+            guard case let .tensor(s, t) = use.type.unaliased, s.isScalar, t.isBool else {
                 throw VerificationError.unexpectedType(use, .tensor(.scalar, .bool), self)
             }
 
@@ -171,25 +170,25 @@ extension InstructionKind : SelfVerifiable {
         case .return: break /// Verified at Function
 
         case let .binary(_, lhs, rhs):
-            guard case let .tensor(s1, t1) = lhs.type,
-                  case let .tensor(s2, t2) = rhs.type,
+            guard case let .tensor(s1, t1) = lhs.type.unaliased,
+                  case let .tensor(s2, t2) = rhs.type.unaliased,
                   let _ = s1 <> s2, t1 == t2
                 else { throw VerificationError.unbroadcastableMismatch(lhs, rhs, self) }
 
         case let .matrixMultiply(lhs, rhs):
-            guard case let .tensor(s1, t1) = lhs.type,
-                  case let .tensor(s2, t2) = rhs.type,
+            guard case let .tensor(s1, t1) = lhs.type.unaliased,
+                  case let .tensor(s2, t2) = rhs.type.unaliased,
                   s1.canMatrixMultiply(with: s2), t1 == t2
                 else { throw VerificationError.cannotMatrixMultiply(lhs, rhs, self) }
 
         case let .concatenate(vv, axis: axis):
             guard let first = vv.first,
-                  case let .tensor(s1, t1) = first.type
+                  case let .tensor(s1, t1) = first.type.unaliased
                 else { throw VerificationError.noOperands(self) }
             /// Check simple, data type equality, and concatenability
             var accShape: TensorShape = s1
             for v in vv.dropFirst() {
-                guard case let .tensor(shape, type) = v.type, type == t1,
+                guard case let .tensor(shape, type) = v.type.unaliased, type == t1,
                     let newShape = accShape.concatenating(with: shape,
                                                           alongDimension: axis)
                     else { throw VerificationError.concatenationShapeMismatch(vv, axis, self) }
@@ -197,7 +196,7 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .reduce(_, v1, axis), let .scan(_, v1, axis: axis):
-            guard case let .tensor(s1, _) = v1.type else {
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, self)
             }
             if let axis = axis, !s1.indices.contains(axis) {
@@ -205,7 +204,7 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .shapeCast(v1, target):
-            guard case let .tensor(s1, _) = v1.type else {
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, self)
             }
             guard s1.contiguousSize == target.contiguousSize else {
@@ -213,35 +212,24 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .dataTypeCast(v1, target):
-            guard case let .tensor(_, t1) = v1.type else {
+            guard case let .tensor(_, t1) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, self)
             }
             guard t1.canCast(to: target) else {
                 throw VerificationError.cannotTypeCast(v1, target, self)
             }
 
-        case let .call(fun, vv):
-            guard vv.count == fun.arguments.count else {
-                throw VerificationError.functionArgumentCountMismatch(fun, self)
-            }
-            for (actual, formal) in zip(vv, fun.arguments) {
-                guard actual.type == formal.type else {
-                    throw VerificationError.functionArgumentMismatch(actual, formal, fun, self)
-                }
-            }
-
-        case let .gradient(fun, vv):
-            guard vv.count == fun.arguments.count else {
-                throw VerificationError.functionArgumentCountMismatch(fun, self)
-            }
-            for (actual, formal) in zip(vv, fun.arguments) {
-                guard actual.type == formal.type else {
-                    throw VerificationError.functionArgumentMismatch(actual, formal, fun, self)
-                }
+        case let .call(fun, vv), let .gradient(fun, vv):
+            let actual = vv.map{$0.type}
+            switch fun.type.unaliased {
+            case let .function(args, _), let .pointer(.function(args, _)):
+                guard args == actual else { fallthrough }
+            default:
+                throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, self)
             }
 
         case let .subtensor(v1, idx):
-            guard case let .tensor(s1, _) = v1.type else {
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, self)
             }
             guard let _ = s1[idx] else {
@@ -249,7 +237,7 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .tupleElement(v1, i):
-            guard case let .tuple(subtypes) = v1.type else {
+            guard case let .tuple(subtypes) = v1.type.unaliased else {
                 throw VerificationError.notTuple(v1, self)
             }
             guard subtypes.indices.contains(i) else {
@@ -257,17 +245,17 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .unary(_, v1), let .transpose(v1):
-            guard case .tensor = v1.type else {
+            guard case .tensor = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, self)
             }
 
         case let .load(v1):
-            guard case .pointer = v1.type else {
+            guard case .pointer = v1.type.unaliased else {
                 throw VerificationError.notPointer(v1, self)
             }
 
         case let .store(v1, to: v2):
-            guard case let .pointer(subtype) = v2.type else {
+            guard case let .pointer(subtype) = v2.type.unaliased else {
                 throw VerificationError.notPointer(v2, self)
             }
             guard v1.type == subtype else {
@@ -277,7 +265,7 @@ extension InstructionKind : SelfVerifiable {
         case let .elementPointer(v, ii):
             func gepCheck<C: Collection>(type: Type, indices: C) throws where C.Iterator.Element == Int {
                 guard let first = indices.first else { return }
-                switch type {
+                switch type.unaliased {
                 /// Can be a pointer
                 case let .pointer(t):
                     try gepCheck(type: t, indices: ii.dropFirst())
