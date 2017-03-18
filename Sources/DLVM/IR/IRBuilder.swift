@@ -87,11 +87,11 @@ extension IRBuilder {
 
     @discardableResult
     open func buildFunction(named name: String,
-                            arguments: [(String?, Type)],
+                            arguments: [(String, Type)],
                             result: Type = .void,
-                            attributes: Function.Attributes) -> Function {
+                            attributes: Set<Function.Attribute>) -> Function {
         let fun = Function(name: name,
-                           arguments: arguments, 
+                           arguments: arguments,
                            result: result,
                            attributes: attributes,
                            parent: module)
@@ -101,7 +101,7 @@ extension IRBuilder {
 
     @discardableResult
     open func buildBasicBlock(named name: String,
-                              arguments: [(String?, Type)],
+                              arguments: [(String, Type)],
                               in function: Function) -> BasicBlock {
         let newName = disambiguatedName(for: name, in: function)
         let block = BasicBlock(name: newName, arguments: arguments, parent: function)
