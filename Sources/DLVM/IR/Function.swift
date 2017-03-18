@@ -8,12 +8,10 @@
 
 public final class Function : Named, IRCollection, IRSubUnit {
 
-    public struct Attributes : OptionSet {
-        public let rawValue: Int
-        public init(rawValue: Int) { self.rawValue = rawValue }
-        public static let differentiable = Attributes(rawValue: 1 << 1)
-        public static let inline = Attributes(rawValue: 1 << 2)
-        public static let all: [Attributes] = [ .differentiable, .inline ]
+    public enum Attribute {
+        case differentiable
+        case inline
+        case differentiating(Function)
     }
 
     public typealias Element = BasicBlock
@@ -21,7 +19,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
     public var name: String
     public var result: Type
     public var arguments: OrderedMapSet<Argument> = []
-    public var attributes: Attributes
+    public var attributes: Set<Attribute> = []
     public unowned var parent: Module
 
     public var elements: OrderedMapSet<BasicBlock> = []
@@ -37,8 +35,8 @@ public final class Function : Named, IRCollection, IRSubUnit {
         return bb
     }
 
-    public init(name: String, arguments: [(String?, Type)],
-                result: Type, attributes: Attributes, parent: Module) {
+    public init(name: String, arguments: [(String, Type)],
+                result: Type, attributes: Set<Attribute>, parent: Module) {
         self.name = name
         self.arguments.append(contentsOf: arguments.map(Argument.init))
         self.result = result
@@ -49,10 +47,26 @@ public final class Function : Named, IRCollection, IRSubUnit {
 
 }
 
-// MARK: - Attribute sequence
-extension Function.Attributes : Sequence {
-    public func makeIterator() -> IndexingIterator<[Function.Attributes]> {
-        return Function.Attributes.all.filter(self.contains).makeIterator()
+// MARK: - Hashable
+extension Function.Attribute : Hashable {
+    public static func == (lhs: Function.Attribute, rhs: Function.Attribute) -> Bool {
+        switch (lhs, rhs) {
+        /// Equality by case handle
+        case (.differentiable, .differentiable),
+             (.inline, .inline),
+             (.differentiating, .differentiating):
+            return true
+        default:
+            return false
+        }
+    }
+    
+    public var hashValue: Int {
+        switch self {
+        case .differentiable:  return 1.hashValue
+        case .inline:          return 2.hashValue
+        case .differentiating: return 3.hashValue
+        }
     }
 }
 

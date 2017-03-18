@@ -252,27 +252,25 @@ extension BasicBlock : TextOutputStreamable {
 
 extension Argument : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write(name.flatMap{"%\($0)"} ?? "%_")
-        target.write(" : \(type)")
         target.write("\(name) : \(type)")
     }
 }
+
+extension Function.Attribute : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write("@")
+        switch self {
+        case .differentiable: target.write("differentiable")
+        case .inline: target.write("inline")
+        case .differentiating(let f): target.write("differentiating(@\(f.name))")
+        }
     }
 }
 
 extension Function : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         for attr in attributes {
-            target.write("@")
-            /// TODO: Use reflection to clean this up
-            switch attr {
-            case Attributes.differentiable:
-                target.write("differentiable")
-            case Attributes.inline:
-                target.write("inline")
-            default:
-                target.write("<<unknown attribuet>>")
-            }
+            attr.write(to: &target)
             target.write("\n")
         }
         target.write("func ")

@@ -18,17 +18,16 @@ public extension GlobalGradientInfo {
 }
 
 public class GlobalGradientAnalysis: AnalysisPass<Module, GlobalGradientInfo> {
-
     public override class func run(on module: Module) -> GlobalGradientInfo {
         var ggi = GlobalGradientInfo()
-        for grad in module where grad.name.characters.first == "∇" {
-            let restName = String(grad.name.characters.dropFirst())
-            if let antigrad: Function = module.element(named: restName) {
-                ggi.gradientMap[antigrad] = grad
-                ggi.antigradientMap[grad] = antigrad
-            }
+        for grad in module {
+            guard let antigrad: Function = grad.attributes.flatMap({ attr in
+                guard case let .differentiating(f) = attr else { return nil }
+                return f
+            }).first else { continue }
+            ggi.gradientMap[antigrad] = grad
+            ggi.antigradientMap[grad] = antigrad
         }
         return ggi
     }
-
 }
