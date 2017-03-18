@@ -8,21 +8,20 @@
 
 open class TransformManager<Body : IRUnit> {
     public typealias TransformType = TransformPass<Body>
-    fileprivate var passes: [TransformType] = []
+    public internal(set) var performedTransforms: [TransformType.Type] = []
 }
 
+// MARK: - Mutation
 internal extension TransformManager {
-    
-    func append(_ transform: TransformType) {
-        passes.append(transform)
+    func append(_ transform: TransformType.Type) {
+        performedTransforms.append(transform)
     }
 
-    func append(_ transforms: TransformType...) {
+    func append(_ transforms: TransformType.Type...) {
         for transform in transforms {
             append(transform)
         }
     }
-
 }
 
 /// - Note: Currently TransformManager is not being utilized,
@@ -40,6 +39,7 @@ public extension IRUnit {
         if Transform.shouldInvalidateAnalyses, changed {
             invalidateAnalyses()
         }
+        _ = try analysis(from: Verifier<Self>.self)
         return changed
     }
 

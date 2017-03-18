@@ -51,22 +51,48 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case namedVoidValue(Node)
     case notPointer(Use, Node)
     case invalidIndices(Use, [Int], Node)
+    case gradientTypeMismatch(Function.Attribute, Type, Node)
+    case invalidGlobalValueInitializer(Literal, Node)
 }
 
 public protocol SelfVerifiable {
-    func verify() throws
+    func performVerification() throws
 }
 
 extension Module : SelfVerifiable {
-    open func verify() throws {
+    public func performVerification() throws {
         for fun in self {
-            try fun.verify()
+            try fun.performVerification()
+        }
+    }
+}
+
+extension GlobalValue : SelfVerifiable {
+    public func performVerification() throws {
+        /// Conservative check
+        switch (type, initializer) {
+        /// Anything can be undefined
+        case (_, .undefined): break
+        /// Reference to another global value results in a pointer
+        case let (.pointer(t), .globalValue(gv)) where gv.type == t: break
+        /// Module function reference
+        case (.function, .function(let f)) where f.type == type: break
+        /// Scalar tensor with scalar literal of the same data type base
+        case (.tensor([], let dt), .scalar(let lit)) where lit.typeBase == dt.base: break
+        /// Tensor literal
+        /// - TODO: Check tensor literal shape
+        case (.tensor, .scalar): break
+        /// Any tensor can be zero initialized
+        case (.tensor, .zero): break
+        /// - TODO: Match more passing cases
+        default:
+            throw VerificationError.invalidGlobalValueInitializer(initializer, self)
         }
     }
 }
 
 extension Function: SelfVerifiable {
-    public func verify() throws {
+    public func performVerification() throws {
         let domTree = try analysis(from: DominanceAnalysis.self)
 
         /// Check entry block arguments
@@ -83,7 +109,7 @@ extension Function: SelfVerifiable {
             }
             bbNames.insert(bb.name)
             /// Verify bb
-            try bb.verify()
+            try bb.performVerification()
 
             /// Check return type
             let bbPremise = try bb.premise()
@@ -107,11 +133,27 @@ extension Function: SelfVerifiable {
                 }
             }
         }
+
+        /// Verify attributes
+        for attr in attributes {
+            switch attr {
+            /// Gradient function
+            case let .differentiating(antigrad):
+                /// Check for type mismatch
+                let antigradArgTypes = antigrad.arguments.map{$0.type}
+                let expectedType: Type = .function(antigradArgTypes, .tuple(antigradArgTypes))
+                guard type == expectedType else {
+                    throw VerificationError.gradientTypeMismatch(attr, expectedType, self)
+                }
+            default:
+                break
+            }
+        }
     }
 }
 
 extension BasicBlock : SelfVerifiable {
-    open func verify() throws {
+    open func performVerification() throws {
         /// Check instructions
         var instNames: Set<String> = []
         guard hasTerminator else {
@@ -124,20 +166,20 @@ extension BasicBlock : SelfVerifiable {
                 }
                 instNames.insert(name)
             }
-            try inst.verify()
+            try inst.performVerification()
         }
     }
 }
 
 extension Instruction : SelfVerifiable {
-    public func verify() throws {
+    public func performVerification() throws {
         /// Use type must match usee type
         for use in operands {
-            try use.verify()
+            try use.performVerification()
         }
 
         /// Visit kind
-        try kind.verify()
+        try kind.performVerification()
         
         /// Check type
         switch type {
@@ -154,7 +196,7 @@ extension Instruction : SelfVerifiable {
 }
 
 extension InstructionKind : SelfVerifiable {
-    public func verify() throws {
+    public func performVerification() throws {
         switch self {
         case let .conditional(use, _, _):
             guard case let .tensor(s, t) = use.type.unaliased, s.isScalar, t.isBool else {
@@ -285,7 +327,7 @@ extension InstructionKind : SelfVerifiable {
 }
 
 extension Use : SelfVerifiable {
-    public func verify() throws {
+    public func performVerification() throws {
         /// Type must be valid
         guard type.isValid else {
             throw VerificationError.invalidType(self)
@@ -297,8 +339,16 @@ extension Use : SelfVerifiable {
     }
 }
 
-public class Verifier<Body : IRUnit & SelfVerifiable> : AnalysisPass<Body, Void> {
+// MARK: - Lazy verification
+public extension IRUnit {
+    public func verify() throws {
+        _ = try analysis(from: Verifier.self)
+    }
+}
+
+/// Verifier pass
+public class Verifier<Body : IRUnit> : AnalysisPass<Body, Void> {
     public override class func run(on body: Body) throws {
-        try body.verify()
+        try body.performVerification()
     }
 }
