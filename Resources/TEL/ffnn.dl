@@ -26,8 +26,10 @@ entry(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params):
     return %o : [1x8 x f32]
 }
 
+@differentiating(@inference)
 @differentiable
-func @∇inference(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params) -> ([4x1 x f32], [4x1 x f32], ffnn_params) {
-entry(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params):
+func @inference_gradient(i1 : [4x1 x f32], i2 : [4x1 x f32], params : ffnn_params) -> ([4x1 x f32], [4x1 x f32], ffnn_params) {
+entry(i1 : [4x1 x f32], i2 : [4x1 x f32], params : ffnn_params):
+}
 }
 
