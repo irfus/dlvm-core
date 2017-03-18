@@ -19,10 +19,10 @@ public class GradientExpander: TransformPass<Module> {
             /// AD is working
 
             /// If function is not differentiable, do nothing
-            guard function.isDifferentiable else { return false }
+            guard function.isDifferentiable else { continue }
             /// If gradient function exists, do nothing
-            let globalGradInfo: GlobalGradientInfo = try function.parent.analysis(from: GlobalGradientAnalysis.self)
-            if let _ = globalGradInfo.gradient(of: function) { return false }
+            let globalGradInfo = try function.parent.analysis(from: GlobalGradientAnalysis.self)
+            if let _ = globalGradInfo.gradient(of: function) { continue }
             /// Expand this function
             expand(function)
             changed = true
@@ -34,10 +34,10 @@ public class GradientExpander: TransformPass<Module> {
     private static func expand(_ function: Function) {
         let builder = IRBuilder(module: function.parent)
         /// Build gradient function
-        let grad = builder.buildFunction(named: "∇" + function.name,
+        let grad = builder.buildFunction(named: function.name + "_gradient",
                                          arguments: function.arguments.map { ($0.name, $0.type) },
                                          result: .tuple(function.arguments.map { ($0.type) }),
-                                         attributes: [ .differentiable ])
+                                         attributes: [ .differentiable, .differentiating(function) ])
         builder.move(to: grad.entry)
     }
 
