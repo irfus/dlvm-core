@@ -6,12 +6,12 @@
 //
 //
 
-public class Argument : Value, Definition, HashableByReference {
-    public var name: String?
+public class Argument : Value, Named, Definition, HashableByReference {
+    public var name: String
     public var type: Type
     public weak var parent: BasicBlock?
 
-    public init(name: String?, type: Type) {
+    public init(name: String, type: Type) {
         self.name = name
         self.type = type
     }
@@ -45,7 +45,7 @@ public final class BasicBlock : IRCollection, IRSubUnit, Named {
         self.init(name: "entry", arguments: parent.arguments, parent: parent)
     }
 
-    public convenience init(name: String, arguments: [(String?, Type)], parent: Function) {
+    public convenience init(name: String, arguments: [(String, Type)], parent: Function) {
         self.init(name: name, arguments: arguments.map(Argument.init), parent: parent)
     }
 

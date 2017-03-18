@@ -70,7 +70,7 @@ class CodeGenerator {
 //        }
 
         /// Build pure inference function
-        var args: [(String?, Type)] = []
+        var args: [(String, Type)] = []
         for input in program.inputs {
             let arg: Type = .tensor(input.shape, program.dataType)
             args.append((input.name, arg))
@@ -95,9 +95,7 @@ class CodeGenerator {
         /// Add all args into env
         for argDef in function.arguments {
             let use = Use.argument(argDef.type, argDef)
-            if let argName = argDef.name {
-                environment[argName] = use
-            }
+            environment[argDef.name] = use
         }
 
         /// Emit tuple extraction
