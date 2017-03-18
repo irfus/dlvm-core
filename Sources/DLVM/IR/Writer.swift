@@ -225,7 +225,7 @@ extension Use : TextOutputStreamable {
         switch self {
         case let .global(_, ref):      target.write("@\(ref.name)")
         case let .instruction(_, ref): target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
-        case let .argument(_, ref):    ref.write(to: &target)
+        case let .argument(_, ref):    target.write("%\(ref.name)")
         case let .literal(_, lit):     lit.literal.write(to: &target)
         case let .function(_, ref):    target.write("@\(ref.name)")
         }
@@ -252,7 +252,7 @@ extension BasicBlock : TextOutputStreamable {
 
 extension Argument : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("\(name) : \(type)")
+        target.write("%\(name) : \(type)")
     }
 }
 
