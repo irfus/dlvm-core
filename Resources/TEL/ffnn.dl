@@ -5,12 +5,12 @@ type ffnn_params = ([4x4 x f32], [8x8 x f32], [8x8 x f32], [4x1 x f32], [8x1 x f
 @differentiable
 func @inference(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params) -> [1x8 x f32] {
 entry(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params):
-    %v0 = element 0 of %params : ffnn_params
-    %v1 = element 1 of %params : ffnn_params
-    %v2 = element 2 of %params : ffnn_params
-    %v3 = element 3 of %params : ffnn_params
-    %v4 = element 4 of %params : ffnn_params
-    %v5 = element 5 of %params : ffnn_params
+    %v0 = extract %params : ffnn_params at 0
+    %v1 = extract %params : ffnn_params at 1
+    %v2 = extract %params : ffnn_params at 2
+    %v3 = extract %params : ffnn_params at 3
+    %v4 = extract %params : ffnn_params at 4
+    %v5 = extract %params : ffnn_params at 5
     %v6 = matrixMultiply %v0 : [4x4 x f32], %i1 : [4x1 x f32]
     %v7 = add %v6 : [4x1 x f32], %v3 : [4x1 x f32]
     %h1 = sigmoid %v7 : [4x1 x f32]
@@ -28,8 +28,9 @@ entry(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params):
 
 @differentiating(@inference)
 @differentiable
-func @inference_gradient(i1 : [4x1 x f32], i2 : [4x1 x f32], params : ffnn_params) -> ([4x1 x f32], [4x1 x f32], ffnn_params) {
-entry(i1 : [4x1 x f32], i2 : [4x1 x f32], params : ffnn_params):
-}
+func @inference_gradient(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params) -> ([4x1 x f32], [4x1 x f32], ffnn_params) {
+entry(%i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params):
+    %v0 = tuple %i1 : [4x1 x f32], %i2 : [4x1 x f32], %params : ffnn_params
+    return %v0 : ([4x1 x f32], [4x1 x f32], ffnn_params)
 }
 

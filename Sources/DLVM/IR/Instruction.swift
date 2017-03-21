@@ -6,6 +6,8 @@
 //
 //
 
+import DLVMTensor
+
 public enum InstructionKind {
     /** Control flow **/
     /// Unconditionally branch to basic block
@@ -44,10 +46,10 @@ public enum InstructionKind {
     case shapeCast(Use, TensorShape)
 
     /** Subtensor **/
-    /// Subtensor addressing
-    case subtensor(Use, TensorIndex)
-    /// Extract an element from tuple
-    case tupleElement(Use, Int)
+    /// Extract an element from tensor, tuple, or array
+    case extract(from: Use, at: [Int])
+    /// Insert an element to tensor, tuple, or array
+    case insert(Use, to: Use, at: [Int])
     /// Form a tuple
     case tuple([Use])
 
@@ -215,17 +217,14 @@ extension InstructionKind : Value {
         case let .tuple(vv):
             return .tuple(vv.map{$0.type})
             
-        case let .tupleElement(v, i):
-            guard case let .tuple(subtypes) = v.type.unaliased,
-                  subtypes.indices.contains(i)
-                else { return .invalid }
-            return subtypes[i]
+        case let .extract(from: v, at: indices):
+            return v.type.subtype(at: indices) ?? .invalid
 
-        case let .subtensor(v, index):
-            guard case let .tensor(s1, t1) = v.type.unaliased,
-                  index.count < s1.rank
-                else { return .invalid }
-            return .tensor(s1.dropFirst(index.count), t1)
+        case let .insert(src, to: dest, at: indices):
+            guard let subtype = dest.type.subtype(at: indices), subtype == src.type else {
+                return .invalid
+            }
+            return dest.type
 
         case let .allocate(type, _):
             return .pointer(type)
@@ -268,7 +267,8 @@ extension Instruction : User {
     public var operands: [Use] {
         switch kind {
         case let .binary(_, op1, op2),
-             let .matrixMultiply(op1, op2):
+             let .matrixMultiply(op1, op2),
+             let .insert(op1, to: op2, at: _):
             return [op1, op2]
         case let .unary(_, op),
              let .reduce(_, op, _),
@@ -277,8 +277,7 @@ extension Instruction : User {
              let .dataTypeCast(op, _),
              let .conditional(op, _, _),
              let .return(op?),
-             let .subtensor(op, _),
-             let .tupleElement(op, _),
+             let .extract(from: op, at: _),
              let .transpose(op),
              let .store(op, _),
              let .load(op),
@@ -313,12 +312,12 @@ public extension InstructionKind {
             return .return(newUse)
         case .unary(let fun, old):
             return .unary(fun, newUse)
+        case .binary(let fun, old, old):
+            return .binary(fun, newUse, newUse)
         case .binary(let fun, old, let use2):
             return .binary(fun, newUse, use2)
         case .binary(let fun, let use1, old):
             return .binary(fun, use1, newUse)
-        case .binary(let fun, old, old):
-            return .binary(fun, newUse, newUse)
         case let .concatenate(uses, axis: axis):
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
@@ -341,10 +340,14 @@ public extension InstructionKind {
             return .gradient(f, uses.map(condSubst))
         case let .tuple(uses):
             return .tuple(uses.map(condSubst))
-        case .tupleElement(old, let i):
-            return .tupleElement(newUse, i)
-        case .subtensor(old, let index):
-            return .subtensor(newUse, index)
+        case .extract(from: old, at: let i):
+            return .extract(from: newUse, at: i)
+        case .insert(old, to: old, at: let indices):
+            return .insert(newUse, to: newUse, at: indices)
+        case .insert(old, to: let use1, at: let indices):
+            return .insert(newUse, to: use1, at: indices)
+        case .insert(let use1, to: old, at: let indices):
+            return .insert(use1, to: newUse, at: indices)
         case .bitCast(old, let targetT):
             return .bitCast(newUse, targetT)
         case .elementPointer(old, let indices):

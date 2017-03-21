@@ -269,20 +269,17 @@ extension InstructionKind : SelfVerifiable {
                 throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, self)
             }
 
-        case let .subtensor(v1, idx):
-            guard case let .tensor(s1, _) = v1.type.unaliased else {
-                throw VerificationError.notTensor(v1, self)
-            }
-            guard let _ = s1[idx] else {
-                throw VerificationError.invalidTensorIndex(v1, idx, self)
+        case let .extract(v1, indices):
+            guard let subtype = v1.type.subtype(at: indices) else {
+                throw VerificationError.invalidIndices(v1, indices, self)
             }
 
-        case let .tupleElement(v1, i):
-            guard case let .tuple(subtypes) = v1.type.unaliased else {
-                throw VerificationError.notTuple(v1, self)
+        case let .insert(src, to: dest, at: indices):
+            guard let subtype = dest.type.subtype(at: indices) else {
+                throw VerificationError.invalidIndices(dest, indices, self)
             }
-            guard subtypes.indices.contains(i) else {
-                throw VerificationError.invalidIndex(v1, i, self)
+            guard subtype == src.type else {
+                throw VerificationError.typeMismatch(src, dest, self)
             }
 
         case let .unary(_, v1), let .transpose(v1):
