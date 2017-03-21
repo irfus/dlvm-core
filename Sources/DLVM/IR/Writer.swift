@@ -169,10 +169,10 @@ extension InstructionKind : TextOutputStreamable {
             target.write("call \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .gradient(f, args):
             target.write("gradient \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .subtensor(use, idx):
-            target.write("subtensor \(idx) of \(use)")
-        case let .tupleElement(use, i):
-            target.write("element \(i) of \(use)")
+        case let .extract(use, indices):
+            target.write("extract \(use) at \(indices.map{"\($0)"}.joined(separator: ", "))")
+        case let .insert(src, to: dest, at: indices):
+            target.write("insert \(src) to \(dest) at \(indices.map{"\($0)"}.joined(separator: ", "))")
         case let .tuple(uses):
             target.write("tuple \(uses.map{"\($0)"}.joined(separator: ", "))")
         case let .allocate(t, n):

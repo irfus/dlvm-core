@@ -85,6 +85,10 @@ extension IRBuilder {
         return .literal(literalValue.type, literalValue)
     }
 
+    open func makeUse(_ argument: Argument) -> Use {
+        return .argument(argument.type, argument)
+    }
+
     @discardableResult
     open func buildFunction(named name: String,
                             arguments: [(String, Type)],

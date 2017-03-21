@@ -5,8 +5,11 @@
 import DLVMTensor
 
 public indirect enum Type {
+    /// Tensor represents all scalars, vectors, matrices and higher
+    /// dimensional matrices of primitive data type
     case tensor(TensorShape, DataType)
     case array(Type, Int)
+    /// N-ary tuple. Corresponding to LLVM-style struct type
     case tuple([Type])
     case pointer(Type)
     case function([Type], Type)
@@ -36,6 +39,25 @@ public extension Type {
         case .void: return true
         default: return false
         }
+    }
+}
+
+// MARK: - Subtype extraction
+public extension Type {
+    func subtype(at indices: [Int]) -> Type? {
+        guard let idx = indices.first else { return self }
+        let result: Type
+        switch unaliased {
+        case let .array(t, n) where idx < n:
+            result = t
+        case let .tuple(tt) where tt.indices.contains(idx):
+            result = tt[idx]
+        case let .tensor(shape, dt) where shape.rank > 0 && idx < shape[0]:
+            result = .tensor(shape.dropFirst(), dt)
+        default:
+            return nil
+        }
+        return result.subtype(at: Array(indices.dropFirst()))
     }
 }
 
@@ -77,6 +99,8 @@ extension Type : Equatable {
             return tt1 == tt2 && t1 == t2
         case (.void, .void), (.invalid, .invalid):
             return true
+        case let (.alias(.opaque(name1)), .alias(.opaque(name2))):
+            return name1 == name2
         default:
             return false
         }
