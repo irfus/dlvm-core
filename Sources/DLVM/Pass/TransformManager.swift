@@ -32,11 +32,12 @@ public extension IRUnit {
     ///
     /// - Returns: whether changes were made
     @discardableResult
-    public func applyTransform<Transform>(_: Transform.Type) throws -> Bool
+    public func applyTransform<Transform>(_ transform: Transform.Type) throws -> Bool
         where Transform : TransformManager<Self>.TransformType
     {
-        let changed = try Transform.run(on: self)
-        if Transform.shouldInvalidateAnalyses, changed {
+        let changed = try transform.run(on: self)
+        transformManager.append(transform)
+        if transform.shouldInvalidateAnalyses, changed {
             invalidateAnalyses()
         }
         _ = try analysis(from: Verifier<Self>.self)
