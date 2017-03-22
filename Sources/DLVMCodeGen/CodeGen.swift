@@ -25,6 +25,12 @@ public class CodeGenerator {
     }
 }
 
+extension CodeGenerator {
+    func emit() {
+        
+    }
+}
+
 public extension CodeGenerator {
     func writeBitcode(to file: FileHandle) {
         LLVMWriteBitcodeToFD(llModule, file.fileDescriptor, 0, 0)
