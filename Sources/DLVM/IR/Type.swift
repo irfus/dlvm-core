@@ -21,21 +21,21 @@ public indirect enum Type {
 // MARK: - Predicates
 public extension Type {
     var isTensor: Bool {
-        switch self {
+        switch canonical {
         case .tensor: return true
         default: return false
         }
     }
 
     var isScalar: Bool {
-        switch self {
+        switch canonical {
         case .tensor([], _): return true
         default: return false
         }
     }
 
     var isVoid: Bool {
-        switch self {
+        switch canonical {
         case .void: return true
         default: return false
         }
