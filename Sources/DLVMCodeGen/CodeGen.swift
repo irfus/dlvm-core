@@ -8,31 +8,32 @@
 
 import Foundation
 import DLVM
-import LLVM_C
+import LLVM
 
-public class CodeGenerator {
-    let llContext: LLVMContextRef
-    let llBuilder: LLVMBuilderRef
-    let llModule: LLVMModuleRef
+public class CodeGenerator<TargetType : Target & FunctionPrototypeCache> {
+    let context: LLVM.Context
+    let builder: LLVM.IRBuilder
+    let module: LLVM.Module
 
-    let module: DLVM.Module
+    let dlModule: DLVM.Module
+    lazy var target: TargetType = TargetType(module: self.module)
 
     init(module: DLVM.Module) {
-        self.module = module
-        self.llContext = LLVMGetGlobalContext()
-        self.llModule = LLVMModuleCreateWithName(module.name)
-        self.llBuilder = LLVMCreateBuilderInContext(llContext)
+        self.dlModule = module
+        self.context = LLVM.Context.global
+        self.module = LLVM.Module(name: module.name)
+        self.builder = LLVM.IRBuilder(module: self.module)
     }
 }
 
 extension CodeGenerator {
     func emit() {
-        
+
     }
 }
 
 public extension CodeGenerator {
-    func writeBitcode(to file: FileHandle) {
-        LLVMWriteBitcodeToFD(llModule, file.fileDescriptor, 0, 0)
+    func writeBitcode(toFile file: String) throws {
+        try module.emitBitCode(to: file)
     }
 }
