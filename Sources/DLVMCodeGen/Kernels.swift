@@ -6,4 +6,4 @@
 //
 //
 
-import LLVM_C
+import LLVM

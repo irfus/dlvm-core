@@ -6,9 +6,9 @@
 //
 //
 
-import LLVM_C
+import LLVM
 
-public struct NVVM : Target {
+public final class NVVM : Target, FunctionPrototypeCache {
     public enum Intrinsic : StaticString {
         case threadIndexX    = "llvm.nvvm.read.ptx.sreg.tid.x"    // () -> i32
         case threadIndexY    = "llvm.nvvm.read.ptx.sreg.tid.y"    // () -> i32
@@ -25,37 +25,104 @@ public struct NVVM : Target {
         case barrier         = "llvm.nvvm.barrier0"               // () -> void
     }
 
-    public let module: LLVMModuleRef
-    fileprivate var functions: [Intrinsic : LLVMValueRef] = [:]
+    public enum MemoryCopyKind : Int, IRValueConvertible {
+        case hostToHost = 0
+        case hostToDevice = 1
+        case deviceToHost = 2
+        case deviceToDevice = 3
 
-    init(module: LLVMModuleRef) {
+        public var constantType: IntType {
+            return i32
+        }
+    }
+
+    public enum RuntimeFunction {
+        case malloc(IRValue) // (i32) -> void*
+        case free(IRValue) // (void*) -> void
+        case synchronize // () -> i32
+        case memcpy(to: IRValue, from: IRValue, count: IRValue, kind: MemoryCopyKind) // (void*, void*, i32, i32) -> i32
+        case launchKernel(IRValue, grid: IRValue, block: IRValue, arguments: IRValue, sharedMemory: IRValue, stream: IRValue)
+    }
+
+    public enum RuntimeType {
+        case stream
+        case dimension
+        case result
+    }
+
+    public unowned let module: LLVM.Module
+    fileprivate lazy var builder: IRBuilder = IRBuilder(module: self.module)
+    public var functions: [AnyHashable : Function] = [:]
+
+    public init(module: LLVM.Module) {
         self.module = module
     }
 }
 
-extension NVVM.Intrinsic : IRIntrinsic {
-    public var type: LLVMTypeRef {
+extension NVVM.Intrinsic : FunctionPrototype {
+    public var type: FunctionType {
         switch self {
-        case .barrier: // () -> void
-            return LLVMFunctionType(LLVMVoidType(), nil, 0, 0)
-        case _: // () -> i32
-            return LLVMFunctionType(LLVMInt32Type(), nil, 0, 0)
+        case .barrier: return [] => void
+        case _: return [] => i32
+        }
+    }
+
+    public var arguments: [IRValue] {
+        return []
+    }
+}
+
+extension NVVM.RuntimeType : TypePrototype {
+    public var name: StaticString {
+        switch self {
+        case .dimension: return "dim3"
+        case .stream: return "cudaStream_t"
+        case .result: return "cudaError_t"
+        }
+    }
+
+    public var type: IRType {
+        switch self {
+        case .dimension: return StructType(elementTypes: [i32, i32, i32])
+        case .stream: return StructType(name: name.description)
+        case .result: return i32
         }
     }
 }
 
-extension NVVM {
-    public subscript(intrinsic: Intrinsic) -> LLVMValueRef {
-        mutating get {
-            if let fun = functions[intrinsic] {
-                return fun
-            }
-            let utf8 = intrinsic.rawValue.utf8Start
-            let fun = utf8.withMemoryRebound(to: Int8.self, capacity: 1, { name in
-                LLVMAddFunction(module, name, intrinsic.type)!
-            })
-            functions[intrinsic] = fun
-            return fun
+extension NVVM.RuntimeFunction : FunctionPrototype {
+    public var name: StaticString {
+        switch self {
+        case .malloc: return "cudaMalloc"
+        case .free: return "cudaFree"
+        case .memcpy: return "cudaMemcpy"
+        case .synchronize: return "cudaDeviceSynchronize"
+        case .launchKernel: return "cudaLaunchKernel"
+        }
+    }
+    
+    public var type: FunctionType {
+        switch self {
+        case .malloc: return [i32] => void
+        case .free: return [void*] => void
+        case .memcpy: return [void*, void*, i32, i32] => void*
+        case .synchronize: return [] => void
+        case .launchKernel:
+            let dim3 = NVVM.RuntimeType.dimension.type
+            let cudaStream_t = NVVM.RuntimeType.stream.type
+            return [void*, dim3, dim3, void**, i32, cudaStream_t] => i32
+        }
+    }
+
+    public var arguments: [IRValue] {
+        switch self {
+        case .synchronize: return []
+        case let .malloc(v1): return [v1]
+        case let .free(v1): return [v1]
+        case let .memcpy(v1, v2, v3, kind):
+            return [v1, v2, v3, kind.constant]
+        case let .launchKernel(v1, v2, v3, v4, v5, v6):
+            return [v1, v2, v3, v4, v5, v6]
         }
     }
 }
