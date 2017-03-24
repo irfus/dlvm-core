@@ -139,3 +139,10 @@ public extension TypeAlias {
         }
     }
 }
+
+// MARK: - Literal helpers
+public extension Type {
+    public func makeZero() -> LiteralValue {
+        return LiteralValue(type: self, literal: .zero)
+    }
+}

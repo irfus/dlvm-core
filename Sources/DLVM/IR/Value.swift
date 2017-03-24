@@ -18,6 +18,7 @@ public enum Scope {
 /// Value base
 public protocol Value {
     var type: Type { get }
+    func makeUse() -> Use
 }
 
 public protocol SimpleValue : Value {

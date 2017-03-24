@@ -15,6 +15,10 @@ public class Argument : Value, Named, Definition, HashableByReference {
         self.name = name
         self.type = type
     }
+
+    public func makeUse() -> Use {
+        return .argument(type, self)
+    }
 }
 
 public final class BasicBlock : IRCollection, IRSubUnit, Named {

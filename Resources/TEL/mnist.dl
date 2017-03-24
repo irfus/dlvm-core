@@ -1,18 +1,23 @@
 module mnist
 
-declare placeholder [1x784] f32 @x
-declare variable [784x10] f32 @W = repeating 0.0
-declare variable [1x10] f32 @b = repeating 0.0
+type $mnist_params = $($[784x10 x f32], $[1x10 x f32])
 
-
-differentiable function @inference([1x784] f32 %x, [784x10] f32 %W, [1x10] f32 %b) -> [1x10] f32 {
-entry([1x784] f32 %x, [784x10] f32 %W, [1x10] f32 %b):
-    %v0 = matrixMultiply [1x784] f32 %x, [784x10] f32 %W
-    %v1 = add [1x10] f32 %v0, [1x10] f32 %b
-    %y = tanh [1x10] f32 %v1
-    ret [1x10] f32 %y
+!differentiable
+func @inference(%x : $[1x784 x f32], %params : $mnist_params) -> $[1x10 x f32] {
+entry(%x : $[1x784 x f32], %params : $mnist_params):
+    %v0 = extract %params : $mnist_params at 0
+    %v1 = extract %params : $mnist_params at 1
+    %v2 = matrixMultiply %x : $[1x784 x f32], %v0 : $[784x10 x f32]
+    %v3 = add %v2 : $[1x10 x f32], %v1 : $[1x10 x f32]
+    %y = tanh %v3 : $[1x10 x f32]
+    return %y : $[1x10 x f32]
 }
 
-differentiable function @∇inference([1x784] f32 %x, [784x10] f32 %W, [1x10] f32 %b) -> ([1x784] f32, [784x10] f32, [1x10] f32) {
+!differentiating(@inference)
+!differentiable
+func @inference_gradient(%x : $[1x784 x f32], %params : $mnist_params) -> $($[1x784 x f32], $mnist_params) {
+entry(%x : $[1x784 x f32], %params : $mnist_params):
+    %v0 = tuple zero : $[1x784 x f32], zero : $mnist_params
+    return %v0 : $($[1x784 x f32], $mnist_params)
 }
 
