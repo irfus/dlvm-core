@@ -107,6 +107,7 @@ extension IRBuilder {
     open func buildBasicBlock(named name: String,
                               arguments: [(String, Type)],
                               in function: Function) -> BasicBlock {
+        if name == "entry" { return function.entry }
         let newName = disambiguatedName(for: name, in: function)
         let block = BasicBlock(name: newName, arguments: arguments, parent: function)
         function.append(block)
@@ -128,9 +129,62 @@ extension IRBuilder {
 
 // MARK: - Positioning
 extension IRBuilder {
-
     open func move(to basicBlock: BasicBlock?) {
         currentBlock = basicBlock
     }
+}
 
+// MARK: - Op sugar
+/// - Note: This extension is only providing limited sugar functions 
+/// for common instructions. For full power, please use `buildInstruction`
+/// with the algebraic data type `InstructionKind`
+public extension IRBuilder {
+    func add(_ lhs: Use, _ rhs: Use) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.add)), lhs, rhs))
+    }
+
+    func subtract(_ lhs: Use, _ rhs: Use) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.subtract)), lhs, rhs))
+    }
+
+    func multiply(_ lhs: Use, by rhs: Use) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.multiply)), lhs, rhs))
+    }
+
+    func divide(_ lhs: Use, by rhs: Use) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.divide)), lhs, rhs))
+    }
+
+    func power(_ lhs: Use, _ rhs: Use) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.power)), lhs, rhs))
+    }
+
+    func call(_ function: Use, _ arguments: [Use]) -> Use {
+        return buildInstruction(.call(function, arguments))
+    }
+
+    func gradient(_ function: Use, _ arguments: [Use]) -> Use {
+        return buildInstruction(.gradient(function, arguments))
+    }
+
+    func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Use {
+        return buildInstruction(.matrixMultiply(lhs, rhs))
+    }
+
+    func transpose(_ use: Use) -> Use {
+        return buildInstruction(.transpose(use))
+    }
+
+    func transform(_ operation: ElementwiseOp, _ use: Use) -> Use {
+        return buildInstruction(.unary(.elementwise(operation), use))
+    }
+
+    func integrate(_ operation: IntegrationOp, _ use: Use) -> Use {
+        return buildInstruction(.unary(.integration(operation), use))
+    }
+
+    @discardableResult
+    func `return`(_ use: Use? = nil) -> Use {
+        return buildInstruction(.return(use))
+    }
 }

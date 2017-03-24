@@ -3,7 +3,7 @@
 //
 
 /// Global value
-public class GlobalValue : Value, Definition {
+public class GlobalValue : Value, Definition, HashableByReference {
     public enum Kind {
         case variable, constant
     }
@@ -11,6 +11,10 @@ public class GlobalValue : Value, Definition {
     public var kind: Kind
     public var type: Type
     public var initializer: Literal
+
+    public func makeUse() -> Use {
+        return .global(type, self)
+    }
 
     public init(name: String, kind: Kind, type: Type, initializer: Literal) {
         self.name = name

@@ -73,7 +73,7 @@ public enum InstructionKind {
     case bitCast(Use, Type)
 }
 
-public final class Instruction : IRSubUnit, Value, Definition {
+public final class Instruction : IRSubUnit, Value, Definition, MaybeNamed {
     public typealias Parent = BasicBlock
     public var name: String?
     public var kind: InstructionKind
@@ -89,6 +89,10 @@ public final class Instruction : IRSubUnit, Value, Definition {
     
     public var type: Type {
         return kind.type
+    }
+
+    public func makeUse() -> Use {
+        return .instruction(type, self)
     }
 }
 
@@ -119,7 +123,7 @@ extension TensorShape {
     }
 }
 
-extension InstructionKind : Value {
+extension InstructionKind {
 
     public var type: Type {
         switch self {

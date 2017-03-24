@@ -7,7 +7,6 @@
 //
 
 public final class Function : Named, IRCollection, IRSubUnit {
-
     public enum Attribute {
         case differentiable
         case inline
@@ -44,7 +43,6 @@ public final class Function : Named, IRCollection, IRSubUnit {
         self.parent = parent
         _ = entry
     }
-
 }
 
 // MARK: - Hashable
@@ -81,6 +79,10 @@ extension Function {
 extension Function : Value, Definition {
     public var type: Type {
         return .function(arguments.map{$0.type}, result)
+    }
+
+    public func makeUse() -> Use {
+        return .function(type, self)
     }
 }
 

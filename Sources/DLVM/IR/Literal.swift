@@ -8,7 +8,9 @@
 
 /// Scalar literal
 public enum ScalarLiteral {
-    case int(Int), float(Double), bool(Bool)
+    case int(IntegerLiteralType)
+    case float(FloatLiteralType)
+    case bool(BooleanLiteralType)
 
     public var typeBase: DataType.Base {
         switch self {
@@ -102,11 +104,29 @@ public struct LiteralValue : Value {
         self.type = type
         self.literal = literal
     }
+
+    public func makeUse() -> Use {
+        return .literal(type, self)
+    }
 }
 
 extension LiteralValue : Equatable {
     public static func == (lhs: LiteralValue, rhs: LiteralValue) -> Bool {
         return lhs.type == rhs.type
             && lhs.literal == rhs.literal
+    }
+}
+
+public extension LiteralValue {
+    init(shape: TensorShape, dataType: DataType, repeating number: Int) {
+        let lit: ScalarLiteral
+        switch dataType.base {
+        case .int: lit = .int(number)
+        case .float: lit = .float(Double(number))
+        case .bool: lit = .bool(number == 0 ? false : true)
+        }
+        let type: Type = .tensor(shape, dataType)
+        self.init(type: type,
+                  literal: shape.isScalar ? .scalar(lit) : .tensor(.repeating(lit)))
     }
 }

@@ -163,7 +163,7 @@ open class PostdominanceAnalysis : AnalysisPass<Function, [DominatorTree<BasicBl
         let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
         let transposeCFG = cfg.transpose
         var domTrees: [DominatorTree<BasicBlock>] = []
-        for exit in exits {
+        for (exit, _) in exits {
             var domTree = DominatorTree(root: exit)
             /// Iteratively build tree
             var changed = true

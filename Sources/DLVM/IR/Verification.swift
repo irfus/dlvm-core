@@ -116,6 +116,7 @@ extension Function: SelfVerifiable {
             if case let .return(retVal) = bbPremise.terminator.kind {
                 switch retVal {
                 case let use? where use.type != result:
+                    print("###############", use.type, result)
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
                 case nil where !result.isVoid:
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)

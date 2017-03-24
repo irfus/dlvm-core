@@ -35,14 +35,16 @@ extension BasicBlock : PremiseHolder {
 
 extension Function : PremiseHolder {
 
-    public struct Premise { let exits: [BasicBlock] }
+    public struct Premise { let exits: [(BasicBlock, Instruction)] }
 
     public class PremiseVerifier : AnalysisPass<Function, Premise> {
         public override class func run(on body: Function) throws -> Premise {
-            var exits: [BasicBlock] = []
+            var exits: [(BasicBlock, Instruction)] = []
             for bb in body {
                 let terminator = try bb.premise().terminator
-                if terminator.kind.isReturn { exits.append(bb) }
+                if case .return = terminator.kind {
+                    exits.append((bb, terminator))
+                }
             }
             return Premise(exits: exits)
         }

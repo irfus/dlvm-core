@@ -64,6 +64,7 @@ extension TensorIndex : TextOutputStreamable {
 
 extension Type : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write("$")
         switch self {
         case .invalid:
             target.write("<<error>>")
@@ -213,9 +214,9 @@ extension TypeAlias : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
         case let .opaque(name):
-            target.write("type \(name) = opaque")
+            target.write("type $\(name) = opaque")
         case let .transparent(name, ty):
-            target.write("type \(name) = \(ty)")
+            target.write("type $\(name) = \(ty)")
         }
     }
 }
@@ -258,7 +259,7 @@ extension Argument : TextOutputStreamable {
 
 extension Function.Attribute : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("@")
+        target.write("!")
         switch self {
         case .differentiable: target.write("differentiable")
         case .inline: target.write("inline")
