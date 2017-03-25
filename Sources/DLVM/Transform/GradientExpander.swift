@@ -46,10 +46,10 @@ fileprivate extension Type {
         case let .tensor(shape, type):
             return LiteralValue(shape: shape, dataType: type, repeating: number)
         case let .tuple(subtypes):
-            let sublits = subtypes.map{$0.makeLiteralValue(number)}
+            let sublits = subtypes.map{$0.makeLiteralValue(number).makeUse()}
             return LiteralValue(type: self, literal: .tuple(sublits))
         case let .array(subtype, i):
-            let sublit = subtype.makeLiteralValue(number)
+            let sublit = subtype.makeLiteralValue(number).makeUse()
             let sublits = Array(repeating: sublit, count: i)
             return LiteralValue(type: self, literal: .array(sublits))
         }
@@ -198,7 +198,6 @@ fileprivate extension GradientExpander {
         }
 
         /// Seed on return instructions
-        /// 1. Get exit blocks
         let exits = try function.premise().exits
         for (block, returnInst) in exits {
             let retVal = returnInst.operands[0]
@@ -218,8 +217,10 @@ fileprivate extension GradientExpander {
             let gradients: [Use] = function.arguments.map {
                 context.adjoints[$0] ?? $0.type.makeZero().makeUse()
             }
-            let retGrad = builder.buildInstruction(.tuple(gradients))
-            builder.return(retGrad)
+
+            let tupleLit = LiteralValue(type: .tuple(function.arguments.map{$0.type}),
+                                        literal: .tuple(gradients))
+            builder.return(tupleLit.makeUse())
         }
 
     }
@@ -228,7 +229,7 @@ fileprivate extension GradientExpander {
                               using bd: IRBuilder,
                               in context: ADContext) {
         guard let adjoint = context.adjoints[instruction] else {
-            preconditionFailure("Adjoint seed not found in AD")
+            fatalError("Adjoint seed not found in AD")
         }
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {

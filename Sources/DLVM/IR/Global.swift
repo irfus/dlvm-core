@@ -10,13 +10,13 @@ public class GlobalValue : Value, Definition, HashableByReference {
     public var name: String
     public var kind: Kind
     public var type: Type
-    public var initializer: Literal
+    public var initializer: LiteralValue
 
     public func makeUse() -> Use {
         return .global(type, self)
     }
 
-    public init(name: String, kind: Kind, type: Type, initializer: Literal) {
+    public init(name: String, kind: Kind, type: Type, initializer: LiteralValue) {
         self.name = name
         self.kind = kind
         self.type = type

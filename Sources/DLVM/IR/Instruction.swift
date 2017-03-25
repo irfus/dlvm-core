@@ -44,14 +44,14 @@ public enum InstructionKind {
     case dataTypeCast(Use, DataType)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
+    /// Bitcast
+    case bitCast(Use, Type)
 
-    /** Subtensor **/
+    /** Aggregate operation **/
     /// Extract an element from tensor, tuple, or array
     case extract(from: Use, at: [Int])
     /// Insert an element to tensor, tuple, or array
     case insert(Use, to: Use, at: [Int])
-    /// Form a tuple
-    case tuple([Use])
 
     /** Function invocation **/
     /// Function call
@@ -68,9 +68,7 @@ public enum InstructionKind {
     /// Store value to pointer
     case store(Use, to: Use)
     /// GEP
-    case elementPointer(Use, [Int])
-    /// Bitcast
-    case bitCast(Use, Type)
+    case elementPointer(Use, [Use])
 }
 
 public final class Instruction : IRSubUnit, Value, Definition, MaybeNamed {
@@ -218,9 +216,6 @@ extension InstructionKind {
                 return .invalid
             }
 
-        case let .tuple(vv):
-            return .tuple(vv.map{$0.type})
-            
         case let .extract(from: v, at: indices):
             return v.type.subtype(at: indices) ?? .invalid
 
@@ -238,18 +233,11 @@ extension InstructionKind {
             return t
 
         case let .elementPointer(v, ii):
-            func gepType<C: Collection>(type: Type, indices: C) -> Type where C.Iterator.Element == Int {
-                guard let first = indices.first else { return type }
-                switch type.unaliased {
-                /// Can be a pointer
-                case let .pointer(t):
+            func gepType<C: Collection>(type: Type, indices: C) -> Type where C.Iterator.Element == Use {
+                if indices.isEmpty { return type }
+                if case let .pointer(t) = type.unaliased {
                     return gepType(type: t, indices: ii.dropFirst())
-
-                /// OR an array of pointers
-                case let .array(.pointer(t), n) where first < n:
-                    return gepType(type: t, indices: ii.dropFirst())
-
-                default:
+                } else {
                     return .invalid
                 }
             }
@@ -291,7 +279,6 @@ extension Instruction : User {
         case .concatenate(let ops, _),
              .call(_, let ops),
              .gradient(_, let ops),
-             .tuple(let ops),
              .branch(_, let ops):
             return ops
         case .return(nil), .allocate:
@@ -342,8 +329,6 @@ public extension InstructionKind {
             return .call(f, uses.map(condSubst))
         case let .gradient(f, uses):
             return .gradient(f, uses.map(condSubst))
-        case let .tuple(uses):
-            return .tuple(uses.map(condSubst))
         case .extract(from: old, at: let i):
             return .extract(from: newUse, at: i)
         case .insert(old, to: old, at: let indices):
