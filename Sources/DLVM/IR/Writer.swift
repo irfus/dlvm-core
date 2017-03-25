@@ -20,30 +20,21 @@ extension ScalarLiteral : TextOutputStreamable {
     }
 }
 
-extension TensorLiteral : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case let .elements(elements):
-            target.write("[\(elements.map{"\($0)"}.joined(separator: ", "))]")
-        case let .repeating(lit):
-            target.write("repeating \(lit)")
-        case let .item(lit):
-            lit.write(to: &target)
-        }
-    }
-}
-
 extension Literal : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .scalar(lit): lit.write(to: &target)
-        case let .tensor(lit): lit.write(to: &target)
-        case let .tuple(vals): target.write("(\(vals.map{"\($0)"}.joined(separator: ", ")))")
-        case let .array(vals): target.write("<\(vals.map{"\($0)"}.joined(separator: ", "))>")
-        case let .globalValue(gv): target.write("@\(gv.name)")
-        case let .function(f): target.write("@\(f.name)")
-        case .zero: target.write("zero")
-        case .undefined: target.write("undefined")
+        case let .scalar(lit):
+            lit.write(to: &target)
+        case let .tensor(vals):
+            target.write("[\(vals.joinedDescription)]")
+        case let .tuple(vals):
+            target.write("(\(vals.joinedDescription))")
+        case let .array(vals):
+            target.write("<\(vals.joinedDescription)>")
+        case .zero:
+            target.write("zero")
+        case .undefined:
+            target.write("undefined")
         }
     }
 }
@@ -57,7 +48,7 @@ extension TensorShape : TextOutputStreamable {
 extension TensorIndex : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("(")
-        map{"\($0)"}.joined(separator: ", ").write(to: &target)
+        joinedDescription.write(to: &target)
         target.write(")")
     }
 }
@@ -73,7 +64,7 @@ extension Type : TextOutputStreamable {
         case let .tensor(s, t):
             target.write("[\(s) x \(t)]")
         case let .tuple(subtypes):
-            target.write("(\(subtypes.map{"\($0)"}.joined(separator: ", ")))")
+            target.write(subtypes.joinedDescription)
         case .void:
             target.write("void")
         case let .array(subtype, n):
@@ -81,7 +72,7 @@ extension Type : TextOutputStreamable {
         case let .pointer(subtype):
             target.write("\(subtype)*")
         case let .function(args, ret):
-            target.write("(\(args.map{"\($0)"}.joined(separator: ", ")) -> \(ret))")
+            target.write("(\(args.joinedDescription) -> \(ret))")
         case let .alias(a):
             a.name.write(to: &target)
         }
@@ -174,8 +165,6 @@ extension InstructionKind : TextOutputStreamable {
             target.write("extract \(use) at \(indices.map{"\($0)"}.joined(separator: ", "))")
         case let .insert(src, to: dest, at: indices):
             target.write("insert \(src) to \(dest) at \(indices.map{"\($0)"}.joined(separator: ", "))")
-        case let .tuple(uses):
-            target.write("tuple \(uses.map{"\($0)"}.joined(separator: ", "))")
         case let .allocate(t, n):
             target.write("allocate \(t), \(n)")
         case let .store(v, p):

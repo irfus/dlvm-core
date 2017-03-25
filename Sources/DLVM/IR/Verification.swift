@@ -51,8 +51,11 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case namedVoidValue(Node)
     case notPointer(Use, Node)
     case invalidIndices(Use, [Int], Node)
+    case invalidOffsets(Use, [Use], Node)
     case gradientTypeMismatch(Function.Attribute, Type, Node)
-    case invalidGlobalValueInitializer(Literal, Node)
+    case invalidLiteral(Type, Literal, Node)
+    case missingIndices(Use, Node)
+    case notDifferentiable(Function, Node)
 }
 
 public protocol SelfVerifiable {
@@ -61,6 +64,9 @@ public protocol SelfVerifiable {
 
 extension Module : SelfVerifiable {
     public func performVerification() throws {
+        for global in globalValues {
+            try global.performVerification()
+        }
         for fun in self {
             try fun.performVerification()
         }
@@ -69,24 +75,58 @@ extension Module : SelfVerifiable {
 
 extension GlobalValue : SelfVerifiable {
     public func performVerification() throws {
-        /// Conservative check
-        switch (type, initializer) {
+        try initializer.performVerification()
+    }
+}
+
+extension LiteralValue : SelfVerifiable {
+
+    private func verifyUse(_ use: Use, _ subtype: Type) throws {
+        try use.performVerification()
+        guard use.type == subtype else {
+            throw VerificationError.unexpectedType(use, subtype, self)
+        }
+    }
+    
+    public func performVerification() throws {
+        switch (type.canonical, literal) {
+
+        /* Simple literals */
+            
         /// Anything can be undefined
         case (_, .undefined): break
-        /// Reference to another global value results in a pointer
-        case let (.pointer(t), .globalValue(gv)) where gv.type == t: break
-        /// Module function reference
-        case (.function, .function(let f)) where f.type == type: break
-        /// Scalar tensor with scalar literal of the same data type base
-        case (.tensor([], let dt), .scalar(let lit)) where lit.typeBase == dt.base: break
-        /// Tensor literal
-        /// - TODO: Check tensor literal shape
-        case (.tensor, .scalar): break
         /// Any tensor can be zero initialized
         case (.tensor, .zero): break
-        /// - TODO: Match more passing cases
+
+        /// Scalar tensor with scalar literal
+        case (.tensor([], let dt), .scalar(let lit)):
+            guard lit.typeBase == dt.base else {
+                throw VerificationError.invalidLiteral(type, literal, self)
+            }
+
+        /* Aggregate literals */
+
+        /// Tensor literal
+        case let (.tensor(shape, dt), .tensor(elements)):
+            let subtype: Type = .tensor(shape.dropFirst(), dt)
+            for use in elements {
+                try verifyUse(use, subtype)
+            }
+
+        /// Tuple literal
+        case let (.tuple(subtypes), .tuple(elements)) where subtypes.count == elements.count:
+            for (subtype, use) in zip(subtypes, elements) {
+                try verifyUse(use, subtype)
+            }
+
+        /// Array literal
+        case let (.array(subtype, n), .array(elements)) where n == elements.count:
+            for use in elements {
+                try verifyUse(use, subtype)
+            }
+            
         default:
-            throw VerificationError.invalidGlobalValueInitializer(initializer, self)
+            throw VerificationError.invalidLiteral(type, literal, self)
         }
     }
 }
@@ -116,7 +156,6 @@ extension Function: SelfVerifiable {
             if case let .return(retVal) = bbPremise.terminator.kind {
                 switch retVal {
                 case let use? where use.type != result:
-                    print("###############", use.type, result)
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
                 case nil where !result.isVoid:
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
@@ -150,25 +189,42 @@ extension Function: SelfVerifiable {
                 break
             }
         }
+
+        /// - TODO: Check if function marked !gradient contains non-differentiable operations
     }
 }
 
 extension BasicBlock : SelfVerifiable {
-    open func performVerification() throws {
-        /// Check instructions
-        var instNames: Set<String> = []
+    public func performVerification() throws {
+        /// Check for terminator
         guard hasTerminator else {
             throw VerificationError<BasicBlock>.missingTerminator(self)
         }
+        /// Check for name duplication
+        var names: Set<String> = []
+        /// Check arguments
+        for arg in arguments {
+            guard !names.contains(arg.name) else {
+                throw VerificationError.redeclared(arg)
+            }
+            names.insert(name)
+            try arg.performVerification()
+        }
+        /// Check instructions
         for inst in self {
             if let name = inst.name {
-                guard !instNames.contains(name) else {
+                guard !names.contains(name) else {
                     throw VerificationError.redeclared(inst)
                 }
-                instNames.insert(name)
+                names.insert(name)
             }
             try inst.performVerification()
         }
+    }
+}
+
+extension Argument : SelfVerifiable {
+    public func performVerification() throws {
     }
 }
 
@@ -271,11 +327,17 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .extract(v1, indices):
+            guard !indices.isEmpty else {
+                throw VerificationError.missingIndices(v1, self)
+            }
             guard let subtype = v1.type.subtype(at: indices) else {
                 throw VerificationError.invalidIndices(v1, indices, self)
             }
 
         case let .insert(src, to: dest, at: indices):
+            guard !indices.isEmpty else {
+                throw VerificationError.missingIndices(dest, self)
+            }
             guard let subtype = dest.type.subtype(at: indices) else {
                 throw VerificationError.invalidIndices(dest, indices, self)
             }
@@ -302,30 +364,24 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .elementPointer(v, ii):
-            func gepCheck<C: Collection>(type: Type, indices: C) throws where C.Iterator.Element == Int {
-                guard let first = indices.first else { return }
-                switch type.unaliased {
-                /// Can be a pointer
-                case let .pointer(t):
+            func gepCheck<C: Collection>(type: Type, indices: C) throws where C.Iterator.Element == Use {
+                if indices.isEmpty { return }
+                if case let .pointer(t) = type.unaliased {
                     try gepCheck(type: t, indices: ii.dropFirst())
-
-                /// OR an array of pointers
-                case let .array(.pointer(t), n) where first < n:
-                    try gepCheck(type: t, indices: ii.dropFirst())
-
-                default:
-                    throw VerificationError.invalidIndices(v, ii, self)
+                } else {
+                    throw VerificationError.invalidOffsets(v, ii, self)
                 }
             }
             try gepCheck(type: v.type, indices: ii)
 
-        case .tuple, .allocate, .bitCast: break
+        case .allocate, .bitCast: break
         }
     }
 }
 
 extension Use : SelfVerifiable {
     public func performVerification() throws {
+        try value.performVerification()
         /// Type must be valid
         guard type.isValid else {
             throw VerificationError.invalidType(self)
