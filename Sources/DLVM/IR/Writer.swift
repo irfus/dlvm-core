@@ -91,8 +91,11 @@ extension DataType.Base : TextOutputStreamable {
 
 extension DataType : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        base.write(to: &target)
-        size.description.write(to: &target)
+        switch self {
+        case .bool: target.write("bool")
+        case let .int(w): target.write("i\(w)")
+        case let .float(w): target.write("f\(w.rawValue)")
+        }
     }
 }
 

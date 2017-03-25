@@ -20,6 +20,13 @@ public indirect enum Type {
 
 // MARK: - Predicates
 public extension Type {
+    var isFirstClass: Bool {
+        switch canonical {
+        case .tensor, .array, .tuple, .pointer, .alias: return true
+        default: return false
+        }
+    }
+    
     var isTensor: Bool {
         switch canonical {
         case .tensor: return true

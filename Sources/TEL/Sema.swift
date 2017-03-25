@@ -7,7 +7,7 @@
 //  This file contains type checker and semantic analyzer
 //
 
-import struct DLVM.DataType
+import enum DLVM.DataType
 import struct DLVM.TensorShape
 import enum DLVM.ElementwiseOp
 import enum DLVM.ComparisonOp
@@ -147,7 +147,7 @@ struct SemaEnvironment {
     private(set) var layers: [Layer] = []
     
     /// Default data type: float32
-    var dataType: DataType = .float(32) {
+    var dataType: DataType = .float(.single) {
         didSet {
             isCustomDataType = true
         }
@@ -222,10 +222,9 @@ extension DataType {
         case "int16": self = .int(16)
         case "int32": self = .int(32)
         case "int64": self = .int(64)
-        case "float8": self = .float(8)
-        case "float16": self = .float(16)
-        case "float32": self = .float(32)
-        case "float64": self = .float(64)
+        case "float16": self = .float(.half)
+        case "float32": self = .float(.single)
+        case "float64": self = .float(.double)
         default: return nil
         }
     }
@@ -238,7 +237,7 @@ public class Program {
     public var moduleName: String
     
     /// Default type: float32
-    public internal(set) var dataType: DataType = .float(32)
+    public internal(set) var dataType: DataType = .float(.single)
     
     public internal(set) var inputs: [Input] = []
     public internal(set) var layers: [Layer] = []

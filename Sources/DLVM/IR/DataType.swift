@@ -6,12 +6,24 @@
 //
 //
 
-public struct DataType {
-    public enum Base : Int { case bool, int, float }
-    public var base: Base
-    public var size: Int
+public enum FloatingPointSize : Int {
+    case half = 16
+    case single = 32
+    case double = 64
 }
 
+extension FloatingPointSize : Comparable {
+    public static func <(lhs: FloatingPointSize, rhs: FloatingPointSize) -> Bool {
+        return lhs.rawValue < rhs.rawValue
+    }
+}
+
+public enum DataType {
+    public enum Base : Int { case bool, int, float }
+    case bool
+    case int(Int)
+    case float(FloatingPointSize)
+}
 public extension DataType.Base {
     var isNumeric: Bool {
         return self != .bool
@@ -19,17 +31,12 @@ public extension DataType.Base {
 }
 
 public extension DataType {
-    
-    static var bool: DataType {
-        return self.init(base: .bool, size: 1)
-    }
-    
-    static func int(_ size: Int) -> DataType {
-        return self.init(base: .int, size: size)
-    }
-
-    static func float(_ size: Int) -> DataType {
-        return self.init(base: .float, size: size)
+    var base: Base {
+        switch self {
+        case .bool: return .bool
+        case .int: return .int
+        case .float: return .float
+        }
     }
 
     static func ~(lhs: DataType, rhs: DataType) -> Bool {
@@ -48,13 +55,22 @@ public extension DataType {
 
 extension DataType : Equatable {
     public static func ==(lhs: DataType, rhs: DataType) -> Bool {
-        return lhs.base == rhs.base && lhs.size == rhs.size
+        switch (lhs, rhs) {
+        case (.bool, .bool): return true
+        case let (.int(w1), .int(w2)): return w1 == w2
+        case let (.float(w1), .float(w2)): return w1 == w2
+        default: return false
+        }
     }
 }
 
 public extension DataType {
     func canCast(to other: DataType) -> Bool {
-        return size <= other.size
-            && base.rawValue <= other.base.rawValue
+        switch (self, other) {
+        case (.bool, .bool): return true
+        case let (.int(w1), .int(w2)): return w1 <= w2
+        case let (.float(w1), .float(w2)): return w1 <= w2
+        default: return false
+        }
     }
 }
