@@ -64,7 +64,7 @@ extension Type : TextOutputStreamable {
         case let .tensor(s, t):
             target.write("[\(s) x \(t)]")
         case let .tuple(subtypes):
-            target.write(subtypes.joinedDescription)
+            target.write("(\(subtypes.joinedDescription))")
         case .void:
             target.write("void")
         case let .array(subtype, n):
