@@ -130,9 +130,9 @@ extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .branch(bb, args):
-            target.write("branch %\(bb.name)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .conditional(op, thenBB, elseBB):
-            target.write("conditional \(op), %\(thenBB.name), %\(elseBB.name)")
+            target.write("branch %\(bb.name)(\(args.joinedDescription))")
+        case let .conditional(op, thenBB, thenArgs, elseBB, elseArgs):
+            target.write("conditional \(op) then %\(thenBB.name)(\(thenArgs.joinedDescription)) else %\(elseBB.name)(\(elseArgs.joinedDescription))")
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }

@@ -55,7 +55,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case gradientTypeMismatch(Function.Attribute, Type, Node)
     case invalidLiteral(Type, Literal, Node)
     case missingIndices(Use, Node)
-    case notDifferentiable(Function, Node)
+    case notDifferentiable(Node)
 }
 
 public protocol SelfVerifiable {
@@ -132,6 +132,14 @@ extension LiteralValue : SelfVerifiable {
 }
 
 extension Function: SelfVerifiable {
+    private func verifyDifferentiability() throws {
+        guard isDifferentiable else { return }
+        /// All arguments have to be tensors
+        guard arguments.forAll({$0.type.isTensor}) else {
+            throw VerificationError.notDifferentiable(self)
+        }
+    }
+
     public func performVerification() throws {
         let domTree = try analysis(from: DominanceAnalysis.self)
 
@@ -174,6 +182,9 @@ extension Function: SelfVerifiable {
             }
         }
 
+        /// Verify differentiability
+        try verifyDifferentiability()
+
         /// Verify attributes
         for attr in attributes {
             switch attr {
@@ -189,8 +200,6 @@ extension Function: SelfVerifiable {
                 break
             }
         }
-
-        /// - TODO: Check if function marked !gradient contains non-differentiable operations
     }
 }
 
@@ -255,13 +264,22 @@ extension Instruction : SelfVerifiable {
 extension InstructionKind : SelfVerifiable {
     public func performVerification() throws {
         switch self {
-        case let .conditional(use, _, _):
+        case let .conditional(use, thenBB, thenArgs, elseBB, elseArgs):
             guard case let .tensor(s, t) = use.type.unaliased, s.isScalar, t.isBool else {
                 throw VerificationError.unexpectedType(use, .tensor(.scalar, .bool), self)
             }
+            guard thenBB.arguments.count == thenArgs.count,
+                  zip(thenBB.arguments, thenArgs).forAll({$0.type == $1.type}) else {
+                throw VerificationError.basicBlockArgumentMismatch(thenArgs, thenBB, self)
+            }
+            guard elseBB.arguments.count == elseArgs.count,
+                  zip(elseBB.arguments, elseArgs).forAll({$0.type == $1.type}) else {
+                throw VerificationError.basicBlockArgumentMismatch(elseArgs, elseBB, self)
+            }
 
         case let .branch(bb, args):
-            for (formal, arg) in zip(bb.arguments, args) where formal.type != arg.type {
+            guard bb.arguments.count == args.count,
+                  zip(bb.arguments, args).forAll({$0.type == $1.type}) else {
                 throw VerificationError.basicBlockArgumentMismatch(args, bb, self)
             }
 

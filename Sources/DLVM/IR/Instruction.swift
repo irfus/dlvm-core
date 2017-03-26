@@ -13,7 +13,7 @@ public enum InstructionKind {
     /// Unconditionally branch to basic block
     case branch(BasicBlock, [Use])
     /// Conditional branch depending on the value
-    case conditional(Use, BasicBlock, BasicBlock)
+    case conditional(Use, BasicBlock, [Use], BasicBlock, [Use])
     /// Return
     case `return`(Use?)
 
@@ -62,7 +62,7 @@ public enum InstructionKind {
 
     /** Memory **/
     /// Allocate stack memory, returning a pointer
-    case allocate(Type, Int)
+    case allocate(Type, Use)
     /// Load value from pointer
     case load(Use)
     /// Store value to pointer
@@ -267,7 +267,6 @@ extension Instruction : User {
              let .scan(_, op, _),
              let .shapeCast(op, _),
              let .dataTypeCast(op, _),
-             let .conditional(op, _, _),
              let .return(op?),
              let .extract(from: op, at: _),
              let .transpose(op),
@@ -281,6 +280,8 @@ extension Instruction : User {
              .gradient(_, let ops),
              .branch(_, let ops):
             return ops
+        case let .conditional(cond, _, thenArgs, _, elseArgs):
+            return [cond] + thenArgs + elseArgs
         case .return(nil), .allocate:
             return []
         }
@@ -297,8 +298,13 @@ public extension InstructionKind {
     func substituting(_ newUse: Use, for old: Use) -> InstructionKind {
         let condSubst = {$0 == old ? newUse : $0}
         switch self {
-        case .conditional(old, let thenBB, let elseBB):
-            return .conditional(newUse, thenBB, elseBB)
+        case .branch(let dest, let args):
+            return .branch(dest, args.map(condSubst))
+        case let .conditional(cond, thenBB, thenArgs, elseBB, elseArgs):
+            let newCond = cond == old ? newUse : cond
+            return .conditional(newCond,
+                                thenBB, thenArgs.map(condSubst),
+                                elseBB, elseArgs.map(condSubst))
         case .return(old?):
             return .return(newUse)
         case .unary(let fun, old):

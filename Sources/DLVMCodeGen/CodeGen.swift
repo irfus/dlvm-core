@@ -152,6 +152,9 @@ extension DLVM.Module : LLEmittable {
         for alias in typeAliases {
             alias.emit(to: &context, in: &env)
         }
+        for fun in self {
+
+        }
         return context.module
     }
 }

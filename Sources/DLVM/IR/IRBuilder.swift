@@ -183,8 +183,52 @@ public extension IRBuilder {
         return buildInstruction(.unary(.integration(operation), use))
     }
 
-    @discardableResult
-    func `return`(_ use: Use? = nil) -> Use {
-        return buildInstruction(.return(use))
+    func `return`(_ use: Use? = nil) {
+        buildInstruction(.return(use))
     }
+
+    func branch(_ destination: BasicBlock, _ arguments: [Use] = []) {
+        buildInstruction(.branch(destination, arguments))
+    }
+
+    func conditional(_ condition: Use,
+                     then thenBB: BasicBlock, arguments thenArguments: [Use] = [],
+                     else elseBB: BasicBlock, arguments elseArguments: [Use] = []) {
+        buildInstruction(.conditional(condition,
+                                      thenBB, thenArguments,
+                                      elseBB, elseArguments))
+    }
+
+    func extract(from source: Use, at indices: [Int]) -> Use {
+        return buildInstruction(.extract(from: source, at: indices))
+    }
+
+    func insert(_ source: Use, to destination: Use, at indices: [Int]) -> Use {
+        return buildInstruction(.insert(source, to: destination, at: indices))
+    }
+
+    func elementPointer(from source: Use, at indices: [Use]) -> Use {
+        return buildInstruction(.elementPointer(source, indices))
+    }
+
+    func load(from source: Use) -> Use {
+        return buildInstruction(.load(source))
+    }
+
+    func store(_ source: Use, to destination: Use) {
+        buildInstruction(.store(source, to: destination))
+    }
+
+    func bitCast(_ source: Use, to targetType: Type) -> Use {
+        return buildInstruction(.bitCast(source, targetType))
+    }
+
+    func shapeCast(_ source: Use, to targetShape: TensorShape) -> Use {
+        return buildInstruction(.shapeCast(source, targetShape))
+    }
+
+    func dataTypeCast(_ source: Use, to targetDataType: DataType) -> Use {
+        return buildInstruction(.dataTypeCast(source, targetDataType))
+    }
+
 }
