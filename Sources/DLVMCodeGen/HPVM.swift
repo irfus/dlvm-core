@@ -8,9 +8,10 @@
 
 import LLVM
 
-public class HPVM : Target, FunctionPrototypeCache {
+/// HPVM Target
+public class HPVM : LLTarget, LLFunctionPrototypeCacheable {
 
-    public enum ReplicationMode : Int, IRValueConvertible {
+    public enum ReplicationMode : Int, LLConstantConvertible {
         case allToAll = 0
         case oneToOne = 1
 
@@ -67,7 +68,7 @@ public class HPVM : Target, FunctionPrototypeCache {
     
 }
 
-extension HPVM.Intrinsic : FunctionPrototype {
+extension HPVM.Intrinsic : LLFunctionPrototype {
 
     public var name: StaticString {
         switch self {
@@ -171,15 +172,15 @@ extension HPVM.Intrinsic : FunctionPrototype {
             return [v1, v2, v3]
         case let .bindOutput(node: v1, output: v2, parentOutput: v3,
                              streaming: streaming):
-            return [v1, v2, v3, streaming.value]
+            return [v1, v2, v3, streaming.constant]
         case let .launch(v1, arguments: v2, streaming: streaming):
-            return [v1, v2, streaming.value]
+            return [v1, v2, streaming.constant]
         }
     }
     
 }
 
-extension HPVM.RuntimeFunction : FunctionPrototype {
+extension HPVM.RuntimeFunction : LLFunctionPrototype {
 
     public var name: StaticString {
         switch self {

@@ -8,7 +8,8 @@
 
 import LLVM
 
-public final class NVVM : Target, FunctionPrototypeCache {
+/// NVVM Target
+public final class NVVM : LLTarget, LLFunctionPrototypeCacheable {
     public enum Intrinsic : StaticString {
         case threadIndexX    = "llvm.nvvm.read.ptx.sreg.tid.x"    // () -> i32
         case threadIndexY    = "llvm.nvvm.read.ptx.sreg.tid.y"    // () -> i32
@@ -25,7 +26,7 @@ public final class NVVM : Target, FunctionPrototypeCache {
         case barrier         = "llvm.nvvm.barrier0"               // () -> void
     }
 
-    public enum MemoryCopyKind : Int, IRValueConvertible {
+    public enum MemoryCopyKind : Int, LLConstantConvertible {
         case hostToHost = 0
         case hostToDevice = 1
         case deviceToHost = 2
@@ -37,10 +38,10 @@ public final class NVVM : Target, FunctionPrototypeCache {
     }
 
     public enum RuntimeFunction {
-        case malloc(IRValue) // (i32) -> void*
-        case free(IRValue) // (void*) -> void
+        case malloc(IRValue) // (i32) -> i8*
+        case free(IRValue) // (i8*) -> void
         case synchronize // () -> i32
-        case memcpy(to: IRValue, from: IRValue, count: IRValue, kind: MemoryCopyKind) // (void*, void*, i32, i32) -> i32
+        case memcpy(to: IRValue, from: IRValue, count: IRValue, kind: MemoryCopyKind) // (i8*, i8*, i32, i32) -> i32
         case launchKernel(IRValue, grid: IRValue, block: IRValue, arguments: IRValue, sharedMemory: IRValue, stream: IRValue)
     }
 
@@ -59,7 +60,7 @@ public final class NVVM : Target, FunctionPrototypeCache {
     }
 }
 
-extension NVVM.Intrinsic : FunctionPrototype {
+extension NVVM.Intrinsic : LLFunctionPrototype {
     public var type: FunctionType {
         switch self {
         case .barrier: return [] => void
@@ -72,7 +73,7 @@ extension NVVM.Intrinsic : FunctionPrototype {
     }
 }
 
-extension NVVM.RuntimeType : TypePrototype {
+extension NVVM.RuntimeType : LLTypePrototype {
     public var name: StaticString {
         switch self {
         case .dimension: return "dim3"
@@ -90,7 +91,7 @@ extension NVVM.RuntimeType : TypePrototype {
     }
 }
 
-extension NVVM.RuntimeFunction : FunctionPrototype {
+extension NVVM.RuntimeFunction : LLFunctionPrototype {
     public var name: StaticString {
         switch self {
         case .malloc: return "cudaMalloc"
@@ -104,13 +105,13 @@ extension NVVM.RuntimeFunction : FunctionPrototype {
     public var type: FunctionType {
         switch self {
         case .malloc: return [i32] => void
-        case .free: return [void*] => void
-        case .memcpy: return [void*, void*, i32, i32] => void*
+        case .free: return [i8*] => void
+        case .memcpy: return [i8*, i8*, i32, i32] => i8*
         case .synchronize: return [] => void
         case .launchKernel:
             let dim3 = NVVM.RuntimeType.dimension.type
             let cudaStream_t = NVVM.RuntimeType.stream.type
-            return [void*, dim3, dim3, void**, i32, cudaStream_t] => i32
+            return [i8*, dim3, dim3, i8**, i32, cudaStream_t] => i32
         }
     }
 
