@@ -2,9 +2,16 @@ import TEL
 import Foundation
 import DLVM
 //import DLVMReader
+import DLVMCodeGen
+import LLVM
 import CommandLineKit
 
 let cli = CommandLineKit.CommandLine()
+
+enum Target : String {
+    case nvvm = "nvvm"
+    case hpvm = "hpvm"
+}
 
 struct Options {
     /// File
@@ -13,9 +20,14 @@ struct Options {
     /// Output
     static let outputPaths = MultiStringOption(shortFlag: "o", longFlag: "outputs",
                                                helpMessage: "Output file paths")
-    /// Print IR
-    static let shouldPrintIR = BoolOption(longFlag: "print-ir",
-                                          helpMessage: "Print DLVM IR after compilation")
+    /// Target compute backend
+    static let target = EnumOption<Target>(shortFlag: "t", longFlag: "target", helpMessage: "Target compute backend [ hpvm | nvvm ]")
+    /// Emit DLVM IR
+    static let shouldEmitDLVM = BoolOption(longFlag: "emit-dlvm", helpMessage: "Emit DLVM IR")
+    /// Emit LLVM IR
+    static let shouldEmitLLVM = BoolOption(longFlag: "emit-llvm", helpMessage: "Emit LLVM Textual IR")
+    /// Emit LLVM Bitcode
+    static let shouldEmitBitcode = BoolOption(longFlag: "emit-bc", helpMessage: "Emit LLVM Bitcode")
     /// Help
     static let needsHelp = BoolOption(shortFlag: "h", longFlag: "help",
                                       helpMessage: "Print help message")
@@ -23,7 +35,10 @@ struct Options {
 
 cli.addOptions(Options.filePaths,
                Options.outputPaths,
-               Options.shouldPrintIR,
+               Options.target,
+               Options.shouldEmitDLVM,
+               Options.shouldEmitLLVM,
+               Options.shouldEmitBitcode,
                Options.needsHelp)
 
 /// Parse command line
@@ -65,19 +80,43 @@ func main() throws {
         let ast = try ProgramTree.parser.parse(source)
         let program = try Program(parse: ast)
         print("TEL module \"\(program.moduleName)\"")
+        
         /// Generate IR
         let module = program.makeModule()
-        try module.verify()
-        try module.applyTransform(GradientExpander.self)
 
-        /// Print IR if needed
-        if Options.shouldPrintIR.wasSet {
+        /// Verify
+        try module.verify()
+        
+        /// Run gradient expansion
+        //try module.applyTransform(GradientExpander.self)
+
+        /// Print DLVM IR if needed
+        if Options.shouldEmitDLVM.wasSet {
+            print("== DLVM module ==")
             print(module)
+            /// Write IR
+            try module.write(toFile: outputPath)
+            print("DLVM module \"\(module.name)\" written to \(outputPath)")
         }
 
-        /// Write IR
-        try module.write(toFile: outputPath)
-        print("DLVM module \"\(module.name)\" written to \(outputPath)")
+        /// LLGen
+        guard let target = Options.target.value else { return }
+            
+        let llModule: LLVM.Module
+        switch target {
+        case .hpvm:
+            let codeGen = CodeGenerator<NVVM>(module: module)
+            llModule = codeGen.emit()
+        case .nvvm:
+            let codeGen = CodeGenerator<NVVM>(module: module)
+            llModule = codeGen.emit()
+        }
+
+        /// Print LLVM IR if needed
+        if Options.shouldEmitLLVM.wasSet {
+            print("== LLVM module ==")
+            llModule.dump()
+        }
     }
 
 }
