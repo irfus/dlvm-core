@@ -19,7 +19,7 @@ public extension Instruction {
         switch kind {
         case let .branch(bb, _):
             return [bb]
-        case let .conditional(_, bb1, bb2):
+        case let .conditional(_, bb1, _, bb2, _):
             return [bb1, bb2]
         default: return []
         }
