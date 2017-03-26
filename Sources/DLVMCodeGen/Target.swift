@@ -8,18 +8,18 @@
 
 import LLVM
 
-public protocol FunctionPrototype : Hashable {
+public protocol LLFunctionPrototype: Hashable {
     var name: StaticString { get }
     var type: FunctionType { get }
     var arguments: [IRValue] { get }
 }
 
-public protocol TypePrototype : Hashable {
+public protocol LLTypePrototype: Hashable {
     var name: StaticString { get }
     var type: IRType { get }
 }
 
-public extension FunctionPrototype {
+public extension LLFunctionPrototype {
     static func == (lhs: Self, rhs: Self) -> Bool {
         return lhs.name.utf8Start == rhs.name.utf8Start
     }
@@ -29,13 +29,13 @@ public extension FunctionPrototype {
     }
 }
 
-public extension FunctionPrototype where Self : RawRepresentable, Self.RawValue == StaticString {
+public extension LLFunctionPrototype where Self : RawRepresentable, Self.RawValue == StaticString {
     var name: StaticString {
         return rawValue
     }
 }
 
-public extension TypePrototype where Self : RawRepresentable, Self.RawValue == StaticString {
+public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue == StaticString {
     var name: StaticString {
         return rawValue
     }
@@ -46,14 +46,14 @@ public extension TypePrototype where Self : RawRepresentable, Self.RawValue == S
     }
 }
 
-public protocol Target {
+public protocol LLTarget : LLFunctionPrototypeCacheable {
     unowned var module: Module { get }
     init(module: Module)
 }
 
-public protocol FunctionPrototypeCache : class {
+public protocol LLFunctionPrototypeCacheable : class {
     var functions: [AnyHashable : Function] { get set }
-    func function<T : FunctionPrototype>(from prototype: T) -> Function
+    func function<T : LLFunctionPrototype>(from prototype: T) -> Function
 }
 
 extension StaticString : Equatable {
@@ -62,9 +62,8 @@ extension StaticString : Equatable {
     }
 }
 
-
-extension Target where Self : FunctionPrototypeCache {
-    func build<T : FunctionPrototype>(
+extension LLTarget where Self : LLFunctionPrototypeCacheable {
+    func build<T : LLFunctionPrototype>(
                _ prototype: T,
                using builder: IRBuilder,
                name: String = "") -> IRValue {
@@ -73,8 +72,8 @@ extension Target where Self : FunctionPrototypeCache {
     }
 }
 
-extension FunctionPrototypeCache where Self : Target {
-    public func function<T : FunctionPrototype>(from prototype: T) -> Function {
+extension LLFunctionPrototypeCacheable where Self : LLTarget {
+    public func function<T : LLFunctionPrototype>(from prototype: T) -> Function {
         if let fun = functions[prototype] {
             return fun
         }
