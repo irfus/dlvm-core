@@ -74,7 +74,7 @@ public extension BasicBlock {
     }
 
     var successorCount: Int {
-        return terminator?.successorCount ?? 0
+        return terminator?.controlFlowSuccessorCount ?? 0
     }
 
     var hasSuccessors: Bool {

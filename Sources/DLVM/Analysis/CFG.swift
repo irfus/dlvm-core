@@ -8,14 +8,19 @@
 // MARK: - Basic block graph traits
 extension BasicBlock : ForwardGraphNode {
     public var successors: ObjectSet<BasicBlock> {
-        return terminator?.successors ?? []
+        return terminator?.controlFlowSuccessors ?? []
+    }
+
+    public var predecessors: ObjectSet<BasicBlock> {
+        let cfg: DirectedGraph<BasicBlock> = try! parent.analysis(from: ControlFlowGraphAnalysis.self)
+        return cfg.predecessors(of: self)
     }
 }
 
 // MARK: - Instruction successors
 public extension Instruction {
 
-    var successors: ObjectSet<BasicBlock> {
+    var controlFlowSuccessors: ObjectSet<BasicBlock> {
         switch kind {
         case let .branch(bb, _):
             return [bb]
@@ -25,7 +30,7 @@ public extension Instruction {
         }
     }
 
-    var successorCount: Int {
+    var controlFlowSuccessorCount: Int {
         switch kind {
         case .branch: return 1
         case .conditional: return 2
@@ -33,10 +38,12 @@ public extension Instruction {
         }
     }
 
-    var isCriticalEdge: Bool {
-        if successorCount == 1 { return false }
-        /// TODO: analyze precedessors
-        return false
+    /// Return true if the specified edge is a critical edge.
+    /// Critical edges are edges from a block with multiple successors to a block
+    /// with multiple predecessors.
+    func isCriticalEdge(to destination: BasicBlock) -> Bool {
+        if controlFlowSuccessorCount <= 1 { return false }
+        return destination.predecessors.count > 1
     }
 
 }
