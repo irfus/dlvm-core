@@ -75,7 +75,7 @@ func main() throws {
     }
 
     for (filePath, outputPath) in zip(filePaths, outputPaths) {
-        let source = try String(contentsOfFile: filePath)
+        let source = try String(contentsOfFile: filePath, encoding: .utf8)
         print("Source file:", filePath)
         let ast = try ProgramTree.parser.parse(source)
         let program = try Program(parse: ast)
