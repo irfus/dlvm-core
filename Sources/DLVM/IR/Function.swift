@@ -30,7 +30,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
             return entry
         }
         let bb = BasicBlock(asEntryOf: self)
-        elements.insert(bb, at: 0)
+        elements.append(bb)
         return bb
     }
 
