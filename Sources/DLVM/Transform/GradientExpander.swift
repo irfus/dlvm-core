@@ -277,12 +277,6 @@ fileprivate extension GradientExpander {
                 (x, cloned)
             ]
 
-        case let .unary(.elementwise(.sigmoid), x):
-            let cloned = context.clone(instruction.makeUse())
-            grad = [
-                (x, bd.subtract(cloned, bd.subtract(x.makeScalar(1), cloned)))
-            ]
-
         case let .unary(.elementwise(.tanh), x):
             let cloned = context.clone(instruction.makeUse())
             grad = [

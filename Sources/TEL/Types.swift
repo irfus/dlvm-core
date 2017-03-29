@@ -78,7 +78,7 @@ extension DLVM.OpKind {
                 throw FunctionTypeError.shapeMismatch(args[0], args[1])
             }
             return shape
-        case .unary, .scan, .reduce:
+        case .unary:
             return args[0]
         case .matrixMultiply:
             guard let shape = args[0].matrixMultiplied(with: args[1]) else {

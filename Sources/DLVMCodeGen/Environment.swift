@@ -49,7 +49,7 @@ extension LLGenEnvironment {
     }
 }
 
-public struct LLGenContext<TargetType :LLTarget> {
+public struct LLGenContext<TargetType : LLTarget> {
     public let dlModule: DLVM.Module
     public let context: LLVM.Context = Context.global
     public private(set) lazy var module: LLVM.Module = Module(name: self.dlModule.name, context: self.context)

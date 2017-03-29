@@ -11,7 +11,6 @@ import DLVM
 /// - MARK: TEL intrinsics
 let intrinsicTable: [String : OpKind] = [
     /// Elementwise tranfer functions
-    "sigmoid" : .unary(.elementwise(.sigmoid)),
     "log" : .unary(.elementwise(.log)),
     "exp" : .unary(.elementwise(.exp)),
     "tan" : .unary(.elementwise(.tan)),
@@ -24,10 +23,6 @@ let intrinsicTable: [String : OpKind] = [
     "sqrt" : .unary(.elementwise(.sqrt)),
     "ceil" : .unary(.elementwise(.ceil)),
     "floor" : .unary(.elementwise(.floor)),
-
-    /// Integration functions
-    "softmax" : .unary(.integration(.softmax)),
-    "logSoftmax" : .unary(.integration(.logSoftmax)),
 
     /// Logical operators (not yet supported)
 //    "&&" : .binary(.associative(.boolean(.and))),

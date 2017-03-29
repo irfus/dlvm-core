@@ -179,10 +179,6 @@ public extension IRBuilder {
         return buildInstruction(.unary(.elementwise(operation), use))
     }
 
-    func integrate(_ operation: IntegrationOp, _ use: Use) -> Use {
-        return buildInstruction(.unary(.integration(operation), use))
-    }
-
     func `return`(_ use: Use? = nil) {
         buildInstruction(.return(use))
     }
