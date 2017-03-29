@@ -30,8 +30,6 @@ public enum ElementwiseOp {
 
 public enum UnaryOp {
     case elementwise(ElementwiseOp)
-    case scan(AssociativeOp)   /// Scan
-    case reduce(AssociativeOp) /// Reduce
 }
 
 public enum AssociativeOp {
@@ -47,6 +45,8 @@ public enum BinaryOp {
 public enum OpKind {
     case unary(UnaryOp)        /// Monomorphic
     case binary(BinaryOp)      /// Monomorphic
+    case scan(AssociativeOp)   /// Scan
+    case reduce(AssociativeOp) /// Reduce
     case matrixMultiply        /// Matrix multiplication
     case concatenate           /// Concatenation
 }
@@ -58,6 +58,8 @@ public extension OpKind {
         case .unary: return 1
         case .binary: return 2
         case .matrixMultiply: return 2
+        case .reduce: return 1
+        case .scan: return 1
         case .concatenate: return Int.max
         }
     }
@@ -71,6 +73,8 @@ public extension OpKind {
             return args[0]
         case .binary where args.count == 2:
             return args[0].mutuallyBroadcasted(with: args[1])
+        case .scan, .reduce:
+            return args[0]
         case .matrixMultiply:
             return args[0].matrixMultiplied(with: args[1])
         default:
