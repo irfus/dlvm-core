@@ -15,3 +15,9 @@ public extension Sequence {
         return map{"\($0)"}.joined(separator: ", ")
     }
 }
+
+public extension Sequence where Iterator.Element : Equatable {
+    public func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {
+        return lazy.filter { $0 != exception }
+    }
+}
