@@ -27,16 +27,17 @@ internal extension SetImplementation where Set : NSObject, Set : NSMutableCopyin
 }
 
 public struct ObjectSet<Element : AnyObject> : ExpressibleByArrayLiteral, SetImplementation {
-    internal var elements: Set<Box<Element>> = []
+    internal var elements: Set<Owned<Element>> = []
 
     public init() {}
 
-    internal init(_ elements: Set<Box<Element>>) {
+    internal init(_ elements: Set<Owned<Element>>) {
         self.elements = elements
     }
 
     public init<S: Sequence>(_ elements: S) where S.Iterator.Element == Element {
-        self.init(Set(elements.lazy.map{Box($0)}))
+        self.init(Set(elements.lazy.map{
+            Owned($0)}))
     }
 
     public init(arrayLiteral elements: Element...) {
@@ -53,17 +54,17 @@ public struct ObjectSet<Element : AnyObject> : ExpressibleByArrayLiteral, SetImp
 // MARK: - Collection
 extension ObjectSet : Collection {
 
-    public typealias Index = Set<Box<Element>>.Index
+    public typealias Index = Set<Owned<Element>>.Index
 
-    public func index(after i: Set<Box<Element>>.Index) -> Set<Box<Element>>.Index {
+    public func index(after i: Set<Owned<Element>>.Index) -> Set<Owned<Element>>.Index {
         return elements.index(after: i)
     }
 
-    public var startIndex: Set<Box<Element>>.Index {
+    public var startIndex: Set<Owned<Element>>.Index {
         return elements.startIndex
     }
 
-    public var endIndex: Set<Box<Element>>.Index {
+    public var endIndex: Set<Owned<Element>>.Index {
         return elements.endIndex
     }
 
@@ -101,22 +102,22 @@ extension ObjectSet : SetAlgebra {
 
     @discardableResult
     public mutating func update(with newMember: Element) -> Element? {
-        return elements.update(with: Box(newMember))?.object
+        return elements.update(with: Owned(newMember))?.object
     }
 
     @discardableResult
     public mutating func remove(_ member: Element) -> Element? {
-        return elements.remove(Box(member))?.object
+        return elements.remove(Owned(member))?.object
     }
 
     @discardableResult
     public mutating func insert(_ newMember: Element) -> (inserted: Bool, memberAfterInsert: Element) {
-        let (inserted, member) = elements.insert(Box(newMember))
+        let (inserted, member) = elements.insert(Owned(newMember))
         return (inserted, member.object)
     }
 
     public func contains(_ element: Element) -> Bool {
-        return elements.contains(Box(element))
+        return elements.contains(Owned(element))
     }
 
     public func contains(_ element: AnyObject) -> Bool {

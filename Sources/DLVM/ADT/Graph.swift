@@ -96,14 +96,14 @@ public struct TransposeEdgeSet<Base : BidirectionalEdgeSet> : BidirectionalEdgeS
 }
 
 /// Directed graph
-public struct DirectedGraph<Node : IRUnit> : BidirectionalEdgeSet {
+public struct DirectedGraph<Node : AnyObject> : BidirectionalEdgeSet {
     public struct Entry {
         public var successors: ObjectSet<Node> = []
         public var predecessors: ObjectSet<Node> = []
         fileprivate init() {}
     }
 
-    fileprivate var entries: [Node : Entry] = [:]
+    fileprivate var entries: [Owned<Node> : Entry] = [:]
 }
 
 // MARK: - Mutation
@@ -111,15 +111,15 @@ public extension DirectedGraph {
     /// Insert node to the graph
     mutating func insertNode(_ node: Node) {
         if contains(node) { return }
-        entries[node] = Entry()
+        entries[Owned(node)] = Entry()
     }
 
     /// Insert edge to the graph
     mutating func insertEdge(from src: Node, to dest: Node) {
         insertNode(src)
-        entries[src]!.successors.insert(dest)
+        entries[Owned(src)]!.successors.insert(dest)
         insertNode(dest)
-        entries[dest]!.predecessors.insert(src)
+        entries[Owned(dest)]!.predecessors.insert(src)
     }
 
     /// Remove everything from the graph
@@ -143,7 +143,7 @@ public extension DirectedGraph {
 
     /// Returns the graph node entry for the node
     subscript(node: Node) -> Entry {
-        guard let entry = entries[node] else {
+        guard let entry = entries[Owned(node)] else {
             preconditionFailure("Node not in the graph")
         }
         return entry
@@ -151,7 +151,7 @@ public extension DirectedGraph {
 
     /// Does the graph contain this node?
     func contains(_ node: Node) -> Bool {
-        return entries.keys.contains(node)
+        return entries.keys.contains(Owned(node))
     }
 
     /// Does the graph contain this edge?
