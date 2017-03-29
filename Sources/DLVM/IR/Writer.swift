@@ -121,8 +121,6 @@ extension UnaryOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .elementwise(fun): String(describing: fun).write(to: &target)
-        case let .reduce(fun): String(describing: fun).write(to: &target)
-        case let .scan(fun): String(describing: fun).write(to: &target)
         }
     }
 }
