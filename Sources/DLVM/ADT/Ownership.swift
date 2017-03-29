@@ -13,14 +13,14 @@
 /// we'll no longer need Unowned/Weak wrappers. Yay!
 prefix operator *
 
-public struct Box<Object: AnyObject> {
+public struct Owned<Object: AnyObject> {
     var object: Object
 
     init(_ object: Object) {
         self.object = object
     }
 
-    static prefix func * (ref: Box) -> Object {
+    static prefix func * (ref: Owned) -> Object {
         return ref.object
     }
 }
@@ -49,9 +49,9 @@ struct Weak<Object: AnyObject> {
     }
 }
 
-extension Box : Hashable {
+extension Owned: Hashable {
 
-    public static func ==(lhs: Box, rhs: Box) -> Bool {
+    public static func ==(lhs: Owned, rhs: Owned) -> Bool {
         return lhs.object === rhs.object
     }
 
