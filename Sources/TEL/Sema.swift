@@ -11,7 +11,6 @@ import enum DLVM.DataType
 import struct DLVM.TensorShape
 import enum DLVM.ElementwiseOp
 import enum DLVM.ComparisonOp
-import enum DLVM.IntegrationOp
 import enum DLVM.ArithmeticOp
 import enum DLVM.BinaryOp
 import enum DLVM.BooleanOp
