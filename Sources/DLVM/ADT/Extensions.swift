@@ -17,7 +17,21 @@ public extension Sequence {
 }
 
 public extension Sequence where Iterator.Element : Equatable {
-    public func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {
+    func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {
         return lazy.filter { $0 != exception }
+    }
+}
+
+public extension Optional {
+    var optionalDescription: String {
+        return map{"\($0)"} ?? ""
+    }
+}
+
+internal extension TextOutputStreamable {
+    var description: String {
+        var desc = ""
+        write(to: &desc)
+        return desc
     }
 }

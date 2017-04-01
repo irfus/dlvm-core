@@ -160,11 +160,11 @@ public extension IRBuilder {
     }
 
     func call(_ function: Use, _ arguments: [Use]) -> Use {
-        return buildInstruction(.call(function, arguments))
+        return buildInstruction(.apply(function, arguments))
     }
 
     func gradient(_ function: Use, _ arguments: [Use]) -> Use {
-        return buildInstruction(.gradient(function, arguments))
+        return buildInstruction(.applyGradient(function, arguments))
     }
 
     func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Use {

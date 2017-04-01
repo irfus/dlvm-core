@@ -113,12 +113,6 @@ public extension Function {
 fileprivate extension Type {
     func makeLiteralValue(_ number: IntegerLiteralType) -> LiteralValue {
         switch canonical {
-        case .void, .pointer, .function:
-            fatalError("Cannot make numeric literal for type \(self)")
-        case .invalid:
-            fatalError("Invalid type. You kiddin?")
-        case .alias(_):
-            fatalError("Opaque type is certainly not differentiable")
         case let .tensor(shape, type):
             return LiteralValue(shape: shape, dataType: type, repeating: number)
         case let .tuple(subtypes):
@@ -128,6 +122,8 @@ fileprivate extension Type {
             let sublit = subtype.makeLiteralValue(number).makeUse()
             let sublits = Array(repeating: sublit, count: i)
             return LiteralValue(type: self, literal: .array(sublits))
+        case _:
+            fatalError()
         }
     }
 }
@@ -365,7 +361,7 @@ fileprivate extension GradientExpander {
                 (x, x.type.makeLiteralValue(1).makeUse())
             ]
 
-        case let .call(fun, args):
+        case let .apply(fun, args):
             let fgrads = bd.gradient(fun, args)
             grad = []
             for (i, arg) in args.enumerated() {

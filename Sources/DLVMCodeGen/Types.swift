@@ -13,7 +13,7 @@ public extension DataType {
     var llType: IRType {
         switch self {
         case .bool: return i1
-        case let .int(w): return IntType(width: w)
+        case let .int(w): return IntType(width: Int(w))
         case .float(.half): return FloatType.half
         case .float(.single): return FloatType.float
         case .float(.double): return FloatType.double

@@ -37,6 +37,7 @@ extension ScalarLiteral : Equatable {
 /// But `LiteralValue`, that uses `Literal`, is a value.
 public enum Literal {
     case undefined
+    case null
     case zero
     case scalar(ScalarLiteral)
     case tensor([Use])
@@ -48,7 +49,8 @@ extension Literal : Equatable {
     public static func == (lhs: Literal, rhs: Literal) -> Bool {
         switch (lhs, rhs) {
         case (.zero, .zero),
-             (.undefined, .undefined):
+             (.undefined, .undefined),
+             (.null, .null):
             return true
         case let (.scalar(s1), .scalar(s2)): return s1 == s2
         case let (.tensor(t1), .tensor(t2)): return t1 == t2

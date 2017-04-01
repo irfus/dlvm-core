@@ -35,6 +35,8 @@ extension Literal : TextOutputStreamable {
             target.write("zero")
         case .undefined:
             target.write("undefined")
+        case .null:
+            target.write("null")
         }
     }
 }
@@ -53,6 +55,24 @@ extension TensorIndex : TextOutputStreamable {
     }
 }
 
+extension MemoryLocation {
+    public func description(for type: Type) -> String {
+        switch self {
+            case .host: return "\(type)"
+            case .compute: return "|\(type)|"
+        }
+    }
+}
+
+extension Mutability : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        switch self {
+            case .mutable: target.write("+")
+            case .immutable: break
+        }
+    }
+}
+
 extension Type : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("$")
@@ -62,19 +82,29 @@ extension Type : TextOutputStreamable {
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("[\(s) x \(t)]")
+            target.write("[\(s) of \(t)]")
         case let .tuple(subtypes):
             target.write("(\(subtypes.joinedDescription))")
         case .void:
             target.write("void")
         case let .array(subtype, n):
-            target.write("<\(n) x \(subtype)>")
-        case let .pointer(subtype):
-            target.write("\(subtype)*")
+            target.write("[\(n) x \(subtype)]")
+        case let .pointer(subtype, loc, mut):
+            target.write("\(mut)*")
+            switch loc {
+            case .host: target.write("\(subtype)")
+            case .compute: target.write("|\(subtype)|")
+            }
+        case let .box(subtype, loc):
+            target.write("@box \(loc.description(for: subtype))")
+        case let .reference(subtype, loc, mut):
+            target.write("\(mut)&\(loc.description(for: subtype))")
         case let .function(args, ret):
             target.write("(\(args.joinedDescription) -> \(ret))")
         case let .alias(a):
             a.name.write(to: &target)
+        case let .computeGraph(f):
+            target.write("{{@\(f.name)}}")
         }
     }
 }
@@ -159,16 +189,16 @@ extension InstructionKind : TextOutputStreamable {
             target.write("dataTypeCast \(op) to \(t)")
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
-        case let .call(f, args):
+        case let .apply(f, args):
             target.write("call \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .gradient(f, args):
-            target.write("gradient \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+        case let .applyGradient(f, args):
+            target.write("applyGradient \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .extract(use, indices):
             target.write("extract \(use) at \(indices.map{"\($0)"}.joined(separator: ", "))")
         case let .insert(src, to: dest, at: indices):
             target.write("insert \(src) to \(dest) at \(indices.map{"\($0)"}.joined(separator: ", "))")
-        case let .allocate(t, n):
-            target.write("allocate \(t), \(n)")
+        case let .allocateStack(t, n):
+            target.write("allocateStack \(t), \(n)")
         case let .store(v, p):
             target.write("store \(v) to \(p)")
         case let .load(v):
@@ -177,6 +207,30 @@ extension InstructionKind : TextOutputStreamable {
             target.write("elementPointer \(v), \(i)")
         case let .bitCast(v, t):
             target.write("bitCast \(v) to \(t)")
+        case let .compute(f, args, in: graph):
+            target.write("compute \(f)(\(args)) in \(graph)")
+        case let .computeGradient(f, args, in: graph):
+            target.write("computeGradient \(f)(\(args.joinedDescription) in \(graph))")
+        case let .allocateHeapRaw(t, loc, count: c):
+            target.write("allocateHeapRaw \(t), \(loc), \(c)")
+        case let .allocateHeap(t, loc):
+            target.write("allocateHeap \(t), \(loc)")
+        case let .deallocate(v):
+            target.write("deallocate \(v)")
+        case let .referenceAddress(v):
+            target.write("referenceAddress \(v)")
+        case let .allocateBox(t, loc):
+            target.write("allocateBox \(t), \(loc)")
+        case let .projectBox(v):
+            target.write("projectBox \(v)")
+        case let .retain(v):
+            target.write("retain \(v)")
+        case let .release(v):
+            target.write("release \(v)")
+        case let .copy(from: src, to: dest, count: count):
+            target.write("copy from \(src) to \(dest), \(count)")
+        case .trap:
+            target.write("trap")
         }
     }
 }
@@ -255,6 +309,7 @@ extension Function.Attribute : TextOutputStreamable {
         case .differentiable: target.write("differentiable")
         case .inline: target.write("inline")
         case .differentiating(let f): target.write("differentiating(@\(f.name))")
+        case .compute: target.write("compute")
         }
     }
 }

@@ -21,6 +21,6 @@ public class ComputeBasicBlock {
 
 public class ComputeFusion : AnalysisPass<Function, DirectedGraph<ComputeBasicBlock>> {
     public static override func run(on body: Function) -> DirectedGraph<ComputeBasicBlock> {
-        return DLUnimplemented()
+        DLUnimplemented()
     }
 }
