@@ -7,3 +7,7 @@
 //
 
 import LLVM
+
+public class KernelGenerator<T : LLTarget> {
+
+}

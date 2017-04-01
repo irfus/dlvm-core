@@ -6,7 +6,7 @@
 //
 //
 
-public enum FloatingPointSize : Int {
+public enum FloatingPointSize : UInt {
     case half = 16
     case single = 32
     case double = 64
@@ -21,7 +21,7 @@ extension FloatingPointSize : Comparable {
 public enum DataType {
     public enum Base : Int { case bool, int, float }
     case bool
-    case int(Int)
+    case int(UInt)
     case float(FloatingPointSize)
 }
 public extension DataType.Base {
@@ -71,6 +71,16 @@ public extension DataType {
         case let (.int(w1), .int(w2)): return w1 <= w2
         case let (.float(w1), .float(w2)): return w1 <= w2
         default: return false
+        }
+    }
+}
+
+public extension DataType {
+    var bitCount: UInt {
+        switch self {
+            case .bool: return 1
+            case .int(let size): return size
+            case .float(let size): return size.rawValue
         }
     }
 }

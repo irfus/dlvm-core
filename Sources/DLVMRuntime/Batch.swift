@@ -8,6 +8,7 @@
 
 import DLVM
 import Foundation
+import dlrt
 
 public protocol BatchProtocol : RandomAccessCollection {
     associatedtype Element

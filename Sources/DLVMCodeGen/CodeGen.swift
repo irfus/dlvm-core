@@ -113,7 +113,7 @@ extension DLVM.`Type` : LLEmittable {
             })
         case .void:
             return VoidType()
-        case let .pointer(subt):
+        case let .pointer(subt, _, _):
             return PointerType(pointee: subt.emit(to: &context, in: &env))
         case .invalid:
             return VoidType()

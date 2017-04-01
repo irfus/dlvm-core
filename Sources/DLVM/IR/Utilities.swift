@@ -8,17 +8,6 @@
 
 import Foundation
 
-// MARK: - Impossible case crasher
-@discardableResult
-func DLImpossibleResult<T>() -> T {
-    fatalError("Impossible case \(T.self). Something's wrong in Core DLVM")
-}
-
-func DLImpossible() {
-    let _: () = DLImpossibleResult()
-}
-
-@discardableResult
-func DLUnimplemented<T>() -> T {
-    fatalError("Unimplemented result \(T.self)")
+func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
+    fatalError("\(function) is not fully implemented. \(file):\(line)")
 }

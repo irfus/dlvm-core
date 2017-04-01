@@ -11,6 +11,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
         case differentiable
         case inline
         case differentiating(Function)
+        case compute
     }
 
     public typealias Element = BasicBlock
@@ -52,7 +53,8 @@ extension Function.Attribute : Hashable {
         /// Equality by case handle
         case (.differentiable, .differentiable),
              (.inline, .inline),
-             (.differentiating, .differentiating):
+             (.differentiating, .differentiating),
+             (.compute, .compute):
             return true
         default:
             return false
@@ -61,17 +63,22 @@ extension Function.Attribute : Hashable {
     
     public var hashValue: Int {
         switch self {
-        case .differentiable:  return 1.hashValue
-        case .inline:          return 2.hashValue
-        case .differentiating: return 3.hashValue
+        case .differentiable:  return 1
+        case .inline:          return 2
+        case .differentiating: return 3
+        case .compute:         return 4
         }
     }
 }
 
 // MARK: - Attribute helper
-extension Function {
-    public var isDifferentiable: Bool {
+public extension Function {
+    var isDifferentiable: Bool {
         return attributes.contains(.differentiable)
+    }
+
+    var isCompute: Bool {
+        return attributes.contains(.compute)
     }
 }
 
@@ -89,8 +96,9 @@ extension Function : Value, Definition {
 // MARK: - Arguments
 public extension Function {
 
-    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type {
-        return types.elementsEqual(arguments.map{$0.type})
+    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type, C.IndexDistance == Int {
+        guard types.count == arguments.count else { return false }
+        return zip(types, arguments).forAll{$0.conforms(to: $1.type)}
     }
 
     func argument(named name: String) -> Argument? {

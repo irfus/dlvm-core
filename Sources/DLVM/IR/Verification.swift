@@ -27,7 +27,6 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case concatenationShapeMismatch([Use], Int, Node)
     case useShapeMismatch(Node)
     case useTypeMismatch(Node)
-    case noTopSection(Node)
     case noDimensions(Use, Node)
     case noSpecifiedDimension(Use, Int, Node)
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
@@ -56,6 +55,14 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case invalidLiteral(Type, Literal, Node)
     case missingIndices(Use, Node)
     case notDifferentiable(Node)
+    case unexpectedMemoryLocation(Use, Node)
+    case invalidCopyOperands(Use, Use, Node)
+    case notComputeFunction(Function, Node)
+    case notMutable(Use, Node)
+    case computeGraphMismatch(Function, Node)
+    case notBox(Use, Node)
+    case notHeapObject(Use, Node)
+    case cannotLoadFromCompute(Use, Node)
 }
 
 public protocol SelfVerifiable {
@@ -134,8 +141,10 @@ extension LiteralValue : SelfVerifiable {
 extension Function: SelfVerifiable {
     private func verifyDifferentiability() throws {
         guard isDifferentiable else { return }
-        /// All arguments have to be tensors
-        guard arguments.forAll({$0.type.isTensor}) else {
+        /// All arguments have to be tensors or aggregate types of tensors
+        /// No explicit pointer semantics are allowed
+        /// - TODO: Check arguments
+        for inst in instructions where inst.kind.accessesMemory {
             throw VerificationError.notDifferentiable(self)
         }
     }
@@ -335,20 +344,46 @@ extension InstructionKind : SelfVerifiable {
                 throw VerificationError.cannotTypeCast(v1, target, self)
             }
 
-        case let .call(fun, vv), let .gradient(fun, vv):
+        case let .apply(fun, vv), let .applyGradient(fun, vv):
             let actual = vv.map{$0.type}
             switch fun.type.unaliased {
-            case let .function(args, _), let .pointer(.function(args, _)):
-                guard args == actual else { fallthrough }
+            case let .function(args, _), let .pointer(.function(args, _), .host, _):
+                guard actual.count == args.count
+                   && zip(actual, args).forAll({$0.conforms(to: $1)}) else {
+                    throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, self)
+                }
+            case .pointer(_, .compute, _):
+                throw VerificationError.unexpectedMemoryLocation(fun, self)
             default:
-                throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, self)
+                throw VerificationError.invalidType(fun)
+            }
+
+        case let .compute(fun, vv, in: graph), let .computeGradient(fun, vv, in: graph):
+            switch (fun, graph.type) {
+            case let (.function(_, fd1), .computeGraph(fd2)) where fd1 == fd2:
+                let actual = vv.map{$0.type}
+                guard fd1.acceptsArguments(actual) else {
+                    throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, self)
+                }
+            default:
+                throw VerificationError.invalidType(fun)
+            }
+
+        case let .projectBox(v):
+            guard case .box = v.type.unaliased else {
+                throw VerificationError.notBox(v, self)
+            }
+
+        case let .allocateHeapRaw(_, _, count: v):
+            guard case .tensor([], .int(64)) = v.type.unaliased else {
+                throw VerificationError.unexpectedType(v, .tensor([], .int(64)), self)
             }
 
         case let .extract(v1, indices):
             guard !indices.isEmpty else {
                 throw VerificationError.missingIndices(v1, self)
             }
-            guard let subtype = v1.type.subtype(at: indices) else {
+            guard let _ = v1.type.subtype(at: indices) else {
                 throw VerificationError.invalidIndices(v1, indices, self)
             }
 
@@ -369,30 +404,63 @@ extension InstructionKind : SelfVerifiable {
             }
 
         case let .load(v1):
-            guard case .pointer = v1.type.unaliased else {
+            guard case .pointer(_, let loc, _) = v1.type.unaliased else {
                 throw VerificationError.notPointer(v1, self)
+            }
+            guard loc == .host else {
+                throw VerificationError.cannotLoadFromCompute(v1, self)
             }
 
         case let .store(v1, to: v2):
-            guard case let .pointer(subtype) = v2.type.unaliased else {
+            guard case let .pointer(subtype, .host, mut) = v2.type.unaliased else {
                 throw VerificationError.notPointer(v2, self)
+            }
+            guard mut == .mutable else {
+                throw VerificationError.notMutable(v2, self)
             }
             guard v1.type == subtype else {
                 throw VerificationError.typeMismatch(v1, v2, self)
             }
 
         case let .elementPointer(v, ii):
-            func gepCheck<C: Collection>(type: Type, indices: C) throws where C.Iterator.Element == Use {
-                if indices.isEmpty { return }
-                if case let .pointer(t) = type.unaliased {
-                    try gepCheck(type: t, indices: ii.dropFirst())
-                } else {
-                    throw VerificationError.invalidOffsets(v, ii, self)
-                }
+            guard type.isValid else {
+                throw VerificationError.invalidOffsets(v, ii, self)
             }
-            try gepCheck(type: v.type, indices: ii)
 
-        case .allocate, .bitCast: break
+        case let .copy(from: src, to: dest, count: count):
+            guard case .tensor([], .int(64)) = count.type.unaliased else {
+                throw VerificationError.unexpectedType(count, .scalar(.int(64)), self)
+            }
+            switch (src.type, dest.type) {
+            case let (.reference(t1, _, _), .reference(t2, _, .mutable)),
+                 let (.pointer(t1, _, _), .pointer(t2, _, .mutable)),
+                 let (.box(t1, _), .box(t2, _)):
+                guard t1 == t2 else { fallthrough }
+            default:
+                throw VerificationError.invalidCopyOperands(src, dest, self)
+            }
+
+        case let .referenceAddress(v):
+            guard case .reference = v.type.unaliased else {
+                throw VerificationError.invalidType(v)
+            }
+
+        case .bitCast(_, _):
+            // TODO
+            break
+
+        case .deallocate(let v):
+            switch v.type.unaliased {
+            case .pointer, .reference, .box: break
+            case _: throw VerificationError.notHeapObject(v, self)
+            }
+
+        case let .retain(v), let .release(v):
+            guard case .box = v.type else {
+                throw VerificationError.notBox(v, self)
+            }
+
+        case .allocateStack, .allocateHeap, .trap, _: break
         }
     }
 }
