@@ -21,6 +21,6 @@ public enum LLAddressSpace: Int {
 // MARK: - Initializer with `LLAddressSpace`
 public extension PointerType {
     public init(pointee: IRType, addressSpace: LLAddressSpace) {
-        self.init(pointee: pointee, addressSpace: addressSpace.hashValue)
+        self.init(pointee: pointee, addressSpace: addressSpace.rawValue)
     }
 }
