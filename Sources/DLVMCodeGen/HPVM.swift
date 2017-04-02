@@ -7,9 +7,10 @@
 //
 
 import LLVM
+import DLVM
 
 /// HPVM Target
-public class HPVM : LLTarget, LLFunctionPrototypeCacheable {
+public final class HPVM : LLFunctionPrototypeCacheable {
 
     public enum ReplicationMode : Int, LLConstantConvertible {
         case allToAll = 0
@@ -21,10 +22,10 @@ public class HPVM : LLTarget, LLFunctionPrototypeCacheable {
     }
 
     public enum Intrinsic {
-        case createNode(Function)
-        case createNode1D(Function, IRValue)
-        case createNode2D(Function, IRValue, IRValue)
-        case createNode3D(Function, IRValue, IRValue, IRValue)
+        case createNode(LLVM.Function)
+        case createNode1D(LLVM.Function, IRValue)
+        case createNode2D(LLVM.Function, IRValue, IRValue)
+        case createNode3D(LLVM.Function, IRValue, IRValue, IRValue)
         case createEdge(from: IRValue, to: IRValue,
                         output: IRValue, input: IRValue,
                         replication: ReplicationMode, streaming: Bool)
@@ -47,7 +48,7 @@ public class HPVM : LLTarget, LLFunctionPrototypeCacheable {
         case getVectorLength(IRValue)
         case malloc(IRValue)
         case barrier
-        case launch(Function, arguments: IRValue, streaming: Bool)
+        case launch(LLVM.Function, arguments: IRValue, streaming: Bool)
         case wait(id: IRValue)
         case push(id: IRValue, arguments: IRValue)
         case pop(id: IRValue)
@@ -60,12 +61,25 @@ public class HPVM : LLTarget, LLFunctionPrototypeCacheable {
     }
 
     public unowned let module: LLVM.Module
-    public var functions: [AnyHashable : Function] = [:]
+    public var functions: [AnyHashable : LLVM.Function] = [:]
 
-    public required init(module: Module) {
+    public required init(module: LLVM.Module) {
         self.module = module
     }
     
+}
+
+// MARK: - Compute function lowering
+extension HPVM : LLTarget {
+    public func loweredComputeGraphType(from function: DLVM.Function) -> StructType {
+        DLUnimplemented()
+    }
+
+    public func emitComputeFunction(from function: DLVM.Function,
+                                    to context: inout LLGenContext<HPVM>,
+                                    in env: inout LLGenEnvironment) -> LLVM.Function {
+        DLUnimplemented()
+    }
 }
 
 extension HPVM.Intrinsic : LLFunctionPrototype {
@@ -205,5 +219,5 @@ extension HPVM.RuntimeFunction : LLFunctionPrototype {
         case let .untrackMemory(address: v1): return [v1]
         }
     }
-    
+
 }

@@ -72,6 +72,9 @@ extension DLVM.LiteralValue : LLEmittable {
 
         case .undefined:
             return type.emit(to: &context, in: &env).undef()
+
+        case .null:
+            return type.emit(to: &context, in: &env).null()
         }
     }
 }
@@ -101,6 +104,15 @@ extension DLVM.TypeAlias : LLEmittable {
     }
 }
 
+public extension DLVM.MemoryLocation {
+    var addressSpace: LLAddressSpace {
+        switch self {
+        case .compute: return .global
+        case .host: return .generic
+        }
+    }
+}
+
 extension DLVM.`Type` : LLEmittable {
     public typealias LLUnit = IRType
     @discardableResult
@@ -113,8 +125,6 @@ extension DLVM.`Type` : LLEmittable {
             })
         case .void:
             return VoidType()
-        case let .pointer(subt, _, _):
-            return PointerType(pointee: subt.emit(to: &context, in: &env))
         case .invalid:
             return VoidType()
         case let .tuple(subtt):
@@ -125,6 +135,25 @@ extension DLVM.`Type` : LLEmittable {
             return FunctionType(argTypes: args.map{$0.emit(to: &context, in: &env)}, returnType: ret.emit(to: &context, in: &env))
         case let .alias(alias):
             return env.type(for: alias)
+        case let .box(subt, .host):
+            return PointerType(pointee:
+                StructType(elementTypes: [
+                    context.referenceCounterType,
+                    subt.emit(to: &context, in: &env) /// Direct storage
+                ])
+            )
+        case let .box(subt, .compute):
+            return PointerType(pointee:
+                StructType(elementTypes: [
+                    context.referenceCounterType,
+                    PointerType(pointee: subt.emit(to: &context, in: &env),
+                                addressSpace: .global) /// Indirect storage
+                ])
+            )
+        case let .pointer(subt, loc, _), let .reference(subt, loc, _):
+            return PointerType(pointee: subt.emit(to: &context, in: &env), addressSpace: loc.addressSpace)
+        case let .computeGraph(fun):
+            return context.target.loweredComputeGraphType(from: fun)
         }
     }
 }
@@ -153,9 +182,36 @@ extension DLVM.Module : LLEmittable {
             alias.emit(to: &context, in: &env)
         }
         for fun in self {
-
+            fun.emit(to: &context, in: &env)
         }
         return context.module
+    }
+}
+
+extension DLVM.Function : LLEmittable {
+    public typealias LLUnit = LLVM.Function
+    @discardableResult
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Function where T : LLTarget {
+        /// Target handles compute functions
+        if isCompute {
+            return context.target.emitComputeFunction(from: self, to: &context, in: &env)
+        }
+        DLUnimplemented()
+    }
+}
+
+extension DLVM.BasicBlock : LLEmittable {
+    public typealias LLUnit = LLVM.BasicBlock
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.BasicBlock where T : LLTarget {
+        DLUnimplemented()
+    }
+}
+
+extension DLVM.Instruction : LLEmittable {
+    public typealias LLUnit = LLVM.Instruction
+    @discardableResult
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Instruction where T : LLTarget {
+        DLUnimplemented()
     }
 }
 

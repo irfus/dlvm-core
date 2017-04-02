@@ -7,9 +7,11 @@
 //
 
 import LLVM
+import DLVM
 
 /// NVVM Target
-public final class NVVM : LLTarget, LLFunctionPrototypeCacheable {
+public final class NVVM : LLFunctionPrototypeCacheable {
+
     public enum Intrinsic : StaticString {
         case threadIndexX    = "llvm.nvvm.read.ptx.sreg.tid.x"    // () -> i32
         case threadIndexY    = "llvm.nvvm.read.ptx.sreg.tid.y"    // () -> i32
@@ -52,11 +54,24 @@ public final class NVVM : LLTarget, LLFunctionPrototypeCacheable {
     }
 
     public unowned let module: LLVM.Module
-    fileprivate lazy var builder: IRBuilder = IRBuilder(module: self.module)
-    public var functions: [AnyHashable : Function] = [:]
+    fileprivate lazy var builder: LLVM.IRBuilder = LLVM.IRBuilder(module: self.module)
+    public var functions: [AnyHashable : LLVM.Function] = [:]
 
     public init(module: LLVM.Module) {
         self.module = module
+    }
+}
+
+// MARK: - LLTarget
+extension NVVM : LLTarget {
+    public func loweredComputeGraphType(from function: DLVM.Function) -> StructType {
+        DLUnimplemented()
+    }
+
+    public func emitComputeFunction(from function: DLVM.Function,
+                                    to context: inout LLGenContext<NVVM>,
+                                    in env: inout LLGenEnvironment) -> LLVM.Function {
+        DLUnimplemented()
     }
 }
 

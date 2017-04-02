@@ -11,10 +11,11 @@ import LLVM
 
 public protocol LLEmittable {
     associatedtype LLUnit
-    @discardableResult func emit<T :LLTarget>(to context: inout LLGenContext<T>,
+    @discardableResult func emit<T : LLTarget>(to context: inout LLGenContext<T>,
                                               in env: inout LLGenEnvironment) -> LLUnit
 }
 
+/// Environment contains mappings from DLVM definitions to LLVM definitions
 public struct LLGenEnvironment {
     fileprivate var globals: [AnyHashable : IRValue] = [:]
     fileprivate var locals: [AnyHashable : IRValue] = [:]
@@ -49,6 +50,7 @@ extension LLGenEnvironment {
     }
 }
 
+/// Context contains module, target, builder, etc
 public struct LLGenContext<TargetType : LLTarget> {
     public let dlModule: DLVM.Module
     public let context: LLVM.Context = Context.global
@@ -57,5 +59,11 @@ public struct LLGenContext<TargetType : LLTarget> {
     public private(set) lazy var builder: LLVM.IRBuilder = IRBuilder(module: self.module)
     public init(module: DLVM.Module) {
         self.dlModule = module
+    }
+}
+
+public extension LLGenContext {
+    var referenceCounterType: IRType {
+        return StructType(name: "_dl_ref")
     }
 }

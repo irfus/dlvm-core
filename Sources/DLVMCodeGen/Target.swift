@@ -46,14 +46,20 @@ public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue ==
     }
 }
 
+import DLVM
+
 public protocol LLTarget : LLFunctionPrototypeCacheable {
-    unowned var module: Module { get }
-    init(module: Module)
+    unowned var module: LLVM.Module { get }
+    init(module: LLVM.Module)
+    func loweredComputeGraphType(from function: DLVM.Function) -> StructType
+    func emitComputeFunction(from function: DLVM.Function,
+                             to context: inout LLGenContext<Self>,
+                             in env: inout LLGenEnvironment) -> LLVM.Function
 }
 
 public protocol LLFunctionPrototypeCacheable : class {
-    var functions: [AnyHashable : Function] { get set }
-    func function<T : LLFunctionPrototype>(from prototype: T) -> Function
+    var functions: [AnyHashable : LLVM.Function] { get set }
+    func function<T : LLFunctionPrototype>(from prototype: T) -> LLVM.Function
 }
 
 extension StaticString : Equatable {
@@ -65,7 +71,7 @@ extension StaticString : Equatable {
 extension LLTarget where Self : LLFunctionPrototypeCacheable {
     func build<T : LLFunctionPrototype>(
                _ prototype: T,
-               using builder: IRBuilder,
+               using builder: LLVM.IRBuilder,
                name: String = "") -> IRValue {
         let function = self.function(from: prototype)
         return builder.buildCall(function, args: prototype.arguments, name: name)
@@ -73,7 +79,7 @@ extension LLTarget where Self : LLFunctionPrototypeCacheable {
 }
 
 extension LLFunctionPrototypeCacheable where Self : LLTarget {
-    public func function<T : LLFunctionPrototype>(from prototype: T) -> Function {
+    public func function<T : LLFunctionPrototype>(from prototype: T) -> LLVM.Function {
         if let fun = functions[prototype] {
             return fun
         }
