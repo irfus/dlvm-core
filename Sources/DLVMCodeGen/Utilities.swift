@@ -54,10 +54,14 @@ extension StructType {
 /// - Note: This is called when LLGen encounters ill-formed DLVM IR.
 /// All well-formedness should be checked by the module verifier, not by LLGen
 @discardableResult
-func DLImpossibleResult<T>() -> T {
-    fatalError("Impossible case \(T.self). Something's wrong in CodeGen")
+func DLImpossibleResult<T>(function: String = #function,
+                           file: StaticString = #file,
+                           line: UInt = #line) -> T {
+    fatalError("Impossible case \(T.self). Something's wrong before LLGen")
 }
 
-func DLImpossible() {
-    let _: () = DLImpossibleResult()
+func DLImpossible(function: String = #function,
+                  file: StaticString = #file,
+                  line: UInt = #line) {
+    let _: () = DLImpossibleResult(function: function, file: file, line: line)
 }
