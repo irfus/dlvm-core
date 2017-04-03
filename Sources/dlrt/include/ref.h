@@ -16,7 +16,7 @@ struct _dl_ref {
     _Atomic long count;
 } __attribute__((swift_name("DLReference")));
 
-struct _dl_ref _dl_ref_init(void (* __nonnull free)(const struct _dl_ref * const _Nonnull))
+struct _dl_ref _dl_ref_init(void (* _Nonnull free)(const struct _dl_ref * const _Nonnull))
     __attribute__((swift_name("DLReference.init(free:)")));
 
 void _dl_ref_retain(struct _dl_ref * const _Nonnull ref)
