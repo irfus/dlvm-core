@@ -362,7 +362,7 @@ fileprivate extension GradientExpander {
             ]
 
         case let .apply(fun, args):
-            let fgrads = bd.gradient(fun, args)
+            let fgrads = bd.applyGradient(fun, args)
             grad = []
             for (i, arg) in args.enumerated() {
                 grad.append((operand: arg,
