@@ -146,6 +146,13 @@ public extension InstructionKind {
             return false
         }
     }
+
+    var isComputeOnly: Bool {
+        switch self {
+        case .reduce, .scan, .matrixMultiply, .concatenate, .transpose: return true
+        default: return false
+        }
+    }
 }
 
 infix operator <>
@@ -161,68 +168,116 @@ extension InstructionKind {
     public var type: Type {
         switch self {
         case let .binary(.associative(.arithmetic), v1, v2):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                let shape = s1 <> s2, t1 == t2
-                else { return .invalid }
-            return .tensor(shape, t1)
+            switch (v1.type.unaliased, v2.type.unaliased) {
+            /// Non-compute scalar
+            case let (.tensor([], t1), .tensor([], t2)) where t1 == t2:
+                return .tensor([], t1)
+            /// Compute tensor
+            case let (.pointer(.tensor(s1, t1), .compute, .mutable),
+                      .pointer(.tensor(s2, t2), .compute, .mutable)) where t1 == t2:
+                return (s1 <> s2).flatMap { .pointer(.tensor($0, t1), .compute, .mutable) }
+                    ?? .invalid
+            default:
+                return .invalid
+            }
 
         case let .binary(.associative(.boolean), v1, v2),
              let .binary(.comparison, v1, v2):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                  let shape = s1 <> s2, t1 == t2
-                else { return .invalid }
-            return .tensor(shape, .bool)
-            
+            switch (v1.type.unaliased, v2.type.unaliased) {
+            /// Non-compute scalar
+            case let (.tensor([], t1), .tensor([], t2)) where t1 == t2:
+                return .tensor([], .bool)
+            /// Compute tensor
+            case let (.pointer(.tensor(s1, t1), .compute, .mutable),
+                      .pointer(.tensor(s2, t2), .compute, .mutable)) where t1 == t2:
+                return (s1 <> s2).flatMap { .pointer(.tensor($0, .bool), .compute, .mutable) }
+                    ?? .invalid
+            default:
+                return .invalid
+            }
+
+        /// Compute-only
         case let .matrixMultiply(v1, v2):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
+            guard case let .pointer(.tensor(s1, t1), .compute, .mutable) = v1.type.unaliased,
+                  case let .pointer(.tensor(s2, t2), .compute, .mutable) = v2.type.unaliased,
                   let newShape = s1.matrixMultiplied(with: s2),
                   t1 == t2 else { return .invalid }
-            return .tensor(newShape, t1)
+            return .pointer(.tensor(newShape, t1), .compute, .mutable)
 
         case let .unary(_, v1):
-            return v1.type.isTensor ? v1.type : .invalid
+            switch v1.type.unaliased {
+            /// Non-compute scalar
+            case .tensor([], _):
+                return v1.type
+            /// Compute tensor
+            case let .pointer(.tensor(s, dt), .compute, .mutable):
+                return v1.type
+            default:
+                return .invalid
+            }
 
-        case let .reduce(_, v1, nil):
-            guard case let .tensor(s1, t1) = v1.type.unaliased else { return .invalid }
-            return .tensor(s1.dropFirst(), t1)
+        /// Compute-only
+        case let .reduce(op, v1, nil):
+            switch (op, v1.type.unaliased) {
+            case let (.arithmetic, .pointer(.tensor(s1, t1), .compute, .mutable)) where t1.isNumeric:
+                return .pointer(.tensor([], t1), .compute, .mutable)
+            case let (.boolean, .pointer(.tensor(s1, .bool), .compute, .mutable)):
+                return .pointer(.tensor([], .bool), .compute, .mutable)
+            default:
+                return .invalid
+            }
 
-        case let .reduce(_, v1, axis: axis?):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  axis < s1.rank
-                else { return .invalid }
-            return .tensor(s1.droppingDimension(axis), t1)
+        /// Compute-only
+        case let .reduce(op, v1, axis: axis?):
+            switch (op, v1.type.unaliased) {
+            case let (.arithmetic, .pointer(.tensor(s1, t1), .compute, .mutable))
+                    where t1.isNumeric && axis < s1.rank:
+                return .pointer(.tensor(s1.droppingDimension(axis), t1), .compute, .mutable)
+            case let (.boolean, .pointer(.tensor(s1, .bool), .compute, .mutable))
+                    where axis < s1.rank:
+                return .pointer(.tensor(s1.droppingDimension(axis), .bool), .compute, .mutable)
+            default:
+                return .invalid
+            }
 
-        case let .scan(_, v1, _):
-            return v1.type.unaliased.isTensor ? v1.type : .invalid
+        /// Compute-only
+        case let .scan(op, v1, _):
+            guard case .pointer(.tensor, .compute, .mutable) = v1.type.unaliased else {
+                return .invalid
+            }
+            return v1.type
 
+        /// Compute-only
         case let .concatenate(vv, axis):
             guard let first = vv.first,
-                  case let .tensor(s1, t1) = first.type.unaliased
+                  case let .pointer(.tensor(s1, t1), .compute, .mutable) = first.type.unaliased
                 else { return .invalid }
             /// Check simple, data type equality, and concatenability
             var accShape: TensorShape = s1
             for v in vv.dropFirst() {
-                guard case let .tensor(shape, type) = v.type.unaliased,
+                guard case let .pointer(.tensor(shape, type), .compute, .mutable) = v.type.unaliased,
                       type == t1,
-                      let newShape = accShape.concatenating(with: shape,
-                                                            alongDimension: axis)
+                      let newShape = accShape.concatenating(with: shape, alongDimension: axis)
                     else { return .invalid }
                 accShape = newShape
             }
-            return .tensor(accShape, t1)
+            return .pointer(.tensor(accShape, t1), .compute, .mutable)
 
+        /// Compute-only
         case let .transpose(v1):
-            guard case let .tensor(s1, t1) = v1.type.unaliased else { return .invalid }
-            return .tensor(s1.transpose, t1)
+            guard case let .pointer(.tensor(s1, t1), .compute, .mutable) = v1.type.unaliased
+                else { return .invalid }
+            return .pointer(.tensor(s1.transpose, t1), .compute, .mutable)
             
         case let .dataTypeCast(v1, dt):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  t1.canCast(to: dt)
-                else { return .invalid }
-            return .tensor(s1, dt)
+            switch v1.type.unaliased {
+            case let .tensor([], t1) where t1.canCast(to: dt):
+                return .tensor([], dt)
+            case let .pointer(.tensor(s1, t1), .compute, .mutable) where t1.canCast(to: dt):
+                return .pointer(.tensor(s1, dt), .compute, .mutable)
+            default:
+                return .invalid
+            }
             
         case let .shapeCast(v1, s):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
