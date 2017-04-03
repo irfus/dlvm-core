@@ -159,12 +159,20 @@ public extension IRBuilder {
         return buildInstruction(.binary(.associative(.arithmetic(.power)), lhs, rhs))
     }
 
-    func call(_ function: Use, _ arguments: [Use]) -> Use {
+    func apply(_ function: Use, _ arguments: [Use]) -> Use {
         return buildInstruction(.apply(function, arguments))
     }
 
-    func gradient(_ function: Use, _ arguments: [Use]) -> Use {
+    func applyGradient(_ function: Use, _ arguments: [Use]) -> Use {
         return buildInstruction(.applyGradient(function, arguments))
+    }
+
+    func compute(_ function: Use, _ arguments: [Use], in graph: Use) -> Use {
+        return buildInstruction(.compute(function, arguments, in: graph))
+    }
+
+    func computeGradient(_ function: Use, _ arguments: [Use], in graph: Use) -> Use {
+        return buildInstruction(.computeGradient(function, arguments, in: graph))
     }
 
     func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Use {
@@ -225,6 +233,22 @@ public extension IRBuilder {
 
     func dataTypeCast(_ source: Use, to targetDataType: DataType) -> Use {
         return buildInstruction(.dataTypeCast(source, targetDataType))
+    }
+
+    func allocateHeap(for type: Type, in location: MemoryLocation) -> Use {
+        return buildInstruction(.allocateHeap(type, location))
+    }
+
+    func allocateHeap(for type: Type, in location: MemoryLocation, size: Use) -> Use {
+        return buildInstruction(.allocateHeapRaw(type, location, count: size))
+    }
+
+    func allocateBox(type: Type, in location: MemoryLocation) -> Use {
+        return buildInstruction(.allocateBox(type, location))
+    }
+
+    func deallocate(_ use: Use) {
+        buildInstruction(.deallocate(use))
     }
 
 }
