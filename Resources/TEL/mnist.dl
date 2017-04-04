@@ -1,23 +1,16 @@
 module mnist
 
-type $mnist_params = $($[784x10 x f32], $[1x10 x f32])
+type $mnist_params = (*@mut @compute [784x10 of f32], *@mut @compute [1x10 of f32])
 
+!compute
 !differentiable
-func @inference(%x : $[1x784 x f32], %params : $mnist_params) -> $[1x10 x f32] {
-entry(%x : $[1x784 x f32], %params : $mnist_params):
+func @inference(%x : *@mut @compute [1x784 of f32], %params : $mnist_params) -> *@mut @compute [1x10 of f32] {
+entry(%x : *@mut @compute [1x784 of f32], %params : $mnist_params):
     %v0 = extract %params : $mnist_params at 0
     %v1 = extract %params : $mnist_params at 1
-    %v2 = matrixMultiply %x : $[1x784 x f32], %v0 : $[784x10 x f32]
-    %v3 = add %v2 : $[1x10 x f32], %v1 : $[1x10 x f32]
-    %y = tanh %v3 : $[1x10 x f32]
-    return %y : $[1x10 x f32]
-}
-
-!differentiating(@inference)
-!differentiable
-func @inference_gradient(%x : $[1x784 x f32], %params : $mnist_params) -> $($[1x784 x f32], $mnist_params) {
-entry(%x : $[1x784 x f32], %params : $mnist_params):
-    %v0 = tuple zero : $[1x784 x f32], zero : $mnist_params
-    return %v0 : $($[1x784 x f32], $mnist_params)
+    %v2 = matrixMultiply %x : *@mut @compute [1x784 of f32], %v0 : *@mut @compute [784x10 of f32]
+    %v3 = add %v2 : *@mut @compute [1x10 of f32], %v1 : *@mut @compute [1x10 of f32]
+    %y = tanh %v3 : *@mut @compute [1x10 of f32]
+    return %y : *@mut @compute [1x10 of f32]
 }
 

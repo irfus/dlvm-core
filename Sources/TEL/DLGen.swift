@@ -72,7 +72,7 @@ class CodeGenerator {
         /// Build pure inference function
         var args: [(String, Type)] = []
         for input in program.inputs {
-            let arg: Type = .tensor(input.shape, program.dataType)
+            let arg: Type = .pointer(.tensor(input.shape, program.dataType), .compute, .mutable)
             args.append((input.name, arg))
         }
         
@@ -80,16 +80,17 @@ class CodeGenerator {
         let paramStructType = builder.buildTypeAlias(
             .transparent("\(program.moduleName)_params",
                 .tuple(program.parameters.map {
-                    .tensor($0.shape, self.program.dataType)
+                    .pointer(.tensor($0.shape, self.program.dataType), .compute, .mutable)
                 })
             )
         )
         args.append(("params", paramStructType))
 
         let output = program.layers.first(where: {$0.isOutput})! // BAD!
+        /// Compute function
         let function = builder.buildFunction(named: "inference", arguments: args,
-                                             result: .tensor(output.shape, program.dataType),
-                                             attributes: [ .differentiable ])
+                                             result: .pointer(.tensor(output.shape, program.dataType), .compute, .mutable),
+                                             attributes: [ .differentiable, .compute ])
         builder.move(to: function.entry)
 
         /// Add all args into env
@@ -112,7 +113,7 @@ class CodeGenerator {
             result = op
             environment[layer.name] = op
         }
-        builder.buildInstruction(.`return`(result))
+        builder.buildInstruction(.return(result))
 
         return builder.module
     }

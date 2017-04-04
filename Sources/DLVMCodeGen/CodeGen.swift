@@ -132,7 +132,8 @@ extension DLVM.`Type` : LLEmittable {
         case let .array(subt, n):
             return ArrayType(elementType: subt.emit(to: &context, in: &env), count: n)
         case let .function(args, ret):
-            return FunctionType(argTypes: args.map{$0.emit(to: &context, in: &env)}, returnType: ret.emit(to: &context, in: &env))
+            return FunctionType(argTypes: args.map{$0.emit(to: &context, in: &env)},
+                                returnType: ret.emit(to: &context, in: &env))
         case let .alias(alias):
             return env.type(for: alias)
         case let .box(subt, .host):
