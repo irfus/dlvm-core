@@ -252,7 +252,6 @@ extension InstructionKind {
             guard let first = vv.first,
                   case let .pointer(.tensor(s1, t1), .compute, .mutable) = first.type.unaliased
                 else { return .invalid }
-            /// Check simple, data type equality, and concatenability
             var accShape: TensorShape = s1
             for v in vv.dropFirst() {
                 guard case let .pointer(.tensor(shape, type), .compute, .mutable) = v.type.unaliased,
@@ -280,10 +279,14 @@ extension InstructionKind {
             }
             
         case let .shapeCast(v1, s):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  s1.contiguousSize == s.contiguousSize
-                else { return .invalid }
-            return .tensor(s, t1)
+            switch v1.type.unaliased {
+            case let .tensor(s1, t1) where s1.contiguousSize == s.contiguousSize:
+                return .tensor(s, t1)
+            case let .pointer(.tensor(s1, t1), .compute, .mutable)
+                    where s1.contiguousSize == s.contiguousSize:
+                return .pointer(.tensor(s, t1), .compute, .mutable)
+            default: return .invalid
+            }
 
         case let .apply(f, vv), let .applyGradient(f, vv):
             switch f.type.unaliased {
