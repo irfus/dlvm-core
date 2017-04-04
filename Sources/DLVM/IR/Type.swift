@@ -22,8 +22,6 @@ public indirect enum Type {
     case pointer(Type, MemoryLocation, Mutability)
     /// Reference counted box
     case box(Type, MemoryLocation)
-    /// Reference
-    case reference(Type, MemoryLocation, Mutability)
     /// Function type
     case function([Type], Type)
     /// Alias type, transparent or opaque
@@ -48,15 +46,15 @@ public extension Type {
 }
 
 // MARK: - Properties
-/*
 public extension Type {
     enum BitSize {
-        case number(Int), pointer,
+        case number(Int)
+        case pointer
     }
 
     var isPassedAsPointer: Bool {
         switch canonical {
-        case .pointer, .reference, .function: return true
+        case .pointer, .function: return true
         default: return false
         }
     }
@@ -68,13 +66,12 @@ public extension Type {
         }
     }
 }
-*/
 
 // MARK: - Predicates
 public extension Type {
     var isFirstClass: Bool {
         switch canonical {
-        case .tensor, .array, .tuple, .pointer, .box, .reference, .computeGraph, .alias: return true
+        case .tensor, .array, .tuple, .pointer, .box, .computeGraph, .alias: return true
         default: return false
         }
     }
@@ -102,8 +99,7 @@ public extension Type {
 
     func conforms(to other: Type) -> Bool {
         switch (self.canonical, other.canonical) {
-        case let (.pointer(t1, loc1, .mutable), .pointer(t2, loc2, .immutable)),
-             let (.reference(t1, loc1, .mutable), .reference(t2, loc2, .immutable)):
+        case let (.pointer(t1, loc1, .mutable), .pointer(t2, loc2, .immutable)):
             return t1 == t2 && loc1 == loc2
         default:
             return self == other
@@ -123,7 +119,7 @@ public extension Type {
             result = .tensor(shape.dropFirst(), dt)
         case let .array(t, n) where idx < n:
             result = t
-        case let .pointer(t, _, _), let .box(t, _), let .reference(t, _, _):
+        case let .pointer(t, _, _), let .box(t, _):
             result = t
         default:
             return nil
@@ -139,7 +135,6 @@ public extension Type {
         case let .array(subT, i): return .array(subT.canonical, i)
         case let .tuple(tt): return .tuple(tt.map{$0.canonical})
         case let .pointer(t, loc, mut): return .pointer(t.canonical, loc, mut)
-        case let .reference(t, loc, mut): return .reference(t.canonical, loc, mut)
         case let .box(t, loc): return .box(t.canonical, loc)
         case let .function(tt, t): return.function(tt.map{$0.canonical}, t.canonical)
         case let .alias(.transparent(_, subT)): return subT.canonical
@@ -168,8 +163,6 @@ extension Type : Equatable {
             return t1 == t2 && n1 == n2
         case let (.pointer(t1, loc1, mut1), .pointer(t2, loc2, mut2)):
             return t1 == t2 && loc1 == loc2 && mut1 == mut2
-        case let (.reference(t1, loc1, mut1), .reference(t2, loc2, mut2)):
-            return t1 == t2 && loc1 == loc2 && mut1 == mut2
         case let (.box(t1, loc1), .box(t2, loc2)):
             return t1 == t2 && loc1 == loc2
         case let (.function(tt1, t1), .function(tt2, t2)):
@@ -195,7 +188,6 @@ public extension Type {
         case .tensor, .void, .computeGraph:
             return true
         case let .array(subtype, _),
-             let .reference(subtype, _, _),
              let .pointer(subtype, _, _),
              let .box(subtype, _):
             return subtype.isValid

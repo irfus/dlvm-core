@@ -413,7 +413,7 @@ extension InstructionKind {
                 throw VerificationError.notBox(v, instruction)
             }
 
-        case let .allocateHeapRaw(_, _, count: v):
+        case let .allocateHeap(_, _, count: v):
             guard case .tensor([], .int(64)) = v.type.unaliased else {
                 throw VerificationError.unexpectedType(v, .tensor([], .int(64)), instruction)
             }
@@ -466,17 +466,11 @@ extension InstructionKind {
                 throw VerificationError.unexpectedType(count, .scalar(.int(64)), instruction)
             }
             switch (src.type, dest.type) {
-            case let (.reference(t1, _, _), .reference(t2, _, .mutable)),
-                 let (.pointer(t1, _, _), .pointer(t2, _, .mutable)),
+            case let (.pointer(t1, _, _), .pointer(t2, _, .mutable)),
                  let (.box(t1, _), .box(t2, _)):
                 guard t1 == t2 else { fallthrough }
             default:
                 throw VerificationError.invalidCopyOperands(src, dest, instruction)
-            }
-
-        case let .referenceAddress(v):
-            guard case .reference = v.type.unaliased else {
-                throw VerificationError.invalidType(v)
             }
 
         case .bitCast(_, _):
@@ -485,7 +479,7 @@ extension InstructionKind {
 
         case .deallocate(let v):
             switch v.type.unaliased {
-            case .pointer, .reference, .box: break
+            case .pointer, .box: break
             case _: throw VerificationError.notHeapObject(v, instruction)
             }
 
@@ -494,7 +488,7 @@ extension InstructionKind {
                 throw VerificationError.notBox(v, instruction)
             }
 
-        case .allocateStack, .allocateHeap, .trap, _: break
+        case .allocateStack, .trap, .allocateBox: break
         }
     }
 }

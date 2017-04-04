@@ -151,7 +151,7 @@ extension DLVM.`Type` : LLEmittable {
                                 addressSpace: .global) /// Indirect storage
                 ])
             )
-        case let .pointer(subt, loc, _), let .reference(subt, loc, _):
+        case let .pointer(subt, loc, _):
             return PointerType(pointee: subt.emit(to: &context, in: &env), addressSpace: loc.addressSpace)
         case let .computeGraph(fun):
             return context.target.loweredComputeGraphType(from: fun)

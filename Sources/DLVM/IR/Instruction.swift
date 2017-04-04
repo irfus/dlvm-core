@@ -71,14 +71,11 @@ public enum InstructionKind {
     /** Heap memory of host and device **/
     /** Memory **/
     /// Allocate host stack memory, returning a pointer
-    case allocateStack(Type, Use) /// => +*T
-    case allocateHeapRaw(Type, MemoryLocation, count: Use) /// => +*T
-    /// Allocate raw heap memory, returning a pointer
-    case allocateHeap(Type, MemoryLocation) /// => +&T
-    case referenceAddress(Use) /// &T => *T; +&T => +*T
+    case allocateStack(Type, Use) /// => *@mut T
+    case allocateHeap(Type, MemoryLocation, count: Use) /// => *@mut T
     /// Reference-counted box
-    case allocateBox(Type, MemoryLocation) /// => box<T>
-    case projectBox(Use) /// @box T => +&T
+    case allocateBox(Type, MemoryLocation) /// => @box T
+    case projectBox(Use) /// @box T => *@mut T
     /// Retain/release a box via reference counter
     case retain(Use)
     case release(Use)
@@ -139,7 +136,7 @@ public extension InstructionKind {
 
     var accessesMemory: Bool {
         switch self {
-        case .allocateStack, .allocateHeapRaw, .allocateBox,
+        case .allocateStack, .allocateHeap, .allocateBox,
              .projectBox, .load, .store, .deallocate:
             return true
         default:
@@ -320,7 +317,7 @@ extension InstructionKind {
             return dest.type
 
         case let .allocateStack(type, _):
-            return .reference(type, .host, .mutable)
+            return .pointer(type, .host, .mutable)
 
         case let .load(v):
             guard case let .pointer(t, .host, _) = v.type.unaliased else { return .invalid }
@@ -367,19 +364,12 @@ extension InstructionKind {
         case let .allocateBox(t, loc):
             return .box(t, loc)
 
-        case let .allocateHeapRaw(t, loc, count: _):
+        case let .allocateHeap(t, loc, count: _):
             return .pointer(t, loc, .mutable)
-
-        case let .referenceAddress(v):
-            guard case let .reference(t, loc, mut) = v.type.unaliased else { return .invalid }
-            return .pointer(t, loc, mut)
 
         case let .projectBox(v):
             guard case let .box(t, loc) = v.type else { return .invalid }
-            return .reference(t, loc, .mutable)
-
-        case let .allocateHeap(t, loc):
-            return .reference(t, loc, .mutable)
+            return .pointer(t, loc, .mutable)
 
         case .store, .copy, .deallocate,
              .branch, .conditional, .return, .retain, .release, .trap:
@@ -404,9 +394,8 @@ extension Instruction : User {
              let .store(op, _), let .load(op),
              let .elementPointer(op, _),
              let .deallocate(op),
-             let .allocateStack(_, op), let .allocateHeapRaw(_, _, count: op),
-             let .projectBox(op), let .referenceAddress(op),
-             let .release(op), let .retain(op):
+             let .allocateStack(_, op), let .allocateHeap(_, _, count: op),
+             let .projectBox(op), let .release(op), let .retain(op):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -419,7 +408,7 @@ extension Instruction : User {
             return [f] + args + [env]
         case let .copy(from: op1, to: op2, count: op3):
             return [op1, op2, op3]
-        case .return(nil), .allocateBox, .trap, .allocateHeap:
+        case .return(nil), .allocateBox, .trap:
             return []
         }
     }
@@ -509,8 +498,8 @@ public extension InstructionKind {
             return .load(new)
         case .allocateStack(let ty, old):
             return .allocateStack(ty, new)
-        case .allocateHeapRaw(let ty, let memLoc, count: old):
-            return .allocateHeapRaw(ty, memLoc, count: new)
+        case .allocateHeap(let ty, let memLoc, count: old):
+            return .allocateHeap(ty, memLoc, count: new)
         case .deallocate(old):
             return .deallocate(new)
         case .copy(from: old, to: old, count: old):

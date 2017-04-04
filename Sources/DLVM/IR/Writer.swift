@@ -92,8 +92,6 @@ extension Type : TextOutputStreamable {
             target.write("*\(mut)\(loc.description(for: subtype))")
         case let .box(subtype, loc):
             target.write("@box \(loc.description(for: subtype))")
-        case let .reference(subtype, loc, mut):
-            target.write("&\(mut)\(loc.description(for: subtype))")
         case let .function(args, ret):
             target.write("(\(args.joinedDescription) -> \(ret))")
         case let .alias(a):
@@ -207,14 +205,10 @@ extension InstructionKind : TextOutputStreamable {
             target.write("compute \(f)(\(args)) in \(graph)")
         case let .computeGradient(f, args, in: graph):
             target.write("computeGradient \(f)(\(args.joinedDescription) in \(graph))")
-        case let .allocateHeapRaw(t, loc, count: c):
-            target.write("allocateHeapRaw \(t), \(loc), \(c)")
-        case let .allocateHeap(t, loc):
-            target.write("allocateHeap \(t), \(loc)")
+        case let .allocateHeap(t, loc, count: c):
+            target.write("allocateHeap \(t), \(loc), \(c)")
         case let .deallocate(v):
             target.write("deallocate \(v)")
-        case let .referenceAddress(v):
-            target.write("referenceAddress \(v)")
         case let .allocateBox(t, loc):
             target.write("allocateBox \(t), \(loc)")
         case let .projectBox(v):
