@@ -332,9 +332,9 @@ extension Function : TextOutputStreamable {
 }
 
 extension Module : TextOutputStreamable {
-
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("module \(name)\n\n")
+        target.write("module \(name)\n")
+        target.write("stage \(stage)\n\n")
         target.write(typeAliases.map{"\($0)"}.joined(separator: "\n"))
         target.write("\n")
         target.write(globalValues.map{"\($0)"}.joined(separator: "\n"))
