@@ -10,11 +10,15 @@ import Foundation
 
 /// Module representing a neural network
 public final class Module : IRCollection, IRUnit {
+    public enum Stage {
+        case raw, canonical
+    }
+    
     public typealias Element = Function
     public typealias Index = Int
     
-    open var name: String
-
+    public var name: String
+    public internal(set) var stage: Stage = .raw
     public var elements: OrderedMapSet<Function> = []
     public var globalValues: OrderedMapSet<GlobalValue> = []
     public var typeAliases: OrderedMapSet<TypeAlias> = []

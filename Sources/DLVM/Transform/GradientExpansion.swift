@@ -8,7 +8,7 @@
 
 /// Replace every `gradient` instruction to a `call` to a function that
 /// produces the gradient
-public class GradientExpander: TransformPass<Module> {
+public class GradientExpansion: TransformPass<Module> {
     public override class func run(on module: Module) throws -> Bool {
         var changed = false
 
@@ -243,7 +243,7 @@ extension ADContext {
     }
 }
 
-fileprivate extension GradientExpander {
+fileprivate extension GradientExpansion {
 
     static func expand(_ function: Function) throws {
         let builder = IRBuilder(module: function.parent)

@@ -1,4 +1,5 @@
 module mnist
+stage raw
 
 type $mnist_params = (*@mut @compute [784x10 of f32], *@mut @compute [1x10 of f32])
 
