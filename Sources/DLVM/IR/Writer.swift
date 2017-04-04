@@ -59,7 +59,7 @@ extension MemoryLocation {
     public func description(for type: Type) -> String {
         switch self {
             case .host: return "\(type)"
-            case .compute: return "|\(type)|"
+            case .compute: return "@compute \(type)"
         }
     }
 }
@@ -67,7 +67,7 @@ extension MemoryLocation {
 extension Mutability : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
-            case .mutable: target.write("+")
+            case .mutable: target.write("@mut ")
             case .immutable: break
         }
     }
@@ -75,7 +75,6 @@ extension Mutability : TextOutputStreamable {
 
 extension Type : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("$")
         switch self {
         case .invalid:
             target.write("<<error>>")
@@ -90,18 +89,15 @@ extension Type : TextOutputStreamable {
         case let .array(subtype, n):
             target.write("[\(n) x \(subtype)]")
         case let .pointer(subtype, loc, mut):
-            target.write("\(mut)*")
-            switch loc {
-            case .host: target.write("\(subtype)")
-            case .compute: target.write("|\(subtype)|")
-            }
+            target.write("*\(mut)\(loc.description(for: subtype))")
         case let .box(subtype, loc):
             target.write("@box \(loc.description(for: subtype))")
         case let .reference(subtype, loc, mut):
-            target.write("\(mut)&\(loc.description(for: subtype))")
+            target.write("&\(mut)\(loc.description(for: subtype))")
         case let .function(args, ret):
             target.write("(\(args.joinedDescription) -> \(ret))")
         case let .alias(a):
+            target.write("$")
             a.name.write(to: &target)
         case let .computeGraph(f):
             target.write("{{@\(f.name)}}")
