@@ -70,7 +70,7 @@ public final class HPVM : LLFunctionPrototypeCacheable {
 }
 
 // MARK: - Compute function lowering
-extension HPVM : LLTarget {
+extension HPVM : LLComputeTarget {
     public func loweredComputeGraphType(from function: DLVM.Function) -> StructType {
         DLUnimplemented()
     }

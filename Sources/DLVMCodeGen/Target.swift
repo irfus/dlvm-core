@@ -51,6 +51,9 @@ import DLVM
 public protocol LLTarget : LLFunctionPrototypeCacheable {
     unowned var module: LLVM.Module { get }
     init(module: LLVM.Module)
+}
+
+public protocol LLComputeTarget : LLTarget {
     func loweredComputeGraphType(from function: DLVM.Function) -> StructType
     func emitComputeFunction(from function: DLVM.Function,
                              to context: inout LLGenContext<Self>,
