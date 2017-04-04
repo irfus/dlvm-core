@@ -63,7 +63,7 @@ public final class NVVM : LLFunctionPrototypeCacheable {
 }
 
 // MARK: - LLTarget
-extension NVVM : LLTarget {
+extension NVVM : LLComputeTarget {
     public func loweredComputeGraphType(from function: DLVM.Function) -> StructType {
         DLUnimplemented()
     }
