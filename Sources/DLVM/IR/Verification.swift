@@ -480,9 +480,14 @@ extension InstructionKind {
                 throw VerificationError.unexpectedType(count, .scalar(.int(64)), instruction)
             }
             switch (src.type, dest.type) {
-            case let (.pointer(t1, _, _), .pointer(t2, _, .mutable)),
-                 let (.box(t1, _), .box(t2, _)):
-                guard t1 == t2 else { fallthrough }
+            case let (.pointer(t1, _, _), .pointer(t2, _, .mutable)) where t1 == t2:
+                break
+            case let (.box(t1, _), .box(t2, _)) where t1 == t2:
+                /// Count must be literal 1
+                guard case .literal(let litVal) = count,
+                      case .scalar(.int(1)) = litVal.literal
+                    else { fallthrough }
+                
             default:
                 throw VerificationError.invalidCopyOperands(src, dest, instruction)
             }

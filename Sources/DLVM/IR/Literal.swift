@@ -6,40 +6,19 @@
 //
 //
 
-/// Scalar literal
-public enum ScalarLiteral {
-    case int(IntegerLiteralType)
-    case float(FloatLiteralType)
-    case bool(BooleanLiteralType)
-
-    public var typeBase: DataType.Base {
-        switch self {
-        case .bool: return .bool
-        case .int: return .int
-        case .float: return .float
-        }
-    }
-}
-
-extension ScalarLiteral : Equatable {
-    public static func == (lhs: ScalarLiteral, rhs: ScalarLiteral) -> Bool {
-        switch (lhs, rhs) {
-        case let (.int(i1), .int(i2)): return i1 == i2
-        case let (.float(f1), .float(f2)): return f1 == f2
-        case let (.bool(b1), .bool(b2)): return b1 == b2
-        default: return false
-        }
-    }
-}
-
 /// Scalar or tensor literal, literally
 /// - Note: It has no type or shape, because a `Literal` is not a `Value`.
 /// But `LiteralValue`, that uses `Literal`, is a value.
 public indirect enum Literal {
+    public enum Scalar {
+        case int(IntegerLiteralType)
+        case float(FloatLiteralType)
+        case bool(BooleanLiteralType)
+    }
     case undefined
     case null
     case zero
-    case scalar(ScalarLiteral)
+    case scalar(Scalar)
     case tensor([Use])
     case tuple([Use])
     case `struct`([Use], isPacked: Bool)
@@ -71,6 +50,29 @@ extension Literal : Equatable {
     }
 }
 
+// MARK: - Scalar literal type base
+public extension Literal.Scalar {
+    var typeBase: DataType.Base {
+        switch self {
+        case .bool: return .bool
+        case .int: return .int
+        case .float: return .float
+        }
+    }
+}
+
+// MARK: - Equatable
+extension Literal.Scalar : Equatable {
+    public static func == (lhs: Literal.Scalar, rhs: Literal.Scalar) -> Bool {
+        switch (lhs, rhs) {
+        case let (.int(i1), .int(i2)): return i1 == i2
+        case let (.float(f1), .float(f2)): return f1 == f2
+        case let (.bool(b1), .bool(b2)): return b1 == b2
+        default: return false
+        }
+    }
+}
+
 /// Literal value. It wraps `Literal` into a value
 public struct LiteralValue : Value {
     public var type: Type
@@ -82,7 +84,7 @@ public struct LiteralValue : Value {
     }
 
     public func makeUse() -> Use {
-        return .literal(type, self)
+        return .literal(self)
     }
 }
 
@@ -95,7 +97,7 @@ extension LiteralValue : Equatable {
 
 public extension LiteralValue {
     init(shape: TensorShape, dataType: DataType, repeating number: Int) {
-        let scalLit: ScalarLiteral
+        let scalLit: Literal.Scalar
         switch dataType.base {
         case .int: scalLit = .int(number)
         case .float: scalLit = .float(Double(number))

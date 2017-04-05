@@ -31,7 +31,7 @@ extension DLVM.Use : LLEmittable {
         case let .function(_, fun): return env.value(for: fun)
         case let .argument(_, arg): return env.value(for: arg)
         case let .instruction(_, inst): return env.value(for: inst)
-        case let .literal(_, litVal): return litVal.emit(to: &context, in: &env)
+        case let .literal(litVal): return litVal.emit(to: &context, in: &env)
         }
     }
 }
