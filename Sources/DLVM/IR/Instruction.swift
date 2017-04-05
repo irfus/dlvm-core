@@ -21,13 +21,17 @@ public enum InstructionKind {
     /// Return
     case `return`(Use?)
 
-    /** Tensor operations **/
+    /** Tensor operations (overloaded for compute mode) **/
     /// - Note: Requires compute function context when applied to 
     /// non-scalar tensor buffers
     /// Monomorphic unary operation
     case unary(UnaryOp, Use)
     /// Monomorphic binary operation
     case binary(BinaryOp, Use, Use)
+    /// Data type cast operation
+    case dataTypeCast(Use, DataType)
+
+    /** Compute-only tensor operations **/
     /// Scan operation with optional axis
     /// If axis is not given, scan is performed on contiguous elements
     case scan(AssociativeOp, Use, axis: Int?)
@@ -40,8 +44,6 @@ public enum InstructionKind {
     case concatenate([Use], axis: Int)
     /// Transpose
     case transpose(Use)
-    /// Data type cast operation
-    case dataTypeCast(Use, DataType)
 
     /** Cost-free casts **/
     /// Shape cast operation
