@@ -10,7 +10,7 @@ extension LiteralValue : TextOutputStreamable {
     }
 }
 
-extension ScalarLiteral : TextOutputStreamable {
+extension Literal.Scalar : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .bool(b): target.write(b.description)
@@ -280,7 +280,7 @@ extension Use : TextOutputStreamable {
         case let .global(_, ref):      target.write("@\(ref.name)")
         case let .instruction(_, ref): target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
         case let .argument(_, ref):    target.write("%\(ref.name)")
-        case let .literal(_, lit):     lit.literal.write(to: &target)
+        case let .literal(litVal):     litVal.literal.write(to: &target)
         case let .function(_, ref):    target.write("@\(ref.name)")
         }
         target.write(" : \(type)")

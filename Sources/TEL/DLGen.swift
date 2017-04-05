@@ -179,7 +179,7 @@ fileprivate extension Constant {
             literal = .scalar(.float(f))
         }
         let litVal = LiteralValue(type: .tensor(.scalar, dataType), literal: literal)
-        return .literal(litVal.type, litVal)
+        return .literal(litVal)
     }
 }
 

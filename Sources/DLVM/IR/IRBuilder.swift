@@ -82,7 +82,7 @@ extension IRBuilder {
     }
 
     open func makeLiteral(_ literalValue: LiteralValue) -> Use {
-        return .literal(literalValue.type, literalValue)
+        return .literal(literalValue)
     }
 
     open func makeUse(_ argument: Argument) -> Use {

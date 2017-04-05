@@ -338,7 +338,7 @@ extension InstructionKind {
                     return gepType(type: t, indices: indices.dropFirst())
                 case let .tuple(tt):
                     /// Current index must be an int literal
-                    guard case let .literal(_, litVal) = idx,
+                    guard case let .literal(litVal) = idx,
                           case let .scalar(.int(i)) = litVal.literal else {
                         return .invalid
                     }
@@ -346,7 +346,7 @@ extension InstructionKind {
                 case let .struct(structTy):
                     let tt = structTy.subtypes
                     /// Current index must be an int literal
-                    guard case let .literal(_, litVal) = idx,
+                    guard case let .literal(litVal) = idx,
                           case let .scalar(.int(i)) = litVal.literal else {
                         return .invalid
                     }

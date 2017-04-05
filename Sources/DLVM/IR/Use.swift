@@ -6,7 +6,7 @@ public enum Use {
     case argument(Type, Argument)
     case instruction(Type, Instruction)
     case global(Type, GlobalValue)
-    case literal(Type, LiteralValue)
+    case literal(LiteralValue)
     case function(Type, Function)
 }
 
@@ -20,8 +20,8 @@ extension Use : Equatable {
             return t1 == t2 && v1 === v2
         case let (.global(t1, v1), .global(t2, v2)):
             return t1 == t2 && v1 === v2
-        case let (.literal(t1, v1), .literal(t2, v2)):
-            return t1 == t2 && v1 == v2
+        case let (.literal(l1), .literal(l2)):
+            return l1 == l2
         default:
             return false
         }
@@ -36,9 +36,10 @@ public extension Use {
         case .argument(let t, _),
              .instruction(let t, _),
              .global(let t, _),
-             .literal(let t, _),
              .function(let t, _):
             return t
+        case .literal(let lit):
+            return lit.type
         }
     }
 
@@ -58,9 +59,9 @@ public extension Use {
         switch self {
         case let .argument(_, val): return val
         case let .global(_, val): return val
-        case let .literal(_, val): return val
         case let .instruction(_, val): return val
         case let .function(_, val): return val
+        case let .literal(lit): return lit
         }
     }
 
