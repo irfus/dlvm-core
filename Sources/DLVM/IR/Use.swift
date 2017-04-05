@@ -22,6 +22,8 @@ extension Use : Equatable {
             return t1 == t2 && v1 === v2
         case let (.literal(l1), .literal(l2)):
             return l1 == l2
+        case let (.function(t1, f1), .function(t2, f2)):
+            return t1 == t2 && f1 == f2
         default:
             return false
         }
