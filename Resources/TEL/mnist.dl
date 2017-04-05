@@ -1,17 +1,17 @@
 module mnist
 stage raw
 
-type $mnist_params = (*@mut @compute [784x10 of f32], *@mut @compute [1x10 of f32])
+type $mnist_params = (*@mut @compute <784x10 of f32>, *@mut @compute <1x10 of f32>)
 
 !compute
 !differentiable
-func @inference(%x : *@mut @compute [1x784 of f32], %params : $mnist_params) -> *@mut @compute [1x10 of f32] {
-entry(%x : *@mut @compute [1x784 of f32], %params : $mnist_params):
+func @inference(%x : *@mut @compute <1x784 of f32>, %params : $mnist_params) -> *@mut @compute <1x10 of f32> {
+entry(%x : *@mut @compute <1x784 of f32>, %params : $mnist_params):
     %v0 = extract %params : $mnist_params at 0
     %v1 = extract %params : $mnist_params at 1
-    %v2 = matrixMultiply %x : *@mut @compute [1x784 of f32], %v0 : *@mut @compute [784x10 of f32]
-    %v3 = add %v2 : *@mut @compute [1x10 of f32], %v1 : *@mut @compute [1x10 of f32]
-    %y = tanh %v3 : *@mut @compute [1x10 of f32]
-    return %y : *@mut @compute [1x10 of f32]
+    %v2 = matrixMultiply %x : *@mut @compute <1x784 of f32>, %v0 : *@mut @compute <784x10 of f32>
+    %v3 = add %v2 : *@mut @compute <1x10 of f32>, %v1 : *@mut @compute <1x10 of f32>
+    %y = tanh %v3 : *@mut @compute <1x10 of f32>
+    return %y : *@mut @compute <1x10 of f32>
 }
 

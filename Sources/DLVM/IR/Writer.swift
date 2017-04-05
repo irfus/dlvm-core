@@ -26,17 +26,23 @@ extension Literal : TextOutputStreamable {
         case let .scalar(lit):
             lit.write(to: &target)
         case let .tensor(vals):
-            target.write("[\(vals.joinedDescription)]")
+            target.write("<\(vals.joinedDescription)>")
         case let .tuple(vals):
             target.write("(\(vals.joinedDescription))")
+        case let .struct(vals, isPacked: isPacked):
+            target.write(isPacked ? "<{" : "{")
+            vals.joinedDescription.write(to: &target)
+            target.write(isPacked ? "}>" : "}")
         case let .array(vals):
-            target.write("<\(vals.joinedDescription)>")
+            target.write("[\(vals.joinedDescription)]")
         case .zero:
             target.write("zero")
         case .undefined:
             target.write("undefined")
         case .null:
             target.write("null")
+        case let .constant(op):
+            target.write("(\(op))")
         }
     }
 }
@@ -73,6 +79,16 @@ extension Mutability : TextOutputStreamable {
     }
 }
 
+extension StructType : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write(isPacked ? "<{" : "{")
+        for (name, type) in fields {
+            target.write("\(name): \(type), ")
+        }
+        target.write(isPacked ? "}>" : "}")
+    }
+}
+
 extension Type : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
@@ -81,7 +97,7 @@ extension Type : TextOutputStreamable {
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("[\(s) of \(t)]")
+            target.write("<\(s) of \(t)>")
         case let .tuple(subtypes):
             target.write("(\(subtypes.joinedDescription))")
         case .void:
@@ -99,6 +115,8 @@ extension Type : TextOutputStreamable {
             a.name.write(to: &target)
         case let .computeGraph(f):
             target.write("{{@\(f.name)}}")
+        case let .struct(structTy):
+            structTy.write(to: &target)
         }
     }
 }
