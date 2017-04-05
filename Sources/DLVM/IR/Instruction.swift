@@ -341,6 +341,14 @@ extension InstructionKind {
                         return .invalid
                     }
                     return gepType(type: tt[i], indices: indices.dropFirst())
+                case let .struct(structTy):
+                    let tt = structTy.subtypes
+                    /// Current index must be an int literal
+                    guard case let .literal(_, litVal) = idx,
+                          case let .scalar(.int(i)) = litVal.literal else {
+                        return .invalid
+                    }
+                    return gepType(type: tt[i], indices: indices.dropFirst())
                 default:
                     return .invalid
                 }
@@ -383,7 +391,13 @@ extension InstructionKind {
 
 extension Instruction : User {
     public var operands: [Use] {
-        switch kind {
+        return kind.operands
+    }
+}
+
+extension InstructionKind {
+    public var operands: [Use] {
+        switch self {
         case let .binary(_, op1, op2),
              let .matrixMultiply(op1, op2),
              let .insert(op1, to: op2, at: _):

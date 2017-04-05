@@ -63,9 +63,16 @@ extension DLVM.LiteralValue : LLEmittable {
             let vals = xx.map{$0.emit(to: &context, in: &env)}
             return StructType.constant(values: vals)
 
+        case let .struct(xx, isPacked: isPacked):
+            let vals = xx.map{$0.emit(to: &context, in: &env)}
+            return StructType.constant(values: vals, isPacked: isPacked)
+
         case let .tensor(xx):
             let vals = xx.map{$0.emit(to: &context, in: &env)}
             return ArrayType.constant(vals, type: xx[0].type.emit(to: &context, in: &env))
+
+        case let .constant(constOp):
+            return constOp.emit(to: &context, in: &env)
 
         case .zero:
             return type.emit(to: &context, in: &env).null()
@@ -129,6 +136,9 @@ extension DLVM.`Type` : LLEmittable {
             return VoidType()
         case let .tuple(subtt):
             return StructType(elementTypes: subtt.map{$0.emit(to: &context, in: &env)})
+        case let .struct(structTy):
+            return StructType(elementTypes: structTy.fields.map{$0.type.emit(to: &context, in: &env)},
+                              isPacked: structTy.isPacked)
         case let .array(subt, n):
             return ArrayType(elementType: subt.emit(to: &context, in: &env), count: n)
         case let .function(args, ret):
@@ -211,6 +221,14 @@ extension DLVM.BasicBlock : LLEmittable {
 }
 
 extension DLVM.Instruction : LLEmittable {
+    public typealias LLUnit = LLVM.Instruction
+    @discardableResult
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Instruction where T : LLComputeTarget {
+        DLUnimplemented()
+    }
+}
+
+extension DLVM.InstructionKind : LLEmittable {
     public typealias LLUnit = LLVM.Instruction
     @discardableResult
     public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Instruction where T : LLComputeTarget {

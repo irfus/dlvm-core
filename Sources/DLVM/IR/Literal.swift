@@ -35,14 +35,16 @@ extension ScalarLiteral : Equatable {
 /// Scalar or tensor literal, literally
 /// - Note: It has no type or shape, because a `Literal` is not a `Value`.
 /// But `LiteralValue`, that uses `Literal`, is a value.
-public enum Literal {
+public indirect enum Literal {
     case undefined
     case null
     case zero
     case scalar(ScalarLiteral)
     case tensor([Use])
     case tuple([Use])
+    case `struct`([Use], isPacked: Bool)
     case array([Use])
+    case constant(InstructionKind)
 }
 
 extension Literal : Equatable {
@@ -52,10 +54,18 @@ extension Literal : Equatable {
              (.undefined, .undefined),
              (.null, .null):
             return true
-        case let (.scalar(s1), .scalar(s2)): return s1 == s2
-        case let (.tensor(t1), .tensor(t2)): return t1 == t2
-        case let (.tuple(tt1), .tuple(tt2)): return tt1 == tt2
-        case let (.array(tt1), .array(tt2)): return tt1 == tt2
+        case let (.scalar(s1), .scalar(s2)):
+            return s1 == s2
+        case let (.tensor(t1), .tensor(t2)):
+            return t1 == t2
+        case let (.tuple(tt1), .tuple(tt2)):
+            return tt1 == tt2
+        case let (.struct(vv1, p1), .struct(vv2, p2)):
+            return vv1 == vv2 && p1 == p2
+        case let (.array(tt1), .array(tt2)):
+            return tt1 == tt2
+        case (.constant(_), .constant(_)):
+            return false /// Or rather unimplemented
         default: return false
         }
     }

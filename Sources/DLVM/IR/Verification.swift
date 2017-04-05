@@ -126,12 +126,26 @@ extension LiteralValue : SelfVerifiable {
                 try verifyUse(use, subtype)
             }
 
+        /// Struct literal
+        case let (.struct(structTy), .struct(elements, isPacked))
+            where structTy.fields.count == elements.count && structTy.isPacked == isPacked:
+            for (subtype, use) in zip(structTy.subtypes, elements) {
+                try verifyUse(use, subtype)
+            }
+
         /// Array literal
         case let (.array(subtype, n), .array(elements)) where n == elements.count:
             for use in elements {
                 try verifyUse(use, subtype)
             }
-            
+
+        /// Constant op
+        case let (type, .constant(op)) where type == op.type:
+            guard !op.accessesMemory else { fallthrough } /// fail
+            for use in op.operands {
+                try verifyUse(use, use.type)
+            }
+
         default:
             throw VerificationError.invalidLiteral(type, literal, self)
         }

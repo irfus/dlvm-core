@@ -8,6 +8,38 @@ public enum Mutability {
     case mutable, immutable
 }
 
+public struct StructType {
+    public typealias Field = (name: String, type: Type)
+    public var fields: [(name: String, type: Type)]
+    public var isPacked: Bool
+
+    public init(fields: [Field], isPacked: Bool = false) {
+        self.fields = fields
+        self.isPacked = isPacked
+    }
+}
+
+extension StructType : Equatable {
+    public static func == (lhs: StructType, rhs: StructType) -> Bool {
+        return lhs.fields.elementsEqual(rhs.fields, by: { $0.name == $1.name && $0.type == $1.type })
+            && lhs.isPacked == rhs.isPacked
+    }
+}
+
+public extension StructType {
+    func field(named name: String) -> Field? {
+        return fields.first(where: {$0.name == name})
+    }
+
+    var subtypes: [Type] {
+        return fields.map {$1}
+    }
+
+    var canonical: StructType {
+        return StructType(fields: fields.map{($0, $1.canonical)}, isPacked: isPacked)
+    }
+}
+
 public indirect enum Type {
     /// Tensor represents all scalars, vectors, matrices and higher
     /// dimensional matrices of primitive data type
@@ -16,8 +48,10 @@ public indirect enum Type {
     case tensor(TensorShape, DataType)
     /// Fixed sized array
     case array(Type, Int)
-    /// N-ary tuple. Corresponding to LLVM-style struct type
+    /// N-ary tuple, corresponding to LLVM unpacked struct type
     case tuple([Type])
+    /// Struct, corresponding to LLVM struct type
+    case `struct`(StructType)
     /// Pointer
     case pointer(Type, MemoryLocation, Mutability)
     /// Reference counted box
@@ -115,6 +149,8 @@ public extension Type {
         switch unaliased {
         case let .tuple(tt) where tt.indices.contains(idx):
             result = tt[idx]
+        case let .struct(structTy) where structTy.fields.indices.contains(idx):
+            result = structTy.fields[idx].type
         case let .tensor(shape, dt) where shape.rank > 0 && idx < shape[0]:
             result = .tensor(shape.dropFirst(), dt)
         case let .array(t, n) where idx < n:
@@ -134,6 +170,7 @@ public extension Type {
         switch self {
         case let .array(subT, i): return .array(subT.canonical, i)
         case let .tuple(tt): return .tuple(tt.map{$0.canonical})
+        case let .struct(ty): return .struct(ty.canonical)
         case let .pointer(t, loc, mut): return .pointer(t.canonical, loc, mut)
         case let .box(t, loc): return .box(t.canonical, loc)
         case let .function(tt, t): return.function(tt.map{$0.canonical}, t.canonical)
@@ -159,6 +196,8 @@ extension Type : Equatable {
             return s1 == s2 && t1 == t2
         case let (.tuple(ts1), .tuple(ts2)):
             return ts1 == ts2
+        case let (.struct(s1), .struct(s2)):
+            return s1 == s2
         case let (.array(t1, n1), .array(t2, n2)):
             return t1 == t2 && n1 == n2
         case let (.pointer(t1, loc1, mut1), .pointer(t2, loc2, mut2)):
@@ -180,6 +219,13 @@ extension Type : Equatable {
 }
 
 // MARK: - Validation
+public extension StructType {
+    var isValid: Bool {
+        return fields.forAll { $1.isValid }
+    }
+}
+
+// MARK: - Validation
 public extension Type {
     public var isValid: Bool {
         switch self {
@@ -192,9 +238,11 @@ public extension Type {
              let .box(subtype, _):
             return subtype.isValid
         case let .tuple(subtypes):
-            return subtypes.reduce(true, { $0 && $1.isValid })
+            return subtypes.forAll { $0.isValid }
+        case let .struct(structTy):
+            return structTy.isValid
         case let .function(args, ret):
-            return args.reduce(true, { $0 && $1.isValid }) && ret.isValid
+            return args.forAll { $0.isValid } && ret.isValid
         case let .alias(a):
             return a.isValid
         }
