@@ -42,11 +42,7 @@ public enum BinaryOp {
     case comparison(ComparisonOp)
 }
 
-/// - TODO: Separate compute instructions from the current overloading paradigm
-/// 1. Add scalar type
-/// 2. Add primitive ops for scalars
-/// 3. Add `compute` instruction as another ADT
-/// 4. Add custom op option
+/// - TODO: Add custom op
 public enum OpKind {
     case unary(UnaryOp)        /// Monomorphic
     case binary(BinaryOp)      /// Monomorphic
