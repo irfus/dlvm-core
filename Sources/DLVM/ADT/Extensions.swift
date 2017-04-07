@@ -18,31 +18,54 @@
 //
 
 public extension Sequence {
+    /// Returns true if all elements satisfy the predicate
     func forAll(_ predicate: (Iterator.Element) -> Bool) -> Bool {
         return reduce(true, { $0 && predicate($1) })
     }
 
+    /// Elements' descriptions joined by comma
     var joinedDescription: String {
         return map{"\($0)"}.joined(separator: ", ")
     }
+    
+    /// `mapM`
+    func liftedMap(_ transform: (Iterator.Element) -> Iterator.Element?) -> [Iterator.Element]? {
+        var result: [Iterator.Element] = []
+        for x in self {
+            guard let new = transform(x) else { return nil }
+            result.append(new)
+        }
+        return result
+    }
 }
 
+// MARK: - Equatable
 public extension Sequence where Iterator.Element : Equatable {
     func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {
         return lazy.filter { $0 != exception }
     }
 }
 
+// MARK: - Optional description
 public extension Optional {
     var optionalDescription: String {
         return map{"\($0)"} ?? ""
     }
 }
 
+// MARK: - Description for TextOutputStreamable
 internal extension TextOutputStreamable {
     var description: String {
         var desc = ""
         write(to: &desc)
         return desc
+    }
+}
+
+/// Optional assignment
+infix operator =?
+public func =? <T> (lhs: inout T, rhs: T?) {
+    if let rhs = rhs {
+        lhs = rhs
     }
 }
