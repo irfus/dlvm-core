@@ -14,5 +14,8 @@ test:
 update:
 	swift package update
 
+xcode:
+	swift package generate-xcodeproj
+
 clean:
 	swift package clean
