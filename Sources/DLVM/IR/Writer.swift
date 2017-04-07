@@ -218,8 +218,6 @@ extension InstructionKind : TextOutputStreamable {
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):
             target.write("call \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
-        case let .applyGradient(f, args):
-            target.write("applyGradient \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .extract(use, indices):
             target.write("extract \(use) at \(indices.map{"\($0)"}.joined(separator: ", "))")
         case let .insert(src, to: dest, at: indices):
@@ -236,14 +234,16 @@ extension InstructionKind : TextOutputStreamable {
             target.write("bitCast \(v) to \(t)")
         case let .compute(f, args, in: graph):
             target.write("compute \(f)(\(args)) in \(graph)")
-        case let .computeGradient(f, args, in: graph):
-            target.write("computeGradient \(f)(\(args.joinedDescription) in \(graph))")
+        case let .gradient(f, from: diff, wrt: vars):
+            target.write("gradient \(f) from \(diff) wrt \(vars)")
         case let .allocateHeap(t, loc, count: c):
             target.write("allocateHeap \(t), \(loc), \(c)")
-        case let .deallocate(v):
-            target.write("deallocate \(v)")
         case let .allocateBox(t, loc):
             target.write("allocateBox \(t), \(loc)")
+        case let .allocateCompute(v):
+            target.write("allocateCompute \(v)")
+        case let .deallocate(v):
+            target.write("deallocate \(v)")
         case let .projectBox(v):
             target.write("projectBox \(v)")
         case let .retain(v):
@@ -296,7 +296,7 @@ extension Use : TextOutputStreamable {
         case let .instruction(_, ref): target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
         case let .argument(_, ref):    target.write("%\(ref.name)")
         case let .literal(litVal):     litVal.literal.write(to: &target)
-        case let .function(_, ref):    target.write("@\(ref.name)")
+        case let .function(ref):       target.write("@\(ref.name)")
         }
         target.write(" : \(type)")
     }

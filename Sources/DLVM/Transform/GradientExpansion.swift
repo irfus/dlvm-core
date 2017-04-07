@@ -70,7 +70,7 @@ public extension Function {
         func newUse(from old: Use) -> Use {
             switch old {
             /// If recursion, change function to the new function
-            case .function(let t, self): return .function(t, newFunc)
+            case .function(self): return .function(newFunc)
             case .function, .global, .literal: return old
             case let .argument(t, arg): return .argument(t, newArgs[arg]!)
             case let .instruction(t, inst): return .instruction(t, newInsts[inst]!)
@@ -371,14 +371,6 @@ fileprivate extension GradientExpansion {
             grad = [
                 (x, x.type.makeLiteralValue(1).makeUse())
             ]
-
-        case let .apply(fun, args):
-            let fgrads = bd.applyGradient(fun, args)
-            grad = []
-            for (i, arg) in args.enumerated() {
-                grad.append((operand: arg,
-                             derivative: bd.buildInstruction(.extract(from: fgrads, at: [i]))))
-            }
 
         default:
             /// - TODO: Implement all cases!

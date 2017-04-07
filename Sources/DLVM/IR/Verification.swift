@@ -74,6 +74,8 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case notBox(Use, Node)
     case notHeapObject(Use, Node)
     case cannotLoadFromCompute(Use, Node)
+    case notFunction(Use, Node)
+    case invalidGradientArguments(Use, Node)
 }
 
 public protocol SelfVerifiable {
@@ -408,7 +410,7 @@ extension InstructionKind {
                 throw VerificationError.notTensor(v1, instruction)
             }
 
-        case let .apply(fun, vv), let .applyGradient(fun, vv):
+        case let .apply(fun, vv):
             let actual = vv.map{$0.type}
             switch fun.type.unaliased {
             case let .function(args, _), let .pointer(.function(args, _), .host, _):
@@ -422,9 +424,9 @@ extension InstructionKind {
                 throw VerificationError.invalidType(fun)
             }
 
-        case let .compute(fun, vv, in: graph), let .computeGradient(fun, vv, in: graph):
+        case let .compute(fun, vv, in: graph):
             switch (fun, graph.type) {
-            case let (.function(_, fd1), .computeGraph(fd2)) where fd1 == fd2:
+            case let (.function(fd1), .computeGraph(fd2)) where fd1 == fd2:
                 let actual = vv.map{$0.type}
                 guard fd1.acceptsArguments(actual) else {
                     throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, instruction)
@@ -516,6 +518,25 @@ extension InstructionKind {
         case let .retain(v), let .release(v):
             guard case .box = v.type else {
                 throw VerificationError.notBox(v, instruction)
+            }
+
+        case let .allocateCompute(v):
+            guard case let .function(fref) = v else {
+                throw VerificationError.notFunction(v, instruction)
+            }
+            guard fref.isCompute else {
+                throw VerificationError.notComputeFunction(fref, instruction)
+            }
+
+        case let .gradient(v, from: diff, wrt: vars):
+            guard case let .function(fref) = v else {
+                throw VerificationError.notFunction(v, instruction)
+            }
+            guard fref.isCompute else {
+                throw VerificationError.notComputeFunction(fref, instruction)
+            }
+            guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars) else {
+                throw VerificationError.invalidGradientArguments(v, instruction)
             }
 
         case .allocateStack, .trap, .allocateBox: break

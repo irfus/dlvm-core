@@ -71,15 +71,11 @@ public enum InstructionKind {
     /** Function invocation **/
     /// Function application
     case apply(Use, [Use])
-    /// Gradient application, using implicit automatic differentiation
-    /// Will be replaced by `compute` or `apply` through GradientExpansion
-    /// transform pass
-    case applyGradient(Use, [Use])
     /// Compute function launcher
     case compute(Use, [Use], in: Use)
-    /// Compute gradient function launcher
-    /// Will be replaced by `compute` or
-    case computeGradient(Use, [Use], in: Use)
+    /// Gradient transformer
+    /// - Note: This will be canonicalized to a function reference
+    case gradient(Use, from: Int, wrt: [Int])
 
     /** Heap memory of host and device **/
     /** Memory **/
@@ -89,10 +85,12 @@ public enum InstructionKind {
     /// Reference-counted box
     case allocateBox(Type, MemoryLocation) /// => @box T
     case projectBox(Use) /// @box T => *@mut T
+    /// Allocate compute graph
+    case allocateCompute(Use)
     /// Retain/release a box via reference counter
     case retain(Use)
     case release(Use)
-    /// Dealloc any heap memory 
+    /// Dealloc any heap memory
     case deallocate(Use)
     /// Load value from pointer on the host
     case load(Use)
@@ -298,7 +296,7 @@ extension InstructionKind {
             default: return .invalid
             }
 
-        case let .apply(f, vv), let .applyGradient(f, vv):
+        case let .apply(f, vv):
             switch f.type.unaliased {
             case let .function(actual, ret),
                  let .pointer(.function(actual, ret), _, _):
@@ -308,14 +306,16 @@ extension InstructionKind {
                 return .invalid
             }
 
-        case let .applyGradient(f, vv), let .computeGradient(f, vv, in: _):
-            let actual = vv.map{$0.type}
-            switch f {
-            case let .function(ty, funDef)
-                where ty == funDef.type
-                   && funDef.isDifferentiable
-                   && funDef.acceptsArguments(actual):
-                return funDef.result
+        case let .gradient(f, from: diffIndex, wrt: varIndices):
+            guard case let .function(fref) = f, fref.isDifferentiable else { return .invalid }
+            return fref.gradientType(fromOutput: diffIndex, withRespectTo: varIndices) ?? .invalid
+
+        case let .compute(v, args, in: graph):
+            let actual = args.map{$0.type}
+            switch (v, graph.type) {
+            case let (.function(f1), .computeGraph(f2))
+                where f1 === f2 && f1.acceptsArguments(actual):
+                return f1.result
             default:
                 return .invalid
             }
@@ -368,16 +368,6 @@ extension InstructionKind {
             }
             return gepType(type: v.type, indices: ArraySlice(ii))
 
-        case let .compute(v, args, in: env):
-            let actual = args.map{$0.type}
-            switch (v, env.type) {
-            case let (.function(_, f1), .computeGraph(f2))
-                where f1 === f2 && f1.acceptsArguments(actual):
-                return f1.result
-            default:
-                return .invalid
-            }
-
         case let .bitCast(_, t):
 //            guard v.type.size == t.size else { return .invalid }
             return t
@@ -389,8 +379,12 @@ extension InstructionKind {
             return .pointer(t, loc, .mutable)
 
         case let .projectBox(v):
-            guard case let .box(t, loc) = v.type else { return .invalid }
+            guard case let .box(t, loc) = v.type.unaliased else { return .invalid }
             return .pointer(t, loc, .mutable)
+
+        case let .allocateCompute(v):
+            guard case let .function(fref) = v else { return .invalid }
+            return .computeGraph(fref)
 
         case .store, .copy, .deallocate,
              .branch, .conditional, .return, .retain, .release, .trap:
@@ -422,16 +416,17 @@ extension InstructionKind {
              let .elementPointer(op, _),
              let .deallocate(op),
              let .allocateStack(_, op), let .allocateHeap(_, _, count: op),
-             let .projectBox(op), let .release(op), let .retain(op):
+             let .projectBox(op), let .release(op), let .retain(op),
+             let .allocateCompute(op), let .gradient(op, _, _):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
             return ops
         case let .conditional(cond, _, thenArgs, _, elseArgs):
             return [cond] + thenArgs + elseArgs
-        case let .apply(f, args), let .applyGradient(f, args):
+        case let .apply(f, args):
             return [f] + args
-        case let .compute(f, args, in: env), let .computeGradient(f, args, in: env):
+        case let .compute(f, args, in: env):
             return [f] + args + [env]
         case let .copy(from: op1, to: op2, count: op3):
             return [op1, op2, op3]
@@ -495,16 +490,10 @@ public extension InstructionKind {
             return .compute(v1, uses.map(condSubst), in: new)
         case .compute(let v1, let uses, in: let v2):
             return .compute(v1, uses.map(condSubst), in: v2)
-        case .computeGradient(old, let uses, old):
-            return .computeGradient(new, uses.map(condSubst), in: new)
-        case .computeGradient(old, let uses, in: let v2):
-            return .computeGradient(old, uses.map(condSubst), in: v2)
-        case .computeGradient(let v1, let uses, in: old):
-            return .computeGradient(v1, uses.map(condSubst), in: new)
+        case .gradient(old, from: let diff, wrt: let wrt):
+            return .gradient(new, from: diff, wrt: wrt)
         case let .apply(f, uses):
-            return .applyGradient(f, uses.map(condSubst))
-        case let .applyGradient(f, uses):
-            return .applyGradient(f, uses.map(condSubst))
+            return .apply(f, uses.map(condSubst))
         case .extract(from: old, at: let i):
             return .extract(from: new, at: i)
         case .insert(old, to: old, at: let indices):
@@ -527,6 +516,8 @@ public extension InstructionKind {
             return .allocateStack(ty, new)
         case .allocateHeap(let ty, let memLoc, count: old):
             return .allocateHeap(ty, memLoc, count: new)
+        case .allocateCompute(old):
+            return .allocateCompute(new)
         case .deallocate(old):
             return .deallocate(new)
         case .copy(from: old, to: old, count: old):
