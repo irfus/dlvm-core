@@ -22,7 +22,7 @@ public enum Use {
     case instruction(Type, Instruction)
     case global(Type, GlobalValue)
     case literal(LiteralValue)
-    case function(Type, Function)
+    case function(Function)
 }
 
 // MARK: - Equatable
@@ -37,8 +37,8 @@ extension Use : Equatable {
             return t1 == t2 && v1 === v2
         case let (.literal(l1), .literal(l2)):
             return l1 == l2
-        case let (.function(t1, f1), .function(t2, f2)):
-            return t1 == t2 && f1 == f2
+        case let (.function(f1), .function(f2)):
+            return f1 === f2
         default:
             return false
         }
@@ -52,11 +52,12 @@ public extension Use {
         switch self {
         case .argument(let t, _),
              .instruction(let t, _),
-             .global(let t, _),
-             .function(let t, _):
+             .global(let t, _):
             return t
-        case .literal(let lit):
-            return lit.type
+        case .literal(let v):
+            return v.type
+        case .function(let v):
+            return v.type
         }
     }
 
@@ -65,7 +66,7 @@ public extension Use {
         case .argument(_, let def as Definition),
              .global(_, let def as Definition),
              .instruction(_, let def as Definition),
-             .function(_, let def as Definition):
+             .function(let def as Definition):
             return def
         case .literal:
             return nil
@@ -77,7 +78,7 @@ public extension Use {
         case let .argument(_, val): return val
         case let .global(_, val): return val
         case let .instruction(_, val): return val
-        case let .function(_, val): return val
+        case let .function(val): return val
         case let .literal(lit): return lit
         }
     }
@@ -88,7 +89,7 @@ public extension Use {
         case let .instruction(_, def): return def.name
         case let .argument(_, def): return def.name
         case .literal: return nil
-        case let .function(_, def): return def.name
+        case let .function(def): return def.name
         }
     }
 

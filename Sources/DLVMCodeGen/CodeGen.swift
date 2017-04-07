@@ -39,7 +39,7 @@ extension DLVM.Use : LLEmittable {
                                    in env: inout LLGenEnvironment) -> IRValue {
         switch self {
         case let .global(_, val): return env.value(for: val)
-        case let .function(_, fun): return env.value(for: fun)
+        case let .function(fun): return env.value(for: fun)
         case let .argument(_, arg): return env.value(for: arg)
         case let .instruction(_, inst): return env.value(for: inst)
         case let .literal(litVal): return litVal.emit(to: &context, in: &env)
@@ -235,7 +235,9 @@ extension DLVM.Instruction : LLEmittable {
     public typealias LLUnit = LLVM.Instruction
     @discardableResult
     public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Instruction where T : LLComputeTarget {
-        DLUnimplemented()
+        var inst = kind.emit(to: &context, in: &env)
+        inst.name =? name
+        return inst
     }
 }
 

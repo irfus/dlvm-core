@@ -100,7 +100,7 @@ extension Function : Value, Definition {
     }
 
     public func makeUse() -> Use {
-        return .function(type, self)
+        return .function(self)
     }
 }
 
@@ -127,13 +127,13 @@ public extension Function {
 }
 
 // MARK: - Control flow
-extension Function {
+public extension Function {
 
-    open var instructions: LazyCollection<FlattenBidirectionalCollection<Function>> {
+    var instructions: LazyCollection<FlattenBidirectionalCollection<Function>> {
         return lazy.joined()
     }
 
-    open func instruction(named name: String) -> Instruction? {
+    func instruction(named name: String) -> Instruction? {
         for bb in self {
             if let inst = bb.element(named: name) {
                 return inst
@@ -142,14 +142,35 @@ extension Function {
         return nil
     }
 
-    open func containsInstruction(named name: String) -> Bool {
+    func containsInstruction(named name: String) -> Bool {
         return instruction(named: name) != nil
     }
 
-    open func containsName(_ name: String) -> Bool {
+    func containsName(_ name: String) -> Bool {
         return containsElement(named: name) || contains(where: {
             $0.containsArgument(named: name) || $0.containsElement(named: name)
         })
     }
 
+}
+
+// MARK: - Gradient information
+public extension Function {
+
+    func gradientType(fromOutput argument: Int, withRespectTo: [Int]) -> Type? {
+        /// Check variable indices
+        let argTypes = arguments.map{$0.type}
+        var newResult: [Type] = []
+        for ty in argTypes {
+            switch ty {
+            case .pointer(.tensor(_, _), .compute, .mutable) where isCompute,
+                 .tensor([], _):
+                newResult.append(ty)
+            default:
+                break
+            }
+        }
+        return .function(newResult, .tuple(newResult))
+    }
+    
 }
