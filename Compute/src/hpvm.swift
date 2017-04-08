@@ -29,6 +29,8 @@ public enum Target : Int {
 
 public typealias P<T> = UnsafeMutablePointer<T>
 public typealias P_ = UnsafeMutableRawPointer
+public typealias I8 = CChar
+public typealias U8 = CUnsignedChar
 
 public enum HPVM {
     public enum Atomic {}
@@ -40,10 +42,10 @@ public extension HPVM {
     static func hint(_: Target)
 
     @_silgen_name("llvm.hpvm.wait")
-    static func wait(_: Int8)
+    static func wait(_: U8)
 
     @_silgen_name("llvm.hpvm.attributes")
-    static func attributes(_: P<Int8>)
+    static func attributes(_: P<U8>)
 
     @_silgen_name("llvm.hpvm.init")
     static func `init`()
@@ -52,13 +54,13 @@ public extension HPVM {
     static func cleanup()
 
     @_silgen_name("llvm.hpvm.bindIn")
-    static func bindIn(_: P_, _: Int8, _: Int8, _: Int8)
+    static func bindIn(_: P_, _: U8, _: U8, _: U8)
 
     @_silgen_name("llvm.hpvm.bindOut")
-    static func bindOut(_: P_, _: Int8, _: Int8, _: Int8)
+    static func bindOut(_: P_, _: U8, _: U8, _: U8)
 
     @_silgen_name("llvm.hpvm.edge")
-    static func edge(_: P_, _: P_, _: Int8, _: Int8, _: Int8, _: Int8) -> P_
+    static func edge(_: P_, _: P_, _: U8, _: U8, _: U8, _: U8) -> P_
 
     @_silgen_name("llvm.hpvm.push")
     static func push(_: P_, _: P_)
@@ -67,7 +69,7 @@ public extension HPVM {
     static func pop(_: P_) -> P_
 
     @_silgen_name("llvm.hpvm.launch")
-    static func launch(_: P<Int8>) -> P_
+    static func launch(_: P_) -> P_
 
     @_silgen_name("llvm.hpvm.getNode")
     static func getNode() -> P_
@@ -79,34 +81,34 @@ public extension HPVM {
     static func barrier()
 
     @_silgen_name("llvm.hpvm.malloc")
-    static func malloc(_: CLong) -> P_
+    static func malloc(_: CUnsignedLong) -> P_
 
     @_silgen_name("llvm.hpvm.getNodeInstanceID.x")
-    static func getNodeInstanceIdX(_: P_) -> Int8
+    static func getNodeInstanceIdX(_: P_) -> U8
 
     @_silgen_name("llvm.hpvm.getNodeInstanceID.y")
-    static func getNodeInstanceIdY(_: P_) -> Int8
+    static func getNodeInstanceIdY(_: P_) -> U8
 
     @_silgen_name("llvm.hpvm.getNodeInstanceID.z")
-    static func getNodeInstanceIdZ(_: P_) -> Int8
+    static func getNodeInstanceIdZ(_: P_) -> U8
 
     @_silgen_name("llvm.hpvm.getNumNodeInstances_x(void*)")
-    static func getNodeInstanceCountX(_: P_) -> Int8
+    static func getNodeInstanceCountX(_: P_) -> U8
 
     @_silgen_name("llvm.hpvm.getNumNodeInstances_y(void*)")
-    static func getNodeInstanceCountY(_: P_) -> Int8
+    static func getNodeInstanceCountY(_: P_) -> U8
 
     @_silgen_name("llvm.hpvm.getNumNodeInstances_z(void*)")
-    static func getNodeInstanceCountZ(_: P_) -> Int8
+    static func getNodeInstanceCountZ(_: P_) -> U8
 
     @_silgen_name("llvm_hpvm_track_mem")
-    static func llvm_hpvm_track_mem(_: P_, _: CLong)
+    static func trackMemory(_: P_, _: CUnsignedLong)
 
     @_silgen_name("llvm_hpvm_untrack_mem")
-    static func llvm_hpvm_untrack_mem(_: P_)
+    static func untrackMemory(_: P_)
 
     @_silgen_name("llvm_hpvm_request_mem")
-    static func llvm_hpvm_request_mem(_: P_, _: CLong)
+    static func requestMemory(_: P_, _: CUnsignedLong)
 
     /// Spcial functions
 
