@@ -10,7 +10,7 @@ Heterogeneous Parallel Virtual Machine and the LLVM NVPTX backend.
 
 ## Targets
 
-### DLVM Core
+### [DLVM Core](Sources)
 
 | Module      | Description                                                              |
 |-------------|--------------------------------------------------------------------------|
@@ -20,10 +20,10 @@ Heterogeneous Parallel Virtual Machine and the LLVM NVPTX backend.
 | TEL, telc   | *Deprecated* TEL frontend (Moved to [TEL](https://github.com/rxwei/TEL)) |
 | dlrt        | Runtime routines (reference counting, etc)                               |
 
-### DLVM Compute Primitives
+### [DLVM Compute Primitives](Compute)
 
-Compute primitives are a set of LLVM Bitcode modules contaning HPVM intrinsic
-calls. This target is located in [/Compute](Compute). It's built separately from
+Compute primitives are a set of LLVM Bitcode modules containing HPVM intrinsic
+calls. It's built separately from
 DLVM Core, since the Swift Package Manager does not support LLVM Bitcode targets.
 
 ## Build Instructions
