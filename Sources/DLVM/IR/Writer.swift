@@ -124,7 +124,7 @@ extension Type : TextOutputStreamable {
         case let .box(subtype, loc):
             target.write("@box \(loc.description(for: subtype))")
         case let .function(args, ret):
-            target.write("(\(args.joinedDescription) -> \(ret))")
+            target.write("(\(args.joinedDescription)) -> \(ret)")
         case let .alias(a):
             target.write("$")
             a.name.write(to: &target)
@@ -344,13 +344,7 @@ extension Function : TextOutputStreamable {
             target.write("\n")
         }
         target.write("func ")
-        target.write("@\(name)(")
-        arguments.map{"\($0)"}.joined(separator: ", ").write(to: &target)
-        target.write(") ")
-        if !result.isVoid {
-            target.write("-> \(result) ")
-        }
-        target.write("{\n")
+        target.write("@\(name) : \(type) {\n")
         for bb in self {
             bb.write(to: &target)
         }

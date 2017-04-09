@@ -5,7 +5,7 @@ type $mnist_params = (*@mut @compute <784x10 of f32>, *@mut @compute <1x10 of f3
 
 !compute
 !differentiable
-func @inference(%x : *@mut @compute <1x784 of f32>, %params : $mnist_params) -> *@mut @compute <1x10 of f32> {
+func @inference : (*@mut @compute <1x784 of f32>, $mnist_params) -> *@mut @compute <1x10 of f32> {
 entry(%x : *@mut @compute <1x784 of f32>, %params : $mnist_params):
     %v0 = extract %params : $mnist_params at 0
     %v1 = extract %params : $mnist_params at 1
