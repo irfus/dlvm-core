@@ -1,5 +1,5 @@
 //
-//  hpvm.swift
+//  swiftdecl.h
 //  DLVM Comptue Primitives
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -17,7 +17,14 @@
 //  limitations under the License.
 //
 
-/// This is the bridging header to Swift
-/// Include any header that will be exposed to Swift
-#import "sgemm.h"
-#import "hpvm.h"
+#ifndef SWIFT_NAME
+#define SWIFT_NAME(x) __attribute__((swift_name(#x)))
+#endif
+
+#ifndef SWIFT_COMPILE_NAME
+#define SWIFT_COMPILE_NAME(X) __attribute__((swift_name(X)))
+#endif
+
+#ifndef SWIFT_ENUM_NAMED
+#define SWIFT_ENUM_NAMED(_type, _name, SWIFT_NAME) enum _name : _type _name SWIFT_COMPILE_NAME(SWIFT_NAME); enum SWIFT_COMPILE_NAME(SWIFT_NAME) SWIFT_ENUM_EXTRA _name : _type
+#endif
