@@ -47,16 +47,16 @@ public final class HPVM : LLFunctionPrototypeCacheable {
                         output: IRValue,
                         parentOutput: IRValue,
                         streaming: Bool)
-        case getCurrentNode
-        case getParentNode(IRValue)
-        case getDimensionCount(IRValue)
-        case getNodeInstanceIdX(IRValue)
-        case getNodeInstanceIdY(IRValue)
-        case getNodeInstanceIdZ(IRValue)
-        case getNodeInstanceCountX(IRValue)
-        case getNodeInstanceCountY(IRValue)
-        case getNodeInstanceCountZ(IRValue)
-        case getVectorLength(IRValue)
+        case currentNode
+        case parentNode(IRValue)
+        case dimensionCount(IRValue)
+        case nodeInstanceIdX(IRValue)
+        case nodeInstanceIdY(IRValue)
+        case nodeInstanceIdZ(IRValue)
+        case nodeInstanceCountX(IRValue)
+        case nodeInstanceCountY(IRValue)
+        case nodeInstanceCountZ(IRValue)
+        case vectorLength(IRValue)
         case malloc(IRValue)
         case barrier
         case launch(LLVM.Function, arguments: IRValue, streaming: Bool)
@@ -104,16 +104,16 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
         case .createEdge: return "llvm.hpvm.createEdge"
         case .bindInput: return "llvm.hpvm.bind.input"
         case .bindOutput: return "llvm.hpvm.bind.output"
-        case .getCurrentNode: return "llvm.hpvm.getNode"
-        case .getParentNode: return "llvm.hpvm.getParentNode"
-        case .getDimensionCount: return "llvm.hpvm.getNumDims"
-        case .getNodeInstanceIdX: return "llvm.hpvm.getNodeInstanceID.x"
-        case .getNodeInstanceIdY: return "llvm.hpvm.getNodeInstanceID.y" 
-        case .getNodeInstanceIdZ: return "llvm.hpvm.getNodeInstanceID.z" 
-        case .getNodeInstanceCountX: return "llvm.hpvm.getNumNodeInstances.x"
-        case .getNodeInstanceCountY: return "llvm.hpvm.getNumNodeInstances.y"
-        case .getNodeInstanceCountZ: return "llvm.hpvm.getNumNodeInstances.z"
-        case .getVectorLength: return "llvm.hpvm.getVectorLength"
+        case .currentNode: return "llvm.hpvm.getNode"
+        case .parentNode: return "llvm.hpvm.getParentNode"
+        case .dimensionCount: return "llvm.hpvm.getNumDims"
+        case .nodeInstanceIdX: return "llvm.hpvm.getNodeInstanceID.x"
+        case .nodeInstanceIdY: return "llvm.hpvm.getNodeInstanceID.y" 
+        case .nodeInstanceIdZ: return "llvm.hpvm.getNodeInstanceID.z" 
+        case .nodeInstanceCountX: return "llvm.hpvm.getNumNodeInstances.x"
+        case .nodeInstanceCountY: return "llvm.hpvm.getNumNodeInstances.y"
+        case .nodeInstanceCountZ: return "llvm.hpvm.getNumNodeInstances.z"
+        case .vectorLength: return "llvm.hpvm.getVectorLength"
         case .malloc: return "llvm.hpvm.malloc"
         case .barrier: return "llvm.hpvm.barrier"
         case .launch: return "llvm.hpvm.launch"
@@ -139,21 +139,21 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
             return [i8*, i32, i32, i1] => void
         case .bindOutput:
             return [i8*, i32, i32, i1] => void
-        case .getCurrentNode:
+        case .currentNode:
             return [] => i8*
-        case .getParentNode:
+        case .parentNode:
             return [i8*] => i8*
-        case .getDimensionCount:
+        case .dimensionCount:
             return [i8*] => i32
-        case .getNodeInstanceIdX,
-             .getNodeInstanceIdY,
-             .getNodeInstanceIdZ:
+        case .nodeInstanceIdX,
+             .nodeInstanceIdY,
+             .nodeInstanceIdZ:
             return [i8*] => i32
-        case .getNodeInstanceCountX,
-             .getNodeInstanceCountY,
-             .getNodeInstanceCountZ:
+        case .nodeInstanceCountX,
+             .nodeInstanceCountY,
+             .nodeInstanceCountZ:
             return [i8*, i32] => i32
-        case .getVectorLength:
+        case .vectorLength:
             return [i32] => i32
         case .malloc:
             return [i32] => i8*
@@ -172,20 +172,20 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
 
     public var arguments: [IRValue] {
         switch self {
-        case .getCurrentNode: return []
+        case .currentNode: return []
         case .barrier: return []
         case let .wait(id: v1): return [v1]
         case let .push(v1, arguments: v2): return [v1, v2]
         case let .pop(v1): return [v1]
-        case let .getParentNode(v1): return [v1]
-        case let .getDimensionCount(v1): return [v1]
-        case let .getNodeInstanceIdX(v1): return [v1]
-        case let .getNodeInstanceIdY(v1): return [v1]
-        case let .getNodeInstanceIdZ(v1): return [v1]
-        case let .getNodeInstanceCountX(v1): return [v1]
-        case let .getNodeInstanceCountY(v1): return [v1]
-        case let .getNodeInstanceCountZ(v1): return [v1]
-        case let .getVectorLength(v1): return [v1]
+        case let .parentNode(v1): return [v1]
+        case let .dimensionCount(v1): return [v1]
+        case let .nodeInstanceIdX(v1): return [v1]
+        case let .nodeInstanceIdY(v1): return [v1]
+        case let .nodeInstanceIdZ(v1): return [v1]
+        case let .nodeInstanceCountX(v1): return [v1]
+        case let .nodeInstanceCountY(v1): return [v1]
+        case let .nodeInstanceCountZ(v1): return [v1]
+        case let .vectorLength(v1): return [v1]
         case let .malloc(v1): return [v1]
         case let .createNode(v1): return [v1]
         case let .createNode1D(v1, v2): return [v1, v2]
