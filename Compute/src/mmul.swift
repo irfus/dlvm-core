@@ -24,7 +24,10 @@ public func mmul(A: UnsafePointer<CFloat>, lda: I32,
                  k: I32)
 {
     HPVM.hint(.gpu)
-    HPVM.attributes(3, A, B, C, 1, C)
+    HPVM.attributeIn(A)
+    HPVM.attributeIn(B)
+    HPVM.attributeIn(C)
+    HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
     let m = HPVM.nodeInstanceIdX(of: thisNode)
@@ -48,7 +51,10 @@ public func mmul(A: UnsafePointer<CDouble>, lda: I32,
                  k: I32)
 {
     HPVM.hint(.gpu)
-    HPVM.attributes(3, A, B, C, 1, C)
+    HPVM.attributeIn(A)
+    HPVM.attributeIn(B)
+    HPVM.attributeIn(C)
+    HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
     let m = HPVM.nodeInstanceIdX(of: thisNode)
@@ -72,7 +78,10 @@ public func mmul(A: UnsafePointer<Int16>, lda: I32,
                  k: I32)
 {
     HPVM.hint(.gpu)
-    HPVM.attributes(3, A, B, C, 1, C)
+    HPVM.attributeIn(A)
+    HPVM.attributeIn(B)
+    HPVM.attributeIn(C)
+    HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
     let m = HPVM.nodeInstanceIdX(of: thisNode)
@@ -96,7 +105,10 @@ public func mmul(A: UnsafePointer<Int32>, lda: I32,
                  k: I32)
 {
     HPVM.hint(.gpu)
-    HPVM.attributes(3, A, B, C, 1, C)
+    HPVM.attributeIn(A)
+    HPVM.attributeIn(B)
+    HPVM.attributeIn(C)
+    HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
     let m = HPVM.nodeInstanceIdX(of: thisNode)
@@ -121,7 +133,10 @@ public func mmul(A: UnsafePointer<Int64>, lda: I32,
                  k: I32)
 {
     HPVM.hint(.gpu)
-    HPVM.attributes(3, A, B, C, 1, C)
+    HPVM.attributeIn(A)
+    HPVM.attributeIn(B)
+    HPVM.attributeIn(C)
+    HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
     let m = HPVM.nodeInstanceIdX(of: thisNode)
