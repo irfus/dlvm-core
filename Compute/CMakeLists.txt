@@ -11,12 +11,11 @@ endif()
 
 set(SWIFTC_BRIDGING_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/compute.h)
 set(SWIFTC_FLAGS ${SWIFTC_LIBC_INC_FLAG} -c -emit-bc -import-objc-header ${SWIFTC_BRIDGING_HEADER})
-set(DLCOMPUTE_MODULE_NAME)
 
 set_directory_properties(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR})
 
 add_custom_target(Compute
-  COMMAND swiftc -module-name="DLVMCompute" ${SWIFTC_FLAGS} ${DLCOMPUTE_SRC}
+  COMMAND swiftc -wmo -module-name="dlcompute" ${SWIFTC_FLAGS} ${DLCOMPUTE_SRC}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "DLVM Compute Primitives"
   SOURCES ${DLCOMPUTE_INC} ${DLCOMPUTE_SRC}
