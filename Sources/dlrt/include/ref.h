@@ -17,14 +17,14 @@
 //  limitations under the License.
 //
 
+#import "../../../Compute/include/swiftdecl.h"
 #import <stdatomic.h>
 
-#define SWIFT_NAME(X) __attribute__((swift_name(#X)))
-
 typedef enum _dl_access_owner {
-    _DL_ACCESS_OWNER_HOST = 0,
-    _DL_ACCESS_OWNER_DEVICE = 1
-} _dl_access_owner;
+    _DL_ACCESS_OWNER_NONE SWIFT_NAME(none) = 0,
+    _DL_ACCESS_OWNER_HOST SWIFT_NAME(host),
+    _DL_ACCESS_OWNER_DEVICE SWIFT_NAME(device)
+} SWIFT_NAME(DLAccessOwner) _dl_access_owner;
 
 /**
  Reference
