@@ -19,27 +19,37 @@
 
 #import "ref.h"
 
-struct _dl_ref _dl_ref_init(void (* _Nonnull free)(const struct _dl_ref * const _Nonnull)) {
-    return (struct _dl_ref){ free, 1 };
+_dl_ref _dl_ref_init(void (* _Nonnull free)(const _dl_ref * const _Nonnull)) {
+    return (_dl_ref) { free, _DL_ACCESS_OWNER_HOST, 1 };
 }
 
-void _dl_ref_retain(struct _dl_ref *const _Nonnull ref)
+void _dl_ref_retain(_dl_ref *const _Nonnull ref)
 {
     atomic_fetch_add((_Atomic int *)&ref->count, 1);
 }
 
-void _dl_ref_release(struct _dl_ref *const _Nonnull ref)
+void _dl_ref_release(_dl_ref *const _Nonnull ref)
 {
     if (atomic_fetch_sub((_Atomic int *)&ref->count, 1) == 1)
         ref->free(ref);
 }
 
-void _dl_ref_dealloc(struct _dl_ref *const _Nonnull ref)
+void _dl_ref_dealloc(_dl_ref *const _Nonnull ref)
 {
     ref->free(ref);
 }
 
-long _dl_ref_count(const struct _dl_ref *const _Nonnull ref)
+long _dl_ref_count(const _dl_ref *const _Nonnull ref)
 {
     return ref->count;
+}
+
+_dl_access_owner _dl_ref_access_owner(_dl_ref * const _Nonnull ref)
+{
+    return ref->access_owner;
+}
+
+void _dl_ref_transfer_access(_dl_ref * const _Nonnull ref, _dl_access_owner target)
+{
+    ref->access_owner = target;
 }
