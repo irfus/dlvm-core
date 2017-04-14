@@ -38,3 +38,7 @@ public extension HPVM {
     @_silgen_name("__hpvm__cleanup")
     static func cleanup()
 }
+
+public func bitCast<T, U>(_ x: T) -> U {
+    return unsafeBitCast(x, to: U.self)
+}

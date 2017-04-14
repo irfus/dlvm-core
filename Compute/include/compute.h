@@ -19,5 +19,5 @@
 
 /// This is the bridging header to Swift
 /// Include any header that will be exposed to Swift
-#import "sgemm.h"
+
 #import "hpvm.h"

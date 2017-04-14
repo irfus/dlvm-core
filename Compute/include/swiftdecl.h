@@ -21,10 +21,22 @@
 #define SWIFT_NAME(x) __attribute__((swift_name(#x)))
 #endif
 
+#ifndef SWIFT_ENUM_EXTRA
+#define SWIFT_ENUM_EXTRA
+#endif
+
+#ifndef SWIFT_ENUM
+#define SWIFT_ENUM(_type, _name)      \
+  enum _name : _type _name;           \
+  enum SWIFT_ENUM_EXTRA _name : _type
+#endif
+
 #ifndef SWIFT_COMPILE_NAME
 #define SWIFT_COMPILE_NAME(X) __attribute__((swift_name(X)))
 #endif
 
 #ifndef SWIFT_ENUM_NAMED
-#define SWIFT_ENUM_NAMED(_type, _name, SWIFT_NAME) enum _name : _type _name SWIFT_COMPILE_NAME(SWIFT_NAME); enum SWIFT_COMPILE_NAME(SWIFT_NAME) SWIFT_ENUM_EXTRA _name : _type
+#define SWIFT_ENUM_NAMED(_type, _name, SWIFT_NAME)                   \
+  enum _name : _type _name SWIFT_COMPILE_NAME(SWIFT_NAME);           \
+  enum SWIFT_COMPILE_NAME(SWIFT_NAME) SWIFT_ENUM_EXTRA _name : _type
 #endif
