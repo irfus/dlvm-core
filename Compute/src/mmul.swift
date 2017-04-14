@@ -26,7 +26,6 @@ public func mmul(A: UnsafePointer<Float>, lda: Int32,
     HPVM.hint(.gpu)
     HPVM.attributeIn(A)
     HPVM.attributeIn(B)
-    HPVM.attributeIn(C)
     HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
@@ -53,7 +52,6 @@ public func mmul(A: UnsafePointer<Double>, lda: Int32,
     HPVM.hint(.gpu)
     HPVM.attributeIn(A)
     HPVM.attributeIn(B)
-    HPVM.attributeIn(C)
     HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
@@ -80,7 +78,6 @@ public func mmul(A: UnsafePointer<Int16>, lda: Int32,
     HPVM.hint(.gpu)
     HPVM.attributeIn(A)
     HPVM.attributeIn(B)
-    HPVM.attributeIn(C)
     HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
@@ -107,7 +104,6 @@ public func mmul(A: UnsafePointer<Int32>, lda: Int32,
     HPVM.hint(.gpu)
     HPVM.attributeIn(A)
     HPVM.attributeIn(B)
-    HPVM.attributeIn(C)
     HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()
@@ -135,7 +131,6 @@ public func mmul(A: UnsafePointer<Int64>, lda: Int32,
     HPVM.hint(.gpu)
     HPVM.attributeIn(A)
     HPVM.attributeIn(B)
-    HPVM.attributeIn(C)
     HPVM.attributeOut(C)
 
     let thisNode = HPVM.currentNode()

@@ -15,7 +15,7 @@ set(SWIFTC_FLAGS ${SWIFTC_LIBC_INC_FLAG} -c -emit-bc -import-objc-header ${SWIFT
 set_directory_properties(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR})
 
 add_custom_target(Compute
-  COMMAND swiftc -wmo -module-name="dlcompute" ${SWIFTC_FLAGS} ${DLCOMPUTE_SRC}
+  COMMAND swiftc -Onone -module-name="dlcompute" ${SWIFTC_FLAGS} ${DLCOMPUTE_SRC}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "DLVM Compute Primitives"
   SOURCES ${DLCOMPUTE_INC} ${DLCOMPUTE_SRC}

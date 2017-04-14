@@ -19,6 +19,7 @@
 
 #import "swiftdecl.h" // Swift Clang-importer macros
 #import <stdlib.h>
+#import <stdbool.h>
 
 // Placeholder types
 struct HPVM {};
@@ -40,22 +41,26 @@ void __hpvm__attribute_in(const void *_Nonnull) SWIFT_NAME(HPVM.attributeIn(_:))
 void __hpvm__attribute_out(const void *_Nonnull) SWIFT_NAME(HPVM.attributeOut(_:));
 void __hpvm__init(); // Separately wrapped in hpvm.swift
 void __hpvm__cleanup(); // Separately wrapped in hpvm.swift
-void __hpvm__bindIn(const void *_Nonnull, int, int, int) SWIFT_NAME(HPVM.bindIn(_:_:_:_:));
-void __hpvm__bindOut(const void *_Nonnull, int, int, int) SWIFT_NAME(HPVM.bindOut(_:_:_:_:));
-const void *_Nonnull __hpvm__edge(const void *_Nonnull, const void *_Nonnull, int, int, int, int) SWIFT_NAME(HPVM.bindOut(_:_:_:_:_:_:));
+void __hpvm__bindIn(const void *_Nonnull, int, int, bool) SWIFT_NAME(HPVM.bindIn(_:_:_:isStreaming:));
+void __hpvm__bindOut(const void *_Nonnull, int, int, bool) SWIFT_NAME(HPVM.bindOut(_:_:_:isStreaming:));
+const void *_Nonnull __hpvm__createEdge(const void *_Nonnull, const void *_Nonnull, int, int, int, bool) SWIFT_NAME(HPVM.createEdge(_:_:_:_:_:isStreaming:));
 void __hpvm__push(const void *_Nonnull, const void *_Nonnull) SWIFT_NAME(HPVM.push(_:_:));
 const void *_Nonnull __hpvm__pop(const void *_Nonnull) SWIFT_NAME(HPVM.pop(_:));
 const void *_Nonnull __hpvm__launch(int, ...);
 const void *_Nonnull __hpvm__getNode(); // Separately wrapped in hpvm.swift
 const void *_Nonnull __hpvm__getParentNode(const void *_Nonnull) SWIFT_NAME(HPVM.parentNode(of:));
 void __hpvm__barrier(); // Separately wrapped in hpvm.swift
-const void *_Nonnull __hpvm__malloc(long) SWIFT_NAME(HPVM.malloc(_:));
+void *_Nonnull __hpvm__malloc(int) SWIFT_NAME(HPVM.malloc(_:));
 int __hpvm__getNodeInstanceID_x(const void *_Nonnull) SWIFT_NAME(HPVM.nodeInstanceIdX(of:));
 int __hpvm__getNodeInstanceID_y(const void *_Nonnull) SWIFT_NAME(HPVM.nodeInstanceIdY(of:));
 int __hpvm__getNodeInstanceID_z(const void *_Nonnull) SWIFT_NAME(HPVM.nodeInstanceIdZ(of:));
 int __hpvm__getNumNodeInstances_x(const void *_Nonnull) SWIFT_NAME(HPVM.nodeInstanceCountX(of:));
 int __hpvm__getNumNodeInstances_y(const void *_Nonnull) SWIFT_NAME(HPVM.nodeInstanceCountY(of:));
 int __hpvm__getNumNodeInstances_z(const void *_Nonnull) SWIFT_NAME(HPVM.nodeInstanceCountZ(of:));
+const void *_Nonnull __hpvm__createNode(const void *_Nonnull) SWIFT_NAME(HPVM.createNode(_:));
+const void *_Nonnull __hpvm__createNode1D(const void *_Nonnull, int) SWIFT_NAME(HPVM.createNode(_:x:));
+const void *_Nonnull __hpvm__createNode2D(const void *_Nonnull, int, int) SWIFT_NAME(HPVM.createNode(_:x:y:));
+const void *_Nonnull __hpvm__createNode3D(const void *_Nonnull, int, int, int) SWIFT_NAME(HPVM.createNode(_:x:y:z:));
 
 // Atomic
 int __hpvm__atomic_cmpxchg(int *_Nonnull, int, int) SWIFT_NAME(HPVMAtomic.cmpxchg(_:_:_:));
