@@ -76,7 +76,9 @@ func Conv2DFloatWorkgroup(I: UnsafePointer<Float>, // In 1
                           height: Int32) // 8
 {
     HPVM.hint(.cpu)
-    // TODO: add attributes
+    HPVM.attributeIn(I)
+    HPVM.attributeIn(M)
+    HPVM.attributeOut(P)
 
     let allocationNode = HPVM.createNode(bitCast(Conv2DFloatAllocate))
     let leafNode = HPVM.createNode(bitCast(Conv2DFloatLeaf), x: tileWidth, y: tileWidth)
