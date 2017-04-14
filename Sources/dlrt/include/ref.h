@@ -19,25 +19,39 @@
 
 #import <stdatomic.h>
 
+#define SWIFT_NAME(X) __attribute__((swift_name(#X)))
+
+typedef enum _dl_access_owner {
+    _DL_ACCESS_OWNER_HOST = 0,
+    _DL_ACCESS_OWNER_DEVICE = 1
+} _dl_access_owner;
+
 /**
  Reference
  */
-struct _dl_ref {
+typedef struct _dl_ref {
     void (* _Nonnull free)(const struct _dl_ref * const _Nonnull);
     _Atomic long count;
-} __attribute__((swift_name("DLReference")));
+    _dl_access_owner access_owner;
+} _dl_ref __attribute__((swift_name("DLReference")));
 
-struct _dl_ref _dl_ref_init(void (* _Nonnull free)(const struct _dl_ref * const _Nonnull))
-    __attribute__((swift_name("DLReference.init(free:)")));
+_dl_ref _dl_ref_init(void (* _Nonnull free)(const _dl_ref * const _Nonnull))
+    SWIFT_NAME(DLReference.init(free:));
 
-void _dl_ref_retain(struct _dl_ref * const _Nonnull ref)
-    __attribute__((swift_name("DLReference.retain(self:)")));
+void _dl_ref_retain(_dl_ref * const _Nonnull ref)
+    SWIFT_NAME(DLReference.retain(self:));
 
-void _dl_ref_release(struct _dl_ref * const _Nonnull ref)
-    __attribute__((swift_name("DLReference.release(self:)")));
+void _dl_ref_release(_dl_ref * const _Nonnull ref)
+    SWIFT_NAME(DLReference.release(self:));
 
-void _dl_ref_dealloc(struct _dl_ref * const _Nonnull ref)
-    __attribute__((swift_name("DLReference.deallocate(self:)")));
+void _dl_ref_dealloc(_dl_ref * const _Nonnull ref)
+    SWIFT_NAME(DLReference.deallocate(self:));
 
-long _dl_ref_count(const struct _dl_ref * const _Nonnull ref)
-    __attribute__((swift_name("getter:DLReference.count(self:)")));
+long _dl_ref_count(const _dl_ref * const _Nonnull ref)
+    SWIFT_NAME(getter:DLReference.count(self:));
+
+_dl_access_owner _dl_ref_access_owner(_dl_ref * const _Nonnull ref)
+    SWIFT_NAME(getter:DLReference.owner(self:));
+
+void _dl_ref_transfer_access(_dl_ref * const _Nonnull ref, _dl_access_owner target)
+    SWIFT_NAME(setter:DLReference.owner(self:_:));
