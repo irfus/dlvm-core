@@ -26,6 +26,15 @@ public typealias I32 = CInt
 /// This extension contains wrappers of top-level void-argument
 /// functions that cannot be imported using `SWIFT_NAME`
 public extension HPVM {
+
+    public enum Target : I32 {
+        case none = 0
+        case cpu = 1
+        case gpu = 2
+        case spir = 3
+        case count = 4
+    }
+
     @_silgen_name("__hpvm__init")
     static func initialize()
 
@@ -37,6 +46,12 @@ public extension HPVM {
 
     @_silgen_name("__hpvm__cleanup")
     static func cleanup()
+
+    @_silgen_name("__hpvm__hint")
+    static func hint(_: Target)
+
+    @_silgen_name("__hpvm__wait")
+    static func wait(_: CInt)
 }
 
 public func bitCast<T, U>(_ x: T) -> U {
