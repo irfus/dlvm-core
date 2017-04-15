@@ -58,7 +58,7 @@ func Conv2DFloatRoot(I: UnsafePointer<Float>, // In 1
 @inline(never)
 @_silgen_name("conv2d_float_allocate")
 func Conv2DFloatAllocate(tileWidth: Int32, maskWidth: Int32) -> (UnsafeMutablePointer<Float>, Int32) {
-    let count = tileWidth + maskWidth - 1
+    let count = tileWidth &+ maskWidth &- 1
     let ptr = HPVM.malloc(count)
     return (ptr.assumingMemoryBound(to: Float.self), count)
 }
@@ -128,54 +128,55 @@ func Conv2DFloatLeaf(I: UnsafePointer<Float>, // In 1
     let blockIdX = HPVM.nodeInstanceIdX(of: parentNode)
     let blockIdY = HPVM.nodeInstanceIdY(of: parentNode)
     let maskRadius = maskWidth / 2
-    let w = tileWidth + maskWidth - 1
+    let w = tileWidth &+ maskWidth &- 1
 
-    for k in 0..<channelCount {
+    var k: Int32 = 0
+    repeat {
         // First batch loading
-        var dest = blockIdY * tileWidth + blockIdX
+        var dest = blockIdY &* tileWidth &+ blockIdX
         var destY = dest / countN
         var destX = dest % countN
-        var srcY = blockIdY * tileWidth + destY - maskRadius
-        var srcX = blockIdX * tileWidth + destX - maskRadius
-        var src = (srcY * width + srcX) * channelCount + k
+        var srcY = blockIdY &* tileWidth &+ destY &- maskRadius
+        var srcX = blockIdX &* tileWidth &+ destX &- maskRadius
+        var src = (srcY &* width &+ srcX) &* channelCount &+ k
         if srcY >= 0 && srcY < height && srcX >= 0 && srcX < width {
-            N[Int(destY * w + destX)] = I[Int(src)]
+            N[Int(destY &* w &+ destX)] = I[Int(src)]
         } else {
-            N[Int(destY * w + destX)] = 0
+            N[Int(destY &* w &+ destX)] = 0
         }
 
         // Second batch loading
-        dest = blockIdY * tileWidth + idX + tileWidth * tileWidth
+        dest = blockIdY &* tileWidth &+ idX &+ tileWidth &* tileWidth
         destY = dest / countN
         destX = dest % countN
-        srcY = blockIdY * tileWidth + destY - maskRadius
-        srcX = blockIdX * tileWidth + destX - maskRadius
-        src = (srcY * width + srcX) * channelCount + k
+        srcY = blockIdY &* tileWidth &+ destY &- maskRadius
+        srcX = blockIdX &* tileWidth &+ destX &- maskRadius
+        src = (srcY &* width &+ srcX) &* channelCount &+ k
         if destY < countN {
             if (srcY >= 0 && srcY < height && srcX >= 0 && srcX < width) {
-                N[Int(destY * w + destX)] = I[Int(src)]
+                N[Int(destY &* w &+ destX)] = I[Int(src)]
             } else {
-                N[Int(destY * w + destX)] = 0
+                N[Int(destY &* w &+ destX)] = 0
             }
         }
         HPVM.barrier()
 
         var accum: Float = 0
-        var x: Int32 = 0
-        var y: Int32 = 0
+        var x: Int32 = 0, y: Int32 = 0
         repeat {
             repeat {
-                accum += N[Int((idY + y) * w + idX + x)] * M[Int(y * maskWidth + x)]
-                x += 1
+                accum += N[Int((idY &+ y) &* w &+ idX &+ x)] * M[Int(y &* maskWidth &+ x)]
+                x = x &+ 1
             } while x < maskWidth
-            y += 1
+            y = y &+ 1
         } while y < maskWidth
 
-        y = blockIdY * tileWidth + idY
-        x = blockIdX * tileWidth + idX
+        y = blockIdY &* tileWidth &+ idY
+        x = blockIdX &* tileWidth &+ idX
         if y < height && x < width {
-            P[Int((y * width + x) * channelCount + k)] = min(max(accum, 0.0), 1.0)
+            P[Int((y &* width &+ x) &* channelCount &+ k)] = min(max(accum, 0.0), 1.0)
         }
         HPVM.barrier()
-    }
+        k = k &+ 1
+    } while k < channelCount
 }

@@ -35,12 +35,12 @@ public func mmul(A: UnsafePointer<Float>, lda: Int32,
     var i: Int32 = 0
     var c: Float = 0.0
     repeat {
-        let a = A[Int(m + i * lda)]
-        let b = B[Int(n + i * ldb)]
+        let a = A[Int(m &+ i &* lda)]
+        let b = B[Int(n &+ i &* ldb)]
         c += a * b
-        i += 1
+        i = i &+ 1
     } while i < k
-    C[Int(m + n * ldc)] = c
+    C[Int(m &+ n * ldc)] = c
 }
 
 @_silgen_name("mmul_f64")
@@ -61,12 +61,12 @@ public func mmul(A: UnsafePointer<Double>, lda: Int32,
     var i: Int32 = 0
     var c: Double = 0.0
     repeat {
-        let a = A[Int(m + i * lda)]
-        let b = B[Int(n + i * ldb)]
+        let a = A[Int(m &+ i &* lda)]
+        let b = B[Int(n &+ i &* ldb)]
         c += a * b
-        i += 1
+        i = i &+ 1
     } while i < k
-    C[Int(m + n * ldc)] = c
+    C[Int(m &+ n &* ldc)] = c
 }
 
 @_silgen_name("mmul_i16")
@@ -87,12 +87,12 @@ public func mmul(A: UnsafePointer<Int16>, lda: Int32,
     var i: Int32 = 0
     var c: Int16 = 0
     repeat {
-        let a = A[Int(m + i * lda)]
-        let b = B[Int(n + i * ldb)]
+        let a = A[Int(m &+ i &* lda)]
+        let b = B[Int(n &+ i &* ldb)]
         c += a * b
-        i += 1
+        i = i &+ 1
     } while i < k
-    C[Int(m + n * ldc)] = c
+    C[Int(m &+ n &* ldc)] = c
 }
 
 @_silgen_name("mmul_i32")
@@ -113,12 +113,12 @@ public func mmul(A: UnsafePointer<Int32>, lda: Int32,
     var i: Int32 = 0
     var c: Int32 = 0
     repeat {
-        let a = A[Int(m + i * lda)]
-        let b = B[Int(n + i * ldb)]
+        let a = A[Int(m &+ i &* lda)]
+        let b = B[Int(n &+ i &* ldb)]
         c += a * b
-        i += 1
+        i = i &+ 1
     } while i < k
-    C[Int(m + n * ldc)] = c
+    C[Int(m &+ n &* ldc)] = c
 }
 
 
@@ -140,10 +140,10 @@ public func mmul(A: UnsafePointer<Int64>, lda: Int32,
     var i: Int32 = 0
     var c: Int64 = 0
     repeat {
-        let a = A[Int(m + i * lda)]
-        let b = B[Int(n + i * ldb)]
+        let a = A[Int(m &+ i &* lda)]
+        let b = B[Int(n &+ i &* ldb)]
         c += a * b
-        i += 1
+        i = i &+ 1
     } while i < k
-    C[Int(m + n * ldc)] = c
+    C[Int(m &+ n &* ldc)] = c
 }
