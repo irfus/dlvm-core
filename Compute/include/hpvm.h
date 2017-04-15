@@ -26,15 +26,15 @@ struct HPVM {};
 struct HPVMAtomic {} SWIFT_NAME(HPVM.Atomic);
 struct HPVMRuntime {} SWIFT_NAME(HPVM.Runtime);
 
-typedef SWIFT_ENUM_NAMED(int, Target, "HPVM.Target") {
-    TargetNone = 0,
-    TargetCPU SWIFT_NAME(cpu),
-    TargetGPU SWIFT_NAME(gpu),
-    TargetSPIR SWIFT_NAME(spir),
-    TargetCount
-};
+typedef enum {
+    HPVMTargetNone = 0,
+    HPVMTargetCPU,
+    HPVMTargetGPU,
+    HPVMTargetSPIR,
+    HPVMTargetCount
+} HPVMTarget;
 
-void __hpvm__hint(Target) SWIFT_NAME(HPVM.hint(_:));
+void __hpvm__hint(HPVMTarget);
 void __hpvm__wait(int);
 
 void __hpvm__attribute_in(const void *_Nonnull) SWIFT_NAME(HPVM.attributeIn(_:));
