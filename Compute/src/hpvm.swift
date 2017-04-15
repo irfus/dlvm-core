@@ -54,6 +54,8 @@ public extension HPVM {
     static func wait(_: CInt)
 }
 
+/// Contextual bit cast helper
+/// - Note: very unsafe
 public func bitCast<T, U>(_ x: T) -> U {
     return unsafeBitCast(x, to: U.self)
 }
