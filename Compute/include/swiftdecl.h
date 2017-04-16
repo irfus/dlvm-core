@@ -17,11 +17,6 @@
 //  limitations under the License.
 //
 
-/// Requires Objective-C mode
-#ifndef __OBJC__
-#error You must enable Objective-C mode in the compiler
-#endif
-
 /// Swift name attribute with quoted expansion
 #ifndef SWIFT_NAME
     #ifdef __swift__
@@ -40,6 +35,9 @@
     #endif
 #endif
 
+/// Swift enum attributes are available only in Objective-C mode
+#ifdef __OBJC__
+
 #ifndef SWIFT_ENUM_EXTRA
     #define SWIFT_ENUM_EXTRA
 #endif
@@ -51,3 +49,5 @@
 #ifndef SWIFT_ENUM_NAMED
     #define SWIFT_ENUM_NAMED(_type, _name, SWIFT_NAME) enum _name : _type _name SWIFT_COMPILE_NAME(SWIFT_NAME); enum SWIFT_COMPILE_NAME(SWIFT_NAME) SWIFT_ENUM_EXTRA _name : _type
 #endif
+
+#endif // __OBJC__
