@@ -82,7 +82,7 @@ class CodeGenerator {
         /// Build pure inference function
         var args: [(String, Type)] = []
         for input in program.inputs {
-            let arg: Type = .pointer(.tensor(input.shape, program.dataType), .compute, .mutable)
+            let arg: Type = .box(.tensor(input.shape, program.dataType), .compute)
             args.append((input.name, arg))
         }
         
@@ -90,7 +90,7 @@ class CodeGenerator {
         let paramStructType = builder.buildTypeAlias(
             .transparent("\(program.moduleName)_params",
                 .tuple(program.parameters.map {
-                    .pointer(.tensor($0.shape, self.program.dataType), .compute, .mutable)
+                    .box(.tensor($0.shape, self.program.dataType), .compute)
                 })
             )
         )
@@ -99,7 +99,7 @@ class CodeGenerator {
         let output = program.layers.first(where: {$0.isOutput})! // BAD!
         /// Compute function
         let function = builder.buildFunction(named: "inference", arguments: args,
-                                             result: .pointer(.tensor(output.shape, program.dataType), .compute, .mutable),
+                                             result: .box(.tensor(output.shape, program.dataType), .compute),
                                              attributes: [ .differentiable, .compute ])
         builder.move(to: function.entry)
 

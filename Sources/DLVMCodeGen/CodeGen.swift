@@ -122,11 +122,11 @@ extension DLVM.TypeAlias : LLEmittable {
     }
 }
 
-public extension DLVM.MemoryLocation {
+public extension DLVM.MemoryType {
     var addressSpace: LLAddressSpace {
         switch self {
         case .compute: return .global
-        case .host: return .generic
+        case .normal: return .generic
         }
     }
 }
@@ -157,7 +157,7 @@ extension DLVM.`Type` : LLEmittable {
                                 returnType: ret.emit(to: &context, in: &env))
         case let .alias(alias):
             return env.type(for: alias)
-        case let .box(subt, .host):
+        case let .box(subt, .normal):
             return PointerType(pointee:
                 StructType(elementTypes: [
                     context.referenceCounterType,
@@ -172,8 +172,8 @@ extension DLVM.`Type` : LLEmittable {
                                 addressSpace: .global) /// Indirect storage
                 ])
             )
-        case let .pointer(subt, loc, _):
-            return PointerType(pointee: subt.emit(to: &context, in: &env), addressSpace: loc.addressSpace)
+        case let .pointer(subt):
+            return PointerType(pointee: subt.emit(to: &context, in: &env))
         case let .computeGraph(fun):
             return context.target.loweredComputeGraphType(from: fun)
         }

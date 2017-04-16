@@ -242,11 +242,11 @@ public extension IRBuilder {
         return buildInstruction(.dataTypeCast(source, targetDataType))
     }
 
-    func allocateHeap(for type: Type, in location: MemoryLocation, size: Use) -> Use {
-        return buildInstruction(.allocateHeap(type, location, count: size))
+    func allocateHeap(for type: Type, count: Use) -> Use {
+        return buildInstruction(.allocateHeap(type, count: count))
     }
 
-    func allocateBox(type: Type, in location: MemoryLocation) -> Use {
+    func allocateBox(type: Type, in location: MemoryType) -> Use {
         return buildInstruction(.allocateBox(type, location))
     }
 

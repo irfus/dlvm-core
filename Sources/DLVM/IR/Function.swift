@@ -163,7 +163,7 @@ public extension Function {
         var newResult: [Type] = []
         for ty in argTypes {
             switch ty {
-            case .pointer(.tensor(_, _), .compute, .mutable) where isCompute,
+            case .box(.tensor(_, _), .compute) where isCompute,
                  .tensor([], _):
                 newResult.append(ty)
             default:

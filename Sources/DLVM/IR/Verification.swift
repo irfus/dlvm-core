@@ -66,10 +66,9 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case invalidLiteral(Type, Literal, Node)
     case missingIndices(Use, Node)
     case notDifferentiable(Node)
-    case unexpectedMemoryLocation(Use, Node)
+    case unexpectedMemoryType(Use, Node)
     case invalidCopyOperands(Use, Use, Node)
     case notComputeFunction(Function, Node)
-    case notMutable(Use, Node)
     case computeGraphMismatch(Function, Node)
     case notBox(Use, Node)
     case notHeapObject(Use, Node)
@@ -327,7 +326,7 @@ extension InstructionKind {
             /// Non-compute scalar
             case .tensor([], _): break
             /// Compute tensor
-            case .pointer(.tensor(_, _), .compute, .mutable): break
+            case .box(.tensor(_, _), .compute): break
             default:
                 throw VerificationError.notTensor(v1, instruction)
             }
@@ -338,8 +337,8 @@ extension InstructionKind {
             case let (.tensor([], t1), .tensor([], t2)) where t1 == t2:
                 break
             /// Compute tensor
-            case let (.pointer(.tensor(s1, t1), .compute, .mutable),
-                      .pointer(.tensor(s2, t2), .compute, .mutable))
+            case let (.box(.tensor(s1, t1), .compute),
+                      .box(.tensor(s2, t2), .compute))
                 where s1.canMutuallyBroadcast(with: s2) && t1 == t2:
                 guard function.isCompute else {
                     throw VerificationError.notComputeFunction(function, instruction)
@@ -353,8 +352,8 @@ extension InstructionKind {
             guard function.isCompute else {
                 throw VerificationError.notComputeFunction(function, instruction)
             }
-            guard case let .pointer(.tensor(s1, t1), .compute, .mutable) = lhs.type.unaliased,
-                  case let .pointer(.tensor(s2, t2), .compute, .mutable) = rhs.type.unaliased,
+            guard case let .box(.tensor(s1, t1), .compute) = lhs.type.unaliased,
+                  case let .box(.tensor(s2, t2), .compute) = rhs.type.unaliased,
                   s1.canMatrixMultiply(with: s2), t1 == t2
                 else { throw VerificationError.cannotMatrixMultiply(lhs, rhs, instruction) }
 
@@ -364,12 +363,12 @@ extension InstructionKind {
                 throw VerificationError.notComputeFunction(function, instruction)
             }
             guard let first = vv.first,
-                  case let .pointer(.tensor(s1, t1), .compute, .mutable) = first.type.unaliased
+                  case let .box(.tensor(s1, t1), .compute) = first.type.unaliased
                 else { throw VerificationError.noOperands(instruction) }
             /// Check simple, data type equality, and concatenability
             var accShape: TensorShape = s1
             for v in vv.dropFirst() {
-                guard case let .pointer(.tensor(shape, type), .compute, .mutable) = v.type.unaliased,
+                guard case let .box(.tensor(shape, type), .compute) = v.type.unaliased,
                       type == t1,
                       let newShape = accShape.concatenating(with: shape, alongDimension: axis)
                     else { throw VerificationError.concatenationShapeMismatch(vv, axis, instruction) }
@@ -381,7 +380,7 @@ extension InstructionKind {
             guard function.isCompute else {
                 throw VerificationError.notComputeFunction(function, instruction)
             }
-            guard case let .pointer(.tensor(s1, _), .compute, .mutable) = v1.type.unaliased else {
+            guard case let .box(.tensor(s1, _), .compute) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
             if let axis = axis, !s1.indices.contains(axis) {
@@ -391,7 +390,7 @@ extension InstructionKind {
         case let .shapeCast(v1, target):
             switch v1.type.unaliased {
             case let .tensor(s1, _) where target.contiguousSize == s1.contiguousSize: break
-            case let .pointer(.tensor(s1, _), .compute, .mutable) where target.contiguousSize == s1.contiguousSize:
+            case let .box(.tensor(s1, _), .compute) where target.contiguousSize == s1.contiguousSize:
                 guard function.isCompute else {
                     throw VerificationError.notComputeFunction(function, instruction)
                 }
@@ -402,7 +401,7 @@ extension InstructionKind {
         case let .dataTypeCast(v1, target):
             switch v1.type.unaliased {
             case let .tensor(_, t1),
-                 let .pointer(.tensor(_, t1), .compute, .mutable):
+                 let .box(.tensor(_, t1), .compute):
                 guard t1.canCast(to: target) else {
                     throw VerificationError.cannotCastDataType(v1, target, instruction)
                 }
@@ -413,13 +412,11 @@ extension InstructionKind {
         case let .apply(fun, vv):
             let actual = vv.map{$0.type}
             switch fun.type.unaliased {
-            case let .function(args, _), let .pointer(.function(args, _), .host, _):
+            case let .function(args, _), let .pointer(.function(args, _)):
                 guard actual.count == args.count
                    && zip(actual, args).forAll({$0.conforms(to: $1)}) else {
                     throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, instruction)
                 }
-            case .pointer(_, .compute, _):
-                throw VerificationError.unexpectedMemoryLocation(fun, instruction)
             default:
                 throw VerificationError.invalidType(fun)
             }
@@ -440,7 +437,7 @@ extension InstructionKind {
                 throw VerificationError.notBox(v, instruction)
             }
 
-        case let .allocateHeap(_, _, count: v):
+        case let .allocateHeap(_, count: v):
             guard case .tensor([], .int(64)) = v.type.unaliased else {
                 throw VerificationError.unexpectedType(v, .tensor([], .int(64)), instruction)
             }
@@ -465,19 +462,13 @@ extension InstructionKind {
             }
 
         case let .load(v1):
-            guard case .pointer(_, let loc, _) = v1.type.unaliased else {
+            guard case .pointer(_) = v1.type.unaliased else {
                 throw VerificationError.notPointer(v1, instruction)
-            }
-            guard loc == .host else {
-                throw VerificationError.cannotLoadFromCompute(v1, instruction)
             }
 
         case let .store(v1, to: v2):
-            guard case let .pointer(subtype, .host, mut) = v2.type.unaliased else {
+            guard case let .pointer(subtype) = v2.type.unaliased else {
                 throw VerificationError.notPointer(v2, instruction)
-            }
-            guard mut == .mutable else {
-                throw VerificationError.notMutable(v2, instruction)
             }
             guard v1.type == subtype else {
                 throw VerificationError.typeMismatch(v1, v2, instruction)
@@ -493,7 +484,7 @@ extension InstructionKind {
                 throw VerificationError.unexpectedType(count, .scalar(.int(64)), instruction)
             }
             switch (src.type, dest.type) {
-            case let (.pointer(t1, _, _), .pointer(t2, _, .mutable)) where t1 == t2:
+            case let (.pointer(t1), .pointer(t2)) where t1 == t2:
                 break
             case let (.box(t1, _), .box(t2, _)) where t1 == t2:
                 /// Count must be literal 1
@@ -537,6 +528,11 @@ extension InstructionKind {
             }
             guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars) else {
                 throw VerificationError.invalidGradientArguments(v, instruction)
+            }
+
+        case let .requestMemory(v):
+            guard case .box(_, .compute) = v.type.unaliased else {
+                throw VerificationError.unexpectedMemoryType(v, instruction)
             }
 
         case .allocateStack, .trap, .allocateBox: break

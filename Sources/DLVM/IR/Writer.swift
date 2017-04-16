@@ -76,10 +76,10 @@ extension TensorIndex : TextOutputStreamable {
     }
 }
 
-extension MemoryLocation {
+extension MemoryType {
     public func description(for type: Type) -> String {
         switch self {
-            case .host: return "\(type)"
+            case .normal: return "\(type)"
             case .compute: return "@compute \(type)"
         }
     }
@@ -119,8 +119,8 @@ extension Type : TextOutputStreamable {
             target.write("void")
         case let .array(subtype, n):
             target.write("[\(n) x \(subtype)]")
-        case let .pointer(subtype, loc, mut):
-            target.write("*\(mut)\(loc.description(for: subtype))")
+        case let .pointer(subtype):
+            target.write("*\(subtype)")
         case let .box(subtype, loc):
             target.write("@box \(loc.description(for: subtype))")
         case let .function(args, ret):
@@ -236,8 +236,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("compute \(f)(\(args)) in \(graph)")
         case let .gradient(f, from: diff, wrt: vars):
             target.write("gradient \(f) from \(diff) wrt \(vars)")
-        case let .allocateHeap(t, loc, count: c):
-            target.write("allocateHeap \(t), \(loc), \(c)")
+        case let .allocateHeap(t, count: c):
+            target.write("allocateHeap \(t), \(c)")
         case let .allocateBox(t, loc):
             target.write("allocateBox \(t), \(loc)")
         case let .allocateCompute(v):
@@ -252,6 +252,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("release \(v)")
         case let .copy(from: src, to: dest, count: count):
             target.write("copy from \(src) to \(dest), \(count)")
+        case let .requestMemory(v):
+            target.write("requestMemory \(v)")
         case .trap:
             target.write("trap")
         }
