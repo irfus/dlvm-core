@@ -7,7 +7,7 @@ file(GLOB DLRT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
 # Set libc path if not generating Xcode (won't build if we specify
 # libc path with Xcode)
 if(NOT CMAKE_GENERATOR STREQUAL Xcode)
-set(CC_LIBC_INC_FLAG -Xcc -I${CMAKE_LIBRARY_PATH})
+set(CC_LIBC_INC_FLAG -I${CMAKE_LIBRARY_PATH})
 endif()
 
 set(CC_BRIDGING_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/dlrt.h)
