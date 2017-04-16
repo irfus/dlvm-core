@@ -12,6 +12,7 @@ endif()
 # DLVM Compute Primitives
 
 add_subdirectory(Compute)
+add_subdirectory(Runtime)
 
 # DLVM Core
 
@@ -25,4 +26,4 @@ add_custom_target(Core
 
 set_directory_properties(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/Core)
 
-add_custom_target(dlvm-all ALL DEPENDS Core Compute)
+add_custom_target(dlvm-all ALL DEPENDS Core Compute Runtime)

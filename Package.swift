@@ -22,21 +22,9 @@ import PackageDescription
 let package = Package(
     name: "DLVM",
     targets: [
-        /// Core DLVM library: IR, BPGen (libDLVM)
         Target(name: "DLVM"),
-        /// DLVM IR Reader
-//        Target(name: "DLVMReader", dependencies: ["DLVM"]),
-        /// DLVM compiler driver
-//        Target(name: "dlc", dependencies: ["DLVM", "DLVMReader", "DLVMCodeGen"]),
-        /// DLVM compiler primitives
-        Target(name: "dlrt"),
-        /// DLVM code generator
         Target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
-        /// DLVM interpreter
-//        Target(name: "dli", dependencies: ["DLVM", "DLVMReader", "DLVMRuntime"]),
-        /// TEL compiler library (libTEL)
         Target(name: "TEL", dependencies: ["DLVM"]),
-        /// TEL compiler driver
         Target(name: "telc", dependencies: ["TEL", "DLVM", "DLVMCodeGen"])
     ],
     dependencies: [
