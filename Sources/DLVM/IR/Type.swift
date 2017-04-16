@@ -41,6 +41,10 @@ extension StructType : Equatable {
     }
 }
 
+public enum MemoryType {
+    case normal, compute
+}
+
 public extension StructType {
     func field(named name: String) -> Field? {
         return fields.first(where: {$0.name == name})
@@ -68,9 +72,9 @@ public indirect enum Type {
     /// Struct, corresponding to LLVM struct type
     case `struct`(StructType)
     /// Pointer
-    case pointer(Type, MemoryLocation, Mutability)
+    case pointer(Type)
     /// Reference counted box
-    case box(Type, MemoryLocation)
+    case box(Type, MemoryType)
     /// Function type
     case function([Type], Type)
     /// Alias type, transparent or opaque
@@ -147,12 +151,7 @@ public extension Type {
     }
 
     func conforms(to other: Type) -> Bool {
-        switch (self.canonical, other.canonical) {
-        case let (.pointer(t1, loc1, .mutable), .pointer(t2, loc2, .immutable)):
-            return t1 == t2 && loc1 == loc2
-        default:
-            return self == other
-        }
+        return canonical == other.canonical
     }
 }
 
@@ -170,7 +169,7 @@ public extension Type {
             result = .tensor(shape.dropFirst(), dt)
         case let .array(t, n) where idx < n:
             result = t
-        case let .pointer(t, _, _), let .box(t, _):
+        case let .pointer(t), let .box(t, _):
             result = t
         default:
             return nil
@@ -186,7 +185,7 @@ public extension Type {
         case let .array(subT, i): return .array(subT.canonical, i)
         case let .tuple(tt): return .tuple(tt.map{$0.canonical})
         case let .struct(ty): return .struct(ty.canonical)
-        case let .pointer(t, loc, mut): return .pointer(t.canonical, loc, mut)
+        case let .pointer(t): return .pointer(t.canonical)
         case let .box(t, loc): return .box(t.canonical, loc)
         case let .function(tt, t): return.function(tt.map{$0.canonical}, t.canonical)
         case let .alias(.transparent(_, subT)): return subT.canonical
@@ -215,8 +214,8 @@ extension Type : Equatable {
             return s1 == s2
         case let (.array(t1, n1), .array(t2, n2)):
             return t1 == t2 && n1 == n2
-        case let (.pointer(t1, loc1, mut1), .pointer(t2, loc2, mut2)):
-            return t1 == t2 && loc1 == loc2 && mut1 == mut2
+        case let (.pointer(t1), .pointer(t2)):
+            return t1 == t2
         case let (.box(t1, loc1), .box(t2, loc2)):
             return t1 == t2 && loc1 == loc2
         case let (.function(tt1, t1), .function(tt2, t2)):
@@ -249,7 +248,7 @@ public extension Type {
         case .tensor, .void, .computeGraph:
             return true
         case let .array(subtype, _),
-             let .pointer(subtype, _, _),
+             let .pointer(subtype),
              let .box(subtype, _):
             return subtype.isValid
         case let .tuple(subtypes):
