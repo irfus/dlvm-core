@@ -17,24 +17,37 @@
 //  limitations under the License.
 //
 
-/// Requires Objective-C
+/// Requires Objective-C mode
+#ifndef __OBJC__
+#error You must enable Objective-C mode in the compiler
+#endif
 
+/// Swift name attribute with quoted expansion
 #ifndef SWIFT_NAME
-#define SWIFT_NAME(x) __attribute__((swift_name(#x)))
+    #ifdef __swift__
+        #define SWIFT_NAME(x) __attribute__((swift_name(#x)))
+    #else
+        #define SWIFT_NAME(x)
+    #endif
+#endif
+
+/// Swift name attribute with direct expansion
+#ifndef SWIFT_COMPILE_NAME
+    #ifdef __swift__
+        #define SWIFT_COMPILE_NAME(X) __attribute__((swift_name(X)))
+    #else
+        #define SWIFT_COMPILE_NAME(X)
+    #endif
 #endif
 
 #ifndef SWIFT_ENUM_EXTRA
-#define SWIFT_ENUM_EXTRA
+    #define SWIFT_ENUM_EXTRA
 #endif
 
 #ifndef SWIFT_ENUM
-#define SWIFT_ENUM(_type, _name) enum _name : _type _name; enum SWIFT_ENUM_EXTRA _name : _type
-#endif
-
-#ifndef SWIFT_COMPILE_NAME
-#define SWIFT_COMPILE_NAME(X) __attribute__((swift_name(X)))
+    #define SWIFT_ENUM(_type, _name) enum _name : _type _name; enum SWIFT_ENUM_EXTRA _name : _type
 #endif
 
 #ifndef SWIFT_ENUM_NAMED
-#define SWIFT_ENUM_NAMED(_type, _name, SWIFT_NAME) enum _name : _type _name SWIFT_COMPILE_NAME(SWIFT_NAME); enum SWIFT_COMPILE_NAME(SWIFT_NAME) SWIFT_ENUM_EXTRA _name : _type
+    #define SWIFT_ENUM_NAMED(_type, _name, SWIFT_NAME) enum _name : _type _name SWIFT_COMPILE_NAME(SWIFT_NAME); enum SWIFT_COMPILE_NAME(SWIFT_NAME) SWIFT_ENUM_EXTRA _name : _type
 #endif
