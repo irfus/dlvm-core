@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+/// WIP: Richard
+
 /// Replace every `gradient` instruction to a `call` to a function that
 /// produces the gradient
 public class GradientExpansion: TransformPass<Module> {
@@ -32,7 +34,9 @@ public class GradientExpansion: TransformPass<Module> {
             for instruction in function.instructions {
                 if case let .gradient(.function(funcToDiff), from: diffIndex, wrt: varIndices) = instruction.kind,
                     funcToDiff.isDifferentiable {
-                    if let _ = globalGradInfo.gradient(of: function) { continue }
+                    if let _ = globalGradInfo.gradient(of: function, from: diffIndex, wrt: varIndices) {
+                        continue
+                    }
                 }
             }
         }

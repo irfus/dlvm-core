@@ -17,14 +17,37 @@
 //  limitations under the License.
 //
 
+fileprivate struct GradientKey {
+    let function: Function
+    let differentiationIndex: Int
+    let variableIndices: [Int]
+}
+
+extension GradientKey : Equatable, Hashable {
+    static func == (lhs: GradientKey, rhs: GradientKey) -> Bool {
+        return lhs.function === rhs.function
+            && lhs.differentiationIndex == rhs.differentiationIndex
+            && lhs.variableIndices == rhs.variableIndices
+    }
+
+    var hashValue: Int {
+        return function.hashValue
+    }
+}
+
 public struct GlobalGradientInfo {
-    fileprivate var gradientMap: [Function : Function] = [:]
+    fileprivate var gradientMap: [GradientKey : Function] = [:]
     fileprivate var antigradientMap: [Function : Function] = [:]
 }
 
 public extension GlobalGradientInfo {
-    func gradient(of function: Function) -> Function? {
-        return gradientMap[function]
+    func gradient(of function: Function,
+                  from diffIndex: Int,
+                  wrt varIndices: [Int]) -> Function? {
+        let key = GradientKey(function: function,
+                              differentiationIndex: diffIndex,
+                              variableIndices: varIndices)
+        return gradientMap[key]
     }
 
     func antigradient(of function: Function) -> Function? {
@@ -36,13 +59,15 @@ public class GlobalGradientAnalysis: AnalysisPass<Module, GlobalGradientInfo> {
     public override class func run(on module: Module) -> GlobalGradientInfo {
         var ggi = GlobalGradientInfo()
         for grad in module {
-            guard let antigrad: Function = grad.attributes.flatMap({ attr in
+            guard let key: GradientKey = grad.attributes.flatMap({ attr in
                 guard case let .differentiating(f, from: diffIndex, wrt: varIndices) = attr
                     else { return nil }
-                return f
+                return GradientKey(function: f,
+                                   differentiationIndex: diffIndex,
+                                   variableIndices: varIndices)
             }).first else { continue }
-            ggi.gradientMap[antigrad] = grad
-            ggi.antigradientMap[grad] = antigrad
+            ggi.gradientMap[key] = grad
+            ggi.antigradientMap[grad] = key.function
         }
         return ggi
     }
