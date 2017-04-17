@@ -1,8 +1,8 @@
-trainable XOR<dim B> {
-    var W1: float[2x5]
-    var b1: float[1x5]
-    var W2: float[5x1]
-    var b2: float[1x1]
+trainable XOR<B> {
+    var W1: float[2 x 5]
+    var b1: float[1 x 5]
+    var W2: float[5 x 1]
+    var b2: float[1 x 1]
 }
 
 impl XOR {
