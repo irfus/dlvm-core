@@ -201,7 +201,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):
-            target.write("call \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+            target.write("apply \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .extract(use, indices):
             target.write("extract \(use) at \(indices.map{"\($0)"}.joined(separator: ", "))")
         case let .insert(src, to: dest, at: indices):
@@ -259,8 +259,7 @@ extension GlobalValue : TextOutputStreamable {
         case .variable: target.write("var ")
         case .constant: target.write("const ")
         }
-        target.write("\(kind) @\(name) ")
-        target.write(": \(type) = \(initializer)\n")
+        target.write("\(kind) @\(name) : \(type) = \(initializer)\n")
     }
 }
 
