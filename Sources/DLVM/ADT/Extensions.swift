@@ -39,6 +39,18 @@ public extension Sequence {
     }
 }
 
+public extension Collection where Index == Int, IndexDistance == Int {
+    func subcollection(atIndices indices: [Int]) -> [Iterator.Element]? {
+        guard indices.count <= count else { return nil }
+        var result: [Iterator.Element] = []
+        for index in indices {
+            if index > count { return nil }
+            result.append(self[index])
+        }
+        return result
+    }
+}
+
 // MARK: - Equatable
 public extension Sequence where Iterator.Element : Equatable {
     func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {
