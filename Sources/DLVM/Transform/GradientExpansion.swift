@@ -22,25 +22,30 @@
 public class GradientExpansion: TransformPass<Module> {
     public override class func run(on module: Module) throws -> Bool {
         var changed = false
+        /// Run analysis before the transformation
+        /// Only to check if this pass has been previously run
+        let globalGradInfo = try module.analysis(from: GlobalGradientAnalysis.self)
+
+        var expanded: [Function : Function] = [:]
 
         for function in module {
-            /// NOTE: For testing purposes, we are differentiating every diff'able function
-            /// instead of expanding `gradient` instructions. We'll move to that later when
-            /// AD is working
-
-            /// - TODO: Run differentiability verification pass to make sure
-            /// the function is differentiable
-
-            /// If function is not differentiable, do nothing
-            guard function.isDifferentiable else { continue }
-            /// If gradient function exists, do nothing
-            let globalGradInfo = try function.parent.analysis(from: GlobalGradientAnalysis.self)
-            if let _ = globalGradInfo.gradient(of: function) { continue }
-            /// Expand this function
-            try expand(function)
-            changed = true
+            for instruction in function.instructions {
+                if case let .gradient(.function(funcToDiff), from: diffIndex, wrt: varIndices) = instruction.kind,
+                    funcToDiff.isDifferentiable {
+                    if let _ = globalGradInfo.gradient(of: function) { continue }
+                }
+            }
         }
 
+            /// If function is not differentiable, do nothing
+//            guard function.isDifferentiable else { continue }
+//            /// If gradient function exists, do nothing
+//            if let _ = globalGradInfo.gradient(of: function) { continue }
+//            /// Clone function
+////            let grad = function.makeClone(named: func)
+//            /// Expand this function
+//            try expand(function)
+//            changed = true
         return changed
     }
 }
@@ -188,122 +193,25 @@ class ADContext {
     }
 }
 
-extension ADContext {
-    func adjoint(for original: Use) -> Use? {
-        switch original {
-        case let .argument(_, def): return adjoints[def]
-        case let .instruction(_, def): return adjoints[def]
-        default: return nil
-        }
-    }
-    
-    func insertAdjoint(_ derivative: Use, for original: Use) {
-        switch original {
-        case let .argument(_, def): adjoints[def] = derivative
-        case let .instruction(_, def): adjoints[def] = derivative
-        default: return
-        }
-    }
-
-    /// Copy forward definition from original definition, if applicable
-    /// There are four cases
-    /// 1. literal, global, or function: return itself
-    /// 3. instruction: recursively clone
-    /// 4. argument: replace it with argument in the gradient function
-    /// - Note: Nodes that are already cloned are stored in the context.
-    /// Nodes must be cloned to their parent's correspodning basic block
-    func clone(_ use: Use) -> Use {
-        switch use {
-        case .literal, .global, .function: return use
-        case let .instruction(_, inst):
-            /// Return cached if present
-            if let cached = clones[inst] {
-                return cached
-            }
-            
-            /// Make sure the clone is happening in the right basic block
-            let forwardBB = inst.parent
-            guard let gradBB = blocks[forwardBB] else {
-                preconditionFailure("Cannot find \(forwardBB.name)'s corresponding gradient block")
-            }
-            builder.move(to: gradBB)
-            
-            /// Recursively clone operands
-            let clonedOperands = inst.operands.map(clone)
-            /// Clone current instruction
-            let newInstUse = builder.buildInstruction(inst.kind)
-            /// Unwrap and get the instruction
-            guard case let .instruction(_, newInst) = newInstUse else { fatalError() }
-            /// Replace old operands with cloned ones
-            /// - Note: Currently we use a not-so-efficient way to replace
-            /// all uses to avoid matching all kinds of instructions all
-            /// over again.
-            for (new, old) in zip (clonedOperands, inst.operands) {
-                newInst.substitute(new, for: old)
-            }
-            /// Cache the clone (this is extremely important)
-            clones[inst] = newInstUse
-            return newInstUse
-            
-        case let .argument(_, arg):
-            guard let cached = clones[arg] else {
-                fatalError("Cannot find argument %\(arg.name)'s corresponding argument in the gradient function. This should not happen")
-            }
-            return cached
-        }
-    }
-}
-
 fileprivate extension GradientExpansion {
 
     static func expand(_ function: Function) throws {
         let builder = IRBuilder(module: function.parent)
-        /// Build gradient function
-        let grad = builder.buildFunction(named: function.name + "_gradient",
-                                         arguments: function.arguments.map { ($0.name, $0.type) },
-                                         result: .tuple(function.arguments.map { ($0.type) }),
-                                         attributes: [ .differentiable, .differentiating(function) ])
-
-        /// Create AD context
-        let context = ADContext(forward: function, gradient: grad)
-
-        /// Create a phantom (temporarily) basic block in the gradient
-        /// function for each basic block in the original function
-        for bb in function {
-            let newBB = builder.buildBasicBlock(named: bb.name,
-                                                arguments: bb.arguments.map{($0.name, $0.type)},
-                                                in: grad)
-            context.blocks[bb] = newBB
-            /// Insert newly created arguments as clones
-            for (old, new) in zip(bb.arguments, newBB.arguments) {
-                context.clones[old] = new.makeUse()
-            }
-        }
-
         /// Seed on return instructions
         let exits = try function.premise().exits
         for (block, returnInst) in exits {
             let retVal = returnInst.operands[0]
             let seed = retVal.type.makeLiteralValue(1).makeUse()
-            context.insertAdjoint(seed, for: retVal)
-
-            /// Get corresponding gradient BB
-            let gradBlock = context.blocks[block]!
-            builder.move(to: gradBlock)
+//            context.insertAdjoint(seed, for: retVal)
 
             /// Differentiate
             for inst in block.reversed().dropFirst() {
-                differentiate(inst, using: builder, in: context)
+//                differentiate(inst, using: builder, in: context)
             }
 
-            /// Collect gradient values. If no gradient exists, return 0
-            let gradients: [Use] = function.arguments.map {
-                context.adjoints[$0] ?? $0.type.makeZero().makeUse()
-            }
-
-            let tupleLit = LiteralValue(type: .tuple(function.arguments.map{$0.type}),
-                                        literal: .tuple(gradients))
-            builder.return(tupleLit.makeUse())
+//            let tupleLit = LiteralValue(type: .tuple(function.arguments.map{$0.type}),
+//                                        literal: .tuple(gradients))
+//            builder.return(tupleLit.makeUse())
         }
 
     }
@@ -329,12 +237,12 @@ fileprivate extension GradientExpansion {
             ]
         case let .binary(.associative(.arithmetic(.multiply)), lhs, rhs):
             grad = [
-                (lhs, context.clone(rhs)), /// ∂f/∂x = y
-                (rhs, context.clone(lhs)), /// ∂f/∂y = x
+                (lhs, rhs), /// ∂f/∂x = y
+                (rhs, lhs), /// ∂f/∂y = x
             ]
         case let .binary(.associative(.arithmetic(.divide)), lhs, rhs):
-            let lhsClone = context.clone(lhs)
-            let rhsClone = context.clone(rhs)
+            let lhsClone = lhs
+            let rhsClone = rhs
             grad = [
                 (lhs, bd.divide(adjoint, by: rhsClone)),  /// ∂f/∂x = D/y
                 (rhs, bd.subtract(lhsClone.makeScalar(0), /// ∂f/∂y = -x/y^2
@@ -343,8 +251,8 @@ fileprivate extension GradientExpansion {
 
         /* Matrix multiplication */
         case let .matrixMultiply(lhs, rhs):
-            let lhsClone = context.clone(lhs)
-            let rhsClone = context.clone(rhs)
+            let lhsClone = lhs
+            let rhsClone = rhs
             grad = [
                 /// ∂f/∂x = D • y^T
                 (lhs, bd.matrixMultiply(bd.transpose(lhsClone), adjoint)),
@@ -355,13 +263,13 @@ fileprivate extension GradientExpansion {
 
         /* Unary elementwise transformations */
         case let .unary(.elementwise(.exp), x):
-            let cloned = context.clone(instruction.makeUse())
+            let cloned = instruction.makeUse()
             grad = [
                 (x, cloned)
             ]
 
         case let .unary(.elementwise(.tanh), x):
-            let cloned = context.clone(instruction.makeUse())
+            let cloned = instruction.makeUse()
             grad = [
                 (x, bd.subtract(cloned, bd.subtract(x.makeScalar(1),
                                                     bd.multiply(cloned, by: cloned))))
@@ -375,15 +283,6 @@ fileprivate extension GradientExpansion {
         default:
             /// - TODO: Implement all cases!
             fatalError("Unimplemented \(instruction)")
-        }
-
-        /// Accumulate to adjacent
-        for (operand, derivative) in grad where operand.type.isTensor {
-            if let adj = context.adjoint(for: operand) {
-                let acc = bd.add(adj, derivative)
-                context.insertAdjoint(acc, for: operand)
-            }
-            context.insertAdjoint(derivative, for: operand)
         }
     }
 

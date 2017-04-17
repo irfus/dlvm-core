@@ -200,6 +200,16 @@ public extension Type {
         default: return self
         }
     }
+
+    var isDifferentiable: Bool {
+        switch self {
+        case let .tensor([], dt),
+             let .box(.tensor(_, dt), .compute) where dt.isNumeric:
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Equatable

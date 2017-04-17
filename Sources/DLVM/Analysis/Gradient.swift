@@ -37,7 +37,8 @@ public class GlobalGradientAnalysis: AnalysisPass<Module, GlobalGradientInfo> {
         var ggi = GlobalGradientInfo()
         for grad in module {
             guard let antigrad: Function = grad.attributes.flatMap({ attr in
-                guard case let .differentiating(f) = attr else { return nil }
+                guard case let .differentiating(f, from: diffIndex, wrt: varIndices) = attr
+                    else { return nil }
                 return f
             }).first else { continue }
             ggi.gradientMap[antigrad] = grad

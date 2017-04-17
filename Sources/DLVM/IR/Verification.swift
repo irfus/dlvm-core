@@ -43,7 +43,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
     case functionArgumentMismatch([Use], Type, Node)
     case notAFunctionCall(Use, Function, Node)
-    case functionDiffArgumentMismatch(Use, Argument, Function, Node)
+    case gradientArgumentMismatch(Function, Int, [Int], Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
     case invalidIndex(Use, Int, Node)
     case multipleExits([BasicBlock], Node)
@@ -224,10 +224,11 @@ extension Function: SelfVerifiable {
         for attr in attributes {
             switch attr {
             /// Gradient function
-            case let .differentiating(antigrad):
+            case let .differentiating(antigrad, from: diffIndex, wrt: varIndices):
                 /// Check for type mismatch
-                let antigradArgTypes = antigrad.arguments.map{$0.type}
-                let expectedType: Type = .function(antigradArgTypes, .tuple(antigradArgTypes))
+                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex, withRespectTo: varIndices) else {
+                    throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
+                }
                 guard type == expectedType else {
                     throw VerificationError.gradientTypeMismatch(attr, expectedType, self)
                 }
