@@ -160,9 +160,12 @@ public extension Function {
     func gradientType(fromOutput diffIndex: Int, withRespectTo varIndices: [Int]) -> Type? {
         /// Check output index
         switch result {
-        case let .tuple(subtypes) where subtypes.indices.contains(diffIndex):
-            return nil
-        case let type where !type.isDifferentiable:
+        case let .tuple(subtypes):
+            guard let diffVars = subtypes.subcollection(atIndices: varIndices),
+                diffVars.forAll({$0.isDifferentiable}) else {
+                return nil
+            }
+        case let type where !type.isDifferentiable || diffIndex != 0:
             return nil
         default:
             break
