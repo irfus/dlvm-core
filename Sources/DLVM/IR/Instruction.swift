@@ -532,6 +532,8 @@ public extension InstructionKind {
             return .copy(from: v1, to: new, count: v3)
         case .copy(from: let v1, to: let v2, count: old):
             return .copy(from: v1, to: v2, count: new)
+        case .requestMemory(old):
+            return .requestMemory(new)
         default:
             return self
         }
