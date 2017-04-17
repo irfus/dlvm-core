@@ -19,10 +19,6 @@
 
 import DLVMTensor
 
-public enum Mutability {
-    case mutable, immutable
-}
-
 public struct StructType {
     public typealias Field = (name: String, type: Type)
     public var fields: [(name: String, type: Type)]

@@ -76,24 +76,6 @@ extension TensorIndex : TextOutputStreamable {
     }
 }
 
-extension MemoryType {
-    public func description(for type: Type) -> String {
-        switch self {
-            case .normal: return "\(type)"
-            case .compute: return "@compute \(type)"
-        }
-    }
-}
-
-extension Mutability : TextOutputStreamable {
-    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        switch self {
-            case .mutable: target.write("@mut ")
-            case .immutable: break
-        }
-    }
-}
-
 extension StructType : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write(isPacked ? "<{" : "{")
@@ -121,15 +103,17 @@ extension Type : TextOutputStreamable {
             target.write("[\(n) x \(subtype)]")
         case let .pointer(subtype):
             target.write("*\(subtype)")
-        case let .box(subtype, loc):
-            target.write("@box \(loc.description(for: subtype))")
+        case let .box(subtype, .normal):
+            target.write("box{\(subtype)}")
+        case let .box(subtype, .compute):
+            target.write("compute{\(subtype)}")
         case let .function(args, ret):
             target.write("(\(args.joinedDescription)) -> \(ret)")
         case let .alias(a):
             target.write("$")
             a.name.write(to: &target)
         case let .computeGraph(f):
-            target.write("{{@\(f.name)}}")
+            target.write("||@\(f.name)||")
         case let .struct(structTy):
             structTy.write(to: &target)
         }
