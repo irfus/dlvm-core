@@ -503,7 +503,7 @@ extension InstructionKind {
 
         case .deallocate(let v):
             switch v.type.unaliased {
-            case .pointer, .box: break
+            case .pointer, .box, .computeGraph: break
             case _: throw VerificationError.notHeapObject(v, instruction)
             }
 
