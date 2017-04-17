@@ -59,6 +59,10 @@ extension StructType {
         let type = LLVMStructCreateNamed(LLVMGetGlobalContext(), name)!
         self.init(llvm: type)
     }
+
+    static var empty: StructType {
+        return StructType(elementTypes: [])
+    }
 }
 
 // MARK: - Impossible case crasher
@@ -75,4 +79,10 @@ func DLImpossible(function: String = #function,
                   file: StaticString = #file,
                   line: UInt = #line) {
     let _: () = DLImpossibleResult(function: function, file: file, line: line)
+}
+
+import Foundation
+
+public func environmentVariable(named name: String) -> String? {
+    return ProcessInfo.processInfo.environment[name]
 }

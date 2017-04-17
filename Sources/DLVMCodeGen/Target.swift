@@ -83,10 +83,9 @@ extension StaticString : Equatable {
 }
 
 extension LLTarget where Self : LLFunctionPrototypeCacheable {
-    func build<T : LLFunctionPrototype>(
-               _ prototype: T,
-               using builder: LLVM.IRBuilder,
-               name: String = "") -> IRValue {
+    func emit<T : LLFunctionPrototype>(_ prototype: T,
+                                       using builder: LLVM.IRBuilder,
+                                       name: String = "") -> IRValue {
         let function = self.function(from: prototype)
         return builder.buildCall(function, args: prototype.arguments, name: name)
     }

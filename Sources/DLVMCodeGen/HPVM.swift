@@ -63,6 +63,9 @@ public final class HPVM : LLFunctionPrototypeCacheable {
         case wait(id: IRValue)
         case push(id: IRValue, arguments: IRValue)
         case pop(id: IRValue)
+        /// Speical functions (non-intrinsics but handled by GenHPVM pass)
+        case attributeIn(IRValue)
+        case attributeOut(IRValue)
     }
 
     public enum RuntimeFunction {
@@ -120,6 +123,8 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
         case .wait: return "llvm.hpvm.wait"
         case .push: return "llvm.hpvm.push"
         case .pop: return "llvm.hpvm.pop"
+        case .attributeIn: return "__hpvm__attributeIn"
+        case .attributeOut: return "__hpvm__attributeOut"
         }
     }
 
@@ -167,6 +172,10 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
             return [i8*, i8*] => void
         case .pop:
             return [i8*] => i8*
+        case .attributeIn:
+            return [i8*] => void
+        case .attributeOut:
+            return [i8*] => void
         }
     }
 
@@ -191,8 +200,8 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
         case let .createNode1D(v1, v2): return [v1, v2]
         case let .createNode2D(v1, v2, v3): return [v1, v2, v3]
         case let .createNode3D(v1, v2, v3, v4): return [v1, v2, v3, v4]
-        case let .createEdge(v1, v2, v3, v4, replication, v6):
-            return [v1, v2, v3, v4, replication.constant, v6]
+        case let .createEdge(v1, v2, v3, v4, replication, streaming):
+            return [v1, v2, v3, v4, replication.constant, streaming.constant]
         case let .bindInput(node: v1, parentInput: v2, input: v3):
             return [v1, v2, v3]
         case let .bindOutput(node: v1, output: v2, parentOutput: v3,
@@ -200,6 +209,10 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
             return [v1, v2, v3, streaming.constant]
         case let .launch(v1, arguments: v2, streaming: streaming):
             return [v1, v2, streaming.constant]
+        case let .attributeIn(v1):
+            return [v1]
+        case let .attributeOut(v1):
+            return [v1]
         }
     }
     

@@ -11,7 +11,7 @@ set(CC_LIBC_INC_FLAG -I${CMAKE_LIBRARY_PATH})
 endif()
 
 set(CC_BRIDGING_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/dlrt.h)
-set(CC_FLAGS -O2 -fmodule-name="dlrt" -I${DLRT_INC_DIR} ${CC_LIBC_INC_FLAG} -ObjC -c -emit-llvm)
+set(CC_FLAGS -O3 -fmodule-name="dlrt" -I${DLRT_INC_DIR} ${CC_LIBC_INC_FLAG} -ObjC -c -emit-llvm -o dlrt.bc)
 
 set_directory_properties(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR})
 
