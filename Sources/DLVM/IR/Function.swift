@@ -21,7 +21,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
     public enum Attribute {
         case differentiable
         case inline
-        case differentiating(Function)
+        case differentiating(Function, from: Int, wrt: [Int])
         case compute
     }
 
@@ -157,20 +157,23 @@ public extension Function {
 // MARK: - Gradient information
 public extension Function {
 
-    func gradientType(fromOutput argument: Int, withRespectTo: [Int]) -> Type? {
+    func gradientType(fromOutput diffIndex: Int, withRespectTo varIndices: [Int]) -> Type? {
+        /// Check output index
+        switch result {
+        case let .tuple(subtypes) where subtypes.indices.contains(diffIndex):
+            return nil
+        case let type where !type.isDifferentiable:
+            return nil
+        default:
+            break
+        }
         /// Check variable indices
         let argTypes = arguments.map{$0.type}
-        var newResult: [Type] = []
-        for ty in argTypes {
-            switch ty {
-            case .box(.tensor(_, _), .compute) where isCompute,
-                 .tensor([], _):
-                newResult.append(ty)
-            default:
-                break
-            }
+        guard let diffVars = argTypes.subcollection(atIndices: varIndices),
+            diffVars.forAll({$0.isDifferentiable}) else {
+            return nil
         }
-        return .function(newResult, .tuple(newResult))
+        return .function(argTypes, .tuple(diffVars))
     }
     
 }
