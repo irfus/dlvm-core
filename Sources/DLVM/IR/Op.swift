@@ -61,6 +61,7 @@ public enum OpKind {
     case reduce(AssociativeOp) /// Reduce
     case matrixMultiply        /// Matrix multiplication
     case concatenate           /// Concatenation
+//    case aggregate(AggregateOp)
 }
 
 public extension OpKind {
@@ -73,6 +74,7 @@ public extension OpKind {
         case .reduce: return 1
         case .scan: return 1
         case .concatenate: return Int.max
+//        case .aggregate(let aggr): return aggr.argumentCount
         }
     }
 
@@ -89,9 +91,35 @@ public extension OpKind {
             return args[0]
         case .matrixMultiply:
             return args[0].matrixMultiplied(with: args[1])
+//        case .aggregate(let aggr):
+//            return aggr.resultShape(forArguments: args)
         default:
             return nil
         }
     }
 
 }
+
+/* A prototype of the implementation of custom ops
+
+public protocol AggregateOp {
+    var argumentCount: Int { get }
+    func resultShape(forArguments args: [TensorShape]) -> TensorShape?
+}
+
+public struct Convolution2D : AggregateOp {
+    public enum PaddingAlgorithm {
+        case same, valid
+    }
+
+    public var argumentCount: Int {
+        return 4
+    }
+
+    public func resultShape(forArguments args: [TensorShape]) -> TensorShape? {
+        /// TODO
+        DLUnimplemented()
+    }
+}
+ 
+ */
