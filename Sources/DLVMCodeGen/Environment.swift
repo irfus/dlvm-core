@@ -64,7 +64,7 @@ extension LLGenEnvironment {
 /// Context contains module, target, builder, etc
 public struct LLGenContext<TargetType : LLTarget> {
     public let dlModule: DLVM.Module
-    public let context: LLVM.Context = Context.global
+    private let context: LLVM.Context = Context.global
     public private(set) lazy var module: LLVM.Module = Module(name: self.dlModule.name, context: self.context)
     public private(set) lazy var target: TargetType = TargetType(module: self.module)
     public private(set) lazy var builder: LLVM.IRBuilder = IRBuilder(module: self.module)
@@ -73,8 +73,3 @@ public struct LLGenContext<TargetType : LLTarget> {
     }
 }
 
-public extension LLGenContext {
-    var referenceCounterType: IRType {
-        return StructType(name: "_dl_ref")
-    }
-}

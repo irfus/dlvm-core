@@ -157,19 +157,11 @@ extension DLVM.`Type` : LLEmittable {
                                 returnType: ret.emit(to: &context, in: &env))
         case let .alias(alias):
             return env.type(for: alias)
-        case let .box(subt, .normal):
+        case let .box(subt, _):
             return PointerType(pointee:
                 StructType(elementTypes: [
-                    context.referenceCounterType,
+                    referenceCounterType,
                     subt.emit(to: &context, in: &env) /// Direct storage
-                ])
-            )
-        case let .box(subt, .compute):
-            return PointerType(pointee:
-                StructType(elementTypes: [
-                    context.referenceCounterType,
-                    PointerType(pointee: subt.emit(to: &context, in: &env),
-                                addressSpace: .global) /// Indirect storage
                 ])
             )
         case let .pointer(subt):
