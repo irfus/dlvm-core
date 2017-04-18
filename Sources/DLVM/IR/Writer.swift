@@ -94,7 +94,7 @@ extension Type : TextOutputStreamable {
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("<\(s) of \(t)>")
+            target.write("<\(s).\(t)>")
         case let .tuple(subtypes):
             target.write("(\(subtypes.joinedDescription))")
         case .void:
@@ -106,14 +106,14 @@ extension Type : TextOutputStreamable {
         case let .box(subtype, .normal):
             target.write("box{\(subtype)}")
         case let .box(subtype, .compute):
-            target.write("compute{\(subtype)}")
+            target.write("|\(subtype)|")
         case let .function(args, ret):
             target.write("(\(args.joinedDescription)) -> \(ret)")
         case let .alias(a):
             target.write("$")
             a.name.write(to: &target)
         case let .computeGraph(f):
-            target.write("||@\(f.name)||")
+            target.write("compute{@\(f.name)}")
         case let .struct(structTy):
             structTy.write(to: &target)
         }
