@@ -118,10 +118,12 @@ extension LiteralValue : SelfVerifiable {
         case (.tensor, .zero): break
 
         /// Scalar tensor with scalar literal
-        case (.tensor([], let dt), .scalar(let lit)):
-            guard lit.typeBase == dt.base else {
-                throw VerificationError.invalidLiteral(type, literal, self)
-            }
+        case (.tensor([], let dt), .scalar(let lit)) where lit.typeBase != dt.base:
+            throw VerificationError.invalidLiteral(type, literal, self)
+
+        /// High-dimensional compute tensor with scalar literal
+        case(.box(.tensor(_, let dt), .compute), .scalar(let lit)) where lit.typeBase != dt.base:
+            throw VerificationError.invalidLiteral(type, literal, self)
 
         /* Aggregate literals */
 
