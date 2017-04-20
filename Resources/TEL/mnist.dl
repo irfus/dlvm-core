@@ -1,17 +1,26 @@
 module mnist
 stage raw
 
-type $mnist_params = (@box @compute <784x10 of f32>, @box @compute <1x10 of f32>)
+type $mnist_params = (|<784x10.f32>|, |<1x10.f32>|)
 
 !compute
 !differentiable
-func @inference : (@box @compute <1x784 of f32>, $mnist_params) -> @box @compute <1x10 of f32> {
-entry(%x : @box @compute <1x784 of f32>, %params : $mnist_params):
+func @inference : (|<1x784.f32>|, $mnist_params) -> |<1x10.f32>| {
+entry(%x : |<1x784.f32>|, %params : $mnist_params):
     %v0 = extract %params : $mnist_params at 0
     %v1 = extract %params : $mnist_params at 1
-    %v2 = matrixMultiply %x : @box @compute <1x784 of f32>, %v0 : @box @compute <784x10 of f32>
-    %v3 = add %v2 : @box @compute <1x10 of f32>, %v1 : @box @compute <1x10 of f32>
-    %y = tanh %v3 : @box @compute <1x10 of f32>
-    return %y : @box @compute <1x10 of f32>
+    %v2 = matrixMultiply %x : |<1x784.f32>|, %v0 : |<784x10.f32>|
+    %v3 = add %v2 : |<1x10.f32>|, %v1 : |<1x10.f32>|
+    %y = tanh %v3 : |<1x10.f32>|
+    return %y : |<1x10.f32>|
 }
 
+/// Differentiable compute function
+!compute
+!differentiable
+func @mnist.inference.impl : (|<1x784.f32>|, |<784x10.f32>|, |<1x10.f32>|) -> |<1x10.f32>| {
+entry(%x : |<1x784.f32>|, %w : |<784x10.f32>|, %b : |<1x10.f32>|):
+    %v0 = matrixMultiply %x : |<1x784.f32>|, %w : |<784x10.f32>|
+    %y = add %v0 : |<1x10.f32>|, %b : |<1x10.f32>|
+    return %y : |<1x10.f32>|
+}

@@ -1,0 +1,17 @@
+trainable MNIST {
+    var W1: float[784 x 10]
+    var b1: float[1 x 10]
+
+    inference<B>(x: float[Bx2]) -> float[Bx1] {
+        let h1 = sigmoid(x . W1 + b1)
+        return softmax(h1 . W2 + b2)
+    }
+
+    loss<B>(reference: float[Bx1], actual: float[Bx1]) -> float {
+        return reduce(mean, (reference - actual)^2)
+    }
+
+    optimize<K*>(weight: float[K], gradient: float[K], learningRate: float) -> float[K] {
+        return weight - gradient * learningRate
+    }
+}
