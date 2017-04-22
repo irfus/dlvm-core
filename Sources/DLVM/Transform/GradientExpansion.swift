@@ -182,7 +182,7 @@ fileprivate extension Use {
     }
 }
 
-class ADContext {
+fileprivate class ADContext {
     var blocks: [BasicBlock : BasicBlock] = [:]
     var adjoints: [AnyHashable : Use] = [:]
     var clones: [AnyHashable : Use] = [:]

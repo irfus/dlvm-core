@@ -75,7 +75,7 @@ public final class NVVM : LLFunctionPrototypeCacheable {
 
 // MARK: - LLTarget
 extension NVVM : LLComputeTarget {
-    public func loweredComputeGraphType(from function: DLVM.Function) -> LLVM.StructType {
+    public func loweredComputeBufferType(from function: DLVM.Function) -> LLVM.StructType {
         DLUnimplemented()
     }
 
