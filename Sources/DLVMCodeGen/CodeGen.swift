@@ -166,8 +166,8 @@ extension DLVM.`Type` : LLEmittable {
             )
         case let .pointer(subt):
             return PointerType(pointee: subt.emit(to: &context, in: &env))
-        case let .computeGraph(fun):
-            return context.target.loweredComputeGraphType(from: fun)
+        case let .computeBuffer(fun):
+            return context.target.loweredComputeBufferType(from: fun)
         }
     }
 }

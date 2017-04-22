@@ -65,7 +65,7 @@ public protocol LLTarget : LLFunctionPrototypeCacheable {
 }
 
 public protocol LLComputeTarget : LLTarget {
-    func loweredComputeGraphType(from function: DLVM.Function) -> LLVM.StructType
+    func loweredComputeBufferType(from function: DLVM.Function) -> LLVM.StructType
     func emitComputeFunction(from function: DLVM.Function,
                              to context: inout LLGenContext<Self>,
                              in env: inout LLGenEnvironment) -> LLVM.Function

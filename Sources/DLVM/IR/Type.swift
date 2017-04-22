@@ -19,42 +19,65 @@
 
 import DLVMTensor
 
-public struct StructType {
+/// Element key to form a key path in GEP and use
+public enum ElementKey {
+    case number(Int)
+    case name(String)
+    case value(Use)
+}
+
+/// Nominal type
+public class StructType : Named, EquatableByReference, HashableByReference {
+    public enum Attribute {
+        case packed
+    }
+    
     public typealias Field = (name: String, type: Type)
+    public var name: String
     public var fields: [(name: String, type: Type)]
-    public var isPacked: Bool
+    public var attributes: Set<Attribute> = []
 
-    public init(fields: [Field], isPacked: Bool = false) {
+    public init(name: String, fields: [Field], attributes: [Attribute]) {
+        self.name = name
         self.fields = fields
-        self.isPacked = isPacked
     }
 }
 
-extension StructType : Equatable {
-    public static func == (lhs: StructType, rhs: StructType) -> Bool {
-        return lhs.fields.elementsEqual(rhs.fields, by: { $0.name == $1.name && $0.type == $1.type })
-            && lhs.isPacked == rhs.isPacked
-    }
-}
+/// - TODO: add enum type
 
+/// Memory type
+///
+/// - normal: Normal host memory
+/// - compute: Managed host memory with compute capabilities
 public enum MemoryType {
     case normal, compute
 }
 
+// MARK: - Accessors
 public extension StructType {
+    var isPacked: Bool {
+        return attributes.contains(.packed)
+    }
+    
     func field(named name: String) -> Field? {
         return fields.first(where: {$0.name == name})
+    }
+
+    func subtype(named name: String) -> Type? {
+        return field(named: name)?.type
     }
 
     var subtypes: [Type] {
         return fields.map {$1}
     }
 
-    var canonical: StructType {
-        return StructType(fields: fields.map{($0, $1.canonical)}, isPacked: isPacked)
+    func subtype(at key: ElementKey) -> Type? {
+        guard case .name(let name) = key else { return nil }
+        return subtype(named: name)
     }
 }
 
+/// Type of IR values
 public indirect enum Type {
     /// Tensor represents all scalars, vectors, matrices and higher
     /// dimensional matrices of primitive data type
@@ -75,11 +98,11 @@ public indirect enum Type {
     case function([Type], Type)
     /// Alias type, transparent or opaque
     case alias(TypeAlias)
-    /// Compute graph typed by a function reference
+    /// Compute buffer typed by a function reference
     /// - Note: this is a special reference type that will
     /// be lowered to a pointer to a struct containing allocated
     /// graph nodes for compute
-    case computeGraph(Function)
+    case computeBuffer(Function)
     /// Doesn't contain any value. No size
     case void
     /// Invalid type during type inference, to be eliminated by
@@ -120,7 +143,7 @@ public extension Type {
 public extension Type {
     var isFirstClass: Bool {
         switch canonical {
-        case .tensor, .array, .tuple, .pointer, .box, .computeGraph, .alias: return true
+        case .tensor, .array, .tuple, .pointer, .box, .computeBuffer, .alias: return true
         default: return false
         }
     }
@@ -180,13 +203,12 @@ public extension Type {
         switch self {
         case let .array(subT, i): return .array(subT.canonical, i)
         case let .tuple(tt): return .tuple(tt.map{$0.canonical})
-        case let .struct(ty): return .struct(ty.canonical)
         case let .pointer(t): return .pointer(t.canonical)
         case let .box(t, loc): return .box(t.canonical, loc)
         case let .function(tt, t): return.function(tt.map{$0.canonical}, t.canonical)
         case let .alias(.transparent(_, subT)): return subT.canonical
         case .alias(.opaque): return self
-        case .tensor, .void, .invalid, .computeGraph: return self
+        case .tensor, .void, .invalid, .computeBuffer, .struct: return self
         }
     }
 
@@ -226,7 +248,7 @@ extension Type : Equatable {
             return t1 == t2 && loc1 == loc2
         case let (.function(tt1, t1), .function(tt2, t2)):
             return tt1 == tt2 && t1 == t2
-        case let (.computeGraph(f1), .computeGraph(f2)):
+        case let (.computeBuffer(f1), .computeBuffer(f2)):
             return f1 === f2
         case (.void, .void), (.invalid, .invalid):
             return true
@@ -241,7 +263,7 @@ extension Type : Equatable {
 // MARK: - Validation
 public extension StructType {
     var isValid: Bool {
-        return fields.forAll { $1.isValid }
+        return subtypes.forAll { $0.isValid }
     }
 }
 
@@ -251,7 +273,7 @@ public extension Type {
         switch self {
         case .invalid:
             return false
-        case .tensor, .void, .computeGraph:
+        case .tensor, .void, .computeBuffer:
             return true
         case let .array(subtype, _),
              let .pointer(subtype),

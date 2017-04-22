@@ -426,7 +426,7 @@ extension InstructionKind {
 
         case let .compute(fun, vv, in: graph):
             switch (fun, graph.type) {
-            case let (.function(fd1), .computeGraph(fd2)) where fd1 == fd2:
+            case let (.function(fd1), .computeBuffer(fd2)) where fd1 == fd2:
                 let actual = vv.map{$0.type}
                 guard fd1.acceptsArguments(actual) else {
                     throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, instruction)
@@ -505,7 +505,7 @@ extension InstructionKind {
 
         case .deallocate(let v):
             switch v.type.unaliased {
-            case .pointer, .box, .computeGraph: break
+            case .pointer, .box, .computeBuffer: break
             case _: throw VerificationError.notHeapObject(v, instruction)
             }
 

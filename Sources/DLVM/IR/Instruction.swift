@@ -311,7 +311,7 @@ extension InstructionKind {
         case let .compute(v, args, in: graph):
             let actual = args.map{$0.type}
             switch (v, graph.type) {
-            case let (.function(f1), .computeGraph(f2))
+            case let (.function(f1), .computeBuffer(f2))
                 where f1 === f2 && f1.acceptsArguments(actual):
                 return f1.result
             default:
@@ -384,7 +384,7 @@ extension InstructionKind {
 
         case let .allocateCompute(v):
             guard case let .function(fref) = v else { return .invalid }
-            return .computeGraph(fref)
+            return .computeBuffer(fref)
 
         case .store, .copy, .deallocate,
              .branch, .conditional, .return, .retain, .release, .trap:
