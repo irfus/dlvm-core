@@ -21,7 +21,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
     public enum Attribute {
         case differentiable
         case inline
-        case differentiating(Function, from: Int, wrt: [Int])
+        case differentiating(Function, from: Int, wrt: [Int], keepingOutputs: [Int])
         case compute
     }
 
@@ -157,25 +157,39 @@ public extension Function {
 // MARK: - Gradient information
 public extension Function {
 
-    func gradientType(fromOutput diffIndex: Int, withRespectTo varIndices: [Int]) -> Type? {
+    func gradientType(fromOutput diffIndex: Int,
+                      withRespectTo varIndices: [Int],
+                      keepingOutputs outputIndices: [Int]) -> Type? {
         /// Check output index
         switch result {
         case let .tuple(subtypes):
-            guard let diffVars = subtypes.subcollection(atIndices: varIndices),
-                diffVars.forAll({$0.isDifferentiable}) else {
-                return nil
-            }
-        case let type where !type.isDifferentiable || diffIndex != 0:
+            guard
+                /// Diff index must be in bounds
+                subtypes.indices.contains(diffIndex),
+                /// Indices of the outputs to keep must be in bounds
+                let _ = subtypes.subcollection(atIndices: outputIndices),
+                /// Indices of the outputs to keep must not contain any duplicate
+                !outputIndices.containsDuplicate
+                else { return nil }
+        case let type where
+                /// Single result must be diff'able
+                !type.isDifferentiable
+                /// Diff index must be 0
+                || diffIndex != 0
+                /// Kept output indices must be [0]
+                || outputIndices != [0]:
             return nil
         default:
             break
         }
         /// Check variable indices
         let argTypes = arguments.map{$0.type}
-        guard let diffVars = argTypes.subcollection(atIndices: varIndices),
-            diffVars.forAll({$0.isDifferentiable}) else {
-            return nil
-        }
+        guard
+            /// Indices of diff variables must be in bounds
+            let diffVars = argTypes.subcollection(atIndices: varIndices),
+            /// All diff variables must be diff'able arguments
+            diffVars.forAll({$0.isDifferentiable})
+            else { return nil }
         return .function(argTypes, .tuple(diffVars))
     }
     

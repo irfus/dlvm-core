@@ -32,9 +32,15 @@ public class GradientExpansion: TransformPass<Module> {
 
         for function in module {
             for instruction in function.instructions {
-                if case let .gradient(.function(funcToDiff), from: diffIndex, wrt: varIndices) = instruction.kind,
+                if case let .gradient(.function(funcToDiff),
+                                      from: diffIndex,
+                                      wrt: varIndices,
+                                      keeping: outputIndices) = instruction.kind,
                     funcToDiff.isDifferentiable {
-                    if let _ = globalGradInfo.gradient(of: function, from: diffIndex, wrt: varIndices) {
+                    if let _ = globalGradInfo.gradient(of: function,
+                                                       from: diffIndex,
+                                                       wrt: varIndices,
+                                                       keepingOutputs: outputIndices) {
                         continue
                     }
                 }

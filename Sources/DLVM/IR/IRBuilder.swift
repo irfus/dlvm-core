@@ -174,8 +174,13 @@ public extension IRBuilder {
         return buildInstruction(.apply(function, arguments))
     }
 
-    func gradient(_ function: Function, from output: Int, withRespectTo variables: [Int]) -> Use {
-        return buildInstruction(.gradient(.function(function), from: output, wrt: variables))
+    func gradient(_ function: Function, from output: Int,
+                  withRespectTo variables: [Int],
+                  keepingOutputs outputIndices: [Int]) -> Use {
+        return buildInstruction(.gradient(.function(function),
+                                          from: output,
+                                          wrt: variables,
+                                          keeping: outputIndices))
     }
 
     func compute(_ function: Use, _ arguments: [Use], in graph: Use) -> Use {
