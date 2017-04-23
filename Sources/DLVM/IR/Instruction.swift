@@ -60,9 +60,9 @@ public enum InstructionKind {
 
     /** Aggregate operation **/
     /// Extract an element from tensor, tuple, or array
-    case extract(from: Use, at: [Int])
+    case extract(from: Use, at: [ElementKey])
     /// Insert an element to tensor, tuple, or array
-    case insert(Use, to: Use, at: [Int])
+    case insert(Use, to: Use, at: [ElementKey])
 
     /** Function invocation **/
     /// Function application
@@ -79,10 +79,10 @@ public enum InstructionKind {
     case allocateStack(Type, Use) /// => *T
     case allocateHeap(Type, count: Use) /// => *T
     /// Reference-counted box
-    case allocateBox(Type, MemoryType) /// => @box T
-    case projectBox(Use) /// @box T => *T
+    case allocateBox(Type, MemoryType) /// => box{T}
+    case projectBox(Use) /// (box{T}) => *T
     /// Allocate compute graph
-    case allocateCompute(Use)
+    case allocateCompute(Use) /// (func) => compute{T}
     /// Retain/release a box via reference counter
     case retain(Use)
     case release(Use)
@@ -94,15 +94,15 @@ public enum InstructionKind {
     case load(Use)
     /// Store value to pointer on the host
     case store(Use, to: Use)
-    /// GEP
-    case elementPointer(Use, [Use])
+    /// GEP (without leading index)
+    case elementPointer(Use, [ElementKey])
     /// Memory copy
     case copy(from: Use, to: Use, count: Use)
     /// Trap
     case trap
 }
 
-public final class Instruction : IRSubUnit, Value, Definition, MaybeNamed {
+public final class Instruction : IRSubUnit, Definition, MaybeNamed {
     public typealias Parent = BasicBlock
     public var name: String?
     public var kind: InstructionKind
@@ -115,13 +115,22 @@ public final class Instruction : IRSubUnit, Value, Definition, MaybeNamed {
         self.kind = kind
         self.parent = parent
     }
-    
+
+}
+
+extension Instruction : Value {
     public var type: Type {
         return kind.type
     }
 
     public func makeUse() -> Use {
         return .instruction(type, self)
+    }
+}
+
+extension InstructionKind : Value {
+    public func makeUse() -> Use {
+        return .constant(self)
     }
 }
 
@@ -335,34 +344,8 @@ extension InstructionKind {
             return t
 
         case let .elementPointer(v, ii):
-            guard case .pointer = v.type else { return .invalid }
-            func gepType(type: Type, indices: ArraySlice<Use>) -> Type {
-                guard let idx = indices.first else { return type }
-                switch type.unaliased {
-                case let .tensor(shape, dt):
-                    return .tensor(shape.dropFirst(), dt)
-                case let .array(t, _):
-                    return gepType(type: t, indices: indices.dropFirst())
-                case let .tuple(tt):
-                    /// Current index must be an int literal
-                    guard case let .literal(litVal) = idx,
-                          case let .scalar(.int(i)) = litVal.literal else {
-                        return .invalid
-                    }
-                    return gepType(type: tt[i], indices: indices.dropFirst())
-                case let .struct(structTy):
-                    let tt = structTy.subtypes
-                    /// Current index must be an int literal
-                    guard case let .literal(litVal) = idx,
-                          case let .scalar(.int(i)) = litVal.literal else {
-                        return .invalid
-                    }
-                    return gepType(type: tt[i], indices: indices.dropFirst())
-                default:
-                    return .invalid
-                }
-            }
-            return gepType(type: v.type, indices: ArraySlice(ii))
+            guard case let .pointer(t) = v.type else { return .invalid }
+            return t.subtype(at: ii).flatMap(Type.pointer) ?? .invalid
 
         case let .bitCast(_, t):
 //            guard v.type.size == t.size else { return .invalid }

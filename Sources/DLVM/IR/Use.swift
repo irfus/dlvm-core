@@ -17,12 +17,13 @@
 //  limitations under the License.
 //
 
-public enum Use {
+public indirect enum Use {
     case argument(Type, Argument)
     case instruction(Type, Instruction)
     case global(Type, GlobalValue)
     case literal(LiteralValue)
     case function(Function)
+    case constant(InstructionKind)
 }
 
 // MARK: - Equatable
@@ -58,6 +59,8 @@ public extension Use {
             return v.type
         case .function(let v):
             return v.type
+        case let .constant(instKind):
+            return instKind.type
         }
     }
 
@@ -68,7 +71,7 @@ public extension Use {
              .instruction(_, let def as Definition),
              .function(let def as Definition):
             return def
-        case .literal:
+        case .literal, .constant:
             return nil
         }
     }
@@ -80,6 +83,7 @@ public extension Use {
         case let .instruction(_, val): return val
         case let .function(val): return val
         case let .literal(lit): return lit
+        case let .constant(instKind): return instKind
         }
     }
 
@@ -88,8 +92,8 @@ public extension Use {
         case let .global(_, def): return def.name
         case let .instruction(_, def): return def.name
         case let .argument(_, def): return def.name
-        case .literal: return nil
         case let .function(def): return def.name
+        case .literal, .constant: return nil
         }
     }
 

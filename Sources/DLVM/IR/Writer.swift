@@ -44,10 +44,6 @@ extension Literal : TextOutputStreamable {
             target.write("<\(vals.joinedDescription)>")
         case let .tuple(vals):
             target.write("(\(vals.joinedDescription))")
-        case let .struct(vals, isPacked: isPacked):
-            target.write(isPacked ? "<{" : "{")
-            vals.joinedDescription.write(to: &target)
-            target.write(isPacked ? "}>" : "}")
         case let .array(vals):
             target.write("[\(vals.joinedDescription)]")
         case .zero:
@@ -56,8 +52,6 @@ extension Literal : TextOutputStreamable {
             target.write("undefined")
         case .null:
             target.write("null")
-        case let .constant(op):
-            target.write("(\(op))")
         }
     }
 }
@@ -286,14 +280,32 @@ extension TypeAlias : TextOutputStreamable {
     }
 }
 
+extension ElementKey : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write("#")
+        switch self {
+        case let .index(i): target.write("\(i)")
+        case let .name(n): target.write(n)
+        case let .value(v): target.write("(\(v))")
+        }
+    }
+}
+
 extension Use : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .global(_, ref):      target.write("@\(ref.name)")
-        case let .instruction(_, ref): target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
-        case let .argument(_, ref):    target.write("%\(ref.name)")
-        case let .literal(litVal):     litVal.literal.write(to: &target)
-        case let .function(ref):       target.write("@\(ref.name)")
+        case let .global(_, ref):
+            target.write("@\(ref.name)")
+        case let .instruction(_, ref):
+            target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
+        case let .argument(_, ref):
+            target.write("%\(ref.name)")
+        case let .literal(litVal):
+            litVal.literal.write(to: &target)
+        case let .function(ref):
+            target.write("@\(ref.name)")
+        case let .constant(instKind):
+            target.write("(\(instKind))")
         }
         target.write(" : \(type)")
     }

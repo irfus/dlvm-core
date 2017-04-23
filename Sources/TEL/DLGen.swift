@@ -112,7 +112,7 @@ class CodeGenerator {
         /// Emit tuple extraction
         let paramsVal = function.argumentValue(named: "params")!
         for (i, param) in program.parameters.enumerated() {
-            let val = builder.buildInstruction(.extract(from: paramsVal, at: [i]))
+            let val = builder.buildInstruction(.extract(from: paramsVal, at: [.index(i)]))
             environment[param.name] = val
         }
 
