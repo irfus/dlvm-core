@@ -78,6 +78,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case notFunction(Use, Node)
     case invalidGradientArguments(Use, Node)
     case notConstantExpression(Node)
+    case structFieldNameMismatch(StructType, Use, Node)
 }
 
 public protocol SelfVerifiable {
@@ -188,6 +189,14 @@ extension LiteralValue : SelfVerifiable {
         case let (.array(subtype, n), .array(elements)) where n == elements.count:
             for use in elements {
                 try verifyUse(use, subtype)
+            }
+            
+        case let (.struct(structTy), .struct(fields)) where structTy.fields.count == fields.count:
+            for ((name: fmlName, type: fmlType), (name, val)) in zip(structTy.fields, fields) {
+                guard fmlName == name else {
+                    throw VerificationError.structFieldNameMismatch(structTy, val, self)
+                }
+                try verifyUse(val, fmlType)
             }
 
         default:
