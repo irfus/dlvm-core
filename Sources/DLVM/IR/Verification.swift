@@ -85,7 +85,7 @@ public protocol SelfVerifiable {
 }
 
 import Foundation
-private let moduleNamePattern = try! NSRegularExpression(pattern: "[a-zA-Z_]")
+private let moduleNamePattern = try! NSRegularExpression(pattern: "[a-zA-Z_]", options: [])
 
 extension Module : SelfVerifiable {
     private func verify<T: SelfVerifiable & Named>(_ declaration: T, namespace: inout Set<String>) throws {
