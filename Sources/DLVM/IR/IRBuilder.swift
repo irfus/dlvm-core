@@ -210,15 +210,15 @@ public extension IRBuilder {
                                       elseBB, elseArguments))
     }
 
-    func extract(from source: Use, at indices: [Int]) -> Use {
+    func extract(from source: Use, at indices: [ElementKey]) -> Use {
         return buildInstruction(.extract(from: source, at: indices))
     }
 
-    func insert(_ source: Use, to destination: Use, at indices: [Int]) -> Use {
+    func insert(_ source: Use, to destination: Use, at indices: [ElementKey]) -> Use {
         return buildInstruction(.insert(source, to: destination, at: indices))
     }
 
-    func elementPointer(from source: Use, at indices: [Use]) -> Use {
+    func elementPointer(from source: Use, at indices: [ElementKey]) -> Use {
         return buildInstruction(.elementPointer(source, indices))
     }
 
@@ -246,8 +246,20 @@ public extension IRBuilder {
         return buildInstruction(.allocateHeap(type, count: count))
     }
 
-    func allocateBox(type: Type, in location: MemoryType) -> Use {
+    func allocateBox(for type: Type, in location: MemoryType) -> Use {
         return buildInstruction(.allocateBox(type, location))
+    }
+
+    func allocateComputeBuffer(for function: Function) -> Use {
+        return buildInstruction(.allocateCompute(.function(function)))
+    }
+
+    func requestMemory(from computeBox: Use) -> Use {
+        return buildInstruction(.requestMemory(computeBox))
+    }
+
+    func projectBox(_ box: Use) -> Use {
+        return buildInstruction(.projectBox(box))
     }
 
     func deallocate(_ use: Use) {

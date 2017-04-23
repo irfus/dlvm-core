@@ -79,10 +79,16 @@ public extension Function {
         func newUse(from old: Use) -> Use {
             switch old {
             /// If recursion, change function to the new function
-            case .function(self): return .function(newFunc)
-            case .function, .global, .literal: return old
-            case let .argument(t, arg): return .argument(t, newArgs[arg]!)
-            case let .instruction(t, inst): return .instruction(t, newInsts[inst]!)
+            case .function(self):
+                return .function(newFunc)
+            case .function, .global, .literal:
+                return old
+            case let .argument(t, arg):
+                return .argument(t, newArgs[arg]!)
+            case let .instruction(t, inst):
+                return .instruction(t, newInsts[inst]!)
+            case let .constant(instKind):
+                return .constant(instKind.substituting(old, for: newUse(from: old)))
             }
         }
 

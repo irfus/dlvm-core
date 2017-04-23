@@ -60,8 +60,8 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case invalidType(Node)
     case namedVoidValue(Node)
     case notPointer(Use, Node)
-    case invalidIndices(Use, [Int], Node)
-    case invalidOffsets(Use, [Use], Node)
+    case invalidIndices(Use, [ElementKey], Node)
+    case invalidOffsets(Use, [ElementKey], Node)
     case gradientTypeMismatch(Function.Attribute, Type, Node)
     case invalidLiteral(Type, Literal, Node)
     case missingIndices(Use, Node)
@@ -75,6 +75,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case cannotLoadFromCompute(Use, Node)
     case notFunction(Use, Node)
     case invalidGradientArguments(Use, Node)
+    case notConstantExpression(Node)
 }
 
 public protocol SelfVerifiable {
@@ -140,24 +141,10 @@ extension LiteralValue : SelfVerifiable {
                 try verifyUse(use, subtype)
             }
 
-        /// Struct literal
-        case let (.struct(structTy), .struct(elements, isPacked))
-            where structTy.fields.count == elements.count && structTy.isPacked == isPacked:
-            for (subtype, use) in zip(structTy.subtypes, elements) {
-                try verifyUse(use, subtype)
-            }
-
         /// Array literal
         case let (.array(subtype, n), .array(elements)) where n == elements.count:
             for use in elements {
                 try verifyUse(use, subtype)
-            }
-
-        /// Constant op
-        case let (type, .constant(op)) where type == op.type:
-            guard !op.accessesMemory else { fallthrough } /// fail
-            for use in op.operands {
-                try verifyUse(use, use.type)
             }
 
         default:
@@ -300,6 +287,16 @@ extension Instruction : SelfVerifiable {
 }
 
 extension InstructionKind {
+    /// Verifies constant expression
+    public func performVerification() throws {
+        switch self {
+        case _ where accessesMemory, .load, .store, .apply, .compute:
+            throw VerificationError.notConstantExpression(self)
+        default: return
+        }
+    }
+
+    /// Verifies instruction
     public func performVerification(in instruction: Instruction) throws {
         let function = instruction.parent.parent
         switch self {
@@ -478,7 +475,10 @@ extension InstructionKind {
             }
 
         case let .elementPointer(v, ii):
-            guard type.isValid else {
+            guard case let .pointer(t) = v.type.unaliased else {
+                throw VerificationError.notPointer(v, instruction)
+            }
+            guard let _ = t.subtype(at: ii) else {
                 throw VerificationError.invalidOffsets(v, ii, instruction)
             }
 

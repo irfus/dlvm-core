@@ -21,9 +21,21 @@ import DLVMTensor
 
 /// Element key to form a key path in GEP and use
 public enum ElementKey {
-    case number(Int)
+    case index(Int)
     case name(String)
     case value(Use)
+}
+
+// MARK: - Equatable
+extension ElementKey : Equatable {
+    public static func == (lhs: ElementKey, rhs: ElementKey) -> Bool {
+        switch (lhs, rhs) {
+        case let (.index(i1), .index(i2)): return i1 == i2
+        case let (.name(n1), .name(n2)): return n1 == n2
+        case let (.value(v1), .value(v2)): return v1 == v2
+        default: return false
+        }
+    }
 }
 
 /// Nominal type
@@ -74,6 +86,10 @@ public extension StructType {
     func subtype(at key: ElementKey) -> Type? {
         guard case .name(let name) = key else { return nil }
         return subtype(named: name)
+    }
+
+    func indexOfField(named name: String) -> Int? {
+        return fields.index(where: { $0.name == name })
     }
 }
 
@@ -176,24 +192,29 @@ public extension Type {
 
 // MARK: - Subtype extraction
 public extension Type {
-    func subtype(at indices: [Int]) -> Type? {
-        guard let idx = indices.first else { return self }
-        let result: Type
-        switch unaliased {
-        case let .tuple(tt) where tt.indices.contains(idx):
-            result = tt[idx]
-        case let .struct(structTy) where structTy.fields.indices.contains(idx):
-            result = structTy.fields[idx].type
-        case let .tensor(shape, dt) where shape.rank > 0 && idx < shape[0]:
-            result = .tensor(shape.dropFirst(), dt)
-        case let .array(t, n) where idx < n:
-            result = t
-        case let .pointer(t), let .box(t, _):
-            result = t
+    func subtype(at key: ElementKey) -> Type? {
+        switch (unaliased, key) {
+        case let (.tuple(tt), .index(i)) where tt.indices.contains(i):
+            return tt[i]
+        case let (.struct(structTy), .name(_)):
+            guard let ty = structTy.subtype(at: key) else { return nil }
+            return ty
+        case let (.tensor(shape, dt), .index(i)) where shape.rank > 0 && i < shape[0]:
+            return .tensor(shape.dropFirst(), dt)
+        case let (.array(t, n), .index(i)) where i < n:
+            return t
+        case let (.pointer(t), .index(_)),
+             let (.box(t, _), .index(_)):
+            return t
         default:
             return nil
         }
-        return result.subtype(at: Array(indices.dropFirst()))
+    }
+    
+    func subtype(at keys: [ElementKey]) -> Type? {
+        return keys.reduce(self, { acc, key in
+            acc.flatMap { $0.subtype(at: key) }
+        })
     }
 }
 

@@ -25,7 +25,12 @@ public extension Sequence {
 
     /// Elements' descriptions joined by comma
     var joinedDescription: String {
-        return map{"\($0)"}.joined(separator: ", ")
+        return description(joinedBy: ", ")
+    }
+
+    /// Elements' descriptions joined
+    func description(joinedBy separator: String) -> String {
+        return map{"\($0)"}.joined(separator: separator)
     }
     
     /// `mapM`

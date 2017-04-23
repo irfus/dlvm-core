@@ -32,17 +32,49 @@ public class CodeGenerator<TargetType : LLComputeTarget> {
     }
 }
 
+public extension Type {
+    func emitIndexPath<T : LLComputeTarget>
+        (from keyPath: [ElementKey],
+         to context: inout LLGenContext<T>,
+         in env: inout LLGenEnvironment) -> [IRValue] {
+        var current: Type = self
+        var indices: [IRValue] = []
+        for key in keyPath {
+            switch (key, current) {
+            case let (.index(i), _):
+                indices.append(i.asLLVM())
+            case let (.name(n), .struct(structTy)):
+                let index = structTy.indexOfField(named: n) ?? DLImpossibleResult()
+                indices.append(index)
+            case let (.value(v), _):
+                indices.append(v.emit(to: &context, in: &env))
+            default:
+                DLImpossible()
+            }
+            current = current.subtype(at: key) ?? DLImpossibleResult()
+        }
+        return indices
+    }
+}
+
 extension DLVM.Use : LLEmittable {
     public typealias LLUnit = IRValue
     @discardableResult
     public func emit<T : LLComputeTarget>(to context: inout LLGenContext<T>,
-                                   in env: inout LLGenEnvironment) -> IRValue {
+                                          in env: inout LLGenEnvironment) -> IRValue {
         switch self {
-        case let .global(_, val): return env.value(for: val)
-        case let .function(fun): return env.value(for: fun)
-        case let .argument(_, arg): return env.value(for: arg)
-        case let .instruction(_, inst): return env.value(for: inst)
-        case let .literal(litVal): return litVal.emit(to: &context, in: &env)
+        case let .global(_, val):
+            return env.value(for: val)
+        case let .function(fun):
+            return env.value(for: fun)
+        case let .argument(_, arg):
+            return env.value(for: arg)
+        case let .instruction(_, inst):
+            return env.value(for: inst)
+        case let .literal(litVal):
+            return litVal.emit(to: &context, in: &env)
+        case .constant(_):
+            DLUnimplemented()
         }
     }
 }
@@ -74,16 +106,9 @@ extension DLVM.LiteralValue : LLEmittable {
             let vals = xx.map{$0.emit(to: &context, in: &env)}
             return StructType.constant(values: vals)
 
-        case let .struct(xx, isPacked: isPacked):
-            let vals = xx.map{$0.emit(to: &context, in: &env)}
-            return StructType.constant(values: vals, isPacked: isPacked)
-
         case let .tensor(xx):
             let vals = xx.map{$0.emit(to: &context, in: &env)}
             return ArrayType.constant(vals, type: xx[0].type.emit(to: &context, in: &env))
-
-        case let .constant(constOp):
-            return constOp.emit(to: &context, in: &env)
 
         case .zero:
             return type.emit(to: &context, in: &env).null()
@@ -131,11 +156,21 @@ public extension DLVM.MemoryType {
     }
 }
 
+extension DLVM.StructType : LLEmittable {
+    public typealias LLUnit = IRType
+    public func emit<T>(to context: inout LLGenContext<T>,
+                        in env: inout LLGenEnvironment) -> IRType where T : LLComputeTarget {
+        return LLVM.StructType(elementTypes: subtypes.map {
+            $0.emit(to: &context, in: &env)
+        }, isPacked: isPacked)
+    }
+}
+
 extension DLVM.`Type` : LLEmittable {
     public typealias LLUnit = IRType
     @discardableResult
     public func emit<T : LLComputeTarget>(to context: inout LLGenContext<T>,
-                                   in env: inout LLGenEnvironment) -> IRType {
+                                          in env: inout LLGenEnvironment) -> IRType {
         switch self {
         case let .tensor(shape, dt):
             return shape.reduce(dt.llType, { acc, dim in
@@ -148,8 +183,7 @@ extension DLVM.`Type` : LLEmittable {
         case let .tuple(subtt):
             return StructType(elementTypes: subtt.map{$0.emit(to: &context, in: &env)})
         case let .struct(structTy):
-            return StructType(elementTypes: structTy.fields.map{$0.type.emit(to: &context, in: &env)},
-                              isPacked: structTy.isPacked)
+            return structTy.emit(to: &context, in: &env)
         case let .array(subt, n):
             return ArrayType(elementType: subt.emit(to: &context, in: &env), count: n)
         case let .function(args, ret):

@@ -32,9 +32,7 @@ public indirect enum Literal {
     case scalar(Scalar)
     case tensor([Use])
     case tuple([Use])
-    case `struct`([Use], isPacked: Bool)
     case array([Use])
-    case constant(InstructionKind)
 }
 
 extension Literal : Equatable {
@@ -50,12 +48,8 @@ extension Literal : Equatable {
             return t1 == t2
         case let (.tuple(tt1), .tuple(tt2)):
             return tt1 == tt2
-        case let (.struct(vv1, p1), .struct(vv2, p2)):
-            return vv1 == vv2 && p1 == p2
         case let (.array(tt1), .array(tt2)):
             return tt1 == tt2
-        case (.constant(_), .constant(_)):
-            return false /// Or rather unimplemented
         default: return false
         }
     }
