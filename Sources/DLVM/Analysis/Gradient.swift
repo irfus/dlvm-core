@@ -17,17 +17,19 @@
 //  limitations under the License.
 //
 
-fileprivate struct GradientKey {
+fileprivate struct GradientConfig {
     let function: Function
     let differentiationIndex: Int
     let variableIndices: [Int]
+    let outputIndices: [Int]
 }
 
-extension GradientKey : Equatable, Hashable {
-    static func == (lhs: GradientKey, rhs: GradientKey) -> Bool {
+extension GradientConfig : Equatable, Hashable {
+    static func == (lhs: GradientConfig, rhs: GradientConfig) -> Bool {
         return lhs.function === rhs.function
             && lhs.differentiationIndex == rhs.differentiationIndex
             && lhs.variableIndices == rhs.variableIndices
+            && lhs.outputIndices == rhs.outputIndices
     }
 
     var hashValue: Int {
@@ -36,17 +38,19 @@ extension GradientKey : Equatable, Hashable {
 }
 
 public struct GlobalGradientInfo {
-    fileprivate var gradientMap: [GradientKey : Function] = [:]
+    fileprivate var gradientMap: [GradientConfig : Function] = [:]
     fileprivate var antigradientMap: [Function : Function] = [:]
 }
 
 public extension GlobalGradientInfo {
     func gradient(of function: Function,
                   from diffIndex: Int,
-                  wrt varIndices: [Int]) -> Function? {
-        let key = GradientKey(function: function,
+                  wrt varIndices: [Int],
+                  keepingOutputs outputIndices: [Int]) -> Function? {
+        let key = GradientConfig(function: function,
                               differentiationIndex: diffIndex,
-                              variableIndices: varIndices)
+                              variableIndices: varIndices,
+                              outputIndices: outputIndices)
         return gradientMap[key]
     }
 
@@ -59,12 +63,15 @@ public class GlobalGradientAnalysis: AnalysisPass<Module, GlobalGradientInfo> {
     public override class func run(on module: Module) -> GlobalGradientInfo {
         var ggi = GlobalGradientInfo()
         for grad in module {
-            guard let key: GradientKey = grad.attributes.flatMap({ attr in
-                guard case let .differentiating(f, from: diffIndex, wrt: varIndices) = attr
+            guard let key: GradientConfig = grad.attributes.flatMap({ attr in
+                guard case let .differentiating(f, from: diffIndex,
+                                                wrt: varIndices,
+                                                keepingOutputs: outputIndices) = attr
                     else { return nil }
-                return GradientKey(function: f,
+                return GradientConfig(function: f,
                                    differentiationIndex: diffIndex,
-                                   variableIndices: varIndices)
+                                   variableIndices: varIndices,
+                                   outputIndices: outputIndices)
             }).first else { continue }
             ggi.gradientMap[key] = grad
             ggi.antigradientMap[grad] = key.function

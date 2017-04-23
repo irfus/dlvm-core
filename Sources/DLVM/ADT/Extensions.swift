@@ -56,6 +56,17 @@ public extension Collection where Index == Int, IndexDistance == Int {
     }
 }
 
+public extension Sequence where Iterator.Element : Hashable {
+    var containsDuplicate: Bool {
+        var set: Set<Iterator.Element> = []
+        for element in self {
+            if set.contains(element) { return true }
+            set.insert(element)
+        }
+        return false
+    }
+}
+
 // MARK: - Equatable
 public extension Sequence where Iterator.Element : Equatable {
     func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {

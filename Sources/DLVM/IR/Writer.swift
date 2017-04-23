@@ -224,8 +224,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("bitCast \(v) to \(t)")
         case let .compute(f, args, in: graph):
             target.write("compute \(f)(\(args)) in \(graph)")
-        case let .gradient(f, from: diff, wrt: vars):
-            target.write("gradient \(f) from \(diff) wrt \(vars)")
+        case let .gradient(f, from: diff, wrt: vars, keeping: outputIndices):
+            target.write("gradient \(f) from \(diff) wrt \(vars) keeping \(outputIndices)")
         case let .allocateHeap(t, count: c):
             target.write("allocateHeap \(t), \(c)")
         case let .allocateBox(t, loc):
@@ -340,8 +340,8 @@ extension Function.Attribute : TextOutputStreamable {
         switch self {
         case .differentiable: target.write("differentiable")
         case .inline: target.write("inline")
-        case let .differentiating(f, from: diffIndex, wrt: varIndices):
-            target.write("differentiating(@\(f.name), from: \(diffIndex), wrt: \(varIndices))")
+        case let .differentiating(f, from: diffIndex, wrt: varIndices, keepingOutputs: outputIndices):
+            target.write("differentiating(@\(f.name), from: \(diffIndex), wrt: \(varIndices)), keepingOutputs: \(outputIndices)")
         case .compute: target.write("compute")
         }
     }

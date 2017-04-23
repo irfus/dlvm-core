@@ -213,9 +213,11 @@ extension Function: SelfVerifiable {
         for attr in attributes {
             switch attr {
             /// Gradient function
-            case let .differentiating(antigrad, from: diffIndex, wrt: varIndices):
+            case let .differentiating(antigrad, from: diffIndex, wrt: varIndices, keepingOutputs: outputIndices):
                 /// Check for type mismatch
-                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex, withRespectTo: varIndices) else {
+                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
+                                                               withRespectTo: varIndices,
+                                                               keepingOutputs: outputIndices) else {
                     throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
                 }
                 guard type == expectedType else {
@@ -522,14 +524,15 @@ extension InstructionKind {
                 throw VerificationError.notComputeFunction(fref, instruction)
             }
 
-        case let .gradient(v, from: diff, wrt: vars):
+        case let .gradient(v, from: diff, wrt: vars, keeping: outputIndices):
             guard case let .function(fref) = v else {
                 throw VerificationError.notFunction(v, instruction)
             }
             guard fref.isCompute else {
                 throw VerificationError.notComputeFunction(fref, instruction)
             }
-            guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars) else {
+            guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars,
+                                            keepingOutputs: outputIndices) else {
                 throw VerificationError.invalidGradientArguments(v, instruction)
             }
 

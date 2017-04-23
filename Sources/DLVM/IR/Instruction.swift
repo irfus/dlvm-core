@@ -46,8 +46,7 @@ public enum InstructionKind {
     /// If axis is not given, reduction is performed on contiguous elements
     case reduce(AssociativeOp, Use, axis: Int?)
     /// Matrix multiplication operation
-    case matrixMultiply(Use, Use)
-    /// Concatenation operation
+    case matrixMultiply(Use, Use) /// Concatenation operation
     case concatenate([Use], axis: Int)
     /// Transpose
     case transpose(Use)
@@ -71,7 +70,7 @@ public enum InstructionKind {
     case compute(Use, [Use], in: Use)
     /// Gradient transformer
     /// - Note: This will be canonicalized to a function reference
-    case gradient(Use, from: Int, wrt: [Int])
+    case gradient(Use, from: Int, wrt: [Int], keeping: [Int])
 
     /** Heap memory of host and device **/
     /** Memory **/
@@ -313,9 +312,11 @@ extension InstructionKind {
                 return .invalid
             }
 
-        case let .gradient(f, from: diffIndex, wrt: varIndices):
+        case let .gradient(f, from: diffIndex, wrt: varIndices, keeping: outputIndices):
             guard case let .function(fref) = f, fref.isDifferentiable else { return .invalid }
-            return fref.gradientType(fromOutput: diffIndex, withRespectTo: varIndices) ?? .invalid
+            return fref.gradientType(fromOutput: diffIndex,
+                                     withRespectTo: varIndices,
+                                     keepingOutputs: outputIndices) ?? .invalid
 
         case let .compute(v, args, in: graph):
             let actual = args.map{$0.type}
@@ -398,7 +399,7 @@ extension InstructionKind {
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateStack(_, op), let .allocateHeap(_, count: op),
              let .projectBox(op), let .release(op), let .retain(op),
-             let .allocateCompute(op), let .gradient(op, _, _), let .requestMemory(op):
+             let .allocateCompute(op), let .gradient(op, _, _, _), let .requestMemory(op):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -471,8 +472,8 @@ public extension InstructionKind {
             return .compute(v1, uses.map(condSubst), in: new)
         case .compute(let v1, let uses, in: let v2):
             return .compute(v1, uses.map(condSubst), in: v2)
-        case .gradient(old, from: let diff, wrt: let wrt):
-            return .gradient(new, from: diff, wrt: wrt)
+        case .gradient(old, from: let diff, wrt: let wrt, keeping: let outputIndices):
+            return .gradient(new, from: diff, wrt: wrt, keeping: outputIndices)
         case let .apply(f, uses):
             return .apply(f, uses.map(condSubst))
         case .extract(from: old, at: let i):
