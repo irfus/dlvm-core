@@ -39,19 +39,19 @@ extension ElementKey : Equatable {
 }
 
 /// Nominal type
-public class StructType : Named, EquatableByReference, HashableByReference {
+public class StructType : Named, HashableByReference {
     public enum Attribute {
         case packed
     }
-    
     public typealias Field = (name: String, type: Type)
     public var name: String
-    public var fields: [(name: String, type: Type)]
+    public var fields: [Field]
     public var attributes: Set<Attribute> = []
 
-    public init(name: String, fields: [Field], attributes: [Attribute]) {
+    public init(name: String, fields: [Field], attributes: Set<Attribute>) {
         self.name = name
         self.fields = fields
+        self.attributes = attributes
     }
 }
 
@@ -90,6 +90,21 @@ public extension StructType {
 
     func indexOfField(named name: String) -> Int? {
         return fields.index(where: { $0.name == name })
+    }
+}
+
+/// Type alias
+public class TypeAlias : Named, HashableByReference {
+    public var name: String
+    public var type: Type?
+
+    public init(name: String, type: Type? = nil) {
+        self.name = name
+        self.type = type
+    }
+
+    public var isOpaque: Bool {
+        return type == nil
     }
 }
 
@@ -227,17 +242,16 @@ public extension Type {
         case let .pointer(t): return .pointer(t.canonical)
         case let .box(t, loc): return .box(t.canonical, loc)
         case let .function(tt, t): return.function(tt.map{$0.canonical}, t.canonical)
-        case let .alias(.transparent(_, subT)): return subT.canonical
-        case .alias(.opaque): return self
+        case let .alias(alias): return alias.type?.canonical ?? self
         case .tensor, .void, .invalid, .computeBuffer, .struct: return self
         }
     }
 
     var unaliased: Type {
-        switch self {
-        case let .alias(.transparent(_, t)): return t.unaliased
-        default: return self
+        if case let .alias(alias) = self {
+            return alias.type?.unaliased ?? self
         }
+        return self
     }
 
     var isDifferentiable: Bool {
@@ -260,7 +274,7 @@ extension Type : Equatable {
         case let (.tuple(ts1), .tuple(ts2)):
             return ts1 == ts2
         case let (.struct(s1), .struct(s2)):
-            return s1 == s2
+            return s1 === s2
         case let (.array(t1, n1), .array(t2, n2)):
             return t1 == t2 && n1 == n2
         case let (.pointer(t1), .pointer(t2)):
@@ -273,8 +287,8 @@ extension Type : Equatable {
             return f1 === f2
         case (.void, .void), (.invalid, .invalid):
             return true
-        case let (.alias(.opaque(name1)), .alias(.opaque(name2))):
-            return name1 == name2
+        case let (.alias(a1), .alias(a2)) where a1.isOpaque && a2.isOpaque:
+            return a1.name == a2.name
         default:
             return false
         }
@@ -315,12 +329,7 @@ public extension Type {
 // MARK: - Validation
 public extension TypeAlias {
     public var isValid: Bool {
-        switch self {
-        case .opaque:
-            return true
-        case let .transparent(_, t):
-            return t.isValid
-        }
+        return type?.isValid ?? true
     }
 }
 

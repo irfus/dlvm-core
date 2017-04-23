@@ -36,7 +36,7 @@ open class Pass<Body : IRUnit, Result> : PassProtocol {
     }
 
     open class func run(on body: Body) throws -> Result {
-        fatalError("Unimplemented")
+        DLUnimplemented()
     }
 
     open class var shouldInvalidateAnalyses: Bool {

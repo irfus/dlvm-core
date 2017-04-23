@@ -126,24 +126,13 @@ extension DLVM.TypeAlias : LLEmittable {
     public typealias LLUnit = IRType
     @discardableResult
     public func emit<T : LLComputeTarget>(to context: inout LLGenContext<T>,
-                                   in env: inout LLGenEnvironment) -> IRType {
-        let resultTy: IRType
-        switch self {
-        case let .opaque(name):
-            return context.builder.createStruct(name: name)
-        case let .transparent(name, .tuple(tt)):
-            let llTypes = tt.map { $0.emit(to: &context, in: &env) }
-            resultTy = context.builder.createStruct(name: name,
-                                                    types: llTypes,
-                                                    isPacked: true)
-        case let .transparent(name, ty):
-            let llType = ty.emit(to: &context, in: &env)
-            resultTy = context.builder.createStruct(name: name,
-                                                    types: [llType],
-                                                    isPacked: false)
+                                          in env: inout LLGenEnvironment) -> IRType {
+        guard let type = type else {
+            let structure = context.builder.createStruct(name: name)
+            env.insertType(structure, for: self)
+            return structure
         }
-        env.insertType(resultTy, for: self)
-        return resultTy
+        return type.emit(to: &context, in: &env)
     }
 }
 

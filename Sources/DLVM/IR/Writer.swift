@@ -121,7 +121,8 @@ extension Type : TextOutputStreamable {
         case let .computeBuffer(f):
             target.write("compute{@\(f.name)}")
         case let .struct(structTy):
-            structTy.write(to: &target)
+            target.write("$")
+            structTy.name.write(to: &target)
         }
     }
 }
@@ -271,11 +272,11 @@ extension GlobalValue : TextOutputStreamable {
 
 extension TypeAlias : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        switch self {
-        case let .opaque(name):
-            target.write("type $\(name) = opaque")
-        case let .transparent(name, ty):
-            target.write("type $\(name) = \(ty)")
+        target.write("type $\(name) = ")
+        if let type = type {
+            type.write(to: &target)
+        } else {
+            target.write("opaque")
         }
     }
 }
@@ -363,16 +364,21 @@ extension Function : TextOutputStreamable {
 }
 
 extension Module : TextOutputStreamable {
+    func write<C, T>(_ elements: C, to target: inout T)
+        where C : Collection, T : TextOutputStream,
+              C.Iterator.Element : TextOutputStreamable
+    {
+        if isEmpty { return }
+        target.write(elements.description(joinedBy: "\n"))
+        target.write("\n")
+    }
+
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n")
-        target.write("stage \(stage)\n\n")
-        target.write(typeAliases.map{"\($0)"}.joined(separator: "\n"))
-        target.write("\n")
-        target.write(globalValues.map{"\($0)"}.joined(separator: "\n"))
-        target.write("\n")
-        for fun in self {
-            fun.write(to: &target)
-            target.write("\n\n")
-        }
+        target.write("stage \(stage)\n")
+        write(structs, to: &target)
+        write(typeAliases, to: &target)
+        write(globalValues, to: &target)
+        write(elements, to: &target)
     }
 }
