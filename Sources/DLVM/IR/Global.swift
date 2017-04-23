@@ -18,7 +18,7 @@
 //
 
 /// Global value
-public class GlobalValue : Value, Definition, HashableByReference {
+public class GlobalValue : Value, Named, Definition, HashableByReference {
     public enum Kind {
         case variable, constant
     }
