@@ -160,27 +160,32 @@ public extension Function {
     func gradientType(fromOutput diffIndex: Int,
                       withRespectTo varIndices: [Int],
                       keepingOutputs outputIndices: [Int]) -> Type? {
+        var keptOutputs: [Type]
         /// Check output index
         switch result {
+        /// Tuple output is treated as multiplt-out
         case let .tuple(subtypes):
             guard
                 /// Diff index must be in bounds
                 subtypes.indices.contains(diffIndex),
                 /// Indices of the outputs to keep must be in bounds
-                let _ = subtypes.subcollection(atIndices: outputIndices),
+                let someOutputs = subtypes.subcollection(atIndices: outputIndices),
                 /// Indices of the outputs to keep must not contain any duplicate
                 !outputIndices.containsDuplicate
                 else { return nil }
-        case let type where
-                /// Single result must be diff'able
-                !type.isDifferentiable
-                /// Diff index must be 0
-                || diffIndex != 0
-                /// Kept output indices must be [0]
-                || outputIndices != [0]:
-            return nil
+            keptOutputs = someOutputs
+        /// Other output is treated as single out
+        case _ where
+                /// Result must be differentiable
+                result.isDifferentiable
+                /// Index must be 0
+                && diffIndex == 0
+                /// Indices of the outputs to keep must be either [] or [0] 
+                && (outputIndices.isEmpty || outputIndices == [0]):
+            keptOutputs = outputIndices.isEmpty ? [] : [result]
+        /// Bad differentiation case
         default:
-            break
+            return nil
         }
         /// Check variable indices
         let argTypes = arguments.map{$0.type}
@@ -190,7 +195,11 @@ public extension Function {
             /// All diff variables must be diff'able arguments
             diffVars.forAll({$0.isDifferentiable})
             else { return nil }
-        return .function(argTypes, .tuple(diffVars))
+        /// Result of differentiation has the same input types but different output types 
+        /// Output type is `(k1, ..., kn, d1, ..., dn)` where `k1...kn` are outputs of the 
+        /// original function to keep, `d1...dn` are derivatives of the output at `diffIndex`
+        /// with respect to arguments at indices `varIndices`, respectively.
+        return .function(argTypes, .tuple(keptOutputs + diffVars))
     }
     
 }
