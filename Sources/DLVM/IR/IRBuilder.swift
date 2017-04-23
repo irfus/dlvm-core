@@ -81,9 +81,11 @@ extension IRBuilder {
 extension IRBuilder {
 
     @discardableResult
-    open func buildGlobalValue(_ value: GlobalValue) -> Use {
-        module.globalValues.append(value)
-        return .global(value.type, value)
+    open func buildStruct(named name: String, fields: DictionaryLiteral<String, Type>,
+                          attributes: Set<StructType.Attribute> = []) -> StructType {
+        let structTy = StructType(name: name, fields: fields.map{$0}, attributes: attributes)
+        module.structs.append(structTy)
+        return structTy
     }
 
     @discardableResult
@@ -91,6 +93,16 @@ extension IRBuilder {
         let alias = TypeAlias(name: name, type: type)
         module.typeAliases.append(alias)
         return .alias(alias)
+    }
+
+    @discardableResult
+    open func buildGlobalValue(named name: String,
+                               kind: GlobalValue.Kind,
+                               type: Type,
+                               initializer: Use) -> Use {
+        let value = GlobalValue(name: name, kind: kind, type: type, initializer: initializer)
+        module.globalValues.append(value)
+        return .global(value.type.pointer, value)
     }
 
     open func makeLiteral(_ literalValue: LiteralValue) -> Use {
@@ -105,7 +117,7 @@ extension IRBuilder {
     open func buildFunction(named name: String,
                             arguments: [(String, Type)],
                             result: Type = .void,
-                            attributes: Set<Function.Attribute>) -> Function {
+                            attributes: Set<Function.Attribute> = []) -> Function {
         let fun = Function(name: name,
                            arguments: arguments,
                            result: result,

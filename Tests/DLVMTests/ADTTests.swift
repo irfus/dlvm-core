@@ -41,4 +41,10 @@ class ADTTests: XCTestCase {
         }
     }
 
+    static var allTests : [(String, (ADTTests) -> () throws -> Void)] {
+        return [
+            ("testOrderedMapSet", testOrderedMapSet)
+        ]
+    }
+
 }
