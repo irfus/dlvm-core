@@ -85,9 +85,9 @@ extension StructType : TextOutputStreamable {
             attr.write(to: &target)
             target.write("\n")
         }
-        target.write("struct %\(name) {\n")
+        target.write("struct $\(name) {\n")
         for (name, type) in fields {
-            target.write("\(name): \(type)\n")
+            target.write("    \(name): \(type)\n")
         }
         target.write("}")
     }
@@ -265,9 +265,9 @@ extension GlobalValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch kind {
         case .variable: target.write("var ")
-        case .constant: target.write("const ")
+        case .constant: target.write("let ")
         }
-        target.write("\(kind) @\(name) : \(type) = \(initializer)\n")
+        target.write("@\(name) : \(type) = \(initializer)")
     }
 }
 
@@ -369,14 +369,15 @@ extension Module : TextOutputStreamable {
         where C : Collection, T : TextOutputStream,
               C.Iterator.Element : TextOutputStreamable
     {
-        if isEmpty { return }
-        target.write(elements.description(joinedBy: "\n"))
-        target.write("\n")
+        for element in elements {
+            element.write(to: &target)
+            target.write("\n")
+        }
     }
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \(name)\n")
-        target.write("stage \(stage)\n")
+        target.write("stage \(stage)\n\n")
         write(structs, to: &target)
         write(typeAliases, to: &target)
         write(globalValues, to: &target)

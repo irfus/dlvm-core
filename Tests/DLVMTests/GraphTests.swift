@@ -43,6 +43,7 @@ class GraphTests: XCTestCase {
 
     static var allTests : [(String, (GraphTests) -> () throws -> Void)] {
         return [
+            ("testTraversal", testTraversal)
         ]
     }
 }

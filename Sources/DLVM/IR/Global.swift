@@ -25,13 +25,13 @@ public class GlobalValue : Value, Named, Definition, HashableByReference {
     public var name: String
     public var kind: Kind
     public var type: Type
-    public var initializer: LiteralValue
+    public var initializer: Use
 
     public func makeUse() -> Use {
         return .global(type, self)
     }
 
-    public init(name: String, kind: Kind, type: Type, initializer: LiteralValue) {
+    public init(name: String, kind: Kind, type: Type, initializer: Use) {
         self.name = name
         self.kind = kind
         self.type = type

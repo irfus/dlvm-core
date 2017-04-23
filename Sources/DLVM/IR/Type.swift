@@ -146,6 +146,10 @@ public extension Type {
     static func scalar(_ dataType: DataType) -> Type {
         return .tensor(.scalar, dataType)
     }
+
+    var pointer: Type {
+        return .pointer(self)
+    }
 }
 
 // MARK: - Properties

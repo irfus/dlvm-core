@@ -596,9 +596,20 @@ extension Use : SelfVerifiable {
         guard type.isValid else {
             throw VerificationError.invalidType(self)
         }
-        /// Value type must match use type
-        guard value.type == type else {
-            throw VerificationError.useTypeMismatch(self)
+        func verify(_ lhs: Type, _ rhs: Type) throws {
+            guard lhs == rhs else {
+                throw VerificationError.useTypeMismatch(self)
+            }
+        }
+        switch self {
+        case let .argument(ty, def):
+            try verify(ty, def.type)
+        case let .instruction(ty, def):
+            try verify(ty, def.type)
+        case let .global(ty, gv):
+            try verify(ty, gv.type.pointer)
+        case .constant, .literal, .function:
+            break
         }
     }
 }
