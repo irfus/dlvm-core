@@ -89,6 +89,7 @@ extension IRBuilder {
     @discardableResult
     open func buildAlias(named name: String, for type: Type? = nil) -> Type {
         let alias = TypeAlias(name: name, type: type)
+        module.typeAliases.append(alias)
         return .alias(alias)
     }
 

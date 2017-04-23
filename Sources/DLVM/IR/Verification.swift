@@ -20,6 +20,8 @@
 import DLVMTensor
 
 public enum VerificationError<Node : SelfVerifiable> : Error {
+    case illegalModuleName(String, Node)
+    case duplicateStructField(String, Node)
     case redeclared(Node)
     case noParent(Node)
     case blockFunctionMismatch(BasicBlock, Node)
@@ -82,20 +84,61 @@ public protocol SelfVerifiable {
     func performVerification() throws
 }
 
+import Foundation
+private let moduleNamePattern = try! NSRegularExpression(pattern: "[a-zA-Z_]")
+
 extension Module : SelfVerifiable {
+    private func verify<T: SelfVerifiable & Named>(_ declaration: T, namespace: inout Set<String>) throws {
+        guard !namespace.contains(declaration.name) else {
+            throw VerificationError.redeclared(declaration)
+        }
+        try declaration.performVerification()
+        namespace.insert(declaration.name)
+    }
+    
     public func performVerification() throws {
-        for global in globalValues {
-            try global.performVerification()
+        guard let _ = moduleNamePattern.firstMatch(in: name, options: [ .anchored ],
+                                                   range: NSRange(0..<name.characters.count)) else {
+            throw VerificationError.illegalModuleName(name, self)
         }
-        for fun in self {
-            try fun.performVerification()
-        }
+        /// Verify types and values
+        var typeNameSet: Set<String> = []
+        try typeAliases.forEach { try self.verify($0, namespace: &typeNameSet) }
+        try structs.forEach { try self.verify($0, namespace: &typeNameSet) }
+        var valueNameSet: Set<String> = []
+        try elements.forEach { try self.verify($0, namespace: &valueNameSet) }
+        try globalValues.forEach { try self.verify($0, namespace: &valueNameSet) }
     }
 }
 
 extension GlobalValue : SelfVerifiable {
     public func performVerification() throws {
         try initializer.performVerification()
+    }
+}
+
+extension TypeAlias : SelfVerifiable {
+    public func performVerification() throws {
+        guard let type = type else { return }
+        guard type.canonical.isValid else {
+            throw VerificationError.invalidType(self)
+        }
+    }
+}
+
+extension StructType : SelfVerifiable {
+    public func performVerification() throws {
+        var set: Set<String> = []
+        /// Verify struct fields' uniqueness and validity
+        for (name, ty) in fields {
+            guard !set.contains(name) else {
+                throw VerificationError.duplicateStructField(name, self)
+            }
+            guard ty.isValid else {
+                throw VerificationError.invalidType(self)
+            }
+            set.insert(name)
+        }
     }
 }
 
