@@ -17,8 +17,6 @@
 //  limitations under the License.
 //
 
-import Foundation
-
 /// Module representing a neural network
 public final class Module : IRCollection, IRUnit {
     public enum Stage {
@@ -32,9 +30,10 @@ public final class Module : IRCollection, IRUnit {
     public internal(set) var stage: Stage = .raw
     public var elements: OrderedMapSet<Function> = []
     public var globalValues: OrderedMapSet<GlobalValue> = []
+    public var structs: OrderedMapSet<StructType> = []
     public var typeAliases: OrderedMapSet<TypeAlias> = []
-    public private(set) var analysisManager: AnalysisManager<Module> = AnalysisManager()
-    public internal(set) var transformManager: TransformManager<Module> = TransformManager()
+    public let analysisManager: AnalysisManager<Module> = AnalysisManager()
+    public let transformManager: TransformManager<Module> = TransformManager()
 
     public init(name: String) {
         self.name = name
@@ -43,11 +42,9 @@ public final class Module : IRCollection, IRUnit {
 
 // MARK: - Output
 extension Module {
-
     open func write(toFile path: String) throws {
         var contents = ""
         write(to: &contents)
         try contents.write(toFile: path, atomically: true, encoding: .utf8)
     }
-    
 }

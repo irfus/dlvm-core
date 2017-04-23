@@ -86,15 +86,14 @@ class CodeGenerator {
             args.append((input.name, arg))
         }
         
-        /// Generate a struct for parameters
-        let paramStructType = builder.buildTypeAlias(
-            .transparent("\(program.moduleName)_params",
-                .tuple(program.parameters.map {
-                    .box(.tensor($0.shape, self.program.dataType), .compute)
-                })
-            )
+        /// Generate a tuple for parameters
+        let paramTupleType = builder.buildAlias(
+            named: "\(program.moduleName)_params",
+            for: .tuple(program.parameters.map {
+                .box(.tensor($0.shape, self.program.dataType), .compute)
+            })
         )
-        args.append(("params", paramStructType))
+        args.append(("params", paramTupleType))
 
         let output = program.layers.first(where: {$0.isOutput})! // BAD!
         /// Compute function
