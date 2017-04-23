@@ -84,7 +84,7 @@ extension DLVM.LiteralValue : LLEmittable {
     public typealias LLUnit = IRValue
     @discardableResult
     public func emit<T : LLComputeTarget>(to context: inout LLGenContext<T>,
-                                   in env: inout LLGenEnvironment) -> LLUnit {
+                                          in env: inout LLGenEnvironment) -> LLUnit {
         switch literal {
         case let .scalar(lit):
             switch lit {
@@ -104,11 +104,17 @@ extension DLVM.LiteralValue : LLEmittable {
 
         case let .tuple(xx):
             let vals = xx.map{$0.emit(to: &context, in: &env)}
-            return StructType.constant(values: vals)
+            return StructType.constant(values: vals, isPacked: true)
 
         case let .tensor(xx):
             let vals = xx.map{$0.emit(to: &context, in: &env)}
             return ArrayType.constant(vals, type: xx[0].type.emit(to: &context, in: &env))
+
+        case let .struct(fields):
+            guard case let .struct(structTy) = type else { DLImpossible() }
+            return LLVM.StructType.constant(values: fields.map{$1}.map { val in
+                val.emit(to: &context, in: &env)
+            }, isPacked: structTy.isPacked)
 
         case .zero:
             return type.emit(to: &context, in: &env).null()

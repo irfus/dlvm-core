@@ -48,6 +48,16 @@ class IRTests: XCTestCase {
         ], attributes: [ .packed ])
         XCTAssertEqual(struct1.description,
                        "!packed\nstruct $TestStruct1 {\n    foo: i32\n    bar: <1x3x4.f64>\n    baz: [4 x [3 x box{<3.i32>}]]\n}")
+        let structLit = builder.makeLiteral(LiteralValue(type: .struct(struct1), literal: .struct([
+            ("foo", .literal(LiteralValue(type: .scalar(.int(32)), literal: .undefined))),
+            ("bar", .literal(LiteralValue(type: .tensor([1, 3, 4], .float(.double)), literal: .undefined))),
+            ("baz", .literal(LiteralValue(type: .array(.array(.box(.tensor([3], .int(32)), .normal), 3), 4), literal: .undefined)))
+        ])))
+        let structGlobal = builder.buildGlobalValue(named: "struct1.value",
+                                                    kind: .variable,
+                                                    type: .struct(struct1),
+                                                    initializer: structLit)
+        XCTAssertEqual("\(structGlobal.value)", "var @struct1.value : $TestStruct1 = {#foo = undefined : i32, #bar = undefined : <1x3x4.f64>, #baz = undefined : [4 x [3 x box{<3.i32>}]]} : $TestStruct1")
     }
 
     static var allTests : [(String, (IRTests) -> () throws -> Void)] {

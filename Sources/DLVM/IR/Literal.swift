@@ -33,6 +33,7 @@ public indirect enum Literal {
     case tensor([Use])
     case tuple([Use])
     case array([Use])
+    case `struct`([(String, Use)])
 }
 
 extension Literal : Equatable {
@@ -50,6 +51,8 @@ extension Literal : Equatable {
             return tt1 == tt2
         case let (.array(tt1), .array(tt2)):
             return tt1 == tt2
+        case let (.struct(ss1), .struct(ss2)):
+            return ss1.elementsEqual(ss2, by: { $0 == $1 })
         default: return false
         }
     }

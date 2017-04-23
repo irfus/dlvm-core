@@ -77,8 +77,9 @@ func DLImpossibleResult<T>(function: String = #function,
 
 func DLImpossible(function: String = #function,
                   file: StaticString = #file,
-                  line: UInt = #line) {
+                  line: UInt = #line) -> Never {
     let _: () = DLImpossibleResult(function: function, file: file, line: line)
+    fatalError()
 }
 
 import Foundation
