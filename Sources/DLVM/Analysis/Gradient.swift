@@ -69,9 +69,9 @@ public class GlobalGradientAnalysis: AnalysisPass<Module, GlobalGradientInfo> {
                                                 keepingOutputs: outputIndices) = attr
                     else { return nil }
                 return GradientConfig(function: f,
-                                   differentiationIndex: diffIndex,
-                                   variableIndices: varIndices,
-                                   outputIndices: outputIndices)
+                                      differentiationIndex: diffIndex,
+                                      variableIndices: varIndices,
+                                      outputIndices: outputIndices)
             }).first else { continue }
             ggi.gradientMap[key] = grad
             ggi.antigradientMap[grad] = key.function

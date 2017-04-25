@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+import CoreTensor
+
 public enum FloatingPointSize : UInt {
     case half = 16
     case single = 32
@@ -35,6 +37,7 @@ public enum DataType {
     case int(UInt)
     case float(FloatingPointSize)
 }
+
 public extension DataType.Base {
     var isNumeric: Bool {
         return self != .bool

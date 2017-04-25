@@ -241,22 +241,22 @@ fileprivate extension GradientExpansion {
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {
         /* Basic arithmetic */
-        case let .binary(.associative(.arithmetic(.add)), lhs, rhs):
+        case let .binary(.associative(.arithmetic(.add)), lhs, rhs, _):
             grad = [
                 (lhs, adjoint), /// ∂f/∂x = D
                 (rhs, adjoint), /// ∂f/∂y = D
             ]
-        case let .binary(.associative(.arithmetic(.subtract)), lhs, rhs):
+        case let .binary(.associative(.arithmetic(.subtract)), lhs, rhs, bc):
             grad = [
                 (lhs, adjoint),                                     /// ∂f/∂x = D
-                (rhs, bd.subtract(adjoint.makeScalar(0), adjoint)), /// ∂f/∂y = -D
+                (rhs, bd.subtract(adjoint.makeScalar(0), adjoint, broadcasting: bc)), /// ∂f/∂y = -D
             ]
-        case let .binary(.associative(.arithmetic(.multiply)), lhs, rhs):
+        case let .binary(.associative(.arithmetic(.multiply)), lhs, rhs, _):
             grad = [
                 (lhs, rhs), /// ∂f/∂x = y
                 (rhs, lhs), /// ∂f/∂y = x
             ]
-        case let .binary(.associative(.arithmetic(.divide)), lhs, rhs):
+        case let .binary(.associative(.arithmetic(.divide)), lhs, rhs, _):
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
@@ -288,7 +288,7 @@ fileprivate extension GradientExpansion {
             let cloned = instruction.makeUse()
             grad = [
                 (x, bd.subtract(cloned, bd.subtract(x.makeScalar(1),
-                                                    bd.multiply(cloned, by: cloned))))
+                                                    bd.multiply(cloned, by: cloned)), broadcasting: [0]))
             ]
 
         case let .extract(from: x, at: _):

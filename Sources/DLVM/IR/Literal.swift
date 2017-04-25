@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+import CoreTensor
+
 /// Scalar or tensor literal, literally
 /// - Note: It has no type or shape, because a `Literal` is not a `Value`.
 /// But `LiteralValue`, that uses `Literal`, is a value.

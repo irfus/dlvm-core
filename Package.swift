@@ -24,20 +24,23 @@ let package = Package(
     targets: [
         Target(name: "DLVM"),
         Target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
-        Target(name: "TEL", dependencies: ["DLVM"]),
-        Target(name: "telc", dependencies: ["TEL", "DLVM", "DLVMCodeGen"])
+//        Target(name: "TEL", dependencies: ["DLVM"]),
+//        Target(name: "telc", dependencies: ["TEL", "DLVM", "DLVMCodeGen"])
     ],
     dependencies: [
       	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 7),
       	//.Package(url: "https://github.com/rxwei/LLVM_C", majorVersion: 2, minor: 1),
       	.Package(url: "https://github.com/trill-lang/LLVMSwift", majorVersion: 0),
       	.Package(url: "https://github.com/rxwei/CommandLine", majorVersion: 3, minor: 0),
-        .Package(url: "https://github.com/rxwei/dlvm-tensor", majorVersion: 0)
+      	.Package(url: "https://github.com/rxwei/CoreTensor", majorVersion: 0, minor: 2)
     ],
     exclude: [
+        "Sources/TEL",
+        "Sources/telc",
         "Sources/DLVMReader",
         "Sources/dlc",
         "Sources/dli",
-        "Kernels"
+        "Compute",
+        "Runtime",
     ]
 )

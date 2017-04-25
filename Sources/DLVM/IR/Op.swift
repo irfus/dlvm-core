@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+import CoreTensor
+
 public enum ComparisonOp {
     case lessThan, lessThanOrEqual
     case greaterThan, greaterThanOrEqual
@@ -56,12 +58,19 @@ public enum BinaryOp {
 /// - TODO: Add custom op
 public enum OpKind {
     case unary(UnaryOp)        /// Monomorphic
-    case binary(BinaryOp)      /// Monomorphic
+    case binary(BinaryOp, BroadcastingConfig?)  /// Monomorphic
     case scan(AssociativeOp)   /// Scan
     case reduce(AssociativeOp) /// Reduce
     case matrixMultiply        /// Matrix multiplication
     case concatenate           /// Concatenation
 //    case aggregate(AggregateOp)
+}
+
+public extension AssociativeOp {
+    var isBoolean: Bool {
+        guard case .boolean(_) = self else { return false }
+        return true
+    }
 }
 
 public extension OpKind {
@@ -85,12 +94,14 @@ public extension OpKind {
             return args.dropFirst().reduce(args[0], { acc, x in acc?.concatenating(with: x) })
         case .unary where args.count == 1:
             return args[0]
-        case .binary where args.count == 2:
-            return args[0].mutuallyBroadcasted(with: args[1])
+        case .binary(_, let bc?) where args.count == 2:
+            return mutuallyBroadcast(args[0], args[1], at: bc)
+        case .binary(_, nil) where args.count == 2:
+            return args[0] == args[1] ? args[0] : nil
         case .scan, .reduce:
             return args[0]
         case .matrixMultiply:
-            return args[0].matrixMultiplied(with: args[1])
+            return args[0].matrixMultiplied(by: args[1])
 //        case .aggregate(let aggr):
 //            return aggr.resultShape(forArguments: args)
         default:

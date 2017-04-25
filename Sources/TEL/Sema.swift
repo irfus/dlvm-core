@@ -17,8 +17,9 @@
 //  limitations under the License.
 //
 
+import CoreTensor
+
 import enum DLVM.DataType
-import struct DLVM.TensorShape
 import enum DLVM.ElementwiseOp
 import enum DLVM.ComparisonOp
 import enum DLVM.ArithmeticOp

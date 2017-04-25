@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-import DLVMTensor
+import CoreTensor
 
 public enum InstructionKind {
     /** Control flow **/
@@ -34,7 +34,7 @@ public enum InstructionKind {
     /// Monomorphic unary operation
     case unary(UnaryOp, Use)
     /// Monomorphic binary operation
-    case binary(BinaryOp, Use, Use)
+    case binary(BinaryOp, Use, Use, BroadcastingConfig?)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
 
@@ -169,43 +169,62 @@ public extension InstructionKind {
     }
 }
 
-infix operator <>
-
-extension TensorShape {
-    public static func <> (lhs: TensorShape, rhs: TensorShape) -> TensorShape? {
-        return lhs.mutuallyBroadcasted(with: rhs)
-    }
+func mutuallyBroadcast(_ lhs: TensorShape, _ rhs: TensorShape,
+                       at bc: BroadcastingConfig) -> TensorShape? {
+    if lhs.isBroadcastable(to: rhs, at: bc) { return rhs }
+    else if rhs.isBroadcastable(to: lhs, at: bc) { return lhs }
+    else { return nil }
 }
 
 extension InstructionKind {
 
     public var type: Type {
         switch self {
-        case let .binary(.associative(.arithmetic), v1, v2):
+        case let .binary(.associative(assoc), v1, v2, nil):
             switch (v1.type.unaliased, v2.type.unaliased) {
             /// Non-compute scalar
             case let (.tensor([], t1), .tensor([], t2)) where t1 == t2:
-                return .tensor([], t1)
+                return .tensor([], assoc.isBoolean ? .bool : t1)
             /// Compute tensor
             case let (.box(.tensor(s1, t1), .compute),
-                      .box(.tensor(s2, t2), .compute)) where t1 == t2:
-                return (s1 <> s2).flatMap { .box(.tensor($0, t1), .compute) }
-                    ?? .invalid
+                      .box(.tensor(s2, t2), .compute)) where t1 == t2 && s1 == s2:
+                return .box(.tensor(s1, assoc.isBoolean ? .bool : t1), .compute)
             default:
                 return .invalid
             }
 
-        case let .binary(.associative(.boolean), v1, v2),
-             let .binary(.comparison, v1, v2):
+        case let .binary(.associative(assoc), v1, v2, bc?):
+            switch (v1.type.unaliased, v2.type.unaliased) {
+            /// Compute tensor
+            case let (.box(.tensor(s1, t1), .compute),
+                      .box(.tensor(s2, t2), .compute)) where
+                t1 == t2 && mutuallyBroadcast(s1, s2, at: bc) != nil:
+                return .box(.tensor(s1, assoc.isBoolean ? .bool : t1), .compute)
+            default:
+                return .invalid
+            }
+
+        case let .binary(.comparison(_), v1, v2, nil):
             switch (v1.type.unaliased, v2.type.unaliased) {
             /// Non-compute scalar
-            case let (.tensor([], t1), .tensor([], t2)) where t1 == t2:
+            case let (.tensor([], t1), .tensor([], t2)) where t1 == t2 && t1.isNumeric:
                 return .tensor([], .bool)
             /// Compute tensor
             case let (.box(.tensor(s1, t1), .compute),
-                      .box(.tensor(s2, t2), .compute)) where t1 == t2:
-                return (s1 <> s2).flatMap { .box(.tensor($0, .bool), .compute) }
-                    ?? .invalid
+                      .box(.tensor(s2, t2), .compute)) where t1 == t2 && s1 == s2:
+                return .box(.tensor(s1, .bool), .compute)
+            /// Compute tensor
+            default:
+                return .invalid
+            }
+
+        case let .binary(.comparison(_), v1, v2, bc?):
+            switch (v1.type.unaliased, v2.type.unaliased) {
+            /// Compute tensor
+            case let (.box(.tensor(s1, t1), .compute),
+                      .box(.tensor(s2, t2), .compute)) where
+                t1.isNumeric && t1 == t2 && mutuallyBroadcast(s1, s2, at: bc) != nil:
+                return .box(.tensor(s1, .bool), .compute)
             default:
                 return .invalid
             }
@@ -214,7 +233,7 @@ extension InstructionKind {
         case let .matrixMultiply(v1, v2):
             guard case let .box(.tensor(s1, t1), .compute) = v1.type.unaliased,
                   case let .box(.tensor(s2, t2), .compute) = v2.type.unaliased,
-                  let newShape = s1.matrixMultiplied(with: s2),
+                  let newShape = s1.matrixMultiplied(by: s2),
                   t1 == t2 else { return .invalid }
             return .box(.tensor(newShape, t1), .compute)
 
@@ -389,7 +408,7 @@ extension Instruction : User {
 extension InstructionKind {
     public var operands: [Use] {
         switch self {
-        case let .binary(_, op1, op2),
+        case let .binary(_, op1, op2, _),
              let .matrixMultiply(op1, op2),
              let .insert(op1, to: op2, at: _):
             return [op1, op2]
@@ -442,12 +461,12 @@ public extension InstructionKind {
             return .return(new)
         case .unary(let fun, old):
             return .unary(fun, new)
-        case .binary(let fun, old, old):
-            return .binary(fun, new, new)
-        case .binary(let fun, old, let use2):
-            return .binary(fun, new, use2)
-        case .binary(let fun, let use1, old):
-            return .binary(fun, use1, new)
+        case .binary(let fun, old, old, let bc):
+            return .binary(fun, new, new, bc)
+        case .binary(let fun, old, let use2, let bc):
+            return .binary(fun, new, use2, bc)
+        case .binary(let fun, let use1, old, let bc):
+            return .binary(fun, use1, new, bc)
         case let .concatenate(uses, axis: axis):
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
