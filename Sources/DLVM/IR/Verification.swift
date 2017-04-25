@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-import DLVMTensor
+import CoreTensor
 
 public enum VerificationError<Node : SelfVerifiable> : Error {
     case illegalModuleName(String, Node)
@@ -385,7 +385,8 @@ extension InstructionKind {
                 throw VerificationError.notTensor(v1, instruction)
             }
 
-        case let .binary(_, lhs, rhs):
+
+        case let .binary(_, lhs, rhs, nil):
             switch (lhs.type.unaliased, rhs.type.unaliased) {
             /// Non-compute scalar
             case let (.tensor([], t1), .tensor([], t2)) where t1 == t2:
@@ -393,7 +394,20 @@ extension InstructionKind {
             /// Compute tensor
             case let (.box(.tensor(s1, t1), .compute),
                       .box(.tensor(s2, t2), .compute))
-                where s1.canMutuallyBroadcast(with: s2) && t1 == t2:
+                where s1 == s2 && t1 == t2:
+                guard function.isCompute else {
+                    throw VerificationError.notComputeFunction(function, instruction)
+                }
+            default:
+                throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
+            }
+
+        case let .binary(_, lhs, rhs, bc?):
+            switch (lhs.type.unaliased, rhs.type.unaliased) {
+            /// Compute tensor
+            case let (.box(.tensor(s1, t1), .compute),
+                      .box(.tensor(s2, t2), .compute))
+                where mutuallyBroadcast(s1, s2, at: bc) != nil && t1 == t2:
                 guard function.isCompute else {
                     throw VerificationError.notComputeFunction(function, instruction)
                 }
@@ -408,7 +422,7 @@ extension InstructionKind {
             }
             guard case let .box(.tensor(s1, t1), .compute) = lhs.type.unaliased,
                   case let .box(.tensor(s2, t2), .compute) = rhs.type.unaliased,
-                  s1.canMatrixMultiply(with: s2), t1 == t2
+                  s1.isMatrixMultiplicable(by: s2), t1 == t2
                 else { throw VerificationError.cannotMatrixMultiply(lhs, rhs, instruction) }
 
         /// Compute-only

@@ -17,6 +17,7 @@
 //  limitations under the License.
 //
 
+import CoreTensor
 import DLVM
 
 public enum FunctionTypeError : Error {

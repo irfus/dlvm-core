@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+import CoreTensor
+
 open class IRBuilder {
 
     open let module: Module
@@ -163,24 +165,24 @@ extension IRBuilder {
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
-    func add(_ lhs: Use, _ rhs: Use) -> Use {
-        return buildInstruction(.binary(.associative(.arithmetic(.add)), lhs, rhs))
+    func add(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.add)), lhs, rhs, bc))
     }
 
-    func subtract(_ lhs: Use, _ rhs: Use) -> Use {
-        return buildInstruction(.binary(.associative(.arithmetic(.subtract)), lhs, rhs))
+    func subtract(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.subtract)), lhs, rhs, bc))
     }
 
-    func multiply(_ lhs: Use, by rhs: Use) -> Use {
-        return buildInstruction(.binary(.associative(.arithmetic(.multiply)), lhs, rhs))
+    func multiply(_ lhs: Use, by rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.multiply)), lhs, rhs, bc))
     }
 
-    func divide(_ lhs: Use, by rhs: Use) -> Use {
-        return buildInstruction(.binary(.associative(.arithmetic(.divide)), lhs, rhs))
+    func divide(_ lhs: Use, by rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.divide)), lhs, rhs, bc))
     }
 
-    func power(_ lhs: Use, _ rhs: Use) -> Use {
-        return buildInstruction(.binary(.associative(.arithmetic(.power)), lhs, rhs))
+    func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+        return buildInstruction(.binary(.associative(.arithmetic(.power)), lhs, rhs, bc))
     }
 
     func apply(_ function: Use, _ arguments: [Use]) -> Use {

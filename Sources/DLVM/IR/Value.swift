@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-@_exported import DLVMTensor
+import CoreTensor
 
 /// Scope of value
 public enum Scope {

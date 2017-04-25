@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-import DLVMTensor
+import CoreTensor
 
 /// Element key to form a key path in GEP and use
 public enum ElementKey {

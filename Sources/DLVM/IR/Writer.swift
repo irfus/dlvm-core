@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-import DLVMTensor
+import CoreTensor
 
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
@@ -186,8 +186,10 @@ extension InstructionKind : TextOutputStreamable {
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }
-        case let .binary(f, op1, op2):
+        case let .binary(f, op1, op2, nil):
             target.write("\(f) \(op1), \(op2)")
+        case let .binary(f, op1, op2, bc?):
+            target.write("\(f) \(op1), \(op2) broadcasting \(bc.joinedDescription)")
         case let .matrixMultiply(op1, op2):
             target.write("matrixMultiply \(op1), \(op2)")
         case let .unary(f, op):
