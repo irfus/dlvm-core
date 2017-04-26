@@ -105,25 +105,23 @@ extension LiteralValue : Equatable {
     }
 }
 
-public extension LiteralValue {
-    init(shape: TensorShape, dataType: DataType, repeating number: Int) {
+public extension Use {
+    static func tensor(_ shape: TensorShape, _ dataType: DataType, repeating item: Int) -> Use {
         let scalLit: Literal.Scalar
         switch dataType.base {
-        case .int: scalLit = .int(number)
-        case .float: scalLit = .float(Double(number))
-        case .bool: scalLit = .bool(number == 0 ? false : true)
+        case .int: scalLit = .int(item)
+        case .float: scalLit = .float(Double(item))
+        case .bool: scalLit = .bool(item == 0 ? false : true)
         }
         let lit: Literal = .scalar(scalLit)
         let type: Type = .tensor(shape, dataType)
 
         if shape.isScalar {
-            self.init(type: type, literal: lit)
+            return .literal(type, lit)
         } else {
-            let subtensor = LiteralValue(shape: shape.dropFirst(),
-                                         dataType: dataType,
-                                         repeating: number)
-            let subtensors = Array(repeating: subtensor.makeUse(), count: shape[0])
-            self.init(type: type, literal: .tensor(subtensors))
+            let subtensor = Use.tensor(shape.dropFirst(), dataType, repeating: item)
+            let subtensors = Array(repeating: subtensor, count: shape[0])
+            return .literal(type, .tensor(subtensors))
         }
     }
 }

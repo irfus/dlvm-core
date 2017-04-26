@@ -143,17 +143,17 @@ public extension Function {
 }
 
 fileprivate extension Type {
-    func makeLiteralValue(_ number: IntegerLiteralType) -> LiteralValue {
+    func makeLiteral(_ number: IntegerLiteralType) -> Use {
         switch canonical {
         case let .tensor(shape, type):
-            return LiteralValue(shape: shape, dataType: type, repeating: number)
+            return .tensor(shape, type, repeating: number)
         case let .tuple(subtypes):
-            let sublits = subtypes.map{$0.makeLiteralValue(number).makeUse()}
-            return LiteralValue(type: self, literal: .tuple(sublits))
+            let sublits = subtypes.map{$0.makeLiteral(number)}
+            return .literal(self, .tuple(sublits))
         case let .array(subtype, i):
-            let sublit = subtype.makeLiteralValue(number).makeUse()
+            let sublit = subtype.makeLiteral(number)
             let sublits = Array(repeating: sublit, count: i)
-            return LiteralValue(type: self, literal: .array(sublits))
+            return .literal(self, .array(sublits))
         case _:
             fatalError()
         }
@@ -168,8 +168,7 @@ fileprivate extension Value {
         guard case let .tensor(shape, dtype) = canType else {
             preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
         }
-        let val = LiteralValue(shape: shape, dataType: dtype, repeating: repeatedValue)
-        return val.makeUse()
+        return .tensor(shape, dtype, repeating: repeatedValue)
     }
 
     func makeScalar(_ value: IntegerLiteralType) -> Use {
@@ -177,8 +176,7 @@ fileprivate extension Value {
         guard case let .tensor(_, dtype) = canType else {
             preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
         }
-        let val = LiteralValue(shape: .scalar, dataType: dtype, repeating: value)
-        return val.makeUse()
+        return .tensor(.scalar, dtype, repeating: value)
     }
 }
 
@@ -217,7 +215,7 @@ fileprivate extension GradientExpansion {
         let exits = try function.premise().exits
         for (block, returnInst) in exits {
             let retVal = returnInst.operands[0]
-            let seed = retVal.type.makeLiteralValue(1).makeUse()
+            let seed = retVal.type.makeLiteral(1)
 //            context.insertAdjoint(seed, for: retVal)
 
             /// Differentiate
@@ -293,7 +291,7 @@ fileprivate extension GradientExpansion {
 
         case let .extract(from: x, at: _):
             grad = [
-                (x, x.type.makeLiteralValue(1).makeUse())
+                (x, x.type.makeLiteral(1))
             ]
 
         default:
