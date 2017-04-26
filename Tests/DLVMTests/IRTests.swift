@@ -32,7 +32,7 @@ class IRTests: XCTestCase {
                                                 LiteralValue(type: .scalar(.int(32)),
                                                              literal: .scalar(.int(10))).makeUse(),
                                                 LiteralValue(type: .scalar(.int(32)),
-                                                             literal: .scalar(.int(20))).makeUse())))
+                                                             literal: .scalar(.int(20))).makeUse(), nil)))
         XCTAssertEqual("\(val1.value)", "let @one : i32 = (add 10 : i32, 20 : i32) : i32")
         let val2 = builder.buildGlobalValue(named: "two", kind: .constant,
                                             type: Type.scalar(.int(32)).pointer,
