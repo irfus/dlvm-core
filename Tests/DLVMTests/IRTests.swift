@@ -29,10 +29,8 @@ class IRTests: XCTestCase {
                                             type: .scalar(.int(32)),
                                             initializer: .constant(.binary(
                                                 .associative(.arithmetic(.add)),
-                                                LiteralValue(type: .scalar(.int(32)),
-                                                             literal: .scalar(.int(10))).makeUse(),
-                                                LiteralValue(type: .scalar(.int(32)),
-                                                             literal: .scalar(.int(20))).makeUse(), nil)))
+                                                .literal(.scalar(.int(32)), .scalar(.int(10))),
+                                                .literal(.scalar(.int(32)), .scalar(.int(20))), nil)))
         XCTAssertEqual("\(val1.value)", "let @one : i32 = (add 10 : i32, 20 : i32) : i32")
         let val2 = builder.buildGlobalValue(named: "two", kind: .constant,
                                             type: Type.scalar(.int(32)).pointer,
@@ -48,11 +46,11 @@ class IRTests: XCTestCase {
         ], attributes: [ .packed ])
         XCTAssertEqual(struct1.description,
                        "!packed\nstruct $TestStruct1 {\n    foo: i32\n    bar: <1x3x4.f64>\n    baz: [4 x [3 x box{<3.i32>}]]\n}")
-        let structLit = builder.makeLiteral(LiteralValue(type: .struct(struct1), literal: .struct([
-            ("foo", .literal(LiteralValue(type: .scalar(.int(32)), literal: .undefined))),
-            ("bar", .literal(LiteralValue(type: .tensor([1, 3, 4], .float(.double)), literal: .undefined))),
-            ("baz", .literal(LiteralValue(type: .array(.array(.box(.tensor([3], .int(32)), .normal), 3), 4), literal: .undefined)))
-        ])))
+        let structLit = builder.makeLiteral(.struct([
+            ("foo", .literal(.scalar(.int(32)), .undefined)),
+            ("bar", .literal(.tensor([1, 3, 4], .float(.double)), .undefined)),
+            ("baz", .literal(.array(.array(.box(.tensor([3], .int(32)), .normal), 3), 4), .undefined))
+        ]), ofType: .struct(struct1))
         let structGlobal = builder.buildGlobalValue(named: "struct1.value",
                                                     kind: .variable,
                                                     type: .struct(struct1),

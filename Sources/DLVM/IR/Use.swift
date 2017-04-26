@@ -21,7 +21,7 @@ public indirect enum Use {
     case argument(Type, Argument)
     case instruction(Type, Instruction)
     case global(Type, GlobalValue)
-    case literal(LiteralValue)
+    case literal(Type, Literal)
     case function(Function)
     case constant(InstructionKind)
 }
@@ -53,10 +53,9 @@ public extension Use {
         switch self {
         case .argument(let t, _),
              .instruction(let t, _),
-             .global(let t, _):
+             .global(let t, _),
+             .literal(let t, _):
             return t
-        case .literal(let v):
-            return v.type
         case .function(let v):
             return v.type
         case let .constant(instKind):
@@ -82,7 +81,7 @@ public extension Use {
         case let .global(_, val): return val
         case let .instruction(_, val): return val
         case let .function(val): return val
-        case let .literal(lit): return lit
+        case let .literal(ty, lit): return LiteralValue(type: ty, literal: lit)
         case let .constant(instKind): return instKind
         }
     }
