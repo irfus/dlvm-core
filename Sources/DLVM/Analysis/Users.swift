@@ -17,12 +17,11 @@
 //  limitations under the License.
 //
 
-public struct UserGraph {
-    fileprivate var users: [ObjectIdentifier : ObjectSet<Instruction>] = [:]
+public struct UserInfo {
+    fileprivate var users: [ObjectIdentifier : Set<Instruction>] = [:]
 }
 
-internal extension UserGraph {
-
+internal extension UserInfo {
     mutating func insert(_ user: Instruction, for def: Definition) {
         let key = ObjectIdentifier(def)
         if !users.keys.contains(key) {
@@ -30,25 +29,20 @@ internal extension UserGraph {
         }
         users[key]!.insert(user)
     }
-    
 }
 
-public extension UserGraph {
-
-    func users(of value: Definition) -> ObjectSet<Instruction> {
+// MARK: - Getter
+public extension UserInfo {
+    /// Returns a set of users
+    subscript(value: Definition) -> Set<Instruction> {
         return users[ObjectIdentifier(value)] ?? []
     }
-
-    func users(of inst: Instruction) -> ObjectSet<Instruction> {
-        return users[ObjectIdentifier(inst)] ?? []
-    }
-
 }
 
-open class UserAnalysis : AnalysisPass<Function, UserGraph> {
-
-    open override class func run(on body: Function) throws -> UserGraph {
-        var userGraph = UserGraph()
+/// Analyzes function and produces a graph from definitions to users
+open class UserAnalysis : AnalysisPass<Function, UserInfo> {
+    open override class func run(on body: Function) throws -> UserInfo {
+        var userGraph = UserInfo()
         for inst in body.instructions {
             for use in inst.operands {
                 if let def = use.definition {
@@ -58,5 +52,4 @@ open class UserAnalysis : AnalysisPass<Function, UserGraph> {
         }
         return userGraph
     }
-
 }
