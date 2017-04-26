@@ -559,10 +559,8 @@ extension InstructionKind {
                 break
             case let (.box(t1, _), .box(t2, _)) where t1 == t2:
                 /// Count must be literal 1
-                guard case .literal(let litVal) = count,
-                      case .scalar(.int(1)) = litVal.literal
-                    else { fallthrough }
-                
+                guard case .literal(_, .scalar(.int(1))) = count else { fallthrough }
+
             default:
                 throw VerificationError.invalidCopyOperands(src, dest, instruction)
             }

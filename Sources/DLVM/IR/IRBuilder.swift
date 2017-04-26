@@ -107,8 +107,8 @@ extension IRBuilder {
         return .global(value.type.pointer, value)
     }
 
-    open func makeLiteral(_ literalValue: LiteralValue) -> Use {
-        return .literal(literalValue)
+    open func makeLiteral(_ literal: Literal, ofType type: Type) -> Use {
+        return .literal(type, literal)
     }
 
     open func makeUse(_ argument: Argument) -> Use {

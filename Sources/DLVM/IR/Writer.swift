@@ -306,8 +306,8 @@ extension Use : TextOutputStreamable {
             target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
         case let .argument(_, ref):
             target.write("%\(ref.name)")
-        case let .literal(litVal):
-            litVal.literal.write(to: &target)
+        case let .literal(_, lit):
+            lit.write(to: &target)
         case let .function(ref):
             target.write("@\(ref.name)")
         case let .constant(instKind):

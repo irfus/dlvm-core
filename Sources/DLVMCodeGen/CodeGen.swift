@@ -71,20 +71,18 @@ extension DLVM.Use : LLEmittable {
             return env.value(for: arg)
         case let .instruction(_, inst):
             return env.value(for: inst)
-        case let .literal(litVal):
-            return litVal.emit(to: &context, in: &env)
+        case let .literal(ty, lit):
+            return emitLiteral(lit, ofType: ty, to: &context, in: &env)
         case .constant(_):
             DLUnimplemented()
         }
     }
-}
 
-// MARK: - Literal lowering
-extension DLVM.LiteralValue : LLEmittable {
-    public typealias LLUnit = IRValue
     @discardableResult
-    public func emit<T : LLComputeTarget>(to context: inout LLGenContext<T>,
-                                          in env: inout LLGenEnvironment) -> LLUnit {
+    private func emitLiteral<T : LLComputeTarget>(
+        _ literal: Literal, ofType type: Type,
+        to context: inout LLGenContext<T>,
+        in env: inout LLGenEnvironment) -> LLUnit {
         switch literal {
         case let .scalar(lit):
             switch lit {

@@ -94,7 +94,7 @@ public struct LiteralValue : Value {
     }
 
     public func makeUse() -> Use {
-        return .literal(self)
+        return .literal(type, literal)
     }
 }
 
