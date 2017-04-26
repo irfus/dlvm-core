@@ -20,7 +20,7 @@
 import CoreTensor
 
 public enum VerificationError<Node : SelfVerifiable> : Error {
-    case illegalModuleName(String, Node)
+    case illegalName(String, Node)
     case duplicateStructField(String, Node)
     case redeclared(Node)
     case noParent(Node)
@@ -85,8 +85,17 @@ public protocol SelfVerifiable {
     func performVerification() throws
 }
 
-import Foundation
-private let moduleNamePattern = try! NSRegularExpression(pattern: "[a-zA-Z_]", options: [])
+import struct Foundation.NSRange
+import class Foundation.NSRegularExpression
+private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z_][a-zA-Z0-9_]*",
+                                                         options: [ .dotMatchesLineSeparators ])
+
+private func verifyIdentifier<Unit : SelfVerifiable>(_ id: String, in unit: Unit) throws {
+    guard let _ = identifierPattern.firstMatch(in: id, options: [ .anchored ],
+                                               range: NSRange(0..<id.characters.count)) else {
+        throw VerificationError.illegalName(id, unit)
+    }
+}
 
 extension Module : SelfVerifiable {
     private func verify<T: SelfVerifiable & Named>(_ declaration: T, namespace: inout Set<String>) throws {
@@ -98,10 +107,7 @@ extension Module : SelfVerifiable {
     }
     
     public func performVerification() throws {
-        guard let _ = moduleNamePattern.firstMatch(in: name, options: [ .anchored ],
-                                                   range: NSRange(0..<name.characters.count)) else {
-            throw VerificationError.illegalModuleName(name, self)
-        }
+        try verifyIdentifier(name, in: self)
         /// Verify types and values
         var typeNameSet: Set<String> = []
         try typeAliases.forEach { try self.verify($0, namespace: &typeNameSet) }
@@ -217,6 +223,8 @@ extension Function: SelfVerifiable {
     }
 
     public func performVerification() throws {
+        try verifyIdentifier(name, in: self)
+
         let domTree = try analysis(from: DominanceAnalysis.self)
 
         /// Check entry block arguments
@@ -284,6 +292,7 @@ extension Function: SelfVerifiable {
 
 extension BasicBlock : SelfVerifiable {
     public func performVerification() throws {
+        try verifyIdentifier(name, in: self)
         /// Check for terminator
         guard hasTerminator else {
             throw VerificationError<BasicBlock>.missingTerminator(self)
@@ -313,11 +322,15 @@ extension BasicBlock : SelfVerifiable {
 
 extension Argument : SelfVerifiable {
     public func performVerification() throws {
+        try verifyIdentifier(name, in: self)
     }
 }
 
 extension Instruction : SelfVerifiable {
     public func performVerification() throws {
+        if let name = name {
+            try verifyIdentifier(name, in: self)
+        }
         /// Use type must match usee type
         for use in operands {
             try use.performVerification()
