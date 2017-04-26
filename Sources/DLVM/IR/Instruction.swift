@@ -151,6 +151,13 @@ public extension InstructionKind {
         }
     }
 
+    var isTrap: Bool {
+        switch self {
+        case .trap: return true
+        default: return false
+        }
+    }
+
     var accessesMemory: Bool {
         switch self {
         case .allocateStack, .allocateHeap, .allocateBox,
@@ -158,6 +165,13 @@ public extension InstructionKind {
             return true
         default:
             return false
+        }
+    }
+
+    var mustWriteToMemory: Bool {
+        switch self {
+        case .store, .copy: return true
+        default: return false
         }
     }
 
