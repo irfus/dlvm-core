@@ -26,28 +26,28 @@ class IRTests: XCTestCase {
 
     func testWriteGlobal() {
         let val1 = builder.buildGlobalValue(named: "one", kind: .constant,
-                                            type: .scalar(.int(32)),
+                                            type: .int(32),
                                             initializer: .constant(.binary(
                                                 .associative(.arithmetic(.add)),
-                                                .literal(.scalar(.int(32)), .scalar(.int(10))),
-                                                .literal(.scalar(.int(32)), .scalar(.int(20))), nil)))
+                                                .literal(.int(32), .scalar(.int(10))),
+                                                .literal(.int(32), .scalar(.int(20))), nil)))
         XCTAssertEqual("\(val1.value)", "let @one : i32 = (add 10 : i32, 20 : i32) : i32")
         let val2 = builder.buildGlobalValue(named: "two", kind: .constant,
-                                            type: Type.scalar(.int(32)).pointer,
+                                            type: Type.int(32).pointer,
                                             initializer: val1)
         XCTAssertEqual("\(val2.value)", "let @two : *i32 = @one : *i32")
     }
 
     func testWriteStruct() {
         let struct1 = builder.buildStruct(named: "TestStruct1", fields: [
-            "foo" : .scalar(.int(32)),
+            "foo" : .int(32),
             "bar" : .tensor([1, 3, 4], .float(.double)),
             "baz" : .array(.array(.box(.tensor([3], .int(32)), .normal), 3), 4)
         ], attributes: [ .packed ])
         XCTAssertEqual(struct1.description,
                        "!packed\nstruct $TestStruct1 {\n    foo: i32\n    bar: <1x3x4.f64>\n    baz: [4 x [3 x box{<3.i32>}]]\n}")
         let structLit = builder.makeLiteral(.struct([
-            ("foo", .literal(.scalar(.int(32)), .undefined)),
+            ("foo", .literal(.int(32), 100000)),
             ("bar", .literal(.tensor([1, 3, 4], .float(.double)), .undefined)),
             ("baz", .literal(.array(.array(.box(.tensor([3], .int(32)), .normal), 3), 4), .undefined))
         ]), ofType: .struct(struct1))
@@ -55,13 +55,63 @@ class IRTests: XCTestCase {
                                                     kind: .variable,
                                                     type: .struct(struct1),
                                                     initializer: structLit)
-        XCTAssertEqual("\(structGlobal.value)", "var @struct1.value : $TestStruct1 = {#foo = undefined : i32, #bar = undefined : <1x3x4.f64>, #baz = undefined : [4 x [3 x box{<3.i32>}]]} : $TestStruct1")
+        XCTAssertEqual("\(structGlobal.value)", "var @struct1.value : $TestStruct1 = {#foo = 100000 : i32, #bar = undefined : <1x3x4.f64>, #baz = undefined : [4 x [3 x box{<3.i32>}]]} : $TestStruct1")
+    }
+
+    func testWriteSimpleFunction() {
+        let fun = builder.buildFunction(named: "foo",
+                                        arguments: [ "x" : .scalar(.float(.single)),
+                                                     "y" : .scalar(.float(.single)) ],
+                                        result: .tensor([3], .bool))
+        builder.move(to: fun.entry)
+        _ = builder.multiply(.literal(.int(32), 5),
+                             .literal(.int(32), .tensor([.literal(.int(32), 1),
+                                                                  .literal(.int(32), 2)])),
+                             broadcasting: [])
+        builder.return(builder.makeLiteral(.null, ofType: .tensor([3], .bool)))
+        XCTAssertEqual(fun.description, "func @foo : (f32, f32) -> <3.bool> {\nentry(%x : f32, %y : f32):\n    %v0 = multiply 5 : i32, <1 : i32, 2 : i32> : i32 broadcasting\n    return null : <3.bool>\n}")
+    }
+
+    func testWriteMultiBBFunction() {
+        let fun = builder.buildFunction(named: "bar",
+                                        arguments: [ "x" : .scalar(.float(.single)),
+                                                     "y" : .scalar(.float(.single)) ],
+                                        result: .int(32))
+        builder.move(to: fun.entry)
+        let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
+        let cmp = builder.compare(.equal, mult, .literal(.int(32), 1))
+        let thenBB = builder.buildBasicBlock(named: "then", arguments: [ "x" : .int(32) ], in: fun)
+        let elseBB = builder.buildBasicBlock(named: "else", arguments: [ "x" : .int(32) ], in: fun)
+        let contBB = builder.buildBasicBlock(named: "cont", arguments: [ "x" : .int(32) ], in: fun)
+        builder.conditional(cmp, then: thenBB, arguments: [.literal(.int(32), 0)], else: elseBB, arguments: [.literal(.int(32), 1)])
+        builder.move(to: thenBB)
+        builder.branch(contBB, [ thenBB.arguments[0].makeUse() ])
+        builder.move(to: elseBB)
+        builder.branch(contBB, [ elseBB.arguments[0].makeUse() ])
+        builder.move(to: contBB)
+        builder.return(contBB.arguments[0].makeUse())
+
+        /// func @bar : (f32, f32) -> i32 {
+        /// entry(%x : f32, %y : f32):
+        ///     %v0 = multiply 5 : i32, 8 : i32
+        ///     %v1 = equal %v0 : i32, 1 : i32
+        ///     conditional %v1 : bool then then(0 : i32) else else(1 : i32)
+        /// then(%x : i32):
+        ///     branch cont(%x : i32)
+        /// else(%x : i32):
+        ///     branch cont(%x : i32)
+        /// cont(%x : i32):
+        ///     return %x : i32
+        /// }
+        XCTAssertEqual(fun.description, "func @bar : (f32, f32) -> i32 {\nentry(%x : f32, %y : f32):\n    %v0 = multiply 5 : i32, 8 : i32\n    %v1 = equal %v0 : i32, 1 : i32\n    conditional %v1 : bool then then(0 : i32) else else(1 : i32)\nthen(%x : i32):\n    branch cont(%x : i32)\nelse(%x : i32):\n    branch cont(%x : i32)\ncont(%x : i32):\n    return %x : i32\n}")
     }
 
     static var allTests : [(String, (IRTests) -> () throws -> Void)] {
         return [
             ("testWriteGlobal", testWriteGlobal),
             ("testWriteStruct", testWriteStruct),
+            ("testWriteSimpleFunction", testWriteSimpleFunction),
+            ("testWriteMultiBBFunction", testWriteMultiBBFunction)
         ]
     }
     
