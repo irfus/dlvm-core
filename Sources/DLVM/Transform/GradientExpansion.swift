@@ -258,9 +258,9 @@ fileprivate extension GradientExpansion {
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
-                (lhs, bd.divide(adjoint, by: rhsClone)),  /// ∂f/∂x = D/y
+                (lhs, bd.divide(adjoint, rhsClone)),  /// ∂f/∂x = D/y
                 (rhs, bd.subtract(lhsClone.makeScalar(0), /// ∂f/∂y = -x/y^2
-                                  bd.divide(lhsClone, by: bd.multiply(rhsClone, by: rhsClone))))
+                                  bd.divide(lhsClone, bd.multiply(rhsClone, rhsClone))))
             ]
 
         /* Matrix multiplication */
@@ -286,7 +286,7 @@ fileprivate extension GradientExpansion {
             let cloned = instruction.makeUse()
             grad = [
                 (x, bd.subtract(cloned, bd.subtract(x.makeScalar(1),
-                                                    bd.multiply(cloned, by: cloned)), broadcasting: [0]))
+                                                    bd.multiply(cloned, cloned)), broadcasting: [0]))
             ]
 
         case let .extract(from: x, at: _):
