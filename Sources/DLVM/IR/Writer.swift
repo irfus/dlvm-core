@@ -180,16 +180,20 @@ extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .branch(bb, args):
-            target.write("branch %\(bb.name)(\(args.joinedDescription))")
+            target.write("branch \(bb.name)(\(args.joinedDescription))")
         case let .conditional(op, thenBB, thenArgs, elseBB, elseArgs):
-            target.write("conditional \(op) then %\(thenBB.name)(\(thenArgs.joinedDescription)) else %\(elseBB.name)(\(elseArgs.joinedDescription))")
+            target.write("conditional \(op) then \(thenBB.name)(\(thenArgs.joinedDescription)) else \(elseBB.name)(\(elseArgs.joinedDescription))")
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }
         case let .binary(f, op1, op2, nil):
             target.write("\(f) \(op1), \(op2)")
         case let .binary(f, op1, op2, bc?):
-            target.write("\(f) \(op1), \(op2) broadcasting \(bc.joinedDescription)")
+            target.write("\(f) \(op1), \(op2) broadcasting")
+            if !bc.isEmpty {
+                target.write(" ")
+                target.write(bc.joinedDescription)
+            }
         case let .matrixMultiply(op1, op2):
             target.write("matrixMultiply \(op1), \(op2)")
         case let .unary(f, op):

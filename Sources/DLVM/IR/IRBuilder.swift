@@ -117,11 +117,11 @@ extension IRBuilder {
 
     @discardableResult
     open func buildFunction(named name: String,
-                            arguments: [(String, Type)],
+                            arguments: DictionaryLiteral<String, Type>,
                             result: Type = .void,
                             attributes: Set<Function.Attribute> = []) -> Function {
         let fun = Function(name: name,
-                           arguments: arguments,
+                           arguments: Array(arguments),
                            result: result,
                            attributes: attributes,
                            parent: module)
@@ -131,11 +131,11 @@ extension IRBuilder {
 
     @discardableResult
     open func buildBasicBlock(named name: String,
-                              arguments: [(String, Type)],
+                              arguments: DictionaryLiteral<String, Type>,
                               in function: Function) -> BasicBlock {
         if name == "entry" { return function.entry }
         let newName = disambiguatedName(for: name, in: function)
-        let block = BasicBlock(name: newName, arguments: arguments, parent: function)
+        let block = BasicBlock(name: newName, arguments: Array(arguments), parent: function)
         function.append(block)
         return block
     }
@@ -173,16 +173,20 @@ public extension IRBuilder {
         return buildInstruction(.binary(.associative(.arithmetic(.subtract)), lhs, rhs, bc))
     }
 
-    func multiply(_ lhs: Use, by rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func multiply(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
         return buildInstruction(.binary(.associative(.arithmetic(.multiply)), lhs, rhs, bc))
     }
 
-    func divide(_ lhs: Use, by rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func divide(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
         return buildInstruction(.binary(.associative(.arithmetic(.divide)), lhs, rhs, bc))
     }
 
     func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
         return buildInstruction(.binary(.associative(.arithmetic(.power)), lhs, rhs, bc))
+    }
+
+    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+        return buildInstruction(.binary(.comparison(`operator`), lhs, rhs, bc))
     }
 
     func apply(_ function: Use, _ arguments: [Use]) -> Use {
@@ -218,13 +222,13 @@ public extension IRBuilder {
         buildInstruction(.return(use))
     }
 
-    func branch(_ destination: BasicBlock, _ arguments: [Use] = []) {
+    func branch(_ destination: BasicBlock, _ arguments: [Use]) {
         buildInstruction(.branch(destination, arguments))
     }
 
     func conditional(_ condition: Use,
-                     then thenBB: BasicBlock, arguments thenArguments: [Use] = [],
-                     else elseBB: BasicBlock, arguments elseArguments: [Use] = []) {
+                     then thenBB: BasicBlock, arguments thenArguments: [Use],
+                     else elseBB: BasicBlock, arguments elseArguments: [Use]) {
         buildInstruction(.conditional(condition,
                                       thenBB, thenArguments,
                                       elseBB, elseArguments))
