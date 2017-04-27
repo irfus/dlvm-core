@@ -143,6 +143,18 @@ public indirect enum Type {
 
 // MARK: - Factories
 public extension Type {
+    static func int(_ size: UInt) -> Type {
+        return .scalar(.int(size))
+    }
+
+    static func float(_ size: FloatingPointSize) -> Type {
+        return .scalar(.float(size))
+    }
+
+    static func bool() -> Type {
+        return .scalar(.bool)
+    }
+    
     static func scalar(_ dataType: DataType) -> Type {
         return .tensor(.scalar, dataType)
     }
