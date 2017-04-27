@@ -38,6 +38,42 @@ public indirect enum Literal {
     case `struct`([(String, Use)])
 }
 
+extension Literal : ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: IntegerLiteralType) {
+        self = .scalar(.int(value))
+    }
+}
+
+extension Literal : ExpressibleByBooleanLiteral {
+    public init(booleanLiteral value: BooleanLiteralType) {
+        self = .scalar(.bool(value))
+    }
+}
+
+extension Literal : ExpressibleByFloatLiteral {
+    public init(floatLiteral value: FloatLiteralType) {
+        self = .scalar(.float(value))
+    }
+}
+
+extension Literal : ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: Use...) {
+        self = .array(elements)
+    }
+}
+
+extension Literal : ExpressibleByDictionaryLiteral {
+    public init(dictionaryLiteral elements: (String, Use)...) {
+        self = .struct(elements)
+    }
+}
+
+extension Literal : ExpressibleByNilLiteral {
+    public init(nilLiteral: ()) {
+        self = .null
+    }
+}
+
 extension Literal : Equatable {
     public static func == (lhs: Literal, rhs: Literal) -> Bool {
         switch (lhs, rhs) {
