@@ -87,7 +87,7 @@ public protocol SelfVerifiable {
 
 import struct Foundation.NSRange
 import class Foundation.NSRegularExpression
-private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z_][a-zA-Z0-9_]*",
+private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z_][a-zA-Z0-9_.]*",
                                                          options: [ .dotMatchesLineSeparators ])
 
 private func verifyIdentifier<Unit : SelfVerifiable>(_ id: String, in unit: Unit) throws {
