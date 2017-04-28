@@ -169,17 +169,13 @@ extension LiteralValue : SelfVerifiable {
         case (.tensor, .zero): break
 
         /// Scalar tensor with scalar literal
-        case (.tensor([], let dt), .scalar(let lit)) where lit.typeBase != dt.base:
-            throw VerificationError.invalidLiteral(type, literal, self)
-
-        /// High-dimensional compute tensor with scalar literal
-        case(.box(.tensor(_, let dt), .compute), .scalar(let lit)) where lit.typeBase != dt.base:
-            throw VerificationError.invalidLiteral(type, literal, self)
+        case (.tensor([], let dt), .scalar(let lit)) where lit.typeBase == dt.base:
+            break
 
         /* Aggregate literals */
 
         /// Tensor literal
-        case let (.tensor(shape, dt), .tensor(elements)):
+        case let (.tensor(shape, dt), .tensor(elements)) where elements.count == shape.first:
             let subtype: Type = .tensor(shape.dropFirst(), dt)
             for use in elements {
                 try verifyUse(use, subtype)
