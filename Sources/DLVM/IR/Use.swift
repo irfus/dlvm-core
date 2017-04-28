@@ -97,3 +97,9 @@ public extension Use {
     }
 
 }
+
+infix operator ~
+
+public func ~ (lhs: Literal, rhs: Type) -> Use {
+    return .literal(rhs, lhs)
+}
