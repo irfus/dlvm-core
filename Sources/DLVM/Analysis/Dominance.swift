@@ -160,7 +160,7 @@ open class DominanceAnalysis : AnalysisPass<Function, DominatorTree<BasicBlock>>
                 for p in preds.dropFirst() where !domTree.contains(p) {
                     newIDom = domTree.nearestCommonDominator(p, newIDom)
                 }
-                if domTree.immediateDominator(of: node) !== newIDom {
+                if !domTree.contains(node) || domTree.immediateDominator(of: node) !== newIDom {
                     domTree.updateImmediateDominator(newIDom, for: node)
                     changed = true
                 }
@@ -192,7 +192,7 @@ open class PostdominanceAnalysis : AnalysisPass<Function, [DominatorTree<BasicBl
                     for p in preds.dropFirst() where !domTree.contains(p) {
                         newIDom = domTree.nearestCommonDominator(p, newIDom)
                     }
-                    if domTree.immediateDominator(of: node) !== newIDom {
+                    if !domTree.contains(node) || domTree.immediateDominator(of: node) !== newIDom {
                         domTree.updateImmediateDominator(newIDom, for: node)
                         changed = true
                     }
