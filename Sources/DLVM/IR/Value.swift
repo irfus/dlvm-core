@@ -35,8 +35,10 @@ public protocol Value : SelfVerifiable {
 /// % operator turns a def to a use
 prefix operator %
 
-public prefix func % <T: Value>(value: T) -> Use {
-    return value.makeUse()
+public extension Value {
+    prefix static func % (value: Self) -> Use {
+        return value.makeUse()
+    }
 }
 
 public protocol SimpleValue : Value {
