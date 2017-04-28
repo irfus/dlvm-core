@@ -14,7 +14,6 @@ class TransformTests: XCTestCase {
     let builder = IRBuilder(moduleName: "TransformTest")
 
     /// - TODO: Fix bug in dominance analysis that causes crash
-    /*
     func testDCE() throws {
         let fun = builder.buildFunction(named: "bar",
                                         arguments: [ "x" : .scalar(.float(.single)),
@@ -68,11 +67,10 @@ class TransformTests: XCTestCase {
         try fun.applyTransform(DeadCodeElimination.self)
         XCTAssertEqual(fun.description, "func @bar : (f32, f32) -> i32 {\nentry(%x : f32, %y : f32):\n    %v0 = multiply 5 : i32, 8 : i32\n    %v1 = equal %v0 : i32, 1 : i32\n    conditional %v1 : bool then then(0 : i32) else else(1 : i32)\nthen(%x : i32):\n    branch cont(%x : i32)\nelse(%x : i32):\n    branch cont(%x : i32)\ncont(%x : i32):\n    return %x : i32\n}")
     }
-     */
 
     static var allTests : [(String, (TransformTests) -> () throws -> Void)] {
         return [
-//            ("testDCE", testDCE),
+            ("testDCE", testDCE),
         ]
     }
 
