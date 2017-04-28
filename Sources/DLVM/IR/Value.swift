@@ -32,6 +32,13 @@ public protocol Value : SelfVerifiable {
     func makeUse() -> Use
 }
 
+/// % operator turns a def to a use
+prefix operator %
+
+public prefix func % <T: Value>(value: T) -> Use {
+    return value.makeUse()
+}
+
 public protocol SimpleValue : Value {
     var shape: TensorShape { get }
     var dataType: DataType { get }

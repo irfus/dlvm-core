@@ -202,10 +202,6 @@ public extension IRBuilder {
                                           keeping: outputIndices))
     }
 
-    func compute(_ function: Use, _ arguments: [Use], in graph: Use) -> Use {
-        return buildInstruction(.compute(function, arguments, in: graph))
-    }
-
     func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Use {
         return buildInstruction(.matrixMultiply(lhs, rhs))
     }
@@ -270,16 +266,8 @@ public extension IRBuilder {
         return buildInstruction(.allocateHeap(type, count: count))
     }
 
-    func allocateBox(for type: Type, in location: MemoryType) -> Use {
-        return buildInstruction(.allocateBox(type, location))
-    }
-
-    func allocateComputeBuffer(for function: Function) -> Use {
-        return buildInstruction(.allocateCompute(.function(function)))
-    }
-
-    func requestMemory(from computeBox: Use) -> Use {
-        return buildInstruction(.requestMemory(computeBox))
+    func allocateBox(for type: Type) -> Use {
+        return buildInstruction(.allocateBox(type))
     }
 
     func projectBox(_ box: Use) -> Use {
