@@ -28,17 +28,13 @@ public enum InstructionKind {
     /// Return
     case `return`(Use?)
 
-    /** Tensor operations (overloaded for compute mode) **/
-    /// - Note: Requires compute function context when applied to 
-    /// non-scalar tensor buffers
-    /// Monomorphic unary operation
+    /** Tensor operations **/
+    /// Monomorphic unary operation (map)
     case unary(UnaryOp, Use)
-    /// Monomorphic binary operation
+    /// Monomorphic binary operation (zipWith)
     case binary(BinaryOp, Use, Use, BroadcastingConfig?)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
-
-    /** Compute-only tensor operations **/
     /// Scan operation with optional axis
     /// If axis is not given, scan is performed on contiguous elements
     case scan(AssociativeOp, Use, axis: Int?)
@@ -46,7 +42,8 @@ public enum InstructionKind {
     /// If axis is not given, reduction is performed on contiguous elements
     case reduce(AssociativeOp, Use, axis: Int?)
     /// Matrix multiplication operation
-    case matrixMultiply(Use, Use) /// Concatenation operation
+    case matrixMultiply(Use, Use)
+    /// Concatenation operation
     case concatenate([Use], axis: Int)
     /// Transpose
     case transpose(Use)
@@ -66,8 +63,6 @@ public enum InstructionKind {
     /** Function invocation **/
     /// Function application
     case apply(Use, [Use])
-    /// Compute function launcher
-    case compute(Use, [Use], in: Use)
     /// Gradient transformer
     /// - Note: This will be canonicalized to a function reference
     case gradient(Use, from: Int, wrt: [Int], keeping: [Int])
@@ -78,15 +73,11 @@ public enum InstructionKind {
     case allocateStack(Type, Use) /// => *T
     case allocateHeap(Type, count: Use) /// => *T
     /// Reference-counted box
-    case allocateBox(Type, MemoryType) /// => box{T}
+    case allocateBox(Type) /// => box{T}
     case projectBox(Use) /// (box{T}) => *T
-    /// Allocate compute graph
-    case allocateCompute(Use) /// (func) => compute{T}
     /// Retain/release a box via reference counter
     case retain(Use)
     case release(Use)
-    /// Request memory
-    case requestMemory(Use)
     /// Dealloc any heap memory
     case deallocate(Use)
     /// Load value from pointer on the host
@@ -183,6 +174,12 @@ public extension InstructionKind {
     }
 }
 
+func isMutuallyBroadcastable(_ lhs: TensorShape, _ rhs: TensorShape,
+                             at bc: BroadcastingConfig) -> Bool {
+    return lhs.isBroadcastable(to: rhs, at: bc)
+        || rhs.isBroadcastable(to: lhs, at: bc)
+}
+
 func mutuallyBroadcast(_ lhs: TensorShape, _ rhs: TensorShape,
                        at bc: BroadcastingConfig) -> TensorShape? {
     if lhs.isBroadcastable(to: rhs, at: bc) { return rhs }
@@ -195,150 +192,113 @@ extension InstructionKind {
     public var type: Type {
         switch self {
         case let .binary(.associative(assoc), v1, v2, nil):
-            switch (v1.type.unaliased, v2.type.unaliased) {
-            /// Non-compute scalar
-            case let (.tensor([], t1), .tensor([], t2)) where t1 == t2:
-                return .tensor([], assoc.isBoolean ? .bool : t1)
-            /// Compute tensor
-            case let (.box(.tensor(s1, t1), .compute),
-                      .box(.tensor(s2, t2), .compute)) where t1 == t2 && s1 == s2:
-                return .box(.tensor(s1, assoc.isBoolean ? .bool : t1), .compute)
-            default:
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
+                  t1 == t2, s1 == s2 else {
                 return .invalid
             }
+            return .tensor(s1, assoc.isBoolean ? .bool : t1)
 
         case let .binary(.associative(assoc), v1, v2, bc?):
-            switch (v1.type.unaliased, v2.type.unaliased) {
-            /// Compute tensor
-            case let (.box(.tensor(s1, t1), .compute),
-                      .box(.tensor(s2, t2), .compute)) where
-                t1 == t2 && mutuallyBroadcast(s1, s2, at: bc) != nil:
-                return .box(.tensor(s1, assoc.isBoolean ? .bool : t1), .compute)
-            default:
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
+                  t1 == t2, isMutuallyBroadcastable(s1, s2, at: bc) else {
                 return .invalid
             }
+            return .tensor(s1, assoc.isBoolean ? .bool : t1)
 
         case let .binary(.comparison(_), v1, v2, nil):
-            switch (v1.type.unaliased, v2.type.unaliased) {
-            /// Non-compute scalar
-            case let (.tensor([], t1), .tensor([], t2)) where t1 == t2 && t1.isNumeric:
-                return .tensor([], .bool)
-            /// Compute tensor
-            case let (.box(.tensor(s1, t1), .compute),
-                      .box(.tensor(s2, t2), .compute)) where t1 == t2 && s1 == s2:
-                return .box(.tensor(s1, .bool), .compute)
-            /// Compute tensor
-            default:
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
+                  t1 == t2 && s1 == s2 && t1.isNumeric else {
                 return .invalid
             }
+            return .tensor(s1, .bool)
 
         case let .binary(.comparison(_), v1, v2, bc?):
-            switch (v1.type.unaliased, v2.type.unaliased) {
-            /// Compute tensor
-            case let (.box(.tensor(s1, t1), .compute),
-                      .box(.tensor(s2, t2), .compute)) where
-                t1.isNumeric && t1 == t2 && mutuallyBroadcast(s1, s2, at: bc) != nil:
-                return .box(.tensor(s1, .bool), .compute)
-            default:
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
+                  t1.isNumeric, t1 == t2, isMutuallyBroadcastable(s1, s2, at: bc) else {
                 return .invalid
             }
+            return .tensor(s1, .bool)
 
-        /// Compute-only
         case let .matrixMultiply(v1, v2):
-            guard case let .box(.tensor(s1, t1), .compute) = v1.type.unaliased,
-                  case let .box(.tensor(s2, t2), .compute) = v2.type.unaliased,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                  case let .tensor(s2, t2) = v2.type.unaliased,
                   let newShape = s1.matrixMultiplied(by: s2),
                   t1 == t2 else { return .invalid }
-            return .box(.tensor(newShape, t1), .compute)
+            return .tensor(newShape, t1)
 
         case let .unary(_, v1):
-            switch v1.type.unaliased {
-            /// Non-compute scalar
-            case .tensor([], _):
-                return v1.type
-            /// Compute tensor
-            case let .box(.tensor(s, dt), .compute):
-                return v1.type
-            default:
-                return .invalid
-            }
+            guard case .tensor(_, _) = v1.type.unaliased else { return .invalid }
+            return v1.type
 
-        /// Compute-only
         case let .reduce(op, v1, nil):
             switch (op, v1.type.unaliased) {
-            case let (.arithmetic, .box(.tensor(s1, t1), .compute)) where t1.isNumeric:
-                return .box(.tensor([], t1), .compute)
-            case let (.boolean, .box(.tensor(s1, .bool), .compute)):
-                return .box(.tensor([], .bool), .compute)
+            case (.boolean, .tensor(_, .bool)):
+                return .scalar(.bool)
+            case let (.arithmetic, .tensor(_, t1)) where t1.isNumeric:
+                return .scalar(t1)
             default:
                 return .invalid
             }
 
-        /// Compute-only
         case let .reduce(op, v1, axis: axis?):
             switch (op, v1.type.unaliased) {
             case let (.arithmetic, .pointer(.tensor(s1, t1)))
                     where t1.isNumeric && axis < s1.rank:
-                return .box(.tensor(s1.droppingDimension(axis), t1), .compute)
+                return .tensor(s1.droppingDimension(axis), t1)
             case let (.boolean, .pointer(.tensor(s1, .bool)))
                     where axis < s1.rank:
-                return .box(.tensor(s1.droppingDimension(axis), .bool), .compute)
+                return .tensor(s1.droppingDimension(axis), .bool)
             default:
                 return .invalid
             }
 
-        /// Compute-only
-        case let .scan(op, v1, _):
-            guard case .box(.tensor, .compute) = v1.type.unaliased else {
-                return .invalid
-            }
+        case let .scan(_, v1, _):
+            guard case .tensor = v1.type.unaliased else { return .invalid }
             return v1.type
 
-        /// Compute-only
         case let .concatenate(vv, axis):
             guard let first = vv.first,
-                  case let .box(.tensor(s1, t1), .compute) = first.type.unaliased
+                  case let .tensor(s1, t1) = first.type.unaliased
                 else { return .invalid }
             var accShape: TensorShape = s1
             for v in vv.dropFirst() {
-                guard case let .box(.tensor(shape, type), .compute) = v.type.unaliased,
+                guard case let .tensor(shape, type) = v.type.unaliased,
                       type == t1,
                       let newShape = accShape.concatenating(with: shape, alongDimension: axis)
                     else { return .invalid }
                 accShape = newShape
             }
-            return .box(.tensor(accShape, t1), .compute)
+            return .tensor(accShape, t1)
 
-        /// Compute-only
         case let .transpose(v1):
-            guard case let .box(.tensor(s1, t1), .compute) = v1.type.unaliased
+            guard case let .tensor(s1, t1) = v1.type.unaliased
                 else { return .invalid }
-            return .box(.tensor(s1.transpose, t1), .compute)
+            return .tensor(s1.transpose, t1)
             
         case let .dataTypeCast(v1, dt):
-            switch v1.type.unaliased {
-            case let .tensor([], t1) where t1.canCast(to: dt):
-                return .tensor([], dt)
-            case let .box(.tensor(s1, t1), .compute) where t1.canCast(to: dt):
-                return .box(.tensor(s1, dt), .compute)
-            default:
+            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.canCast(to: dt) else {
                 return .invalid
             }
-            
+            return .tensor(s1, dt)
+
         case let .shapeCast(v1, s):
             switch v1.type.unaliased {
             case let .tensor(s1, t1) where s1.contiguousSize == s.contiguousSize:
                 return .tensor(s, t1)
-            case let .box(.tensor(s1, t1), .compute)
+            case let .tensor(s1, t1)
                     where s1.contiguousSize == s.contiguousSize:
-                return .box(.tensor(s, t1), .compute)
+                return .tensor(s, t1)
             default: return .invalid
             }
 
         case let .apply(f, vv):
             switch f.type.unaliased {
-            case let .function(actual, ret),
-                 let .box(.function(actual, ret), _):
+            case let .pointer(.function(actual, ret)),
+                 let .function(actual, ret):
                 guard actual == vv.map({$0.type}) else { fallthrough }
                 return ret
             default:
@@ -350,16 +310,6 @@ extension InstructionKind {
             return fref.gradientType(fromOutput: diffIndex,
                                      withRespectTo: varIndices,
                                      keepingOutputs: outputIndices) ?? .invalid
-
-        case let .compute(v, args, in: graph):
-            let actual = args.map{$0.type}
-            switch (v, graph.type) {
-            case let (.function(f1), .computeBuffer(f2))
-                where f1 === f2 && f1.acceptsArguments(actual):
-                return f1.result
-            default:
-                return .invalid
-            }
 
         case let .extract(from: v, at: indices):
             return v.type.subtype(at: indices) ?? .invalid
@@ -374,7 +324,7 @@ extension InstructionKind {
             return .pointer(type)
 
         case let .load(v):
-            guard case let .box(t, .normal) = v.type.unaliased else { return .invalid }
+            guard case let .pointer(t) = v.type.unaliased else { return .invalid }
             return t
 
         case let .elementPointer(v, ii):
@@ -385,23 +335,15 @@ extension InstructionKind {
 //            guard v.type.size == t.size else { return .invalid }
             return t
 
-        case let .allocateBox(t, loc):
-            return .box(t, loc)
+        case let .allocateBox(t):
+            return .box(t)
 
         case let .allocateHeap(t, count: _):
             return .pointer(t)
 
-        case let .requestMemory(v):
-            guard case let .box(t, .compute) = v.type else { return .invalid }
-            return .pointer(t)
-
         case let .projectBox(v):
-            guard case let .box(t, _) = v.type.unaliased else { return .invalid }
+            guard case let .box(t) = v.type.unaliased else { return .invalid }
             return .pointer(t)
-
-        case let .allocateCompute(v):
-            guard case let .function(fref) = v else { return .invalid }
-            return .computeBuffer(fref)
 
         case .store, .copy, .deallocate,
              .branch, .conditional, .return, .retain, .release, .trap:
@@ -432,7 +374,7 @@ extension InstructionKind {
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateStack(_, op), let .allocateHeap(_, count: op),
              let .projectBox(op), let .release(op), let .retain(op),
-             let .allocateCompute(op), let .gradient(op, _, _, _), let .requestMemory(op):
+             let .gradient(op, _, _, _):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -441,8 +383,6 @@ extension InstructionKind {
             return [cond] + thenArgs + elseArgs
         case let .apply(f, args):
             return [f] + args
-        case let .compute(f, args, in: env):
-            return [f] + args + [env]
         case let .copy(from: op1, to: op2, count: op3):
             return [op1, op2, op3]
         case .return(nil), .allocateBox, .trap:
@@ -497,14 +437,6 @@ public extension InstructionKind {
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
             return .dataTypeCast(new, type)
-        case .compute(old, let uses, in: old):
-            return .compute(new, uses.map(condSubst), in: new)
-        case .compute(old, let uses, in: let v2):
-            return .compute(old, uses.map(condSubst), in: v2)
-        case .compute(let v1, let uses, in: old):
-            return .compute(v1, uses.map(condSubst), in: new)
-        case .compute(let v1, let uses, in: let v2):
-            return .compute(v1, uses.map(condSubst), in: v2)
         case .gradient(old, from: let diff, wrt: let wrt, keeping: let outputIndices):
             return .gradient(new, from: diff, wrt: wrt, keeping: outputIndices)
         case let .apply(f, uses):
@@ -531,8 +463,6 @@ public extension InstructionKind {
             return .allocateStack(ty, new)
         case .allocateHeap(let ty, count: old):
             return .allocateHeap(ty, count: new)
-        case .allocateCompute(old):
-            return .allocateCompute(new)
         case .deallocate(old):
             return .deallocate(new)
         case .copy(from: old, to: old, count: old):
@@ -549,8 +479,6 @@ public extension InstructionKind {
             return .copy(from: v1, to: new, count: v3)
         case .copy(from: let v1, to: let v2, count: old):
             return .copy(from: v1, to: v2, count: new)
-        case .requestMemory(old):
-            return .requestMemory(new)
         default:
             return self
         }

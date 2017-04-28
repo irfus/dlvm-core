@@ -49,10 +49,10 @@ public class FunctionSideEffectAnalysis : AnalysisPass<Module, SideEffectInfo<Fu
                 }
                 /// Check function calls
                 switch inst.kind {
-                case .apply(.function(let callee), _), .compute(.function(let callee), _, in: _):
+                case .apply(.function(let callee), _):
                     /// Call within the same module
                     sameModuleCalls.append((function, callee))
-                case .apply, .compute:
+                case .apply:
                     /// External call: we make conservative decision
                     props = .all
                 default:
@@ -88,7 +88,7 @@ public class SideEffectAnalysis : AnalysisPass<Module, SideEffectInfo<Instructio
                     result[inst].insert(.mayWriteToMemory)
                 case _ where inst.kind.isTrap:
                     result[inst].insert(.mayTrap)
-                case .apply(.function(let callee), _), .compute(.function(let callee), _, _):
+                case .apply(.function(let callee), _):
                     result[inst].formUnion(funcSideEffects[callee])
                 default:
                     result[inst] = .none

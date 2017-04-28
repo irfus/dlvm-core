@@ -57,14 +57,6 @@ public class StructType : Named, HashableByReference {
 
 /// - TODO: add enum type
 
-/// Memory type
-///
-/// - normal: Normal host memory
-/// - compute: Managed host memory with compute capabilities
-public enum MemoryType {
-    case normal, compute
-}
-
 // MARK: - Accessors
 public extension StructType {
     var isPacked: Bool {
@@ -124,16 +116,11 @@ public indirect enum Type {
     /// Pointer
     case pointer(Type)
     /// Reference counted box
-    case box(Type, MemoryType)
+    case box(Type)
     /// Function type
     case function([Type], Type)
     /// Alias type, transparent or opaque
     case alias(TypeAlias)
-    /// Compute buffer typed by a function reference
-    /// - Note: this is a special reference type that will
-    /// be lowered to a pointer to a struct containing allocated
-    /// graph nodes for compute
-    case computeBuffer(Function)
     /// Doesn't contain any value. No size
     case void
     /// Invalid type during type inference, to be eliminated by
@@ -190,7 +177,7 @@ public extension Type {
 public extension Type {
     var isFirstClass: Bool {
         switch canonical {
-        case .tensor, .array, .tuple, .pointer, .box, .computeBuffer, .alias: return true
+        case .tensor, .array, .tuple, .pointer, .box, .alias: return true
         default: return false
         }
     }
@@ -234,8 +221,7 @@ public extension Type {
             return .tensor(shape.dropFirst(), dt)
         case let (.array(t, n), .index(i)) where i < n:
             return t
-        case let (.pointer(t), .index(_)),
-             let (.box(t, _), .index(_)):
+        case let (.pointer(t), .index(_)):
             return t
         default:
             return nil
@@ -256,10 +242,10 @@ public extension Type {
         case let .array(subT, i): return .array(subT.canonical, i)
         case let .tuple(tt): return .tuple(tt.map{$0.canonical})
         case let .pointer(t): return .pointer(t.canonical)
-        case let .box(t, loc): return .box(t.canonical, loc)
+        case let .box(t): return .box(t.canonical)
         case let .function(tt, t): return.function(tt.map{$0.canonical}, t.canonical)
         case let .alias(alias): return alias.type?.canonical ?? self
-        case .tensor, .void, .invalid, .computeBuffer, .struct: return self
+        case .tensor, .void, .invalid, .struct: return self
         }
     }
 
@@ -273,7 +259,7 @@ public extension Type {
     var isDifferentiable: Bool {
         switch self {
         case let .tensor([], dt),
-             let .box(.tensor(_, dt), .compute) where dt.isNumeric:
+             let .tensor(_, dt) where dt.isNumeric:
             return true
         default:
             return false
@@ -295,12 +281,10 @@ extension Type : Equatable {
             return t1 == t2 && n1 == n2
         case let (.pointer(t1), .pointer(t2)):
             return t1 == t2
-        case let (.box(t1, loc1), .box(t2, loc2)):
-            return t1 == t2 && loc1 == loc2
+        case let (.box(t1), .box(t2)):
+            return t1 == t2
         case let (.function(tt1, t1), .function(tt2, t2)):
             return tt1 == tt2 && t1 == t2
-        case let (.computeBuffer(f1), .computeBuffer(f2)):
-            return f1 === f2
         case (.void, .void), (.invalid, .invalid):
             return true
         case let (.alias(a1), .alias(a2)) where a1.isOpaque && a2.isOpaque:
@@ -324,11 +308,11 @@ public extension Type {
         switch self {
         case .invalid:
             return false
-        case .tensor, .void, .computeBuffer:
+        case .tensor, .void:
             return true
         case let .array(subtype, _),
              let .pointer(subtype),
-             let .box(subtype, _):
+             let .box(subtype):
             return subtype.isValid
         case let .tuple(subtypes):
             return subtypes.forAll { $0.isValid }

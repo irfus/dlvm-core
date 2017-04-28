@@ -112,17 +112,13 @@ extension Type : TextOutputStreamable {
             target.write("[\(n) x \(subtype)]")
         case let .pointer(subtype):
             target.write("*\(subtype)")
-        case let .box(subtype, .normal):
+        case let .box(subtype):
             target.write("box{\(subtype)}")
-        case let .box(subtype, .compute):
-            target.write("|\(subtype)|")
         case let .function(args, ret):
             target.write("(\(args.joinedDescription)) -> \(ret)")
         case let .alias(a):
             target.write("$")
             a.name.write(to: &target)
-        case let .computeBuffer(f):
-            target.write("compute{@\(f.name)}")
         case let .struct(structTy):
             target.write("$")
             structTy.name.write(to: &target)
@@ -232,16 +228,12 @@ extension InstructionKind : TextOutputStreamable {
             target.write("elementPointer \(v), \(i)")
         case let .bitCast(v, t):
             target.write("bitCast \(v) to \(t)")
-        case let .compute(f, args, in: graph):
-            target.write("compute \(f)(\(args)) in \(graph)")
         case let .gradient(f, from: diff, wrt: vars, keeping: outputIndices):
             target.write("gradient \(f) from \(diff) wrt \(vars) keeping \(outputIndices)")
         case let .allocateHeap(t, count: c):
             target.write("allocateHeap \(t), \(c)")
-        case let .allocateBox(t, loc):
-            target.write("allocateBox \(t), \(loc)")
-        case let .allocateCompute(v):
-            target.write("allocateCompute \(v)")
+        case let .allocateBox(t):
+            target.write("allocateBox \(t)")
         case let .deallocate(v):
             target.write("deallocate \(v)")
         case let .projectBox(v):
@@ -252,8 +244,6 @@ extension InstructionKind : TextOutputStreamable {
             target.write("release \(v)")
         case let .copy(from: src, to: dest, count: count):
             target.write("copy from \(src) to \(dest), \(count)")
-        case let .requestMemory(v):
-            target.write("requestMemory \(v)")
         case .trap:
             target.write("trap")
         }

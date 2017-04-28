@@ -140,15 +140,6 @@ extension DLVM.TypeAlias : LLEmittable {
     }
 }
 
-public extension DLVM.MemoryType {
-    var addressSpace: LLAddressSpace {
-        switch self {
-        case .compute: return .global
-        case .normal: return .generic
-        }
-    }
-}
-
 extension DLVM.StructType : LLEmittable {
     public typealias LLUnit = IRType
     public func emit<T>(to context: inout LLGenContext<T>,
@@ -184,7 +175,7 @@ extension DLVM.`Type` : LLEmittable {
                                 returnType: ret.emit(to: &context, in: &env))
         case let .alias(alias):
             return env.type(for: alias)
-        case let .box(subt, _):
+        case let .box(subt):
             return PointerType(pointee:
                 StructType(elementTypes: [
                     referenceCounterType,
@@ -193,8 +184,6 @@ extension DLVM.`Type` : LLEmittable {
             )
         case let .pointer(subt):
             return PointerType(pointee: subt.emit(to: &context, in: &env))
-        case let .computeBuffer(fun):
-            return context.target.loweredComputeBufferType(from: fun)
         }
     }
 }
