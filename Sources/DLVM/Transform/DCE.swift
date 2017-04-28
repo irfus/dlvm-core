@@ -37,7 +37,9 @@ open class DeadCodeElimination : TransformPass<Function> {
         let sideEffectInfo = try module.analysis(from: SideEffectAnalysis.self)
 
         /// If instruction is not trivially dead, change nothing
-        guard userInfo[inst].isEmpty && sideEffectInfo[inst].mayHaveSideEffects else { return false }
+        guard userInfo[inst].isEmpty,
+            sideEffectInfo[inst] == .none,
+            !inst.kind.isTerminator else { return false }
         /// Eliminate
         inst.removeFromParent()
         /// Remove instruction and check users
@@ -45,7 +47,9 @@ open class DeadCodeElimination : TransformPass<Function> {
         userInfo = try function.analysis(from: UserAnalysis.self)
         /// For original uses, check if they need to be revisited
         for case let .instruction(_, usee) in inst.operands
-            where userInfo[usee].isEmpty && sideEffectInfo[usee].mayHaveSideEffects {
+            where userInfo[usee].isEmpty
+                && sideEffectInfo[usee] == .none
+                && !inst.kind.isTerminator {
             workList.add(usee)
         }
         return true

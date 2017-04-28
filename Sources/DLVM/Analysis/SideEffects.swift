@@ -20,12 +20,6 @@ public struct SideEffectProperties : OptionSet {
     }
 }
 
-public extension SideEffectProperties {
-    var mayHaveSideEffects: Bool {
-        return self != .none
-    }
-}
-
 public struct SideEffectInfo<Unit : IRUnit> {
     private var table: [Unit : SideEffectProperties] = [:]
 
