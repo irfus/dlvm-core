@@ -59,6 +59,10 @@ public class StructType : Named, HashableByReference {
 
 // MARK: - Accessors
 public extension StructType {
+    var type: Type {
+        return .struct(self)
+    }
+    
     var isPacked: Bool {
         return attributes.contains(.packed)
     }

@@ -28,7 +28,7 @@ public class GlobalValue : Value, Named, Definition, HashableByReference {
     public var initializer: Use
 
     public func makeUse() -> Use {
-        return .global(type, self)
+        return .global(type.pointer, self)
     }
 
     public init(name: String, kind: Kind, type: Type, initializer: Use) {

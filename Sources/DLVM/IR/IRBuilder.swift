@@ -101,18 +101,10 @@ extension IRBuilder {
     open func buildGlobalValue(named name: String,
                                kind: GlobalValue.Kind,
                                type: Type,
-                               initializer: Use) -> Use {
+                               initializer: Use) -> GlobalValue {
         let value = GlobalValue(name: name, kind: kind, type: type, initializer: initializer)
         module.globalValues.append(value)
-        return .global(value.type.pointer, value)
-    }
-
-    open func makeLiteral(_ literal: Literal, ofType type: Type) -> Use {
-        return .literal(type, literal)
-    }
-
-    open func makeUse(_ argument: Argument) -> Use {
-        return .argument(argument.type, argument)
+        return value
     }
 
     @discardableResult
@@ -141,7 +133,7 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildInstruction(_ kind: InstructionKind, name: String? = nil) -> Use {
+    open func buildInstruction(_ kind: InstructionKind, name: String? = nil) -> Instruction {
         guard let block = currentBlock else {
             preconditionFailure("Builder isn't positioned at a basic block")
         }
@@ -149,7 +141,7 @@ extension IRBuilder {
         let inst = Instruction(name: kind.type.isVoid ? nil : (name ?? makeVariableName(in: function)),
                                kind: kind, parent: block)
         block.append(inst)
-        return .instruction(inst.type, inst)
+        return inst
     }
 }
 
@@ -165,52 +157,52 @@ extension IRBuilder {
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
-    func add(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func add(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
         return buildInstruction(.binary(.associative(.arithmetic(.add)), lhs, rhs, bc))
     }
 
-    func subtract(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func subtract(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
         return buildInstruction(.binary(.associative(.arithmetic(.subtract)), lhs, rhs, bc))
     }
 
-    func multiply(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func multiply(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
         return buildInstruction(.binary(.associative(.arithmetic(.multiply)), lhs, rhs, bc))
     }
 
-    func divide(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func divide(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
         return buildInstruction(.binary(.associative(.arithmetic(.divide)), lhs, rhs, bc))
     }
 
-    func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
         return buildInstruction(.binary(.associative(.arithmetic(.power)), lhs, rhs, bc))
     }
 
-    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Use {
+    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
         return buildInstruction(.binary(.comparison(`operator`), lhs, rhs, bc))
     }
 
-    func apply(_ function: Use, _ arguments: [Use]) -> Use {
+    func apply(_ function: Use, _ arguments: [Use]) -> Instruction {
         return buildInstruction(.apply(function, arguments))
     }
 
     func gradient(_ function: Function, from output: Int,
                   withRespectTo variables: [Int],
-                  keepingOutputs outputIndices: [Int]) -> Use {
+                  keepingOutputs outputIndices: [Int]) -> Instruction {
         return buildInstruction(.gradient(.function(function),
                                           from: output,
                                           wrt: variables,
                                           keeping: outputIndices))
     }
 
-    func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Use {
+    func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.matrixMultiply(lhs, rhs))
     }
 
-    func transpose(_ use: Use) -> Use {
+    func transpose(_ use: Use) -> Instruction {
         return buildInstruction(.transpose(use))
     }
 
-    func transform(_ operation: ElementwiseOp, _ use: Use) -> Use {
+    func transform(_ operation: ElementwiseOp, _ use: Use) -> Instruction {
         return buildInstruction(.unary(.elementwise(operation), use))
     }
 
@@ -230,19 +222,19 @@ public extension IRBuilder {
                                       elseBB, elseArguments))
     }
 
-    func extract(from source: Use, at indices: [ElementKey]) -> Use {
+    func extract(from source: Use, at indices: [ElementKey]) -> Instruction {
         return buildInstruction(.extract(from: source, at: indices))
     }
 
-    func insert(_ source: Use, to destination: Use, at indices: [ElementKey]) -> Use {
+    func insert(_ source: Use, to destination: Use, at indices: [ElementKey]) -> Instruction {
         return buildInstruction(.insert(source, to: destination, at: indices))
     }
 
-    func elementPointer(from source: Use, at indices: [ElementKey]) -> Use {
+    func elementPointer(from source: Use, at indices: [ElementKey]) -> Instruction {
         return buildInstruction(.elementPointer(source, indices))
     }
 
-    func load(from source: Use) -> Use {
+    func load(from source: Use) -> Instruction {
         return buildInstruction(.load(source))
     }
 
@@ -250,27 +242,27 @@ public extension IRBuilder {
         buildInstruction(.store(source, to: destination))
     }
 
-    func bitCast(_ source: Use, to targetType: Type) -> Use {
+    func bitCast(_ source: Use, to targetType: Type) -> Instruction {
         return buildInstruction(.bitCast(source, targetType))
     }
 
-    func shapeCast(_ source: Use, to targetShape: TensorShape) -> Use {
+    func shapeCast(_ source: Use, to targetShape: TensorShape) -> Instruction {
         return buildInstruction(.shapeCast(source, targetShape))
     }
 
-    func dataTypeCast(_ source: Use, to targetDataType: DataType) -> Use {
+    func dataTypeCast(_ source: Use, to targetDataType: DataType) -> Instruction {
         return buildInstruction(.dataTypeCast(source, targetDataType))
     }
 
-    func allocateHeap(for type: Type, count: Use) -> Use {
+    func allocateHeap(for type: Type, count: Use) -> Instruction {
         return buildInstruction(.allocateHeap(type, count: count))
     }
 
-    func allocateBox(for type: Type) -> Use {
+    func allocateBox(for type: Type) -> Instruction {
         return buildInstruction(.allocateBox(type))
     }
 
-    func projectBox(_ box: Use) -> Use {
+    func projectBox(_ box: Use) -> Instruction {
         return buildInstruction(.projectBox(box))
     }
 
