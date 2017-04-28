@@ -31,11 +31,11 @@ class IRTests: XCTestCase {
                                                 .associative(.arithmetic(.add)),
                                                 .literal(.int(32), .scalar(.int(10))),
                                                 .literal(.int(32), .scalar(.int(20))), nil)))
-        XCTAssertEqual("\(val1.value)", "let @one : i32 = (add 10 : i32, 20 : i32) : i32")
+        XCTAssertEqual("\(val1)", "let @one : i32 = (add 10 : i32, 20 : i32) : i32")
         let val2 = builder.buildGlobalValue(named: "two", kind: .constant,
                                             type: Type.int(32).pointer,
-                                            initializer: val1)
-        XCTAssertEqual("\(val2.value)", "let @two : *i32 = @one : *i32")
+                                            initializer: %val1)
+        XCTAssertEqual("\(val2)", "let @two : *i32 = @one : *i32")
     }
 
     func testWriteStruct() {
@@ -46,16 +46,16 @@ class IRTests: XCTestCase {
         ], attributes: [ .packed ])
         XCTAssertEqual(struct1.description,
                        "!packed\nstruct $TestStruct1 {\n    foo: i32\n    bar: <1x3x4.f64>\n    baz: [4 x [3 x <3.i32>]]\n}")
-        let structLit = builder.makeLiteral(.struct([
+        let structLit : Literal = .struct([
             ("foo", 100000 ~ .int(32)),
             ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),
             ("baz", .undefined ~ .array(.array(.tensor([3], .int(32)), 3), 4))
-        ]), ofType: .struct(struct1))
+        ])
         let structGlobal = builder.buildGlobalValue(named: "struct1.value",
                                                     kind: .variable,
-                                                    type: .struct(struct1),
-                                                    initializer: structLit)
-        XCTAssertEqual("\(structGlobal.value)", "var @struct1.value : $TestStruct1 = {#foo = 100000 : i32, #bar = undefined : <1x3x4.f64>, #baz = undefined : [4 x [3 x <3.i32>]]} : $TestStruct1")
+                                                    type: struct1.type,
+                                                    initializer: structLit ~ struct1.type)
+        XCTAssertEqual("\(structGlobal)", "var @struct1.value : $TestStruct1 = {#foo = 100000 : i32, #bar = undefined : <1x3x4.f64>, #baz = undefined : [4 x [3 x <3.i32>]]} : $TestStruct1")
     }
 
     func testWriteSimpleFunction() {
@@ -67,7 +67,7 @@ class IRTests: XCTestCase {
         _ = builder.multiply(.literal(.int(32), 5),
                              .literal(.int(32), .tensor([.literal(.int(32), 1), .literal(.int(32), 2)])),
                              broadcasting: [])
-        builder.return(builder.makeLiteral(.null, ofType: .tensor([3], .bool)))
+        builder.return(.null ~ .tensor([3], .bool))
         XCTAssertEqual(fun.description, "func @foo : (f32, f32) -> <3.bool> {\nentry(%x : f32, %y : f32):\n    %v0 = multiply 5 : i32, <1 : i32, 2 : i32> : i32 broadcasting\n    return null : <3.bool>\n}")
     }
 
@@ -78,11 +78,11 @@ class IRTests: XCTestCase {
                                         result: .int(32))
         builder.move(to: fun.entry)
         let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
-        let cmp = builder.compare(.equal, mult, .literal(.int(32), 1))
+        let cmp = builder.compare(.equal, %mult, .literal(.int(32), 1))
         let thenBB = builder.buildBasicBlock(named: "then", arguments: [ "x" : .int(32) ], in: fun)
         let elseBB = builder.buildBasicBlock(named: "else", arguments: [ "x" : .int(32) ], in: fun)
         let contBB = builder.buildBasicBlock(named: "cont", arguments: [ "x" : .int(32) ], in: fun)
-        builder.conditional(cmp, then: thenBB, arguments: [.literal(.int(32), 0)],
+        builder.conditional(%cmp, then: thenBB, arguments: [.literal(.int(32), 0)],
                             else: elseBB, arguments: [.literal(.int(32), 1)])
         builder.move(to: thenBB)
         builder.branch(contBB, [ %thenBB.arguments[0] ])

@@ -247,7 +247,7 @@ fileprivate extension GradientExpansion {
         case let .binary(.associative(.arithmetic(.subtract)), lhs, rhs, bc):
             grad = [
                 (lhs, adjoint),                                     /// ∂f/∂x = D
-                (rhs, bd.subtract(adjoint.makeScalar(0), adjoint, broadcasting: bc)), /// ∂f/∂y = -D
+                (rhs, %bd.subtract(adjoint.makeScalar(0), adjoint, broadcasting: bc)), /// ∂f/∂y = -D
             ]
         case let .binary(.associative(.arithmetic(.multiply)), lhs, rhs, _):
             grad = [
@@ -258,9 +258,9 @@ fileprivate extension GradientExpansion {
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
-                (lhs, bd.divide(adjoint, rhsClone)),  /// ∂f/∂x = D/y
-                (rhs, bd.subtract(lhsClone.makeScalar(0), /// ∂f/∂y = -x/y^2
-                                  bd.divide(lhsClone, bd.multiply(rhsClone, rhsClone))))
+                (lhs, %bd.divide(adjoint, rhsClone)),  /// ∂f/∂x = D/y
+                (rhs, %bd.subtract(lhsClone.makeScalar(0), /// ∂f/∂y = -x/y^2
+                                   %bd.divide(lhsClone, %bd.multiply(rhsClone, rhsClone))))
             ]
 
         /* Matrix multiplication */
@@ -269,9 +269,9 @@ fileprivate extension GradientExpansion {
             let rhsClone = rhs
             grad = [
                 /// ∂f/∂x = D • y^T
-                (lhs, bd.matrixMultiply(bd.transpose(lhsClone), adjoint)),
+                (lhs, %bd.matrixMultiply(%bd.transpose(lhsClone), adjoint)),
                 /// ∂f/∂y = x^T • D
-                (rhs, bd.matrixMultiply(adjoint, bd.transpose(rhsClone))),
+                (rhs, %bd.matrixMultiply(adjoint, %bd.transpose(rhsClone))),
             ]
 
 
@@ -285,8 +285,8 @@ fileprivate extension GradientExpansion {
         case let .unary(.elementwise(.tanh), x):
             let cloned = instruction.makeUse()
             grad = [
-                (x, bd.subtract(cloned, bd.subtract(x.makeScalar(1),
-                                                    bd.multiply(cloned, cloned)), broadcasting: [0]))
+                (x, %bd.subtract(cloned, %bd.subtract(x.makeScalar(1),
+                                                      %bd.multiply(cloned, cloned)), broadcasting: [0]))
             ]
 
         case let .extract(from: x, at: _):

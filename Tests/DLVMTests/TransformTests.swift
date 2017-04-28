@@ -21,26 +21,31 @@ class TransformTests: XCTestCase {
                                         result: .int(32))
         builder.move(to: fun.entry)
         let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
-        builder.buildInstruction(.binary(.associative(.arithmetic(.multiply)),
+        let dead1 = builder.buildInstruction(.binary(.associative(.arithmetic(.multiply)),
                                          .literal(.int(32), 10000), .literal(.int(32), 20000), nil),
-                                 name: "dead")
-        let cmp = builder.compare(.equal, mult, .literal(.int(32), 1))
+                                 name: "dead1")
+        builder.buildInstruction(.binary(.associative(.arithmetic(.add)),
+                                         %dead1, 20000 ~ Type.int(32), nil),
+                                 name: "dead2")
+        let cmp = builder.compare(.equal, %mult, .literal(.int(32), 1))
         let thenBB = builder.buildBasicBlock(named: "then", arguments: [ "x" : .int(32) ], in: fun)
         let elseBB = builder.buildBasicBlock(named: "else", arguments: [ "x" : .int(32) ], in: fun)
         let contBB = builder.buildBasicBlock(named: "cont", arguments: [ "x" : .int(32) ], in: fun)
-        builder.conditional(cmp, then: thenBB, arguments: [.literal(.int(32), 0)], else: elseBB, arguments: [.literal(.int(32), 1)])
+        builder.conditional(%cmp, then: thenBB, arguments: [.literal(.int(32), 0)],
+                            else: elseBB, arguments: [.literal(.int(32), 1)])
         builder.move(to: thenBB)
-        builder.branch(contBB, [ thenBB.arguments[0].makeUse() ])
+        builder.branch(contBB, [ %thenBB.arguments[0] ])
         builder.move(to: elseBB)
-        builder.branch(contBB, [ elseBB.arguments[0].makeUse() ])
+        builder.branch(contBB, [ %elseBB.arguments[0] ])
         builder.move(to: contBB)
-        builder.return(contBB.arguments[0].makeUse())
+        builder.return(%contBB.arguments[0])
 
         /// Original:
         /// func @bar : (f32, f32) -> i32 {
         /// entry(%x : f32, %y : f32):
         ///     %v0 = multiply 5 : i32, 8 : i32
-        ///     %dead = multiply 10000 : i32, 20000 : i32 
+        ///     %dead1 = multiply 10000 : i32, 20000 : i32 
+        ///     %dead2 = add %dead1 : i32, 20000 : i32 
         ///     %v1 = equal %v0 : i32, 1 : i32
         ///     conditional %v1 : bool then then(0 : i32) else else(1 : i32)
         /// then(%x : i32):
