@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-open class TransformManager<Body : IRUnit> {
+public class TransformManager<Body : IRUnit> {
     public typealias TransformType = TransformPass<Body>
     public internal(set) var performedTransforms: [TransformType.Type] = []
 }
@@ -38,12 +38,11 @@ internal extension TransformManager {
 /// - Note: Currently TransformManager is not being utilized,
 /// transforms are run from IRUnit directly
 public extension IRUnit {
-
-    /// Apply a transform pass on self
+    /// Applies a transform pass on self
     ///
-    /// - Returns: whether changes were made
+    /// - Returns: whether changes are made
     @discardableResult
-    public func applyTransform<Transform>(_ transform: Transform.Type) throws -> Bool
+    func applyTransform<Transform>(_ transform: Transform.Type) throws -> Bool
         where Transform : TransformManager<Self>.TransformType
     {
         let changed = try transform.run(on: self)
@@ -51,12 +50,16 @@ public extension IRUnit {
         if transform.shouldInvalidateAnalyses, changed {
             invalidateAnalyses()
         }
-        _ = try analysis(from: Verifier<Self>.self)
+        /// Run verifier
+        try verify()
         return changed
     }
 
+    /// Applies transform passes on self
+    ///
+    /// - Returns: whether changes are made
     @discardableResult
-    public func applyTransforms<Transform>(_ transforms: Transform.Type...) throws -> Bool
+    func applyTransforms<Transform>(_ transforms: Transform.Type...) throws -> Bool
         where Transform : TransformManager<Self>.TransformType
     {
         var changed = false
@@ -65,5 +68,4 @@ public extension IRUnit {
         }
         return changed
     }
-    
 }

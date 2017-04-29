@@ -19,7 +19,7 @@
 
 public protocol PremiseHolder {
     associatedtype Premise
-    associatedtype PremiseVerifier // : Pass
+    associatedtype PremiseVerifier : AnalysisPass<Self, Premise>
     func premise() throws -> Premise
 }
 

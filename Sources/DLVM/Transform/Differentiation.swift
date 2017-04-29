@@ -1,5 +1,5 @@
 //
-//  GradientExpander.swift
+//  Differentiation.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -18,11 +18,12 @@
 //
 
 /// WIP: Richard
+/// - TODO: Refactor bigly
 
 /// Replace every `gradient` instruction to a `call` to a function that
 /// produces the gradient
-public class GradientExpansion: TransformPass<Module> {
-    public override class func run(on module: Module) throws -> Bool {
+open class Differentiation: TransformPass<Module> {
+    open override class func run(on module: Module) throws -> Bool {
         var changed = false
         /// Run analysis before the transformation
         /// Only to check if this pass has been previously run
@@ -32,11 +33,11 @@ public class GradientExpansion: TransformPass<Module> {
 
         for function in module {
             for instruction in function.instructions {
-                if case let .gradient(.function(funcToDiff),
+                if case let .gradient(.function(_, funcToDiff),
                                       from: diffIndex,
                                       wrt: varIndices,
                                       keeping: outputIndices) = instruction.kind,
-                    funcToDiff.isDifferentiable {
+                   funcToDiff.isDifferentiable {
                     if let _ = globalGradInfo.gradient(of: function,
                                                        from: diffIndex,
                                                        wrt: varIndices,
@@ -63,84 +64,6 @@ public class GradientExpansion: TransformPass<Module> {
 /// - Note: A new approach of adjoint code generation will be used.
 /// Function will first be cloned and then adjoint code gets generated in
 /// a real adjoint fasion
-
-// MARK: - Function cloning
-/// - Note: Big, ugly, not-so-safe, imperative code written in 4 minutes
-public extension Function {
-    public func makeClone(named name: String) -> Function {
-        precondition(!parent.containsElement(named: name),
-                     "Module already contains a function with the same name")
-
-        let newFunc = Function(name: name,
-                               arguments: arguments.map{($0.name, $0.type)},
-                               result: result,
-                               attributes: attributes,
-                               parent: parent)
-
-        /// Mappings from old IR units to new IR units
-        var newArgs: [Argument : Argument] = [:]
-        var newBlocks: [BasicBlock : BasicBlock] = [:]
-        var newInsts: [Instruction : Instruction] = [:]
-
-        func newUse(from old: Use) -> Use {
-            switch old {
-            /// If recursion, change function to the new function
-            case .function(self):
-                return .function(newFunc)
-            case .function, .global, .literal:
-                return old
-            case let .argument(t, arg):
-                return .argument(t, newArgs[arg]!)
-            case let .instruction(t, inst):
-                return .instruction(t, newInsts[inst]!)
-            case let .constant(instKind):
-                return .constant(instKind.substituting(old, for: newUse(from: old)))
-            }
-        }
-
-        /// Clone basic blocks
-        for oldBB in self {
-            /// Entry block is a special case which always exists in a function
-            let newBB = oldBB.isEntry ? newFunc.entry : {
-                let newBB = BasicBlock(name: oldBB.name,
-                                       arguments: oldBB.arguments.map{($0.name, $0.type)},
-                                       parent: newFunc)
-                newFunc.append(newBB)
-                return newBB
-            }()
-
-            /// Insert argument mappings
-            for (oldArg, newArg) in zip(oldBB.arguments, newBB.arguments) {
-                newArgs[oldArg] = newArg
-            }
-            newBlocks[oldBB] = newBB
-        }
-
-        /// Clone instructions
-        for oldBB in self {
-            let newBB = newBlocks[oldBB]!
-            /// Clone instructions
-            for oldInst in oldBB {
-                let newInst = Instruction(name: oldInst.name, kind: oldInst.kind, parent: newBB)
-                /// - Note: Slow but clean for now
-                for oldUse in newInst.operands {
-                    newInst.substitute(oldUse, for: newUse(from: oldUse))
-                }
-                /// If branching, switch old BBs to new BBs
-                switch newInst.kind {
-                case let .branch(dest, args):
-                    newInst.kind = .branch(newBlocks[dest]!, args)
-                case let .conditional(cond, thenBB, thenArgs, elseBB, elseArgs):
-                    newInst.kind = .conditional(cond, newBlocks[thenBB]!, thenArgs,
-                                                newBlocks[elseBB]!, elseArgs)
-                default: break
-                }
-            }
-        }
-
-        return newFunc
-    }
-}
 
 fileprivate extension Type {
     func makeLiteral(_ number: IntegerLiteralType) -> Use {
@@ -207,7 +130,7 @@ fileprivate class ADContext {
     }
 }
 
-fileprivate extension GradientExpansion {
+fileprivate extension Differentiation {
 
     static func expand(_ function: Function) throws {
         let builder = IRBuilder(module: function.parent)

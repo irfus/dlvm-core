@@ -140,7 +140,6 @@ public extension Instruction {
 
 /// Dominance analysis on a function
 open class DominanceAnalysis : AnalysisPass<Function, DominatorTree<BasicBlock>> {
-
     open override class func run(on body: Function) throws -> DominatorTree<BasicBlock> {
         var domTree = DominatorTree(root: body.entry)
         let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
@@ -172,7 +171,6 @@ open class DominanceAnalysis : AnalysisPass<Function, DominatorTree<BasicBlock>>
 
 /// Post-dominance analysis on a function
 open class PostdominanceAnalysis : AnalysisPass<Function, [DominatorTree<BasicBlock>]> {
-
     open override class func run(on body: Function) throws -> [DominatorTree<BasicBlock>] {
         let exits = try body.premise().exits
         let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)

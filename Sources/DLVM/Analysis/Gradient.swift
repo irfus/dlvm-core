@@ -59,8 +59,8 @@ public extension GlobalGradientInfo {
     }
 }
 
-public class GlobalGradientAnalysis: AnalysisPass<Module, GlobalGradientInfo> {
-    public override class func run(on module: Module) -> GlobalGradientInfo {
+open class GlobalGradientAnalysis: AnalysisPass<Module, GlobalGradientInfo> {
+    open override class func run(on module: Module) -> GlobalGradientInfo {
         var ggi = GlobalGradientInfo()
         for grad in module {
             guard let key: GradientConfig = grad.attributes.flatMap({ attr in

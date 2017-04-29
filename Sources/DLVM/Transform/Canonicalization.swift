@@ -17,11 +17,13 @@
 //  limitations under the License.
 //
 
-import Foundation
-
-public class Canonicalization : TransformPass<Module> {
-    public static override func run(on body: Module) throws -> Bool {
-        let changed = try body.applyTransforms(GradientExpansion.self)
+/// Applys the following transform passes and switches the IR stage to 'canonical'.
+/// - Transforms:
+///   - Differentiation
+open class Canonicalization : TransformPass<Module> {
+    open override class func run(on body: Module) throws -> Bool {
+        if body.stage == .canonical { return false }
+        let changed = try body.applyTransforms(Differentiation.self)
         body.stage = .canonical
         return changed
     }
