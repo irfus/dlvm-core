@@ -45,7 +45,7 @@ internal struct PreservedAnalyses {
     }
 }
 
-open class AnalysisManager<Body : IRUnit> {
+public class AnalysisManager<Body : IRUnit> {
     fileprivate var analyses: PreservedAnalyses = PreservedAnalyses()
     internal init() {}
 }

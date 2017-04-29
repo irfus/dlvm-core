@@ -20,19 +20,32 @@ public struct SideEffectProperties : OptionSet {
     }
 }
 
-public struct SideEffectInfo<Unit : IRUnit> {
-    private var table: [Unit : SideEffectProperties] = [:]
+public struct SideEffectInfo {
+    private var table: [Function : SideEffectProperties] = [:]
 
-    public subscript(body: Unit) -> SideEffectProperties {
+    public subscript(body: Function) -> SideEffectProperties {
         set { table[body] = newValue }
         get { return table[body]! }
+    }
+
+    public subscript(instruction: Instruction) -> SideEffectProperties {
+        switch instruction.kind {
+        case .trap:
+            return .mayTrap
+        case _ where instruction.kind.mustWriteToMemory:
+            return .mayWriteToMemory
+        case .apply(.function(_, let callee), _):
+            return self[callee]
+        default:
+            return []
+        }
     }
 }
 
 /// Conservatively analyzes side effects of all functions in the module
-public class FunctionSideEffectAnalysis : AnalysisPass<Module, SideEffectInfo<Function>> {
-    public override static func run(on body: Module) throws -> SideEffectInfo<Function> {
-        var result = SideEffectInfo<Function>()
+open class SideEffectAnalysis : AnalysisPass<Module, SideEffectInfo> {
+    open override class func run(on body: Module) throws -> SideEffectInfo {
+        var result = SideEffectInfo()
         var sameModuleCalls: [(Function, Function)] = []
 
         /// Find instructions that definitely have side-effects, and collect callers and
@@ -66,35 +79,11 @@ public class FunctionSideEffectAnalysis : AnalysisPass<Module, SideEffectInfo<Fu
         var propChanged = false
         repeat {
             for (caller, callee) in sameModuleCalls where result[caller] != result[callee] {
-                result[caller].formUnion(result[callee]) // Unwrapped safely
+                result[caller].formUnion(result[callee])
                 propChanged = true
             }
         } while propChanged
 
-        return result
-    }
-}
-
-/// Conservatively analyzes side effects of all instructions in the module
-/// - Dependencies: FunctionSideEffectAnalysis
-public class SideEffectAnalysis : AnalysisPass<Module, SideEffectInfo<Instruction>> {
-    public override static func run(on body: Module) throws -> SideEffectInfo<Instruction> {
-        var funcSideEffects = try body.analysis(from: FunctionSideEffectAnalysis.self)
-        var result = SideEffectInfo<Instruction>()
-        for function in body {
-            for inst in function.instructions {
-                switch inst.kind {
-                case _ where inst.kind.mustWriteToMemory:
-                    result[inst].insert(.mayWriteToMemory)
-                case _ where inst.kind.isTrap:
-                    result[inst].insert(.mayTrap)
-                case .apply(.function(_, let callee), _):
-                    result[inst].formUnion(funcSideEffects[callee])
-                default:
-                    result[inst] = .none
-                }
-            }
-        }
         return result
     }
 }

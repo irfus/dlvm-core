@@ -27,10 +27,10 @@ class IRTests: XCTestCase {
     func testWriteGlobal() {
         let val1 = builder.buildGlobalValue(named: "one", kind: .constant,
                                             type: .int(32),
-                                            initializer: .constant(.binary(
+                                            initializer: %InstructionKind.binary(
                                                 .associative(.arithmetic(.add)),
                                                 .literal(.int(32), .scalar(.int(10))),
-                                                .literal(.int(32), .scalar(.int(20))), nil)))
+                                                .literal(.int(32), .scalar(.int(20))), nil))
         XCTAssertEqual("\(val1)", "let @one : i32 = (add 10 : i32, 20 : i32) : i32")
         let val2 = builder.buildGlobalValue(named: "two", kind: .constant,
                                             type: Type.int(32).pointer,

@@ -27,8 +27,8 @@ extension Instruction : BackwardGraphNode {
     }
 }
 
-public class DataFlowGraphAnalysis : AnalysisPass<Function, DirectedGraph<Instruction>> {
-    public static override func run(on body: Function) throws -> DirectedGraph<Instruction> {
+open class DataFlowGraphAnalysis : AnalysisPass<Function, DirectedGraph<Instruction>> {
+    open override class func run(on body: Function) throws -> DirectedGraph<Instruction> {
         var graph = DirectedGraph<Instruction>()
         for bb: BasicBlock in body {
             for inst: Instruction in bb {

@@ -1,5 +1,5 @@
 //
-//  ComputeFusion.swift
+//  ValuePromotion.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -17,21 +17,9 @@
 //  limitations under the License.
 //
 
-import Foundation
-
-/// A node containing all instructions that are fused in one kernel
-/// Essentially a node in the meta-DFG
-public struct ComputeNode : BackwardGraphNode {
-    public var predecessors: [ComputeNode]
-    public var instructions: [Instruction]
-}
-
-public class ComputeBasicBlock : HashableByReference {
-    public var nodes: [ComputeNode] = []
-}
-
-open class ComputeFusion : AnalysisPass<Function, DirectedGraph<ComputeBasicBlock>> {
-    open override class func run(on body: Function) -> DirectedGraph<ComputeBasicBlock> {
+/// Promotes stack allocations to virtual register values
+open class ValuePromotion : TransformPass<Function> {
+    open override class func run(on body: Function) throws -> Bool {
         DLUnimplemented()
     }
 }
