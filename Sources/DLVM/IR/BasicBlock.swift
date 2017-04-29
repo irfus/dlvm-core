@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-public class Argument : Value, Named, Definition, HashableByReference {
+public class Argument : Value, Named, HashableByReference {
     public var name: String
     public var type: Type
     public weak var parent: BasicBlock?

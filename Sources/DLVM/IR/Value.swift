@@ -62,10 +62,9 @@ public protocol MaybeNamed {
     var name: String? { get }
 }
 
-public protocol Definition : class, Value {
-}
-
 /// User, anything that can use a value
 public protocol User {
     var operands: [Use] { get }
 }
+
+public typealias Definition = Value & AnyObject

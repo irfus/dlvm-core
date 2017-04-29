@@ -92,7 +92,7 @@ public enum InstructionKind {
     case trap
 }
 
-public final class Instruction : IRSubUnit, Definition, MaybeNamed {
+public final class Instruction : IRSubUnit, MaybeNamed {
     public typealias Parent = BasicBlock
     public var name: String?
     public var kind: InstructionKind
@@ -162,13 +162,6 @@ public extension InstructionKind {
     var mustWriteToMemory: Bool {
         switch self {
         case .store, .copy: return true
-        default: return false
-        }
-    }
-
-    var isComputeOnly: Bool {
-        switch self {
-        case .reduce, .scan, .matrixMultiply, .concatenate, .transpose: return true
         default: return false
         }
     }
