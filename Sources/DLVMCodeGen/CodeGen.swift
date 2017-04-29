@@ -65,7 +65,7 @@ extension DLVM.Use : LLEmittable {
         switch self {
         case let .global(_, val):
             return env.value(for: val)
-        case let .function(fun):
+        case let .function(_, fun):
             return env.value(for: fun)
         case let .argument(_, arg):
             return env.value(for: arg)
@@ -73,7 +73,7 @@ extension DLVM.Use : LLEmittable {
             return env.value(for: inst)
         case let .literal(ty, lit):
             return emitLiteral(lit, ofType: ty, to: &context, in: &env)
-        case .constant(_):
+        case .constant(_, _):
             DLUnimplemented()
         }
     }

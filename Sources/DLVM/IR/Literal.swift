@@ -161,3 +161,17 @@ public extension Use {
         }
     }
 }
+
+public extension Literal {
+    func substituting(_ new: Use, for old: Use) -> Literal {
+        let condSubst = {$0 == old ? new : $0}
+        switch self {
+        case .array(let vv): return .array(vv.map(condSubst))
+        case .tensor(let vv): return .array(vv.map(condSubst))
+        case .tuple(let vv): return .array(vv.map(condSubst))
+        case .struct(let fields):
+            return .struct(Array(fields.map{($0, condSubst($1))}))
+        case .null, .undefined, .zero, .scalar: return self
+        }
+    }
+}

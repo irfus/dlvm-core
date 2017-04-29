@@ -120,7 +120,7 @@ extension Instruction : Value {
 
 extension InstructionKind : Value {
     public func makeUse() -> Use {
-        return .constant(self)
+        return .constant(type, self)
     }
 }
 
@@ -299,7 +299,7 @@ extension InstructionKind {
             }
 
         case let .gradient(f, from: diffIndex, wrt: varIndices, keeping: outputIndices):
-            guard case let .function(fref) = f, fref.isDifferentiable else { return .invalid }
+            guard case let .function(_, fref) = f, fref.isDifferentiable else { return .invalid }
             return fref.gradientType(fromOutput: diffIndex,
                                      withRespectTo: varIndices,
                                      keepingOutputs: outputIndices) ?? .invalid

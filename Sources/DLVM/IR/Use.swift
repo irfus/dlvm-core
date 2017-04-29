@@ -22,8 +22,8 @@ public indirect enum Use {
     case instruction(Type, Instruction)
     case global(Type, GlobalValue)
     case literal(Type, Literal)
-    case function(Function)
-    case constant(InstructionKind)
+    case function(Type, Function)
+    case constant(Type, InstructionKind)
 }
 
 // MARK: - Equatable
@@ -36,10 +36,10 @@ extension Use : Equatable {
             return t1 == t2 && v1 === v2
         case let (.global(t1, v1), .global(t2, v2)):
             return t1 == t2 && v1 === v2
-        case let (.literal(l1), .literal(l2)):
-            return l1 == l2
-        case let (.function(f1), .function(f2)):
-            return f1 === f2
+        case let (.literal(t1, l1), .literal(t2, l2)):
+            return t1 == t2 && l1 == l2
+        case let (.function(t1, f1), .function(t2, f2)):
+            return t1 == t2 && f1 === f2
         default:
             return false
         }
@@ -54,12 +54,10 @@ public extension Use {
         case .argument(let t, _),
              .instruction(let t, _),
              .global(let t, _),
-             .literal(let t, _):
+             .literal(let t, _),
+             .function(let t, _),
+             .constant(let t, _):
             return t
-        case .function(let v):
-            return v.type
-        case let .constant(instKind):
-            return instKind.type
         }
     }
 
@@ -68,9 +66,9 @@ public extension Use {
         case let .argument(_, val): return val
         case let .global(_, val): return val
         case let .instruction(_, val): return val
-        case let .function(val): return val
+        case let .function(_, val): return val
         case let .literal(ty, lit): return LiteralValue(type: ty, literal: lit)
-        case let .constant(instKind): return instKind
+        case let .constant(_, instKind): return instKind
         }
     }
 
@@ -79,7 +77,7 @@ public extension Use {
         case let .global(_, def): return def.name
         case let .instruction(_, def): return def.name
         case let .argument(_, def): return def.name
-        case let .function(def): return def.name
+        case let .function(_, def): return def.name
         case .literal, .constant: return nil
         }
     }

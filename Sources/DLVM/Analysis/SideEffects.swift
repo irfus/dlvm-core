@@ -49,7 +49,7 @@ public class FunctionSideEffectAnalysis : AnalysisPass<Module, SideEffectInfo<Fu
                 }
                 /// Check function calls
                 switch inst.kind {
-                case .apply(.function(let callee), _):
+                case .apply(.function(_, let callee), _):
                     /// Call within the same module
                     sameModuleCalls.append((function, callee))
                 case .apply:
@@ -88,7 +88,7 @@ public class SideEffectAnalysis : AnalysisPass<Module, SideEffectInfo<Instructio
                     result[inst].insert(.mayWriteToMemory)
                 case _ where inst.kind.isTrap:
                     result[inst].insert(.mayTrap)
-                case .apply(.function(let callee), _):
+                case .apply(.function(_, let callee), _):
                     result[inst].formUnion(funcSideEffects[callee])
                 default:
                     result[inst] = .none
