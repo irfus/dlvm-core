@@ -188,7 +188,7 @@ public extension IRBuilder {
     func gradient(_ function: Function, from output: Int,
                   withRespectTo variables: [Int],
                   keepingOutputs outputIndices: [Int]) -> Instruction {
-        return buildInstruction(.gradient(.function(function),
+        return buildInstruction(.gradient(%function,
                                           from: output,
                                           wrt: variables,
                                           keeping: outputIndices))

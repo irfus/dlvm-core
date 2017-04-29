@@ -302,9 +302,9 @@ extension Use : TextOutputStreamable {
             target.write("%\(ref.name)")
         case let .literal(_, lit):
             lit.write(to: &target)
-        case let .function(ref):
+        case let .function(_, ref):
             target.write("@\(ref.name)")
-        case let .constant(instKind):
+        case let .constant(_, instKind):
             target.write("(\(instKind))")
         }
         target.write(" : \(type)")

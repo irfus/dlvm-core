@@ -100,7 +100,7 @@ extension Function : Value {
     }
 
     public func makeUse() -> Use {
-        return .function(self)
+        return .function(type, self)
     }
 }
 

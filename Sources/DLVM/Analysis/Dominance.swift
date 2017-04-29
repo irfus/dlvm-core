@@ -111,7 +111,7 @@ public extension DominatorTree where Node == BasicBlock {
         case let .instruction(_, usee):
             return properlyDominates(usee, instruction)
 
-        case let .constant(instKind):
+        case let .constant(_, instKind):
             return instKind.operands.forAll { properlyDominates($0, instruction) }
         }
     }

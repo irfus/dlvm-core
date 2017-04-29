@@ -533,7 +533,7 @@ extension InstructionKind {
             }
 
         case let .gradient(v, from: diff, wrt: vars, keeping: outputIndices):
-            guard case let .function(fref) = v else {
+            guard case let .function(_, fref) = v else {
                 throw VerificationError.notFunction(v, instruction)
             }
             guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars,
