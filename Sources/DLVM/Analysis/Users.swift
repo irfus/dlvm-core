@@ -45,7 +45,7 @@ open class UserAnalysis : AnalysisPass<Function, UserInfo> {
         var userGraph = UserInfo()
         for inst in body.instructions {
             for use in inst.operands {
-                if let def = use.definition {
+                if let def = use.value as? Definition {
                     userGraph.insert(inst, for: def)
                 }
             }

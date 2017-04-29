@@ -70,10 +70,8 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case notDifferentiable(Node)
     case unexpectedMemoryType(Use, Node)
     case invalidCopyOperands(Use, Use, Node)
-    case computeGraphMismatch(Function, Node)
     case notBox(Use, Node)
     case notHeapObject(Use, Node)
-    case cannotLoadFromCompute(Use, Node)
     case notFunction(Use, Node)
     case invalidGradientArguments(Use, Node)
     case notConstantExpression(Node)
@@ -352,7 +350,7 @@ extension InstructionKind {
     /// Verifies constant expression
     public func performVerification() throws {
         switch self {
-        case _ where accessesMemory, .load, .store, .apply:
+        case _ where accessesMemory || isTrap, .load, .store, .apply:
             throw VerificationError.notConstantExpression(self)
         default: return
         }
@@ -360,7 +358,6 @@ extension InstructionKind {
 
     /// Verifies instruction
     public func performVerification(in instruction: Instruction) throws {
-        let function = instruction.parent.parent
         switch self {
         case let .conditional(use, thenBB, thenArgs, elseBB, elseArgs):
             guard case let .tensor(s, t) = use.type.unaliased, s.isScalar, t.isBool else {

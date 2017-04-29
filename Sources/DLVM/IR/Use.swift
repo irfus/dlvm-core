@@ -63,18 +63,6 @@ public extension Use {
         }
     }
 
-    var definition: Definition? {
-        switch self {
-        case .argument(_, let def as Definition),
-             .global(_, let def as Definition),
-             .instruction(_, let def as Definition),
-             .function(let def as Definition):
-            return def
-        case .literal, .constant:
-            return nil
-        }
-    }
-
     var value: Value {
         switch self {
         case let .argument(_, val): return val
