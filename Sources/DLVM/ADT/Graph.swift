@@ -77,7 +77,7 @@ public extension ForwardGraphNode
 
 /// Graph representation storing all forward and backward edges
 public protocol BidirectionalEdgeSet {
-    associatedtype Node : AnyObject
+    associatedtype Node : HashableByReference
     func predecessors(of node: Node) -> ObjectSet<Node>
     func successors(of node: Node) -> ObjectSet<Node>
 }
@@ -107,14 +107,14 @@ public struct TransposeEdgeSet<Base : BidirectionalEdgeSet> : BidirectionalEdgeS
 }
 
 /// Directed graph
-public struct DirectedGraph<Node : AnyObject> : BidirectionalEdgeSet {
+public struct DirectedGraph<Node : HashableByReference> : BidirectionalEdgeSet {
     public struct Entry {
         public var successors: ObjectSet<Node> = []
         public var predecessors: ObjectSet<Node> = []
         fileprivate init() {}
     }
 
-    fileprivate var entries: [Owned<Node> : Entry] = [:]
+    fileprivate var entries: [Node : Entry] = [:]
 }
 
 // MARK: - Mutation
@@ -122,15 +122,15 @@ public extension DirectedGraph {
     /// Insert node to the graph
     mutating func insertNode(_ node: Node) {
         if contains(node) { return }
-        entries[Owned(node)] = Entry()
+        entries[node] = Entry()
     }
 
     /// Insert edge to the graph
     mutating func insertEdge(from src: Node, to dest: Node) {
         insertNode(src)
-        entries[Owned(src)]!.successors.insert(dest)
+        entries[src]!.successors.insert(dest)
         insertNode(dest)
-        entries[Owned(dest)]!.predecessors.insert(src)
+        entries[dest]!.predecessors.insert(src)
     }
 
     /// Remove everything from the graph
@@ -154,7 +154,7 @@ public extension DirectedGraph {
 
     /// Returns the graph node entry for the node
     subscript(node: Node) -> Entry {
-        guard let entry = entries[Owned(node)] else {
+        guard let entry = entries[node] else {
             preconditionFailure("Node not in the graph")
         }
         return entry
@@ -162,7 +162,7 @@ public extension DirectedGraph {
 
     /// Does the graph contain this node?
     func contains(_ node: Node) -> Bool {
-        return entries.keys.contains(Owned(node))
+        return entries.keys.contains(node)
     }
 
     /// Does the graph contain this edge?
