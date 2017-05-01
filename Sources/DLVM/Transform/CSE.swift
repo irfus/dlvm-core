@@ -18,8 +18,10 @@
 //
 
 /// Eliminates common subexpressions in a function
-open class CommonSubexpressionElimination : TransformPass<Function> {
-    open override class func run(on body: Function) throws -> Bool {
+open class CommonSubexpressionElimination : TransformPass {
+    public typealias Body = Function
+
+    open class func run(on body: Function) throws -> Bool {
         DLUnimplemented()
     }
 }

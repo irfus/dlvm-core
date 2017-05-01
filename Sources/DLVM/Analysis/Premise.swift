@@ -19,11 +19,11 @@
 
 public protocol PremiseHolder {
     associatedtype Premise
-    associatedtype PremiseVerifier : AnalysisPass<Self, Premise>
+    associatedtype PremiseVerifier : AnalysisPass
     func premise() throws -> Premise
 }
 
-public extension PremiseHolder where Self : IRUnit, PremiseVerifier: AnalysisPass<Self, Premise> {
+public extension PremiseHolder where Self : IRUnit, PremiseVerifier.Result == Premise, PremiseVerifier.Body == Self {
     func premise() throws -> Premise {
         return try analysis(from: PremiseVerifier.self)
     }
@@ -33,8 +33,10 @@ extension BasicBlock : PremiseHolder {
 
     public struct Premise { let terminator: Instruction }
 
-    public class PremiseVerifier : AnalysisPass<BasicBlock, Premise> {
-        public override class func run(on body: BasicBlock) throws -> Premise {
+    public enum PremiseVerifier : AnalysisPass {
+        public typealias Body = BasicBlock
+
+        public static func run(on body: BasicBlock) throws -> Premise {
             guard let last = body.last, last.kind.isTerminator else {
                 throw VerificationError.missingTerminator(body)
             }
@@ -48,8 +50,10 @@ extension Function : PremiseHolder {
 
     public struct Premise { let exits: [(BasicBlock, Instruction)] }
 
-    public class PremiseVerifier : AnalysisPass<Function, Premise> {
-        public override class func run(on body: Function) throws -> Premise {
+    public enum PremiseVerifier : AnalysisPass {
+        public typealias Body = Function
+
+        public static func run(on body: Function) throws -> Premise {
             var exits: [(BasicBlock, Instruction)] = []
             for bb in body {
                 let terminator = try bb.premise().terminator

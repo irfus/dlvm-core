@@ -18,8 +18,10 @@
 //
 
 /// Promotes box/heap allocations to stack
-open class StackPromotion : TransformPass<Function> {
-    open override class func run(on body: Function) throws -> Bool {
+open class StackPromotion : TransformPass {
+    public typealias Body = Function
+    
+    open class func run(on body: Function) throws -> Bool {
         DLUnimplemented()
     }
 }

@@ -17,50 +17,29 @@
 //  limitations under the License.
 //
 
-public typealias AnyPass = AnyObject
-
-public protocol PassProtocol : class {
+public protocol Pass {
     associatedtype Body : IRUnit
-    associatedtype Result
     static var name: String { get }
+}
+
+public protocol AnalysisPass : Pass {
+    associatedtype Result
     static func run(on body: Body) throws -> Result
+}
+
+public protocol TransformPass : Pass {
     static var shouldInvalidateAnalyses: Bool { get }
+    static func run(on body: Body) throws -> Bool
 }
 
-/// Base class for passes
-open class Pass<Body : IRUnit, Result> : PassProtocol {
-    /// Pass name is the name of the pass type
-    public final class var name: String {
+public extension TransformPass {
+    static var shouldInvalidateAnalyses: Bool {
+        return true
+    }
+}
+
+public extension Pass {
+    static var name: String {
         return String(describing: type(of: self))
-    }
-
-    /// Runs pass on body
-    open class func run(on body: Body) throws -> Result {
-        DLUnimplemented()
-    }
-
-    /// Determines if the pass will require invalidation of cached
-    /// pass result
-    public class var shouldInvalidateAnalyses: Bool {
-        return true
-    }
-
-    /// Initializer is inaccessible anywhere
-    private init() {}
-}
-
-/// Analysis passes produce analysis information and does not mutate
-/// the body
-open class AnalysisPass<Body : IRUnit, Result> : Pass<Body, Result> {
-    public override static var shouldInvalidateAnalyses: Bool {
-        return false
-    }
-}
-
-/// Transform passes optionally mutate the body and produce a boolean
-/// signifying if the body is mutated
-open class TransformPass<Body : IRUnit> : Pass<Body, Bool> {
-    public override static var shouldInvalidateAnalyses: Bool {
-        return true
     }
 }

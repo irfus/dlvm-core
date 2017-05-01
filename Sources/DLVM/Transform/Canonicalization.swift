@@ -20,8 +20,10 @@
 /// Applys the following transform passes and switches the IR stage to 'canonical'.
 /// - Transforms:
 ///   - Differentiation
-open class Canonicalization : TransformPass<Module> {
-    open override class func run(on body: Module) throws -> Bool {
+open class Canonicalization : TransformPass {
+    public typealias Body = Module
+    
+    open class func run(on body: Module) throws -> Bool {
         if body.stage == .canonical { return false }
         let changed = try body.applyTransforms(Differentiation.self)
         body.stage = .canonical

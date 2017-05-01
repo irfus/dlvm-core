@@ -104,8 +104,10 @@ public extension Function {
 
 }
 
-open class ControlFlowGraphAnalysis : AnalysisPass<Function, DirectedGraph<BasicBlock>> {
-    open override class func run(on body: Function) -> DirectedGraph<BasicBlock> {
+open class ControlFlowGraphAnalysis : AnalysisPass {
+    public typealias Body = Function
+
+    open class func run(on body: Function) -> DirectedGraph<BasicBlock> {
         return DirectedGraph(nodes: body)
     }
 }

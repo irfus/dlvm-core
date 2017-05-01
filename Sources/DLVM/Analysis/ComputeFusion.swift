@@ -30,8 +30,9 @@ public class ComputeBasicBlock : HashableByReference {
     public var nodes: [ComputeNode] = []
 }
 
-open class ComputeFusion : AnalysisPass<Function, DirectedGraph<ComputeBasicBlock>> {
-    open override class func run(on body: Function) -> DirectedGraph<ComputeBasicBlock> {
+open class ComputeFusion : AnalysisPass {
+    public typealias Body = Function
+    open class func run(on body: Function) -> DirectedGraph<ComputeBasicBlock> {
         DLUnimplemented()
     }
 }

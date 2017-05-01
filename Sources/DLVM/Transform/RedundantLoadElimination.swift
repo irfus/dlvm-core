@@ -18,8 +18,10 @@
 //
 
 /// Eliminates redundant loads across basic blocks
-open class RedundantLoadElimination : TransformPass<Function> {
-    open override class func run(on body: Function) throws -> Bool {
+open class RedundantLoadElimination : TransformPass {
+    public typealias Body = Function
+
+    open class func run(on body: Function) throws -> Bool {
         DLUnimplemented()
     }
 }

@@ -40,8 +40,10 @@ public extension UserInfo {
 }
 
 /// Analyzes function and produces a graph from definitions to users
-open class UserAnalysis : AnalysisPass<Function, UserInfo> {
-    open override class func run(on body: Function) throws -> UserInfo {
+open class UserAnalysis : AnalysisPass {
+    public typealias Body = Function
+
+    open class func run(on body: Function) throws -> UserInfo {
         var userGraph = UserInfo()
         for inst in body.instructions {
             for use in inst.operands {
