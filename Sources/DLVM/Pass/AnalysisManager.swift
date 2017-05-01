@@ -17,26 +17,26 @@
 //  limitations under the License.
 //
 
-private typealias ID = ObjectIdentifier
-
 internal struct PreservedAnalyses {
-    private var analysisMap: [ObjectIdentifier : Any] = [:]
+    private typealias ID = ObjectIdentifier
 
-    func result<Pass : PassProtocol>(from _: Pass.Type) -> Pass.Result? {
+    private var analysisMap: [ID : Any] = [:]
+
+    func result<Pass : AnalysisPass>(from _: Pass.Type) -> Pass.Result? {
         /// If result is cached, return it
         return analysisMap[ID(Pass.self)] as? Pass.Result
     }
 
-    func containsResult<Pass : PassProtocol>(from type: Pass.Type) -> Bool {
+    func containsResult<Pass : AnalysisPass>(from type: Pass.Type) -> Bool {
         return result(from: type) != nil
     }
 
-    mutating func insert<Pass : PassProtocol>(_ result: Pass.Result,
+    mutating func insert<Pass : AnalysisPass>(_ result: Pass.Result,
                                               for type: Pass.Type) {
         analysisMap[ID(type)] = result
     }
 
-    mutating func removeResult<Pass : PassProtocol>(from type: Pass.Type) -> Pass.Result? {
+    mutating func removeResult<Pass : AnalysisPass>(from type: Pass.Type) -> Pass.Result? {
         return analysisMap.removeValue(forKey: ID(type)) as? Pass.Result
     }
 
@@ -52,34 +52,28 @@ public class AnalysisManager<Body : IRUnit> {
 
 
 public extension AnalysisManager {
-
-    public typealias PassType<Result> = AnalysisPass<Body, Result>
-
     func invalidateAll() {
         analyses.removeAll()
     }
 
     @discardableResult
-    func invalidateAnalysis<Pass, Result>(from pass: Pass.Type) -> Result?
-        where Pass : PassType<Result> {
+    func invalidateAnalysis<Pass : AnalysisPass>(from pass: Pass.Type) -> Pass.Result? {
         return analyses.removeResult(from: pass)
     }
 
-    func updateAnalysis<Pass, Result>(_ result: Result, from pass: Pass.Type)
-        where Pass : PassType<Result> {
+    func updateAnalysis<Pass : AnalysisPass>(_ result: Pass.Result, from pass: Pass.Type) {
         analyses.insert(result, for: pass)
     }
 
-    func analysis<Pass, Result>(from pass: Pass.Type) -> Result?
-        where Pass : PassType<Result> {
+    func analysis<Pass : AnalysisPass>(from pass: Pass.Type) -> Pass.Result? {
         return analyses.result(from: pass)
     }
-
 }
 
 public extension IRUnit {
-    public func analysis<Pass, Result>(from pass: Pass.Type) throws -> Result
-        where Pass : AnalysisManager<Self>.PassType<Result> {
+    func analysis<Pass : AnalysisPass>(from pass: Pass.Type) throws -> Pass.Result
+        where Pass.Body == Self
+    {
         if let result = analysisManager.analysis(from: pass) {
             return result
         }

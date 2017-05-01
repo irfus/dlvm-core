@@ -574,13 +574,15 @@ extension Use : SelfVerifiable {
 // MARK: - Lazy verification
 public extension IRUnit {
     public func verify() throws {
-        _ = try analysis(from: Verifier.self)
+        _ = try analysis(from: Verifier<Self>.self)
     }
 }
 
 /// Verifier pass
-public class Verifier<Body : IRUnit> : AnalysisPass<Body, Void> {
-    public override class func run(on body: Body) throws {
+public enum Verifier<Unit : IRUnit> : AnalysisPass {
+    public typealias Body = Unit
+    
+    public static func run(on body: Body) throws {
         try body.performVerification()
     }
 }

@@ -22,8 +22,10 @@
 
 /// Replace every `gradient` instruction to a `call` to a function that
 /// produces the gradient
-open class Differentiation: TransformPass<Module> {
-    open override class func run(on module: Module) throws -> Bool {
+open class Differentiation: TransformPass {
+    public typealias Body = Module
+    
+    open class func run(on module: Module) throws -> Bool {
         var changed = false
         /// Run analysis before the transformation
         /// Only to check if this pass has been previously run

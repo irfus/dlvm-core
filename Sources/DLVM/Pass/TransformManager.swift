@@ -18,32 +18,33 @@
 //
 
 public class TransformManager<Body : IRUnit> {
-    public typealias TransformType = TransformPass<Body>
-    public internal(set) var performedTransforms: [TransformType.Type] = []
+    public internal(set) var performedTransforms: [Any.Type] = []
 }
 
 // MARK: - Mutation
 internal extension TransformManager {
-    func append(_ transform: TransformType.Type) {
+    func append<Transform : TransformPass>(_ transform: Transform.Type)
+        where Transform.Body == Body
+    {
         performedTransforms.append(transform)
     }
 
-    func append(_ transforms: TransformType.Type...) {
+    func append<Transform : TransformPass>(_ transforms: Transform.Type...)
+        where Transform.Body == Body
+    {
         for transform in transforms {
             append(transform)
         }
     }
 }
 
-/// - Note: Currently TransformManager is not being utilized,
-/// transforms are run from IRUnit directly
 public extension IRUnit {
     /// Applies a transform pass on self
     ///
     /// - Returns: whether changes are made
     @discardableResult
-    func applyTransform<Transform>(_ transform: Transform.Type) throws -> Bool
-        where Transform : TransformManager<Self>.TransformType
+    func applyTransform<Transform : TransformPass>(_ transform: Transform.Type) throws -> Bool
+        where Transform.Body == Self
     {
         let changed = try transform.run(on: self)
         transformManager.append(transform)
@@ -59,8 +60,8 @@ public extension IRUnit {
     ///
     /// - Returns: whether changes are made
     @discardableResult
-    func applyTransforms<Transform>(_ transforms: Transform.Type...) throws -> Bool
-        where Transform : TransformManager<Self>.TransformType
+    func applyTransforms<Transform : TransformPass>(_ transforms: Transform.Type...) throws -> Bool
+        where Transform.Body == Self
     {
         var changed = false
         for transform in transforms {

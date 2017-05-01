@@ -43,8 +43,11 @@ public struct SideEffectInfo {
 }
 
 /// Conservatively analyzes side effects of all functions in the module
-open class SideEffectAnalysis : AnalysisPass<Module, SideEffectInfo> {
-    open override class func run(on body: Module) throws -> SideEffectInfo {
+open class SideEffectAnalysis : AnalysisPass {
+    public typealias Body = Module
+    public typealias Result = SideEffectInfo
+    
+    open class func run(on body: Module) throws -> SideEffectInfo {
         var result = SideEffectInfo()
         var sameModuleCalls: [(Function, Function)] = []
 

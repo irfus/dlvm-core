@@ -20,8 +20,10 @@
 import class Foundation.NSMutableOrderedSet
 
 /// Dead code elimination (traditional algorithm)
-open class DeadCodeElimination : TransformPass<Function> {
-    open override class func run(on body: Function) throws -> Bool {
+open class DeadCodeElimination : TransformPass {
+    public typealias Body = Function
+
+    open class func run(on body: Function) throws -> Bool {
         var changed: Bool = false
         let workList: NSMutableOrderedSet = []
         var count = 0

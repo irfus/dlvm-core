@@ -18,8 +18,9 @@
 //
 
 /// Promotes stack allocations to virtual register values
-open class ValuePromotion : TransformPass<Function> {
-    open override class func run(on body: Function) throws -> Bool {
+open class ValuePromotion : TransformPass {
+    public typealias Body = Function
+    open class func run(on body: Function) throws -> Bool {
         DLUnimplemented()
     }
 }

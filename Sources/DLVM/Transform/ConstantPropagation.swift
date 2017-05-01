@@ -18,8 +18,10 @@
 //
 
 /// Folds and propagates constant operations in a function
-open class ConstantPropagation : TransformPass<Function> {
-    open override class func run(on body: Function) throws -> Bool {
+open class ConstantPropagation : TransformPass {
+    public typealias Body = Function
+    
+    open class func run(on body: Function) throws -> Bool {
         DLUnimplemented()
     }
 }
