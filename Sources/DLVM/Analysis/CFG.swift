@@ -22,11 +22,6 @@ extension BasicBlock : ForwardGraphNode {
     public var successors: ObjectSet<BasicBlock> {
         return terminator?.controlFlowSuccessors ?? []
     }
-
-    public var predecessors: ObjectSet<BasicBlock> {
-        let cfg: DirectedGraph<BasicBlock> = try! parent.analysis(from: ControlFlowGraphAnalysis.self)
-        return cfg.predecessors(of: self)
-    }
 }
 
 // MARK: - Instruction successors
@@ -53,9 +48,13 @@ public extension Instruction {
     /// Return true if the specified edge is a critical edge.
     /// Critical edges are edges from a block with multiple successors to a block
     /// with multiple predecessors.
-    func isCriticalEdge(to destination: BasicBlock) -> Bool {
+    func isCriticalEdge(to destination: BasicBlock) throws -> Bool {
+        let function = destination.parent
+        precondition(function === parent.parent,
+                     "Destination basic block is not in the same function as the instruction")
+        let cfg = try function.analysis(from: ControlFlowGraphAnalysis.self)
         if controlFlowSuccessorCount <= 1 { return false }
-        return destination.predecessors.count > 1
+        return cfg[destination].predecessors.count > 1
     }
 
 }
