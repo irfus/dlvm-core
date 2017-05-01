@@ -19,8 +19,8 @@
 
 public extension Sequence {
     /// Returns true if all elements satisfy the predicate
-    func forAll(_ predicate: (Iterator.Element) -> Bool) -> Bool {
-        return reduce(true, { $0 && predicate($1) })
+    func forAll(_ predicate: (Iterator.Element) throws -> Bool) rethrows -> Bool {
+        return try reduce(true, { try $0 && predicate($1) })
     }
 
     /// Elements' descriptions joined by comma
