@@ -65,7 +65,22 @@ public extension IRUnit {
     {
         var changed = false
         for transform in transforms {
-            changed = try applyTransform(transform)
+            changed = try applyTransform(transform) || changed
+        }
+        return changed
+    }
+}
+
+public extension IRCollection where Iterator.Element : IRUnit {
+    @discardableResult
+    func mapTransforms<Transform : TransformPass>(_ transforms: Transform.Type...) throws -> Bool
+        where Transform.Body == Iterator.Element
+    {
+        var changed = false
+        for element in self {
+            for transform in transforms {
+                changed = try element.applyTransform(transform) || changed
+            }
         }
         return changed
     }
