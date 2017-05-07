@@ -21,7 +21,7 @@ import LLVM
 import DLVM
 
 /// HPVM Target
-public final class HPVM : LLFunctionPrototypeCacheable {
+public final class HPVM : LLTarget, LLFunctionPrototypeCacheable {
 
     public enum ReplicationMode : Int, LLConstantConvertible {
         case allToAll = 0
@@ -81,19 +81,6 @@ public final class HPVM : LLFunctionPrototypeCacheable {
         self.module = module
     }
     
-}
-
-// MARK: - Compute function lowering
-extension HPVM : LLComputeTarget {
-    public func loweredComputeBufferType(from function: DLVM.Function) -> LLVM.StructType {
-        DLUnimplemented()
-    }
-
-    public func emitComputeFunction(from function: DLVM.Function,
-                                    to context: inout LLGenContext<HPVM>,
-                                    in env: inout LLGenEnvironment) -> LLVM.Function {
-        DLUnimplemented()
-    }
 }
 
 extension HPVM.Intrinsic : LLFunctionPrototype {

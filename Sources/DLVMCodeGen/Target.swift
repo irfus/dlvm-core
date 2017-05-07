@@ -64,13 +64,6 @@ public protocol LLTarget : LLFunctionPrototypeCacheable {
     init(module: LLVM.Module)
 }
 
-public protocol LLComputeTarget : LLTarget {
-    func loweredComputeBufferType(from function: DLVM.Function) -> LLVM.StructType
-    func emitComputeFunction(from function: DLVM.Function,
-                             to context: inout LLGenContext<Self>,
-                             in env: inout LLGenEnvironment) -> LLVM.Function
-}
-
 public protocol LLFunctionPrototypeCacheable : class {
     var functions: [AnyHashable : LLVM.Function] { get set }
     func function<T : LLFunctionPrototype>(from prototype: T) -> LLVM.Function

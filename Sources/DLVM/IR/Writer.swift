@@ -342,7 +342,6 @@ extension Function.Attribute : TextOutputStreamable {
         case .inline: target.write("inline")
         case let .differentiating(f, from: diffIndex, wrt: varIndices, keepingOutputs: outputIndices):
             target.write("differentiating(@\(f.name), from: \(diffIndex), wrt: \(varIndices)), keepingOutputs: \(outputIndices)")
-        case .compute: target.write("compute")
         }
     }
 }
