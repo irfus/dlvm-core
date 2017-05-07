@@ -21,7 +21,7 @@ import LLVM
 import DLVM
 
 /// NVVM Target
-public final class NVVM : LLFunctionPrototypeCacheable {
+public final class NVVM : LLTarget, LLFunctionPrototypeCacheable {
 
     public enum Intrinsic : StaticString {
         case threadIndexX    = "llvm.nvvm.read.ptx.sreg.tid.x"    // () -> i32
@@ -70,19 +70,6 @@ public final class NVVM : LLFunctionPrototypeCacheable {
 
     public init(module: LLVM.Module) {
         self.module = module
-    }
-}
-
-// MARK: - LLTarget
-extension NVVM : LLComputeTarget {
-    public func loweredComputeBufferType(from function: DLVM.Function) -> LLVM.StructType {
-        DLUnimplemented()
-    }
-
-    public func emitComputeFunction(from function: DLVM.Function,
-                                    to context: inout LLGenContext<NVVM>,
-                                    in env: inout LLGenEnvironment) -> LLVM.Function {
-        DLUnimplemented()
     }
 }
 

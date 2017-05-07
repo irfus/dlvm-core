@@ -22,7 +22,6 @@ public final class Function : Named, IRCollection, IRSubUnit {
         case differentiable
         case inline
         case differentiating(Function, from: Int, wrt: [Int], keepingOutputs: [Int])
-        case compute
     }
 
     public typealias Element = BasicBlock
@@ -64,8 +63,7 @@ extension Function.Attribute : Hashable {
         /// Equality by case handle
         case (.differentiable, .differentiable),
              (.inline, .inline),
-             (.differentiating, .differentiating),
-             (.compute, .compute):
+             (.differentiating, .differentiating):
             return true
         default:
             return false
@@ -77,7 +75,6 @@ extension Function.Attribute : Hashable {
         case .differentiable:  return 1
         case .inline:          return 2
         case .differentiating: return 3
-        case .compute:         return 4
         }
     }
 }
@@ -86,10 +83,6 @@ extension Function.Attribute : Hashable {
 public extension Function {
     var isDifferentiable: Bool {
         return attributes.contains(.differentiable)
-    }
-
-    var isCompute: Bool {
-        return attributes.contains(.compute)
     }
 }
 

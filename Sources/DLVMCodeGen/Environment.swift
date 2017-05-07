@@ -22,7 +22,7 @@ import LLVM
 
 public protocol LLEmittable {
     associatedtype LLUnit
-    @discardableResult func emit<T : LLComputeTarget>(to context: inout LLGenContext<T>,
+    @discardableResult func emit<T : LLTarget>(to context: inout LLGenContext<T>,
                                                       in env: inout LLGenEnvironment) -> LLUnit
 }
 
