@@ -265,7 +265,7 @@ extension GlobalValue : TextOutputStreamable {
         case .variable: target.write("var ")
         case .constant: target.write("let ")
         }
-        target.write("@\(name) : \(type) = \(initializer)")
+        target.write("@\(name): \(type) = \(initializer)")
     }
 }
 
@@ -307,7 +307,7 @@ extension Use : TextOutputStreamable {
         case let .constant(_, instKind):
             target.write("(\(instKind))")
         }
-        target.write(" : \(type)")
+        target.write(": \(type)")
     }
 }
 
@@ -330,7 +330,7 @@ extension BasicBlock : TextOutputStreamable {
 
 extension Argument : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("%\(name) : \(type)")
+        target.write("%\(name): \(type)")
     }
 }
 
@@ -353,7 +353,7 @@ extension Function : TextOutputStreamable {
             target.write("\n")
         }
         target.write("func ")
-        target.write("@\(name) : \(type) {\n")
+        target.write("@\(name): \(type) {\n")
         for bb in self {
             bb.write(to: &target)
         }
