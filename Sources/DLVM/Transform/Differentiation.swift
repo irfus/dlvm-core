@@ -29,7 +29,7 @@ open class Differentiation: TransformPass {
         var changed = false
         /// Run analysis before the transformation
         /// Only to check if this pass has been previously run
-        let globalGradInfo = try module.analysis(from: GlobalGradientAnalysis.self)
+        let globalGradInfo = try module.analysis(from: GradientRelationAnalysis.self)
 
         var expanded: [Function : Function] = [:]
 
