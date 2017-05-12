@@ -37,12 +37,12 @@ extension GradientConfig : Equatable, Hashable {
     }
 }
 
-public struct GlobalGradientInfo {
+public struct GradientRelationInfo {
     fileprivate var gradientMap: [GradientConfig : Function] = [:]
     fileprivate var antigradientMap: [Function : Function] = [:]
 }
 
-public extension GlobalGradientInfo {
+public extension GradientRelationInfo {
     func gradient(of function: Function,
                   from diffIndex: Int,
                   wrt varIndices: [Int],
@@ -59,11 +59,11 @@ public extension GlobalGradientInfo {
     }
 }
 
-open class GlobalGradientAnalysis: AnalysisPass {
+open class GradientRelationAnalysis: AnalysisPass {
     public typealias Body = Module
     
-    open class func run(on module: Module) -> GlobalGradientInfo {
-        var ggi = GlobalGradientInfo()
+    open class func run(on module: Module) -> GradientRelationInfo {
+        var ggi = GradientRelationInfo()
         for grad in module {
             guard let key: GradientConfig = grad.attributes.flatMap({ attr in
                 guard case let .differentiating(f, from: diffIndex,
