@@ -42,7 +42,6 @@ public final class BasicBlock : IRCollection, IRSubUnit, Named {
     open var elements: OrderedMapSet<Instruction> = []
     open unowned var parent: Function
     public internal(set) var analysisManager: AnalysisManager<BasicBlock> = AnalysisManager()
-    public internal(set) var transformManager: TransformManager<BasicBlock> = TransformManager()
 
     internal init<C: Collection>(name: String, arguments: C, parent: Function)
         where C.Iterator.Element == Argument
