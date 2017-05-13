@@ -34,7 +34,6 @@ public extension HashableByReference {
 
 public protocol IRUnit : class, HashableByReference, SelfVerifiable {
     var analysisManager: AnalysisManager<Self> { get }
-    var transformManager: TransformManager<Self> { get }
     func invalidateAnalyses()
 }
 

@@ -34,7 +34,6 @@ public final class Function : Named, IRCollection, IRSubUnit {
 
     public var elements: OrderedMapSet<BasicBlock> = []
     public internal(set) var analysisManager: AnalysisManager<Function> = AnalysisManager()
-    public internal(set) var transformManager: TransformManager<Function> = TransformManager()
 
     public unowned var entry: BasicBlock {
         if let entry = elements["entry"] {

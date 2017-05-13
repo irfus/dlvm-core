@@ -33,7 +33,6 @@ public final class Module : IRCollection, IRUnit {
     public var structs: OrderedMapSet<StructType> = []
     public var typeAliases: OrderedMapSet<TypeAlias> = []
     public let analysisManager: AnalysisManager<Module> = AnalysisManager()
-    public let transformManager: TransformManager<Module> = TransformManager()
 
     public init(name: String) {
         self.name = name

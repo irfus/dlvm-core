@@ -98,7 +98,6 @@ public final class Instruction : IRSubUnit, MaybeNamed {
     public var kind: InstructionKind
     public unowned var parent: BasicBlock
     public internal(set) var analysisManager: AnalysisManager<Instruction> = AnalysisManager()
-    public internal(set) var transformManager: TransformManager<Instruction> = TransformManager()
 
     public required init(name: String?, kind: InstructionKind, parent: BasicBlock) {
         self.name = name
