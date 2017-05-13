@@ -17,24 +17,54 @@
 //  limitations under the License.
 //
 
-public class TransformManager<Body : IRUnit> {
-    public internal(set) var performedTransforms: [Any.Type] = []
+/// Transform queue, a builder API for defining and applying a sequence
+/// of transform passes
+public class TransformQueue<Body : IRCollection> where Body.Iterator.Element : IRUnit {
+    fileprivate enum Action {
+        case apply((Body) throws -> Bool, shouldInvalidate: Bool)
+        case map((Body.Iterator.Element) throws -> Bool, shouldInvalidate: Bool)
+    }
+    fileprivate var workList: [Action] = []
 }
 
-// MARK: - Mutation
-internal extension TransformManager {
-    func append<Transform : TransformPass>(_ transform: Transform.Type)
-        where Transform.Body == Body
-    {
-        performedTransforms.append(transform)
+// MARK: - Transform queue builder
+public extension TransformQueue {
+    /// Build a 'map' action to the queue
+    @discardableResult
+    func map<T : TransformPass>(_: T.Type) -> TransformQueue where T.Body == Body.Iterator.Element {
+        workList.append(.map(T.run, shouldInvalidate: T.shouldInvalidateAnalyses))
+        return self
     }
 
-    func append<Transform : TransformPass>(_ transforms: Transform.Type...)
-        where Transform.Body == Body
-    {
-        for transform in transforms {
-            append(transform)
+    /// Build an 'apply' action to the queue
+    @discardableResult
+    func apply<T : TransformPass>(_: T.Type) -> TransformQueue where T.Body == Body {
+        workList.append(.apply(T.run, shouldInvalidate: T.shouldInvalidateAnalyses))
+        return self
+    }
+
+    /// Apply queued transform passes to
+    @discardableResult
+    func run(on body: Body) throws -> Bool {
+        var changed = false
+        for functor in workList {
+            switch functor {
+            case let .apply(fn, shouldInvalidate: inv):
+                changed = try fn(body) || changed
+                if inv, changed {
+                    body.invalidateAnalyses()
+                }
+            case let .map(fn, shouldInvalidate: inv):
+                changed = try body.reduce(changed, { alreadyChanged, element in
+                    let changed = try fn(element)
+                    if inv, changed {
+                        element.invalidateAnalyses()
+                    }
+                    return changed || alreadyChanged
+                })
+            }
         }
+        return changed
     }
 }
 
@@ -47,7 +77,6 @@ public extension IRUnit {
         where Transform.Body == Self
     {
         let changed = try transform.run(on: self)
-        transformManager.append(transform)
         if transform.shouldInvalidateAnalyses, changed {
             invalidateAnalyses()
         }
@@ -55,32 +84,16 @@ public extension IRUnit {
         try verify()
         return changed
     }
-
-    /// Applies transform passes on self
-    ///
-    /// - Returns: whether changes are made
-    @discardableResult
-    func applyTransforms<Transform : TransformPass>(_ transforms: Transform.Type...) throws -> Bool
-        where Transform.Body == Self
-    {
-        var changed = false
-        for transform in transforms {
-            changed = try applyTransform(transform) || changed
-        }
-        return changed
-    }
 }
 
 public extension IRCollection where Iterator.Element : IRUnit {
     @discardableResult
-    func mapTransforms<Transform : TransformPass>(_ transforms: Transform.Type...) throws -> Bool
+    func mapTransform<Transform : TransformPass>(_ transform: Transform.Type) throws -> Bool
         where Transform.Body == Iterator.Element
     {
         var changed = false
         for element in self {
-            for transform in transforms {
-                changed = try element.applyTransform(transform) || changed
-            }
+            changed = try element.applyTransform(transform) || changed
         }
         return changed
     }
