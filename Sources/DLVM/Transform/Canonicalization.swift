@@ -25,7 +25,7 @@ open class Canonicalization : TransformPass {
     
     open class func run(on body: Module) throws -> Bool {
         if body.stage == .canonical { return false }
-        let changed = try body.applyTransforms(Differentiation.self)
+        let changed = try body.applyTransform(Differentiation.self)
         body.stage = .canonical
         return changed
     }
