@@ -204,7 +204,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .unary(f, op):
             target.write("\(f) \(op)")
         case let .reduce(comb, op, dims):
-            target.write("reduce \(comb) \(op) along \(dims.joinedDescription)")
+            target.write("reduce \(comb) \(op) along \(dims)")
         case let .scan(f, op, axis: axis):
             target.write("scan \(f) \(op)")
             if let axis = axis {
