@@ -164,10 +164,19 @@ extension BinaryOp: TextOutputStreamable {
     }
 }
 
-extension UnaryOp: TextOutputStreamable {
+extension UnaryOp : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .elementwise(fun): String(describing: fun).write(to: &target)
+        }
+    }
+}
+
+extension ReductionCombinator : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        switch self {
+        case let .function(f): f.write(to: &target)
+        case let .op(op): op.write(to: &target)
         }
     }
 }
@@ -194,11 +203,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("matrixMultiply \(op1), \(op2)")
         case let .unary(f, op):
             target.write("\(f) \(op)")
-        case let .reduce(f, op, axis: axis):
-            target.write("reduce \(f) \(op)")
-            if let axis = axis {
-                target.write(" along \(axis)")
-            }
+        case let .reduce(comb, op, dims):
+            target.write("reduce \(comb) \(op) along \(dims.joinedDescription)")
         case let .scan(f, op, axis: axis):
             target.write("scan \(f) \(op)")
             if let axis = axis {

@@ -55,6 +55,11 @@ public enum BinaryOp {
     case comparison(ComparisonOp)
 }
 
+public enum ReductionCombinator {
+    case function(Use)
+    case op(AssociativeOp)
+}
+
 /// - TODO: Add custom op
 public enum OpKind {
     case unary(UnaryOp)        /// Monomorphic
