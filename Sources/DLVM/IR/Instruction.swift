@@ -38,9 +38,8 @@ public enum InstructionKind {
     /// Scan operation with optional axis
     /// If axis is not given, scan is performed on contiguous elements
     case scan(AssociativeOp, Use, axis: Int?)
-    /// Reduction operation with optional axis
-    /// If axis is not given, reduction is performed on contiguous elements
-    case reduce(AssociativeOp, Use, axis: Int?)
+    /// Reduction operation
+    case reduce(ReductionCombinator, Use, [Int])
     /// Matrix multiplication operation
     case matrixMultiply(Use, Use)
     /// Concatenation operation
@@ -226,24 +225,17 @@ extension InstructionKind {
             guard case .tensor(_, _) = v1.type.unaliased else { return .invalid }
             return v1.type
 
-        case let .reduce(op, v1, nil):
+        case let .reduce(op, v1, dims):
             switch (op, v1.type.unaliased) {
-            case (.boolean, .tensor(_, .bool)):
-                return .scalar(.bool)
-            case let (.arithmetic, .tensor(_, t1)) where t1.isNumeric:
-                return .scalar(t1)
-            default:
-                return .invalid
-            }
-
-        case let .reduce(op, v1, axis: axis?):
-            switch (op, v1.type.unaliased) {
-            case let (.arithmetic, .pointer(.tensor(s1, t1)))
-                    where t1.isNumeric && axis < s1.rank:
-                return .tensor(s1.droppingDimension(axis), t1)
-            case let (.boolean, .pointer(.tensor(s1, .bool)))
-                    where axis < s1.rank:
-                return .tensor(s1.droppingDimension(axis), .bool)
+            case (.op(.boolean), .tensor(let s1, .bool))
+                where dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+                return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), .bool)
+            case let (.op(.arithmetic), .tensor(s1, t1))
+                where t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+                return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
+            case let (.function(f), .tensor(s1, t1))
+                where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):
+                return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
             default:
                 return .invalid
             }
@@ -417,8 +409,14 @@ public extension InstructionKind {
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
             return .transpose(new)
-        case .reduce(let fun, old, axis: let axis):
-            return .reduce(fun, new, axis: axis)
+        case .reduce(.function(old), old, let dims):
+            return .reduce(.function(new), new, dims)
+        case .reduce(.function(old), let v1, let dims):
+            return .reduce(.function(new), v1, dims)
+        case .reduce(.function(let v1), old, let dims):
+            return .reduce(.function(v1), new, dims)
+        case .reduce(let fun, old, let dims):
+            return .reduce(fun, new, dims)
         case .matrixMultiply(old, let use2):
             return .matrixMultiply(new, use2)
         case .matrixMultiply(let use1, old):

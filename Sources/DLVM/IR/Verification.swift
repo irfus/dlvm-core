@@ -76,6 +76,8 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case invalidGradientArguments(Use, Node)
     case notConstantExpression(Node)
     case structFieldNameMismatch(StructType, Use, Node)
+    case invalidReductionDimensions([Int], Use, Node)
+    case dataTypeNotNumeric(Use, Node)
 }
 
 public protocol SelfVerifiable {
@@ -420,7 +422,35 @@ extension InstructionKind {
                 accShape = newShape
             }
 
-        case let .reduce(_, v1, axis), let .scan(_, v1, axis: axis):
+        case let .reduce(.op(.arithmetic), v1, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(v1, instruction)
+            }
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+
+        case let .reduce(.op(.boolean), v1, dims):
+            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+            }
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+
+        case let .reduce(.function(f), v1, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+            let expectedFuncType: Type = .function([.tensor([], t1)], .tensor([], t1))
+            guard expectedFuncType == f.type.unaliased else {
+                throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
+            }
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+
+        case let .scan(_, v1, axis: axis):
             guard case let .tensor(s1, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
