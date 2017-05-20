@@ -18,19 +18,19 @@
 //
 
 import DLVM
-import LLVM
+import LLVM_C
 
 public protocol LLEmittable {
     associatedtype LLUnit
-    @discardableResult func emit<T : LLTarget>(to context: inout LLGenContext<T>,
-                                                      in env: inout LLGenEnvironment) -> LLUnit
+    @discardableResult func emit<T>(to context: inout LLGenContext<T>,
+                                    in env: inout LLGenEnvironment) -> LLUnit
 }
 
 /// Environment contains mappings from DLVM definitions to LLVM definitions
 public struct LLGenEnvironment {
-    fileprivate var globals: [AnyHashable : IRValue] = [:]
-    fileprivate var locals: [AnyHashable : IRValue] = [:]
-    fileprivate var types: [TypeAlias : IRType] = [:]
+    fileprivate var globals: [AnyHashable : LLVMValueRef] = [:]
+    fileprivate var locals: [AnyHashable : LLVMValueRef] = [:]
+    fileprivate var types: [TypeAlias : LLVMTypeRef] = [:]
 }
 
 extension LLGenEnvironment {
@@ -39,24 +39,24 @@ extension LLGenEnvironment {
     }
 
     mutating func insertGlobal<T : Definition & Hashable>
-        (_ value: IRValue, for dlValue: T) {
+        (_ value: LLVMValueRef, for dlValue: T) {
         globals[dlValue] = value
     }
 
     mutating func insertLocal<T : Definition & Hashable>
-        (_ value: IRValue, for dlValue: T) {
+        (_ value: LLVMValueRef, for dlValue: T) {
         locals[dlValue] = value
     }
 
-    mutating func insertType(_ type: IRType, for typeAlias: TypeAlias) {
+    mutating func insertType(_ type: LLVMTypeRef, for typeAlias: TypeAlias) {
         types[typeAlias] = type
     }
 
-    func value<T : Definition & Hashable>(for value: T) -> IRValue {
+    func value<T : Definition & Hashable>(for value: T) -> LLVMValueRef {
         return locals[value] ?? globals[value] ?? DLImpossibleResult()
     }
 
-    func type(for alias: DLVM.TypeAlias) -> IRType {
+    func type(for alias: DLVM.TypeAlias) -> LLVMTypeRef {
         return types[alias] ?? DLImpossibleResult()
     }
 }
@@ -64,10 +64,10 @@ extension LLGenEnvironment {
 /// Context contains module, target, builder, etc
 public struct LLGenContext<TargetType : LLTarget> {
     public let dlModule: DLVM.Module
-    private let context: LLVM.Context = Context.global
-    public private(set) lazy var module: LLVM.Module = Module(name: self.dlModule.name, context: self.context)
-    public private(set) lazy var target: TargetType = TargetType(module: self.module)
-    public private(set) lazy var builder: LLVM.IRBuilder = IRBuilder(module: self.module)
+    private let context: LLVMContextRef = LLVMGetGlobalContext()
+    public let module: LLVMModuleRef = Module(name: self.dlModule.name, context: self.context)
+    public let target: TargetType = TargetType(module: self.module)
+    public let builder: LLVMBuilderRef = IRBuilder(module: self.module)
     public init(module: DLVM.Module) {
         self.dlModule = module
     }

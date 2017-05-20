@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-import LLVM
+import LLVM_C
 import DLVM
 
 /// NVVM Target
@@ -45,17 +45,17 @@ public final class NVVM : LLTarget, LLFunctionPrototypeCacheable {
         case deviceToHost = 2
         case deviceToDevice = 3
 
-        public var constantType: IntType {
+        public var llType: LLVMTypeRef {
             return i32
         }
     }
 
     public enum RuntimeFunction {
-        case malloc(IRValue) // (i32) -> i8*
-        case free(IRValue) // (i8*) -> void
+        case malloc(LLVMValueRef) // (i32) -> i8*
+        case free(LLVMValueRef) // (i8*) -> void
         case synchronize // () -> i32
-        case memcpy(to: IRValue, from: IRValue, count: IRValue, kind: MemoryCopyKind) // (i8*, i8*, i32, i32) -> i32
-        case launchKernel(IRValue, grid: IRValue, block: IRValue, arguments: IRValue, sharedMemory: IRValue, stream: IRValue)
+        case memcpy(to: LLVMValueRef, from: LLVMValueRef, count: LLVMValueRef, kind: MemoryCopyKind) // (i8*, i8*, i32, i32) -> i32
+        case launchKernel(LLVMValueRef, grid: LLVMValueRef, block: LLVMValueRef, arguments: LLVMValueRef, sharedMemory: LLVMValueRef, stream: LLVMValueRef)
     }
 
     public enum RuntimeType {
@@ -64,24 +64,29 @@ public final class NVVM : LLTarget, LLFunctionPrototypeCacheable {
         case result
     }
 
-    public unowned let module: LLVM.Module
-    fileprivate lazy var builder: LLVM.IRBuilder = LLVM.IRBuilder(module: self.module)
-    public var functions: [AnyHashable : LLVM.Function] = [:]
+    public let module: LLVMModuleRef
+    private let builder: LLVMBuilderRef = LLVMCreateBuilder()
+    public var functions: [AnyHashable : LLVMValueRef] = [:]
 
-    public init(module: LLVM.Module) {
+    public init(module: LLVMModuleRef) {
         self.module = module
+    }
+
+    deinit {
+        LLVMDisposeBuilder(builder)
+        LLVMDisposeModule(module)
     }
 }
 
 extension NVVM.Intrinsic : LLFunctionPrototype {
-    public var type: FunctionType {
+    public var type: LLVMValueRef {
         switch self {
         case .barrier: return [] => void
         case _: return [] => i32
         }
     }
 
-    public var arguments: [IRValue] {
+    public var arguments: [LLVMValueRef] {
         return []
     }
 }
@@ -95,10 +100,10 @@ extension NVVM.RuntimeType : LLTypePrototype {
         }
     }
 
-    public var type: IRType {
+    public var type: LLVMTypeRef {
         switch self {
-        case .dimension: return StructType(elementTypes: [i32, i32, i32])
-        case .stream: return StructType(name: name.description)
+        case .dimension: return [i32, i32, i32]
+        case .stream: return ^name.description
         case .result: return i32
         }
     }
@@ -115,7 +120,7 @@ extension NVVM.RuntimeFunction : LLFunctionPrototype {
         }
     }
     
-    public var type: FunctionType {
+    public var type: LLVMTypeRef {
         switch self {
         case .malloc: return [i32] => void
         case .free: return [i8*] => void
@@ -128,7 +133,7 @@ extension NVVM.RuntimeFunction : LLFunctionPrototype {
         }
     }
 
-    public var arguments: [IRValue] {
+    public var arguments: [LLVMValueRef] {
         switch self {
         case .synchronize: return []
         case let .malloc(v1): return [v1]

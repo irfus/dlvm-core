@@ -17,17 +17,17 @@
 //  limitations under the License.
 //
 
-import LLVM
+import LLVM_C
 
 public protocol LLFunctionPrototype: Hashable {
     var name: StaticString { get }
-    var type: FunctionType { get }
-    var arguments: [IRValue] { get }
+    var type: LLVMTypeRef { get }
+    var arguments: [LLVMValueRef] { get }
 }
 
 public protocol LLTypePrototype: Hashable {
     var name: StaticString { get }
-    var type: IRType { get }
+    var type: LLVMTypeRef { get }
 }
 
 public extension LLFunctionPrototype {
@@ -52,7 +52,7 @@ public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue ==
     }
 
     // Opaque by default
-    public var type: IRType {
+    public var type: LLVMTypeRef {
         return StructType(name: name.description)
     }
 }
@@ -60,13 +60,13 @@ public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue ==
 import DLVM
 
 public protocol LLTarget : LLFunctionPrototypeCacheable {
-    unowned var module: LLVM.Module { get }
-    init(module: LLVM.Module)
+    var module: LLVMModuleRef { get }
+    init(module: LLVMModuleRef)
 }
 
 public protocol LLFunctionPrototypeCacheable : class {
-    var functions: [AnyHashable : LLVM.Function] { get set }
-    func function<T : LLFunctionPrototype>(from prototype: T) -> LLVM.Function
+    var functions: [AnyHashable : LLVMValueRef] { get set }
+    func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef
 }
 
 extension StaticString : Equatable {
@@ -78,14 +78,14 @@ extension StaticString : Equatable {
 extension LLTarget where Self : LLFunctionPrototypeCacheable {
     func emit<T : LLFunctionPrototype>(_ prototype: T,
                                        using builder: LLVM.IRBuilder,
-                                       name: String = "") -> IRValue {
+                                       name: String = "") -> LLVMValueRef {
         let function = self.function(from: prototype)
         return builder.buildCall(function, args: prototype.arguments, name: name)
     }
 }
 
 extension LLFunctionPrototypeCacheable where Self : LLTarget {
-    public func function<T : LLFunctionPrototype>(from prototype: T) -> LLVM.Function {
+    public func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef {
         if let fun = functions[prototype] {
             return fun
         }

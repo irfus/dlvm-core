@@ -18,7 +18,7 @@
 //
 
 import DLVM
-import LLVM
+import LLVM_C
 
 public class CodeGenerator<TargetType : LLTarget> {
     public let dlModule: DLVM.Module
@@ -36,9 +36,9 @@ public extension Type {
     func emitIndexPath<T : LLTarget>
         (from keyPath: [ElementKey],
          to context: inout LLGenContext<T>,
-         in env: inout LLGenEnvironment) -> [IRValue] {
+         in env: inout LLGenEnvironment) -> [LLVMValueRef] {
         var current: Type = self
-        var indices: [IRValue] = []
+        var indices: [LLVMValueRef] = []
         for key in keyPath {
             switch (key, current) {
             case let (.index(i), _):
@@ -58,10 +58,10 @@ public extension Type {
 }
 
 extension DLVM.Use : LLEmittable {
-    public typealias LLUnit = IRValue
+    public typealias LLUnit = LLVMValueRef
     @discardableResult
     public func emit<T : LLTarget>(to context: inout LLGenContext<T>,
-                                          in env: inout LLGenEnvironment) -> IRValue {
+                                          in env: inout LLGenEnvironment) -> LLVMValueRef {
         switch self {
         case let .global(_, val):
             return env.value(for: val)
@@ -127,10 +127,10 @@ extension DLVM.Use : LLEmittable {
 }
 
 extension DLVM.TypeAlias : LLEmittable {
-    public typealias LLUnit = IRType
+    public typealias LLUnit = LLVMTypeRef
     @discardableResult
     public func emit<T : LLTarget>(to context: inout LLGenContext<T>,
-                                          in env: inout LLGenEnvironment) -> IRType {
+                                          in env: inout LLGenEnvironment) -> LLVMTypeRef {
         guard let type = type else {
             let structure = context.builder.createStruct(name: name)
             env.insertType(structure, for: self)
@@ -141,9 +141,9 @@ extension DLVM.TypeAlias : LLEmittable {
 }
 
 extension DLVM.StructType : LLEmittable {
-    public typealias LLUnit = IRType
+    public typealias LLUnit = LLVMTypeRef
     public func emit<T>(to context: inout LLGenContext<T>,
-                        in env: inout LLGenEnvironment) -> IRType where T : LLTarget {
+                        in env: inout LLGenEnvironment) -> LLVMTypeRef where T : LLTarget {
         return LLVM.StructType(elementTypes: subtypes.map {
             $0.emit(to: &context, in: &env)
         }, isPacked: isPacked)
@@ -151,10 +151,10 @@ extension DLVM.StructType : LLEmittable {
 }
 
 extension DLVM.`Type` : LLEmittable {
-    public typealias LLUnit = IRType
+    public typealias LLUnit = LLVMTypeRef
     @discardableResult
     public func emit<T : LLTarget>(to context: inout LLGenContext<T>,
-                                          in env: inout LLGenEnvironment) -> IRType {
+                                          in env: inout LLGenEnvironment) -> LLVMTypeRef {
         switch self {
         case let .tensor(shape, dt):
             return shape.reduce(dt.llType, { acc, dim in
@@ -201,7 +201,7 @@ extension DLVM.GlobalValue : LLEmittable {
 }
 
 extension DLVM.Module : LLEmittable {
-    public typealias LLUnit = LLVM.Module
+    public typealias LLUnit = LLVMModuleRef
     @discardableResult
     public func emit<T : LLTarget>(to context: inout LLGenContext<T>,
                                    in env: inout LLGenEnvironment) -> LLUnit {
@@ -219,24 +219,24 @@ extension DLVM.Module : LLEmittable {
 }
 
 extension DLVM.Function : LLEmittable {
-    public typealias LLUnit = LLVM.Function
+    public typealias LLUnit = LLVMValueRef
     @discardableResult
-    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Function where T : LLTarget {
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVMValueRef where T : LLTarget {
         DLUnimplemented()
     }
 }
 
 extension DLVM.BasicBlock : LLEmittable {
-    public typealias LLUnit = LLVM.BasicBlock
-    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.BasicBlock where T : LLTarget {
+    public typealias LLUnit = LLVMBasicBlockRef
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVMBasicBlockRef where T : LLTarget {
         DLUnimplemented()
     }
 }
 
 extension DLVM.Instruction : LLEmittable {
-    public typealias LLUnit = LLVM.Instruction
+    public typealias LLUnit = LLVMValueRef
     @discardableResult
-    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Instruction where T : LLTarget {
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVMValueRef where T : LLTarget {
         var inst = kind.emit(to: &context, in: &env)
         inst.name =? name
         return inst
@@ -244,15 +244,15 @@ extension DLVM.Instruction : LLEmittable {
 }
 
 extension DLVM.InstructionKind : LLEmittable {
-    public typealias LLUnit = LLVM.Instruction
+    public typealias LLUnit = LLVMValueRef
     @discardableResult
-    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVM.Instruction where T : LLTarget {
+    public func emit<T>(to context: inout LLGenContext<T>, in env: inout LLGenEnvironment) -> LLVMValueRef where T : LLTarget {
         DLUnimplemented()
     }
 }
 
 extension CodeGenerator {
-    public func emit() -> LLVM.Module {
+    public func emit() -> LLVMModuleRef {
         return dlModule.emit(to: &context, in: &environment)
     }
 }
