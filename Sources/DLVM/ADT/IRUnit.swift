@@ -38,16 +38,12 @@ public protocol IRUnit : class, HashableByReference, SelfVerifiable {
 }
 
 public protocol IRSubUnit : IRUnit {
-    associatedtype Parent : IRCollection, IRUnit
+    associatedtype Parent : IRCollection where Parent.Element == Self
     unowned var parent: Parent { get set }
 }
 
-public extension IRSubUnit
-    where Parent : IRCollection,
-          Parent.ElementCollection : OrderedMapSetProtocol,
-          Parent.ElementCollection.Iterator.Element == Self,
-          Parent.ElementCollection.Element == Parent.ElementCollection.Iterator.Element
-{
+public extension IRSubUnit {
+    
     var indexInParent: Int {
         guard let index = parent.index(of: self) else {
             preconditionFailure("Self does not exist in parent basic block")
@@ -58,4 +54,5 @@ public extension IRSubUnit
     func removeFromParent() {
         parent.remove(self)
     }
+
 }

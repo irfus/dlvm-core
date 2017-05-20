@@ -18,129 +18,153 @@
 //
 
 /// IRCollection
-public protocol IRCollection : class, IRUnit, RandomAccessCollection, HashableByReference {
-    associatedtype ElementCollection : RandomAccessCollection
-    var elements: ElementCollection { get set }
+public protocol IRCollection : class, IRUnit, RandomAccessCollection {
+    var elements: OrderedMapSet<Element> { get set }
     func append(_ element: Element)
-    func insert(_ element: Element, at index: ElementCollection.Index)
+    func insert(_ element: Element, at index: OrderedMapSet<Element>.Index)
     func remove(_ element: Element)
 }
 
 // MARK: - Mutation
-public extension IRCollection
-    where ElementCollection : OrderedMapSetProtocol,
-          ElementCollection.Element == ElementCollection.Iterator.Element {
+public extension IRCollection {
 
-    public func append(_ element: Element) {
+    func append(_ element: Element) {
         elements.append(element)
     }
 
-    public func insert(_ element: Element, at index: ElementCollection.Index) {
+    func insert(_ element: Element, at index: OrderedMapSet<Element>.Index) {
         elements.insert(element, at: index)
     }
 
-    public func insert(_ element: Element, after other: Element) {
+    func insert(_ element: Element, after other: Element) {
         elements.insert(element, after: other)
     }
 
-    public func insert(_ element: Element, before other: Element) {
+    func insert(_ element: Element, before other: Element) {
         elements.insert(element, before: other)
     }
     
-    public func index(of element: Element) -> Int? {
+    func index(of element: Element) -> Int? {
         return elements.index(of: element)
     }
 
-    public func remove(_ element: Element) {
+    func remove(_ element: Element) {
         elements.remove(element)
     }
 
-    public func contains(_ element: Element) -> Bool {
+    func contains(_ element: Element) -> Bool {
         return elements.contains(element)
     }
 
-    public func element(named name: String) -> Element? {
+    func element(named name: String) -> Element? {
         return elements.element(named: name)
     }
 
-    public func containsElement(named name: String) -> Bool {
+    func containsElement(named name: String) -> Bool {
         return elements.containsElement(named: name)
     }
 
 }
 
+public extension IRCollection {
+    func makeIterator() -> OrderedMapSet<Element>.Iterator {
+        return elements.makeIterator()
+    }
+
+    func index(after i: OrderedMapSet<Element>.Index) -> OrderedMapSet<Element>.Index {
+        return elements.index(after: i)
+    }
+
+    var indices: DefaultRandomAccessIndices<OrderedMapSet<Element>> {
+        return elements.indices
+    }
+
+    var startIndex: OrderedMapSet<Element>.Index {
+        return elements.startIndex
+    }
+
+    var endIndex: OrderedMapSet<Element>.Index {
+        return elements.endIndex
+    }
+
+    subscript(i: OrderedMapSet<Element>.Index) -> Element {
+        return elements[i]
+    }
+
+    func index(before i: OrderedMapSet<Element>.Index) -> OrderedMapSet<Element>.Index {
+        return elements.index(before: i)
+    }
+
+}
+
+
+/*
+
 // MARK: - Mutation
 public extension IRCollection
-    where ElementCollection.Iterator.Element : IRSubUnit,
-          ElementCollection.Iterator.Element.Parent == Self,
-          ElementCollection : OrderedMapSetProtocol,
-          ElementCollection.Element == ElementCollection.Iterator.Element {
+    where OrderedMapSet<Element>.Element : IRSubUnit,
+          OrderedMapSet<Element>.Element.Parent == Self {
 
-    public func append(_ element: Element) {
+    func append(_ element: Element) {
         elements.append(element)
         element.parent = self
         invalidateAnalyses()
     }
 
-    public func insert(_ element: Element, at index: ElementCollection.Index) {
+    func insert(_ element: Element, at index: OrderedMapSet<Element>.Index) {
         elements.insert(element, at: index)
         element.parent = self
         invalidateAnalyses()
     }
 
-    public func insert(_ element: Element, after other: Element) {
+    func insert(_ element: Element, after other: Element) {
         elements.insert(element, after: other)
         element.parent = self
         invalidateAnalyses()
     }
 
-    public func insert(_ element: Element, before other: Element) {
+    func insert(_ element: Element, before other: Element) {
         elements.insert(element, before: other)
         element.parent = self
         invalidateAnalyses()
     }
 
-    public func remove(_ element: Element) {
+    func remove(_ element: Element) {
         elements.remove(element)
         invalidateAnalyses()
     }
 
-}
+    //typealias SubSequence = OrderedMapSet<Element>.SubSequence
+    //typealias Index = OrderedMapSet<Element>.Index
+    //typealias Indices = DefaultRandomAccessIndices<OrderedMapSet<Element>>
 
-// MARK: - RandomAccessCollection default implementation
-public extension IRCollection {
-
-    public typealias Element = ElementCollection.Iterator.Element
-//    public typealias Index = ElementCollection.Index // SILGen crasher
-    public typealias Indices = DefaultRandomAccessIndices<ElementCollection>
-    public typealias SubSequence = ElementCollection.SubSequence
-
-    public func makeIterator() -> ElementCollection.Iterator {
+    func makeIterator() -> OrderedMapSet<Element>.Iterator {
         return elements.makeIterator()
     }
 
-    public func index(after i: ElementCollection.Index) -> ElementCollection.Index {
+    func index(after i: OrderedMapSet<Element>.Index) -> OrderedMapSet<Element>.Index {
         return elements.index(after: i)
     }
 
-    public var indices: DefaultRandomAccessIndices<ElementCollection> {
+    var indices: DefaultRandomAccessIndices<OrderedMapSet<Element>> {
         return elements.indices
     }
 
-    public var startIndex: ElementCollection.Index {
+    var startIndex: OrderedMapSet<Element>.Index {
         return elements.startIndex
     }
 
-    public var endIndex: ElementCollection.Index {
+    var endIndex: OrderedMapSet<Element>.Index {
         return elements.endIndex
     }
 
-    public subscript(i: ElementCollection.Index) -> Element {
+    subscript(i: OrderedMapSet<Element>.Index) -> Element {
         return elements[i]
     }
 
-    public func index(before i: ElementCollection.Index) -> ElementCollection.Index {
+    func index(before i: OrderedMapSet<Element>.Index) -> OrderedMapSet<Element>.Index {
         return elements.index(before: i)
     }
 
 }
+ */

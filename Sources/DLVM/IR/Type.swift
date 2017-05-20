@@ -76,7 +76,7 @@ public extension StructType {
     }
 
     var subtypes: [Type] {
-        return fields.map {$1}
+        return fields.map {$0.1}
     }
 
     func subtype(at key: ElementKey) -> Type? {
