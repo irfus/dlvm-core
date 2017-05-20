@@ -17,13 +17,15 @@
 //  limitations under the License.
 //
 
-public protocol PremiseHolder {
+public protocol PremiseHolder : IRUnit {
     associatedtype Premise
+    /// - TODO: Add constraints here (currently causing compiler crash)
     associatedtype PremiseVerifier : AnalysisPass
     func premise() throws -> Premise
 }
 
-public extension PremiseHolder where Self : IRUnit, PremiseVerifier.Result == Premise, PremiseVerifier.Body == Self {
+public extension PremiseHolder
+    where PremiseVerifier.Result == Premise, PremiseVerifier.Body == Self {
     func premise() throws -> Premise {
         return try analysis(from: PremiseVerifier.self)
     }

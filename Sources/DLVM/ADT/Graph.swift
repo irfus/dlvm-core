@@ -19,13 +19,13 @@
 
 /// Graph node that defines its successors
 public protocol ForwardGraphNode {
-    associatedtype SuccessorCollection: Collection // where SuccessorCollection.Iterator.Element == Self
+    associatedtype SuccessorCollection: Collection where SuccessorCollection.Element == Self
     var successors: SuccessorCollection { get }
 }
 
 /// Graph node that defines its predecessors
 public protocol BackwardGraphNode {
-    associatedtype PredecessorCollection: Collection
+    associatedtype PredecessorCollection: Collection where PredecessorCollection.Element == Self
     var predecessors: PredecessorCollection { get }
 }
 
@@ -47,9 +47,7 @@ public extension BackwardGraphNode {
 public typealias BidirectionalGraphNode = ForwardGraphNode & BackwardGraphNode
 
 /// Transpose of a bidirectional graph node
-public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalGraphNode
-    where Base.SuccessorCollection.Iterator.Element == Base,
-          Base.PredecessorCollection.Iterator.Element == Base {
+public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalGraphNode {
     public let base: Base
 
     public init(base: Base) {
@@ -66,10 +64,7 @@ public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalG
 }
 
 // MARK: - Transpose
-public extension ForwardGraphNode
-    where Self : BackwardGraphNode,
-          SuccessorCollection.Iterator.Element == Self,
-          Self.PredecessorCollection.Iterator.Element == Self {
+public extension ForwardGraphNode where Self : BackwardGraphNode {
     var transpose: TransposeGraphNode<Self> {
         return TransposeGraphNode(base: self)
     }
@@ -111,10 +106,10 @@ public struct DirectedGraph<Node : HashableByReference> : BidirectionalEdgeSet {
     public struct Entry {
         public var successors: ObjectSet<Node> = []
         public var predecessors: ObjectSet<Node> = []
-        fileprivate init() {}
     }
 
     fileprivate var entries: [Node : Entry] = [:]
+    public init() {}
 }
 
 // MARK: - Mutation
@@ -137,10 +132,6 @@ public extension DirectedGraph {
     mutating func removeAll() {
         entries.removeAll()
     }
-}
-
-// MARK: - Query
-public extension DirectedGraph {
 
     /// Predecessors of the node
     func predecessors(of node: Node) -> ObjectSet<Node> {
@@ -185,7 +176,7 @@ public extension DirectedGraph {
         guard contains(firstNode) else { return false }
         let secondPreds = predecessors(of: secondNode)
         return secondPreds.contains(firstNode)
-            || secondPreds.contains(where: { precedes($0, secondNode) })
+    //        || secondPreds.contains(where: { precedes($0, secondNode) })
     }
 
     /// Does this node succeed the other?
@@ -193,7 +184,7 @@ public extension DirectedGraph {
         guard contains(secondNode) else { return false }
         let secondSuccs = successors(of: secondNode)
         return secondSuccs.contains(firstNode)
-            || secondSuccs.contains(where: { succeeds(firstNode, $0) })
+    //        || secondSuccs.contains(where: { succeeds(firstNode, $0) })
     }
 
     /// Is this node a source?
@@ -208,24 +199,54 @@ public extension DirectedGraph {
     
 }
 
-// MARK: - Initializer from source nodes that store successors
-public extension DirectedGraph
-    where Node : ForwardGraphNode,
-          Node.SuccessorCollection.Iterator.Element == Node {
+/// - TODO: Fix SR-4956 and restore these as initializers
+public extension DirectedGraph where Node : ForwardGraphNode {
 
-    init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
+    static func bag<S : Sequence>(of nodes: S) -> DirectedGraph where S.Element == Node {
+        var graph = self.init()
         for node in nodes {
             for succ in node.successors {
-                insertEdge(from: node, to: succ)
+                graph.insertEdge(from: node, to: succ)
             }
         }
+        return graph
     }
 
-    init<S : Sequence>(sources: S) where S.Iterator.Element == Node {
-        for source in sources {
-            insertAll(fromSource: source)
+    static func graph<S : Sequence>(fromSources sources: S) -> DirectedGraph where S.Element == Node {
+        var graph = self.init()
+        for src in sources {
+            graph.insertAll(fromSource: src)
         }
+        return graph
     }
+
+}
+
+/// - TODO: Fix SR-4956 and restore these as initializers
+public extension DirectedGraph where Node : BackwardGraphNode {
+
+    static func bag<S : Sequence>(of nodes: S) -> DirectedGraph where S.Element == Node {
+        var graph = self.init()
+        for node in nodes {
+            for pred in node.predecessors {
+                graph.insertEdge(from: pred, to: node)
+            }
+        }
+        return graph
+    }
+
+    static func graph<S : Sequence>(fromLeaves leaves: S) -> DirectedGraph where S.Element == Node {
+        var graph = self.init()
+        for leaf in leaves {
+            graph.insertAll(fromLeaf: leaf)
+        }
+        return graph
+    }
+    
+}
+
+// MARK: - Initializer from source nodes that store successors
+public extension DirectedGraph where Node : ForwardGraphNode {
 
     /// Recursively insert all vertices and edges to the graph by traversing
     /// forward from a source vertex
@@ -245,23 +266,7 @@ public extension DirectedGraph
 }
 
 // MARK: - Initializer from leaves that store predecessors
-public extension DirectedGraph
-    where Node : BackwardGraphNode,
-          Node.PredecessorCollection.Iterator.Element == Node {
-
-    init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
-        for node in nodes {
-            for pred in node.predecessors {
-                insertEdge(from: pred, to: node)
-            }
-        }
-    }
-
-    init<S : Sequence>(leaves: S) where S.Iterator.Element == Node {
-        for leaf in leaves {
-            insertAll(fromLeaf: leaf)
-        }
-    }
+public extension DirectedGraph where Node : BackwardGraphNode {
 
     /// Recursively insert all vertices and edges to the graph by traversing 
     /// backward from a leaf vertex

@@ -170,7 +170,7 @@ public extension Literal {
         case .tensor(let vv): return .array(vv.map(condSubst))
         case .tuple(let vv): return .array(vv.map(condSubst))
         case .struct(let fields):
-            return .struct(Array(fields.map{($0, condSubst($1))}))
+            return .struct(Array(fields.map{($0.0, condSubst($0.1))}))
         case .null, .undefined, .zero, .scalar: return self
         }
     }

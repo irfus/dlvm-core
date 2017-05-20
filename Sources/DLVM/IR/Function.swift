@@ -47,7 +47,7 @@ public final class Function : Named, IRCollection, IRSubUnit {
     public init(name: String, arguments: [(String, Type)],
                 result: Type, attributes: Set<Attribute>, parent: Module) {
         self.name = name
-        self.arguments.append(contentsOf: arguments.map(Argument.init))
+        self.arguments.append(contentsOf: arguments.map { Argument(name: $0.0, type: $0.1) })
         self.result = result
         self.attributes = attributes
         self.parent = parent
@@ -101,7 +101,7 @@ public extension Function {
 
     func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type, C.IndexDistance == Int {
         guard types.count == arguments.count else { return false }
-        return zip(types, arguments).forAll{$0.conforms(to: $1.type)}
+        return zip(types, arguments).forAll{$0.0.conforms(to: $0.1.type)}
     }
 
     func argument(named name: String) -> Argument? {
