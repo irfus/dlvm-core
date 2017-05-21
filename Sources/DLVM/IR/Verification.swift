@@ -366,17 +366,17 @@ extension InstructionKind {
                 throw VerificationError.unexpectedType(use, .tensor(.scalar, .bool), instruction)
             }
             guard thenBB.arguments.count == thenArgs.count,
-                  zip(thenBB.arguments, thenArgs).forAll({$0.type == $1.type}) else {
+                  zip(thenBB.arguments, thenArgs).forAll({$0.1.type == $0.1.type}) else {
                 throw VerificationError.basicBlockArgumentMismatch(thenArgs, thenBB, instruction)
             }
             guard elseBB.arguments.count == elseArgs.count,
-                  zip(elseBB.arguments, elseArgs).forAll({$0.type == $1.type}) else {
+                  zip(elseBB.arguments, elseArgs).forAll({$0.0.type == $0.1.type}) else {
                 throw VerificationError.basicBlockArgumentMismatch(elseArgs, elseBB, instruction)
             }
 
         case let .branch(bb, args):
             guard bb.arguments.count == args.count,
-                  zip(bb.arguments, args).forAll({$0.type == $1.type}) else {
+                  zip(bb.arguments, args).forAll({$0.0.type == $0.1.type}) else {
                 throw VerificationError.basicBlockArgumentMismatch(args, bb, instruction)
             }
 
@@ -477,7 +477,7 @@ extension InstructionKind {
             switch fun.type.unaliased {
             case let .function(args, _),
                  let .pointer(.function(args, _)):
-                guard actual.count == args.count && zip(actual, args).forAll({$0.conforms(to: $1)}) else {
+                guard actual.count == args.count && zip(actual, args).forAll({$0.0.conforms(to: $0.1)}) else {
                     throw VerificationError.functionArgumentMismatch(vv, fun.type.unaliased, instruction)
                 }
             default:

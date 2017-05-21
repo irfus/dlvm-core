@@ -18,7 +18,7 @@
 //
 
 import Foundation
-import LLVM
+import LLVM_C
 
 public var runtimePath: String {
     guard let path = environmentVariable(named: "DLRT_PATH") else {
@@ -26,8 +26,6 @@ public var runtimePath: String {
     }
     return path
 }
-
-import cllvm
 
 public var runtimeModule: LLVMModuleRef {
     func checkStatus(_ status: LLVMBool, errorMessageBuffer errorBuf: UnsafeMutablePointer<CChar>?) {

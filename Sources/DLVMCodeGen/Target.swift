@@ -17,17 +17,17 @@
 //  limitations under the License.
 //
 
-import LLVM
+import LLVM_C
 
 public protocol LLFunctionPrototype: Hashable {
     var name: StaticString { get }
-    var type: FunctionType { get }
-    var arguments: [IRValue] { get }
+    var type: LLVMTypeRef { get }
+    var arguments: [LLVMValueRef] { get }
 }
 
 public protocol LLTypePrototype: Hashable {
     var name: StaticString { get }
-    var type: IRType { get }
+    var type: LLVMTypeRef { get }
 }
 
 public extension LLFunctionPrototype {
@@ -52,21 +52,21 @@ public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue ==
     }
 
     // Opaque by default
-    public var type: IRType {
-        return StructType(name: name.description)
+    public var type: LLVMTypeRef {
+        return ^name.description
     }
 }
 
 import DLVM
 
-public protocol LLTarget : LLFunctionPrototypeCacheable {
-    unowned var module: LLVM.Module { get }
-    init(module: LLVM.Module)
+public protocol LLTarget {
+    var module: LLVMModuleRef { get }
+    init(module: LLVMModuleRef)
 }
 
-public protocol LLFunctionPrototypeCacheable : class {
-    var functions: [AnyHashable : LLVM.Function] { get set }
-    func function<T : LLFunctionPrototype>(from prototype: T) -> LLVM.Function
+protocol LLFunctionPrototypeCacheable : class {
+    var functions: [AnyHashable : LLVMValueRef] { get set }
+    func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef
 }
 
 extension StaticString : Equatable {
@@ -77,22 +77,25 @@ extension StaticString : Equatable {
 
 extension LLTarget where Self : LLFunctionPrototypeCacheable {
     func emit<T : LLFunctionPrototype>(_ prototype: T,
-                                       using builder: LLVM.IRBuilder,
-                                       name: String = "") -> IRValue {
+                                       using builder: LLVMBuilderRef,
+                                       name: String = "") -> LLVMValueRef {
         let function = self.function(from: prototype)
-        return builder.buildCall(function, args: prototype.arguments, name: name)
+        var args: [LLVMValueRef?] = prototype.arguments.map{$0}
+        return LLVMBuildCall(builder, function, &args, UInt32(args.count), name)
     }
 }
 
 extension LLFunctionPrototypeCacheable where Self : LLTarget {
-    public func function<T : LLFunctionPrototype>(from prototype: T) -> LLVM.Function {
+    func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef {
         if let fun = functions[prototype] {
             return fun
         }
-        let builder = IRBuilder(module: module)
-        let fun = builder.addFunction(prototype.name.description,
-                                      type: prototype.type)
-        functions[prototype] = fun
-        return fun
+        let name = prototype.name
+        let function = name.utf8Start.withMemoryRebound(
+            to: Int8.self, capacity: name.utf8CodeUnitCount) { ptr in
+            LLVMAddFunction(module, ptr, prototype.type)!
+        }
+        functions[prototype] = function
+        return function
     }
 }

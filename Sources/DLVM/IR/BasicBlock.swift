@@ -60,7 +60,7 @@ public final class BasicBlock : IRCollection, IRSubUnit, Named {
     }
 
     public convenience init(name: String, arguments: [(String, Type)], parent: Function) {
-        self.init(name: name, arguments: arguments.map(Argument.init), parent: parent)
+        self.init(name: name, arguments: arguments.map { Argument(name: $0.0, type: $0.1) }, parent: parent)
     }
 
 }

@@ -17,31 +17,27 @@
 //  limitations under the License.
 //
 
-import LLVM
+import LLVM_C
 import DLVM
 
 public class Builtin {
-    public var functions: [AnyHashable : LLVM.Function] = [:]
-    public var module: LLVM.Module
-    public required init(module: LLVM.Module) {
+    public var functions: [AnyHashable : LLVMValueRef] = [:]
+    public var module: LLVMModuleRef
+    public required init(module: LLVMModuleRef) {
         self.module = module
     }
 }
 
 /// Runtime reference counter type
-var referenceCounterType: LLVM.StructType {
-    return LLVM.StructType(elementTypes: [
-        StructType.empty*,
-        i64, // reference count
-        i32, // memory type
-    ])
+var referenceCounterType: LLVMTypeRef {
+    DLUnimplemented()
 }
 
 public extension Builtin {
     enum Memory {
-        case memcpy(to: IRValue, from: IRValue, count: IRValue, align: IRValue, isVolatile: IRValue)
-        case malloc(size: IRValue)
-        case free(IRValue)
+        case memcpy(to: LLVMValueRef, from: LLVMValueRef, count: LLVMValueRef, align: LLVMValueRef, isVolatile: LLVMValueRef)
+        case malloc(size: LLVMValueRef)
+        case free(LLVMValueRef)
     }
 
     enum AccessOwner : Int32, LLConstantConvertible {
@@ -49,16 +45,16 @@ public extension Builtin {
         case host = 1
         case device = 2
         
-        public var constantType: IntType { return i32 }
+        public var constantType: LLVMTypeRef { return i32 }
     }
 
     enum Reference {
-        case initialize(IRValue, AccessOwner)
-        case retain(IRValue)
-        case release(IRValue)
-        case deallocate(IRValue)
-        case accessOwner(IRValue)
-        case setAccessOwner(IRValue, AccessOwner)
+        case initialize(LLVMValueRef, AccessOwner)
+        case retain(LLVMValueRef)
+        case release(LLVMValueRef)
+        case deallocate(LLVMValueRef)
+        case accessOwner(LLVMValueRef)
+        case setAccessOwner(LLVMValueRef, AccessOwner)
     }
 }
 
@@ -71,7 +67,7 @@ extension Builtin.Memory : LLFunctionPrototype {
         }
     }
 
-    public var arguments: [IRValue] {
+    public var arguments: [LLVMValueRef] {
         switch self {
         case let .free(val):
             return [val]
@@ -82,7 +78,7 @@ extension Builtin.Memory : LLFunctionPrototype {
         }
     }
     
-    public var type: FunctionType {
+    public var type: LLVMTypeRef {
         switch self {
         case .free: return [i8*] => void
         case .malloc: return [i64*] => i8*
@@ -104,10 +100,10 @@ extension Builtin.Reference : LLFunctionPrototype {
         }
     }
 
-    public var arguments: [IRValue] {
+    public var arguments: [LLVMValueRef] {
         switch self {
         case let .initialize(v1, v2):
-            return [v1, v2.constant]
+            return [v1, %v2]
         case let .retain(v):
             return [v]
         case let .release(v):
@@ -117,14 +113,14 @@ extension Builtin.Reference : LLFunctionPrototype {
         case let .accessOwner(v):
             return [v]
         case let .setAccessOwner(v1, v2):
-            return [v1, v2.constant]
+            return [v1, %v2]
         }
     }
 
-    public var type: FunctionType {
+    public var type: LLVMTypeRef {
         switch self {
         case .initialize:
-            return [StructType.empty, i32] => referenceCounterType
+            return [^[], i32] => referenceCounterType
         case .retain, .release, .deallocate:
             return [referenceCounterType*] => void
         case .accessOwner:

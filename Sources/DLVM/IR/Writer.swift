@@ -47,7 +47,7 @@ extension Literal : TextOutputStreamable {
         case let .array(vals):
             target.write("[\(vals.joinedDescription)]")
         case let .struct(fields):
-            target.write("{\(fields.map{"#\($0) = \($1)"}.joined(separator: ", "))}")
+            target.write("{\(fields.map{"#\($0.0) = \($0.1)"}.joined(separator: ", "))}")
         case .zero:
             target.write("zero")
         case .undefined:
