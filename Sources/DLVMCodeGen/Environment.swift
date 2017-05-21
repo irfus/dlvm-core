@@ -62,14 +62,25 @@ extension LLGenEnvironment {
 }
 
 /// Context contains module, target, builder, etc
-public struct LLGenContext<TargetType : LLTarget> {
+public class LLGenContext<TargetType : LLTarget> {
     public let dlModule: DLVM.Module
-    private let context: LLVMContextRef = LLVMGetGlobalContext()
-    public let module: LLVMModuleRef = Module(name: self.dlModule.name, context: self.context)
-    public let target: TargetType = TargetType(module: self.module)
-    public let builder: LLVMBuilderRef = IRBuilder(module: self.module)
+    public let module: LLVMModuleRef
+    public let target: TargetType
+    public let builder: LLVMBuilderRef
+
     public init(module: DLVM.Module) {
-        self.dlModule = module
+        dlModule = module
+        let context = LLVMGetGlobalContext()
+        self.module = dlModule.name.withCString { ptr in
+            LLVMModuleCreateWithNameInContext(ptr, context)
+        }
+        target = TargetType(module: self.module)
+        builder = LLVMCreateBuilderInContext(context)
+    }
+
+    deinit {
+        LLVMDisposeModule(module)
+        LLVMDisposeBuilder(builder)
     }
 }
 
