@@ -120,7 +120,7 @@ extension Builtin.Reference : LLFunctionPrototype {
     public var type: LLVMTypeRef {
         switch self {
         case .initialize:
-            return [[], i32] => referenceCounterType
+            return [^[], i32] => referenceCounterType
         case .retain, .release, .deallocate:
             return [referenceCounterType*] => void
         case .accessOwner:

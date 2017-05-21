@@ -53,18 +53,18 @@ public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue ==
 
     // Opaque by default
     public var type: LLVMTypeRef {
-        return StructType(name: name.description)
+        return ^name.description
     }
 }
 
 import DLVM
 
-public protocol LLTarget : LLFunctionPrototypeCacheable {
+public protocol LLTarget {
     var module: LLVMModuleRef { get }
     init(module: LLVMModuleRef)
 }
 
-public protocol LLFunctionPrototypeCacheable : class {
+protocol LLFunctionPrototypeCacheable : class {
     var functions: [AnyHashable : LLVMValueRef] { get set }
     func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef
 }
@@ -77,22 +77,25 @@ extension StaticString : Equatable {
 
 extension LLTarget where Self : LLFunctionPrototypeCacheable {
     func emit<T : LLFunctionPrototype>(_ prototype: T,
-                                       using builder: LLVM.IRBuilder,
+                                       using builder: LLVMBuilderRef,
                                        name: String = "") -> LLVMValueRef {
         let function = self.function(from: prototype)
-        return builder.buildCall(function, args: prototype.arguments, name: name)
+        var args: [LLVMValueRef?] = prototype.arguments.map{$0}
+        return LLVMBuildCall(builder, function, &args, UInt32(args.count), name)
     }
 }
 
 extension LLFunctionPrototypeCacheable where Self : LLTarget {
-    public func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef {
+    func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef {
         if let fun = functions[prototype] {
             return fun
         }
-        let builder = IRBuilder(module: module)
-        let fun = builder.addFunction(prototype.name.description,
-                                      type: prototype.type)
-        functions[prototype] = fun
-        return fun
+        let name = prototype.name
+        let function = name.utf8Start.withMemoryRebound(
+            to: Int8.self, capacity: name.utf8CodeUnitCount) { ptr in
+            LLVMAddFunction(module, ptr, prototype.type)!
+        }
+        functions[prototype] = function
+        return function
     }
 }

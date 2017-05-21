@@ -102,7 +102,7 @@ extension NVVM.RuntimeType : LLTypePrototype {
 
     public var type: LLVMTypeRef {
         switch self {
-        case .dimension: return [i32, i32, i32]
+        case .dimension: return ^[i32, i32, i32]
         case .stream: return ^name.description
         case .result: return i32
         }

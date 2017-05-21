@@ -45,6 +45,11 @@ postfix func ***(type: LLVMTypeRef) -> LLVMTypeRef {
     return LLVMPointerType(type**, LLAddressSpace.generic.rawValue)
 }
 
+/// Array type sugar
+func * (lhs: Int, rhs: LLVMTypeRef) -> LLVMTypeRef {
+    return LLVMArrayType(rhs, UInt32(lhs))
+}
+
 extension LLVMBool {
     static var `true`: LLVMBool {
         return 1
@@ -55,24 +60,36 @@ extension LLVMBool {
 }
 
 prefix operator ^
+
 extension String {
+    /// Make opaque type
     static prefix func ^ (value: String) -> LLVMTypeRef {
         return LLVMStructCreateNamed(LLVMGetGlobalContext(), value)
     }
 }
 
-/// Form a function type
 infix operator =>
-func => (lhs: [LLVMTypeRef], rhs: LLVMTypeRef) -> LLVMTypeRef {
-    var lhs: [LLVMTypeRef?] = lhs.map{$0}
-    return LLVMFunctionType(rhs, &lhs, UInt32(lhs.count), .true)
-}
+prefix operator <^>
 
 // MARK: - Opaque type initializer
-extension LLVMTypeRef : ExpressibleByArrayLiteral {
-    public init(arrayLiteral fields: LLVMTypeRef...) {
+extension Sequence where Element == LLVMTypeRef {
+
+    /// Form a function type
+    static func => (lhs: Self, rhs: LLVMTypeRef) -> LLVMTypeRef {
+        var lhs: [LLVMTypeRef?] = lhs.map{$0}
+        return LLVMFunctionType(rhs, &lhs, UInt32(lhs.count), .true)
+    }
+
+    /// Form an unpacked struct type
+    static prefix func ^ (fields: Self) -> LLVMTypeRef {
         var fields: [LLVMTypeRef?] = fields.map{$0}
-        self = LLVMStructType(&fields, UInt32(fields.count), .false)
+        return LLVMStructType(&fields, UInt32(fields.count), .false)
+    }
+    
+    /// Form a packed struct type
+    static prefix func <^> (fields: Self) -> LLVMTypeRef {
+        var fields: [LLVMTypeRef?] = fields.map{$0}
+        return LLVMStructType(&fields, UInt32(fields.count), .true)
     }
 }
 

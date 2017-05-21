@@ -222,7 +222,7 @@ extension HPVM.RuntimeFunction : LLFunctionPrototype {
         }
     }
 
-    public var type: FunctionType {
+    public var type: LLVMTypeRef {
         switch self {
         case .trackMemory: return [i8*, i64] => void
         case .requestMemory: return [i8*, i64] => void
