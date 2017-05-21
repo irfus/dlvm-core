@@ -18,4 +18,4 @@
 //
 
 import DLVM
-import LLVM
+import LLVM_C

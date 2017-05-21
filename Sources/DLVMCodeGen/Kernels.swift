@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-import LLVM
+import LLVM_C
 
 public class KernelGenerator<T : LLTarget> {
 

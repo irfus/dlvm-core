@@ -19,10 +19,10 @@
 
 /// Transform queue, a builder API for defining and applying a sequence
 /// of transform passes
-public class TransformQueue<Body : IRCollection> where Body.Iterator.Element : IRUnit {
+public class TransformQueue<Body : IRCollection> where Body.Element : IRUnit {
     fileprivate enum Action {
         case apply((Body) throws -> Bool, shouldInvalidate: Bool)
-        case map((Body.Iterator.Element) throws -> Bool, shouldInvalidate: Bool)
+        case map((Body.Element) throws -> Bool, shouldInvalidate: Bool)
     }
     fileprivate var workList: [Action] = []
 }
@@ -31,7 +31,7 @@ public class TransformQueue<Body : IRCollection> where Body.Iterator.Element : I
 public extension TransformQueue {
     /// Build a 'map' action to the queue
     @discardableResult
-    func map<T : TransformPass>(_: T.Type) -> TransformQueue where T.Body == Body.Iterator.Element {
+    func map<T : TransformPass>(_: T.Type) -> TransformQueue where T.Body == Body.Element {
         workList.append(.map(T.run, shouldInvalidate: T.shouldInvalidateAnalyses))
         return self
     }

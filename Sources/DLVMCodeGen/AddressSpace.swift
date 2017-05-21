@@ -17,21 +17,14 @@
 //  limitations under the License.
 //
 
-import LLVM
+import LLVM_C
 
 /// Address space
-public enum LLAddressSpace: Int {
+public enum LLAddressSpace: UInt32 {
     case generic = 0
     case global = 1
     case `internal` = 2
     case shared = 3
     case constant = 4
     case local = 5
-}
-
-// MARK: - Initializer with `LLAddressSpace`
-public extension PointerType {
-    public init(pointee: IRType, addressSpace: LLAddressSpace) {
-        self.init(pointee: pointee, addressSpace: addressSpace.rawValue)
-    }
 }

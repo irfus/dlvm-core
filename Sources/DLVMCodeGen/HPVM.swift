@@ -17,67 +17,74 @@
 //  limitations under the License.
 //
 
-import LLVM
+import LLVM_C
 import DLVM
 
 /// HPVM Target
 public final class HPVM : LLTarget, LLFunctionPrototypeCacheable {
 
-    public enum ReplicationMode : Int, LLConstantConvertible {
-        case allToAll = 0
-        case oneToOne = 1
+    public enum ReplicationMode : LLConstantConvertible {
+        case allToAll
+        case oneToOne
 
-        public var constantType: IntType {
+        var llType: LLVMTypeRef {
             return i1
+        }
+
+        var constant: LLVMValueRef {
+            switch self {
+            case .allToAll: return %1
+            case .oneToOne: return %0
+            }
         }
     }
 
     public enum Intrinsic {
-        case createNode(LLVM.Function)
-        case createNode1D(LLVM.Function, IRValue)
-        case createNode2D(LLVM.Function, IRValue, IRValue)
-        case createNode3D(LLVM.Function, IRValue, IRValue, IRValue)
-        case createEdge(from: IRValue, to: IRValue,
-                        output: IRValue, input: IRValue,
+        case createNode(LLVMValueRef)
+        case createNode1D(LLVMValueRef, LLVMValueRef)
+        case createNode2D(LLVMValueRef, LLVMValueRef, LLVMValueRef)
+        case createNode3D(LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef)
+        case createEdge(from: LLVMValueRef, to: LLVMValueRef,
+                        output: LLVMValueRef, input: LLVMValueRef,
                         replication: ReplicationMode, streaming: Bool)
-        case bindInput(node: IRValue,
-                       parentInput: IRValue,
-                       input: IRValue)
-        case bindOutput(node: IRValue,
-                        output: IRValue,
-                        parentOutput: IRValue,
+        case bindInput(node: LLVMValueRef,
+                       parentInput: LLVMValueRef,
+                       input: LLVMValueRef)
+        case bindOutput(node: LLVMValueRef,
+                        output: LLVMValueRef,
+                        parentOutput: LLVMValueRef,
                         streaming: Bool)
         case currentNode
-        case parentNode(IRValue)
-        case dimensionCount(IRValue)
-        case nodeInstanceIdX(IRValue)
-        case nodeInstanceIdY(IRValue)
-        case nodeInstanceIdZ(IRValue)
-        case nodeInstanceCountX(IRValue)
-        case nodeInstanceCountY(IRValue)
-        case nodeInstanceCountZ(IRValue)
-        case vectorLength(IRValue)
-        case malloc(IRValue)
+        case parentNode(LLVMValueRef)
+        case dimensionCount(LLVMValueRef)
+        case nodeInstanceIdX(LLVMValueRef)
+        case nodeInstanceIdY(LLVMValueRef)
+        case nodeInstanceIdZ(LLVMValueRef)
+        case nodeInstanceCountX(LLVMValueRef)
+        case nodeInstanceCountY(LLVMValueRef)
+        case nodeInstanceCountZ(LLVMValueRef)
+        case vectorLength(LLVMValueRef)
+        case malloc(LLVMValueRef)
         case barrier
-        case launch(LLVM.Function, arguments: IRValue, streaming: Bool)
-        case wait(id: IRValue)
-        case push(id: IRValue, arguments: IRValue)
-        case pop(id: IRValue)
+        case launch(LLVMValueRef, arguments: LLVMValueRef, streaming: Bool)
+        case wait(id: LLVMValueRef)
+        case push(id: LLVMValueRef, arguments: LLVMValueRef)
+        case pop(id: LLVMValueRef)
         /// Speical functions (non-intrinsics but handled by GenHPVM pass)
-        case attributeIn(IRValue)
-        case attributeOut(IRValue)
+        case attributeIn(LLVMValueRef)
+        case attributeOut(LLVMValueRef)
     }
 
     public enum RuntimeFunction {
-        case trackMemory(address: IRValue, size: IRValue)
-        case requestMemory(address: IRValue, size: IRValue)
-        case untrackMemory(address: IRValue)
+        case trackMemory(address: LLVMValueRef, size: LLVMValueRef)
+        case requestMemory(address: LLVMValueRef, size: LLVMValueRef)
+        case untrackMemory(address: LLVMValueRef)
     }
 
-    public unowned let module: LLVM.Module
-    public var functions: [AnyHashable : LLVM.Function] = [:]
+    public let module: LLVMModuleRef
+    public var functions: [AnyHashable : LLVMValueRef] = [:]
 
-    public required init(module: LLVM.Module) {
+    public required init(module: LLVMModuleRef) {
         self.module = module
     }
     
@@ -115,7 +122,7 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
         }
     }
 
-    public var type: FunctionType {
+    public var type: LLVMTypeRef {
         switch self {
         case .createNode:
             return [i8*] => i8*
@@ -166,7 +173,7 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
         }
     }
 
-    public var arguments: [IRValue] {
+    public var arguments: [LLVMValueRef] {
         switch self {
         case .currentNode: return []
         case .barrier: return []
@@ -188,14 +195,14 @@ extension HPVM.Intrinsic : LLFunctionPrototype {
         case let .createNode2D(v1, v2, v3): return [v1, v2, v3]
         case let .createNode3D(v1, v2, v3, v4): return [v1, v2, v3, v4]
         case let .createEdge(v1, v2, v3, v4, replication, streaming):
-            return [v1, v2, v3, v4, replication.constant, streaming.constant]
+            return [v1, v2, v3, v4, %replication, %streaming]
         case let .bindInput(node: v1, parentInput: v2, input: v3):
             return [v1, v2, v3]
         case let .bindOutput(node: v1, output: v2, parentOutput: v3,
                              streaming: streaming):
-            return [v1, v2, v3, streaming.constant]
+            return [v1, v2, v3, %streaming]
         case let .launch(v1, arguments: v2, streaming: streaming):
-            return [v1, v2, streaming.constant]
+            return [v1, v2, %streaming]
         case let .attributeIn(v1):
             return [v1]
         case let .attributeOut(v1):
@@ -215,7 +222,7 @@ extension HPVM.RuntimeFunction : LLFunctionPrototype {
         }
     }
 
-    public var type: FunctionType {
+    public var type: LLVMTypeRef {
         switch self {
         case .trackMemory: return [i8*, i64] => void
         case .requestMemory: return [i8*, i64] => void
@@ -223,7 +230,7 @@ extension HPVM.RuntimeFunction : LLFunctionPrototype {
         }
     }
 
-    public var arguments: [IRValue] {
+    public var arguments: [LLVMValueRef] {
         switch self {
         case let .trackMemory(address: v1, size: v2): return [v1, v2]
         case let .requestMemory(address: v1, size: v2): return [v1, v2]
