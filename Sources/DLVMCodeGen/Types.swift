@@ -72,7 +72,7 @@ infix operator =>
 prefix operator <^>
 
 // MARK: - Opaque type initializer
-extension Sequence where Element == LLVMTypeRef {
+extension Sequence where Iterator.Element == LLVMTypeRef {
 
     /// Form a function type
     static func => (lhs: Self, rhs: LLVMTypeRef) -> LLVMTypeRef {
@@ -91,6 +91,7 @@ extension Sequence where Element == LLVMTypeRef {
         var fields: [LLVMTypeRef?] = fields.map{$0}
         return LLVMStructType(&fields, UInt32(fields.count), .true)
     }
+
 }
 
 
@@ -106,6 +107,7 @@ extension LLConstantConvertible {
     }
 }
 
+#if swift(>=4.0)
 extension LLConstantConvertible where Self : FixedWidthInteger {
     var llType: LLVMTypeRef {
         return LLVMIntType(UInt32(bitWidth))
@@ -116,6 +118,25 @@ extension LLConstantConvertible where Self : FixedWidthInteger {
                             Self.isSigned ? .true : .false)
     }
 }
+#else
+extension LLConstantConvertible where Self : Integer {
+    var llType: LLVMTypeRef {
+        return LLVMIntType(UInt32(MemoryLayout<Self>.size * 8))
+    }
+}
+    
+extension LLConstantConvertible where Self : UnsignedInteger {
+    var constant: LLVMValueRef {
+        return LLVMConstInt(llType, UInt64(toUIntMax()), .false)
+    }
+}
+    
+extension LLConstantConvertible where Self : SignedInteger {
+    var constant: LLVMValueRef {
+        return LLVMConstInt(llType, UInt64(bitPattern: toIntMax()), .true)
+    }
+}
+#endif
 
 extension LLConstantConvertible where Self : RawRepresentable, Self.RawValue : LLConstantConvertible {
     var llType: LLVMTypeRef {

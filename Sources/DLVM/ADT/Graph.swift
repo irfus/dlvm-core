@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+#if swift(>=4.0)
+
 /// Graph node that defines its successors
 public protocol ForwardGraphNode {
     associatedtype SuccessorCollection: Collection where SuccessorCollection.Element == Self
@@ -29,15 +31,31 @@ public protocol BackwardGraphNode {
     var predecessors: PredecessorCollection { get }
 }
 
+#else
+
+/// Graph node that defines its successors
+public protocol ForwardGraphNode {
+    associatedtype SuccessorCollection: Collection
+    var successors: SuccessorCollection { get }
+}
+
+/// Graph node that defines its predecessors
+public protocol BackwardGraphNode {
+    associatedtype PredecessorCollection: Collection
+    var predecessors: PredecessorCollection { get }
+}
+
+#endif
+
 // MARK: - Property predicates
-public extension ForwardGraphNode {
+public extension ForwardGraphNode where SuccessorCollection.Iterator.Element == Self {
     var isLeaf: Bool {
         return successors.isEmpty
     }
 }
 
 // MARK: - Property predicates
-public extension BackwardGraphNode {
+public extension BackwardGraphNode where PredecessorCollection.Iterator.Element == Self {
     var isSource: Bool {
         return predecessors.isEmpty
     }
@@ -47,7 +65,9 @@ public extension BackwardGraphNode {
 public typealias BidirectionalGraphNode = ForwardGraphNode & BackwardGraphNode
 
 /// Transpose of a bidirectional graph node
-public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalGraphNode {
+public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalGraphNode
+    where Base.SuccessorCollection.Iterator.Element == Base, Base.PredecessorCollection.Iterator.Element == Base
+{
     public let base: Base
 
     public init(base: Base) {
@@ -64,7 +84,7 @@ public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalG
 }
 
 // MARK: - Transpose
-public extension ForwardGraphNode where Self : BackwardGraphNode {
+public extension ForwardGraphNode where Self : BackwardGraphNode, Self.SuccessorCollection.Iterator.Element == Self, Self.PredecessorCollection.Iterator.Element == Self {
     var transpose: TransposeGraphNode<Self> {
         return TransposeGraphNode(base: self)
     }
@@ -176,7 +196,7 @@ public extension DirectedGraph {
         guard contains(firstNode) else { return false }
         let secondPreds = predecessors(of: secondNode)
         return secondPreds.contains(firstNode)
-    //        || secondPreds.contains(where: { precedes($0, secondNode) })
+            || secondPreds.contains(where: { precedes($0, secondNode) })
     }
 
     /// Does this node succeed the other?
@@ -184,7 +204,7 @@ public extension DirectedGraph {
         guard contains(secondNode) else { return false }
         let secondSuccs = successors(of: secondNode)
         return secondSuccs.contains(firstNode)
-    //        || secondSuccs.contains(where: { succeeds(firstNode, $0) })
+            || secondSuccs.contains(where: { succeeds(firstNode, $0) })
     }
 
     /// Is this node a source?
@@ -199,54 +219,24 @@ public extension DirectedGraph {
     
 }
 
-/// - TODO: Fix SR-4956 and restore these as initializers
-public extension DirectedGraph where Node : ForwardGraphNode {
-
-    static func bag<S : Sequence>(of nodes: S) -> DirectedGraph where S.Element == Node {
-        var graph = self.init()
-        for node in nodes {
-            for succ in node.successors {
-                graph.insertEdge(from: node, to: succ)
-            }
-        }
-        return graph
-    }
-
-    static func graph<S : Sequence>(fromSources sources: S) -> DirectedGraph where S.Element == Node {
-        var graph = self.init()
-        for src in sources {
-            graph.insertAll(fromSource: src)
-        }
-        return graph
-    }
-
-}
-
-/// - TODO: Fix SR-4956 and restore these as initializers
-public extension DirectedGraph where Node : BackwardGraphNode {
-
-    static func bag<S : Sequence>(of nodes: S) -> DirectedGraph where S.Element == Node {
-        var graph = self.init()
-        for node in nodes {
-            for pred in node.predecessors {
-                graph.insertEdge(from: pred, to: node)
-            }
-        }
-        return graph
-    }
-
-    static func graph<S : Sequence>(fromLeaves leaves: S) -> DirectedGraph where S.Element == Node {
-        var graph = self.init()
-        for leaf in leaves {
-            graph.insertAll(fromLeaf: leaf)
-        }
-        return graph
-    }
-    
-}
 
 // MARK: - Initializer from source nodes that store successors
-public extension DirectedGraph where Node : ForwardGraphNode {
+public extension DirectedGraph
+    where Node : ForwardGraphNode, Node.SuccessorCollection.Iterator.Element == Node {
+
+    init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
+        for node in nodes {
+            for succ in node.successors {
+                insertEdge(from: node, to: succ)
+            }
+        }
+    }
+
+    init<S : Sequence>(sources: S) where S.Iterator.Element == Node {
+        for source in sources {
+            insertAll(fromSource: source)
+        }
+    }
 
     /// Recursively insert all vertices and edges to the graph by traversing
     /// forward from a source vertex
@@ -266,9 +256,24 @@ public extension DirectedGraph where Node : ForwardGraphNode {
 }
 
 // MARK: - Initializer from leaves that store predecessors
-public extension DirectedGraph where Node : BackwardGraphNode {
+public extension DirectedGraph
+    where Node : BackwardGraphNode, Node.PredecessorCollection.Iterator.Element == Node {
 
-    /// Recursively insert all vertices and edges to the graph by traversing 
+    init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
+        for node in nodes {
+            for pred in node.predecessors {
+                insertEdge(from: pred, to: node)
+            }
+        }
+    }
+
+    init<S : Sequence>(leaves: S) where S.Iterator.Element == Node {
+        for leaf in leaves {
+            insertAll(fromLeaf: leaf)
+        }
+    }
+
+    /// Recursively insert all vertices and edges to the graph by traversing
     /// backward from a leaf vertex
     ///
     /// - Parameter node: leaf vertex
@@ -283,5 +288,5 @@ public extension DirectedGraph where Node : BackwardGraphNode {
         }
         insertAll(fromLeaf: node)
     }
-
+    
 }

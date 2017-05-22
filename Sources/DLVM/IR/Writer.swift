@@ -257,8 +257,12 @@ extension InstructionKind : TextOutputStreamable {
 }
 
 extension Instruction : TextOutputStreamable {
+    public var printedName: String? {
+        return name ?? (type.isVoid ? nil : "\(parent.indexInParent).\(indexInParent)")
+    }
+    
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        if let name = name {
+        if let name = printedName {
             target.write("%\(name) = ")
         }
         kind.write(to: &target)
@@ -303,7 +307,7 @@ extension Use : TextOutputStreamable {
         case let .global(_, ref):
             target.write("@\(ref.name)")
         case let .instruction(_, ref):
-            target.write(ref.name.flatMap{"%\($0)"} ?? "%_")
+            target.write(ref.printedName.flatMap{"%\($0)"} ?? "%_")
         case let .argument(_, ref):
             target.write("%\(ref.name)")
         case let .literal(_, lit):

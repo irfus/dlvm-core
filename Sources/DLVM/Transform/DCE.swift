@@ -55,6 +55,7 @@ open class DeadCodeElimination : TransformPass {
             !inst.kind.isTerminator else { return false }
         /// Eliminate
         inst.removeFromParent()
+        count += 1
         /// Remove instruction and check users
         /// Get new user analysis
         userInfo = try function.analysis(from: UserAnalysis.self)

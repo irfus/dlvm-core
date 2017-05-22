@@ -19,8 +19,8 @@
 
 import Foundation
 
-public protocol OrderedSetCollection : RangeReplaceableCollection, RandomAccessCollection
-    where Element : Hashable {
+public protocol OrderedSetCollection : RangeReplaceableCollection, RandomAccessCollection {
+    associatedtype Element : Hashable = Iterator.Element
     mutating func remove(_ element: Element)
     mutating func insert(_ element: Element, after other: Element)
     mutating func insert(_ element: Element, before other: Element)
@@ -31,14 +31,14 @@ public struct OrderedSet<Element : Hashable> : OrderedSetCollection {
     fileprivate var mutatingElements: NSMutableOrderedSet {
         mutating get {
             if !isKnownUniquelyReferenced(&elements) {
-                elements = NSMutableOrderedSet(orderedSet: elements, copyItems: true)
+                elements = elements.mutableCopy() as! NSMutableOrderedSet
             }
             return elements
         }
     }
     public init() {}
 
-    public init<S : Sequence>(_ elements: S) where S.Element == Element {
+    public init<S : Sequence>(_ elements: S) where S.Iterator.Element == Element {
         append(contentsOf: elements)
     }
 }
@@ -56,7 +56,7 @@ public extension OrderedSet {
         mutatingElements.add(element)
     }
 
-    mutating func append<S: Sequence>(contentsOf elements: S) where S.Element == Element {
+    mutating func append<S: Sequence>(contentsOf elements: S) where S.Iterator.Element == Element {
         for element in elements {
             append(element)
         }
@@ -143,6 +143,11 @@ extension OrderedSet : RandomAccessCollection {
 
 // MARK: - RangeReplaceableCollection
 extension OrderedSet : RangeReplaceableCollection {
+    public mutating func replaceSubrange<C>(_ subrange: Range<Int>, with newElements: C) where C : Collection, C.Iterator.Element == Element {
+        var newElements = newElements.map{$0} as [AnyObject]
+        elements.replaceObjects(in: NSRange(subrange), with: &newElements, count: subrange.count)
+    }
+
     public subscript(position: Int) -> Element {
         get {
             return elements[position] as! Element
