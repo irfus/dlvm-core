@@ -70,3 +70,4 @@ xcuserdata/
 # LaTeX/Org stuff
 Documentation/**/auto/
 *.pdf
+*.resolved
