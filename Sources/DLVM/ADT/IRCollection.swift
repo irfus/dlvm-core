@@ -18,48 +18,64 @@
 //
 
 /// IRCollection
-public protocol IRCollection : class, RandomAccessCollection, Verifiable where Index == Int {
+public protocol IRCollection : class, RandomAccessCollection, Verifiable {
     associatedtype Base : OrderedSetCollection
-        where Base.Index == Index, Base.Element == Element, Base.SubSequence == SubSequence,
-              Base.Indices == Indices, Base.IndexDistance == IndexDistance
+    associatedtype Element : Hashable = Base.Element
+    associatedtype Index = Base.Index
+    associatedtype IndexDistance = Base.IndexDistance
+    associatedtype Iterator = Base.Iterator
+    associatedtype Indices = Base.Indices
+    associatedtype SubSequence : Collection = Base.SubSequence
     var elements: Base { get set }
     var analysisManager: AnalysisManager<Self> { get }
-    // func invalidateAnalyses()
 }
 
-public extension IRCollection {
+public extension IRCollection
+    where Base.Index == Index, Base.Iterator == Iterator, Base.Iterator.Element == Element,
+          Base.Element == Element, Base.SubSequence == SubSequence, Base.Indices == Indices,
+          Base.IndexDistance == IndexDistance {
 
-    func makeIterator() -> Base.Iterator {
+    func makeIterator() -> Iterator {
         return elements.makeIterator()
     }
 
-    func index(after i: Index) -> Index {
+    func index(after i: Base.Index) -> Base.Index {
         return elements.index(after: i)
     }
 
-    func index(before i: Index) -> Index {
+    func index(before i: Base.Index) -> Base.Index {
         return elements.index(before: i)
     }
 
-    var indices: Indices {
+    var indices: Base.Indices {
         return elements.indices
     }
 
-    var startIndex: Index {
+    var startIndex: Base.Index {
         return elements.startIndex
     }
 
-    var endIndex: Index {
+    var endIndex: Base.Index {
         return elements.endIndex
     }
 
-    subscript(i: Index) -> Element {
+    subscript(i: Base.Index) -> Base.Element {
         return elements[i]
     }
 
+    subscript(bounds: Range<Base.Index>) -> Base.SubSequence {
+        return elements[bounds]
+    }
+}
+
+public extension IRCollection
+    where Base.Index == Index, Base.Element == Base.Iterator.Element, Base.Element == Element,
+          Base.SubSequence == SubSequence, Base.Indices == Indices, Base.IndexDistance == IndexDistance,
+          Element : IRUnit, Element.Parent == Self {
+
     func remove(_ element: Element) {
         elements.remove(element)
-        // invalidateAnalyses()
+        invalidateAnalyses()
     }
 
     func contains(_ element: Element) -> Bool {
@@ -68,26 +84,26 @@ public extension IRCollection {
 
     func append(_ newElement: Element) {
         elements.append(newElement)
-        // newElement.parent = self
-        // invalidateAnalyses()
+        newElement.parent = self
+        invalidateAnalyses()
     }
 
-    func insert(_ newElement: Element, at index: Index) {
+    func insert(_ newElement: Element, at index: Base.Index) {
         elements.insert(newElement, at: index)
-        // newElement.parent = self
-        // invalidateAnalyses()
+        newElement.parent = self
+        invalidateAnalyses()
     }
 
     func insert(_ newElement: Element, after other: Element) {
         elements.insert(newElement, after: other)
-        // newElement.parent = self
-        // invalidateAnalyses()
+        newElement.parent = self
+        invalidateAnalyses()
     }
 
     func insert(_ newElement: Element, before other: Element) {
         elements.insert(newElement, before: other)
-        // newElement.parent = self
-        // invalidateAnalyses()
+        newElement.parent = self
+        invalidateAnalyses()
     }
 
 }
