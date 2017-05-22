@@ -97,7 +97,7 @@ public final class Instruction : IRUnit, MaybeNamed {
     public var kind: InstructionKind
     public unowned var parent: BasicBlock
 
-    public required init(name: String?, kind: InstructionKind, parent: BasicBlock) {
+    public init(name: String? = nil, kind: InstructionKind, parent: BasicBlock) {
         self.name = name
         self.kind = kind
         self.parent = parent
