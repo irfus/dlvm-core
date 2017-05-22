@@ -91,19 +91,17 @@ public enum InstructionKind {
     case trap
 }
 
-public final class Instruction : IRSubUnit, MaybeNamed {
+public final class Instruction : IRUnit, MaybeNamed {
     public typealias Parent = BasicBlock
     public var name: String?
     public var kind: InstructionKind
     public unowned var parent: BasicBlock
-    public internal(set) var analysisManager: AnalysisManager<Instruction> = AnalysisManager()
 
     public required init(name: String?, kind: InstructionKind, parent: BasicBlock) {
         self.name = name
         self.kind = kind
         self.parent = parent
     }
-
 }
 
 extension Instruction : Value {

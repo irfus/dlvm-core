@@ -18,7 +18,7 @@
 //
 
 public protocol Pass {
-    associatedtype Body : IRUnit
+    associatedtype Body : IRCollection
     static var name: String { get }
 }
 

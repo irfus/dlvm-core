@@ -19,6 +19,7 @@
 
 /// Transform queue, a builder API for defining and applying a sequence
 /// of transform passes
+/*
 public class TransformQueue<Body : IRCollection> where Body.Element : IRUnit {
     fileprivate enum Action {
         case apply((Body) throws -> Bool, shouldInvalidate: Bool)
@@ -67,8 +68,9 @@ public extension TransformQueue {
         return changed
     }
 }
+ */
 
-public extension IRUnit {
+public extension IRCollection {
     /// Applies a transform pass on self
     ///
     /// - Returns: whether changes are made
@@ -86,7 +88,7 @@ public extension IRUnit {
     }
 }
 
-public extension IRCollection where Iterator.Element : IRUnit {
+public extension IRCollection {
     @discardableResult
     func mapTransform<Transform : TransformPass>(_ transform: Transform.Type) throws -> Bool
         where Transform.Body == Iterator.Element

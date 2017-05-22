@@ -50,20 +50,32 @@ extension BasicBlock : PremiseHolder {
 
 extension Function : PremiseHolder {
 
-    public struct Premise { let exits: [(BasicBlock, Instruction)] }
+    public struct Premise {
+        let entry: BasicBlock
+        let exits: [(BasicBlock, Instruction)]
+    }
 
     public enum PremiseVerifier : AnalysisPass {
         public typealias Body = Function
 
         public static func run(on body: Function) throws -> Premise {
             var exits: [(BasicBlock, Instruction)] = []
+            var maybeEntry: BasicBlock? = nil
             for bb in body {
+                if bb.isEntry {
+                    maybeEntry = bb
+                    continue
+                }
                 let terminator = try bb.premise().terminator
                 if case .return = terminator.kind {
                     exits.append((bb, terminator))
                 }
             }
-            return Premise(exits: exits)
+            /// Entry must exist
+            guard let entry = maybeEntry else {
+                throw VerificationError.noEntry(body)
+            }
+            return Premise(entry: entry, exits: exits)
         }
     }
     

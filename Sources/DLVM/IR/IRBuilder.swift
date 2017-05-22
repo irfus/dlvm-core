@@ -29,15 +29,7 @@ open class IRBuilder {
         }
     }
 
-    open weak var currentFunction: Function? {
-        didSet {
-            if oldValue !== currentFunction {
-                variableNameId = 0
-            }
-        }
-    }
-
-    fileprivate var variableNameId = 0
+    open weak var currentFunction: Function?
 
     public init(module: Module) {
         self.module = module
@@ -64,19 +56,11 @@ public extension IRBuilder {
 
 // MARK: - Helpers
 extension IRBuilder {
-
-    func makeVariableName(in function: Function) -> String {
-        defer { variableNameId += 1 }
-        return disambiguatedName(for: "v\(variableNameId)", in: function)
+    func makeVariableName(in basicBlock: BasicBlock, index: Int? = nil) -> String {
+        let bbn = basicBlock.indexInParent
+        let index = index ?? basicBlock.count
+        return "\(bbn), \(index)"
     }
-
-    func disambiguatedName(for name: String, in function: Function, id: Int = 0) -> String {
-        let newName = id == 0 ? name : name + ".\(id)"
-        return function.containsName(newName)
-             ? disambiguatedName(for: name, in: function, id: id + 1)
-             : newName
-    }
-
 }
 
 // MARK: - Main builder API
@@ -125,9 +109,7 @@ extension IRBuilder {
     open func buildBasicBlock(named name: String,
                               arguments: DictionaryLiteral<String, Type>,
                               in function: Function) -> BasicBlock {
-        if name == "entry" { return function.entry }
-        let newName = disambiguatedName(for: name, in: function)
-        let block = BasicBlock(name: newName, arguments: Array(arguments), parent: function)
+        let block = BasicBlock(name: name, arguments: Array(arguments), parent: function)
         function.append(block)
         return block
     }
@@ -138,7 +120,7 @@ extension IRBuilder {
             preconditionFailure("Builder isn't positioned at a basic block")
         }
         let function = block.parent
-        let inst = Instruction(name: kind.type.isVoid ? nil : (name ?? makeVariableName(in: function)),
+        let inst = Instruction(name: kind.type.isVoid ? nil : (name ?? makeVariableName(in: block)),
                                kind: kind, parent: block)
         block.append(inst)
         return inst

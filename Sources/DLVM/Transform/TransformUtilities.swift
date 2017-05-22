@@ -21,9 +21,6 @@
 /// - Note: Big, ugly, not-so-safe, imperative code written in 4 minutes
 public extension Function {
     public func makeClone(named name: String) -> Function {
-        precondition(!parent.containsElement(named: name),
-                     "Module already contains a function with the same name")
-
         let newFunc = Function(name: name,
                                arguments: arguments.map{($0.name, $0.type)},
                                result: result,
@@ -55,14 +52,10 @@ public extension Function {
 
         /// Clone basic blocks
         for oldBB in self {
-            /// Entry block is a special case which always exists in a function
-            let newBB = oldBB.isEntry ? newFunc.entry : {
-                let newBB = BasicBlock(name: oldBB.name,
-                                       arguments: oldBB.arguments.map{($0.name, $0.type)},
-                                       parent: newFunc)
-                newFunc.append(newBB)
-                return newBB
-            }()
+            let newBB = BasicBlock(name: oldBB.name,
+                                   arguments: oldBB.arguments.map{($0.name, $0.type)},
+                                   parent: newFunc)
+            newFunc.append(newBB)
 
             /// Insert argument mappings
             for (oldArg, newArg) in zip(oldBB.arguments, newBB.arguments) {

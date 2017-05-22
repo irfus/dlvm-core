@@ -143,7 +143,8 @@ open class DominanceAnalysis : AnalysisPass {
     public typealias Body = Function
 
     open class func run(on body: Function) throws -> DominatorTree<BasicBlock> {
-        var domTree = DominatorTree(root: body.entry)
+        let entry = try body.premise().entry
+        var domTree = DominatorTree(root: entry)
         let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
 
         /// Initialization of data flow analysis
@@ -153,7 +154,7 @@ open class DominanceAnalysis : AnalysisPass {
         var changed = true
         repeat {
             changed = false
-            for node in body.entry.postorder.reversed().dropFirst() {
+            for node in entry.postorder.reversed().dropFirst() {
                 let preds = cfg.predecessors(of: node)
                 guard var newIDom = preds.first else {
                     preconditionFailure("Successor node doesn't have any predecessor")

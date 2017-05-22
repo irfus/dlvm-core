@@ -19,7 +19,7 @@
 
 import CoreTensor
 
-public enum VerificationError<Node : SelfVerifiable> : Error {
+public enum VerificationError<Node : Verifiable> : Error {
     case illegalName(String, Node)
     case duplicateStructField(String, Node)
     case redeclared(Node)
@@ -80,7 +80,7 @@ public enum VerificationError<Node : SelfVerifiable> : Error {
     case dataTypeNotNumeric(Use, Node)
 }
 
-public protocol SelfVerifiable {
+public protocol Verifiable {
     func performVerification() throws
 }
 
@@ -89,15 +89,15 @@ import class Foundation.NSRegularExpression
 private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z_][a-zA-Z0-9_.]*",
                                                          options: [ .dotMatchesLineSeparators ])
 
-private func verifyIdentifier<Unit : SelfVerifiable>(_ id: String, in unit: Unit) throws {
+private func verifyIdentifier<Unit : Verifiable>(_ id: String, in unit: Unit) throws {
     guard let _ = identifierPattern.firstMatch(in: id, options: [ .anchored ],
                                                range: NSRange(0..<id.characters.count)) else {
         throw VerificationError.illegalName(id, unit)
     }
 }
 
-extension Module : SelfVerifiable {
-    private func verify<T: SelfVerifiable & Named>(_ declaration: T, namespace: inout Set<String>) throws {
+extension Module : Verifiable {
+    private func verify<T: Verifiable & Named>(_ declaration: T, namespace: inout Set<String>) throws {
         guard !namespace.contains(declaration.name) else {
             throw VerificationError.redeclared(declaration)
         }
@@ -117,13 +117,13 @@ extension Module : SelfVerifiable {
     }
 }
 
-extension GlobalValue : SelfVerifiable {
+extension GlobalValue : Verifiable {
     public func performVerification() throws {
         try initializer.performVerification()
     }
 }
 
-extension TypeAlias : SelfVerifiable {
+extension TypeAlias : Verifiable {
     public func performVerification() throws {
         guard let type = type else { return }
         guard type.canonical.isValid else {
@@ -132,7 +132,7 @@ extension TypeAlias : SelfVerifiable {
     }
 }
 
-extension StructType : SelfVerifiable {
+extension StructType : Verifiable {
     public func performVerification() throws {
         var set: Set<String> = []
         /// Verify struct fields' uniqueness and validity
@@ -148,7 +148,7 @@ extension StructType : SelfVerifiable {
     }
 }
 
-extension LiteralValue : SelfVerifiable {
+extension LiteralValue : Verifiable {
 
     private func verifyUse(_ use: Use, _ subtype: Type) throws {
         try use.performVerification()
@@ -206,7 +206,7 @@ extension LiteralValue : SelfVerifiable {
     }
 }
 
-extension Function: SelfVerifiable {
+extension Function : Verifiable {
     private func verifyDifferentiability() throws {
         guard isDifferentiable else { return }
         /// All arguments have to be tensors or aggregate types of tensors
@@ -222,17 +222,16 @@ extension Function: SelfVerifiable {
 
         let domTree = try analysis(from: DominanceAnalysis.self)
 
-        /// Check entry block arguments
-        guard entry.arguments.elementsEqual(arguments) else {
-            throw VerificationError.functionEntryArgumentMismatch(entry, self)
-        }
-
         var bbNames: Set<String> = []
         /// Verify basic blocks
         for bb in self {
             /// Check for redeclaration
             guard !bbNames.contains(bb.name) else {
                 throw VerificationError.redeclared(bb)
+            }
+            /// Check entry block arguments
+            guard !bb.isEntry || bb.arguments.elementsEqual(arguments) else {
+                throw VerificationError.functionEntryArgumentMismatch(bb, self)
             }
             bbNames.insert(bb.name)
             /// Verify bb
@@ -285,7 +284,7 @@ extension Function: SelfVerifiable {
     }
 }
 
-extension BasicBlock : SelfVerifiable {
+extension BasicBlock : Verifiable {
     public func performVerification() throws {
         try verifyIdentifier(name, in: self)
         /// Check for terminator
@@ -315,13 +314,13 @@ extension BasicBlock : SelfVerifiable {
     }
 }
 
-extension Argument : SelfVerifiable {
+extension Argument : Verifiable {
     public func performVerification() throws {
         try verifyIdentifier(name, in: self)
     }
 }
 
-extension Instruction : SelfVerifiable {
+extension Instruction : Verifiable {
     public func performVerification() throws {
         if let name = name {
             try verifyIdentifier(name, in: self)
@@ -576,7 +575,7 @@ extension InstructionKind {
     }
 }
 
-extension Use : SelfVerifiable {
+extension Use : Verifiable {
     public func performVerification() throws {
         try value.performVerification()
         /// Type must be valid
@@ -602,14 +601,14 @@ extension Use : SelfVerifiable {
 }
 
 // MARK: - Lazy verification
-public extension IRUnit {
+public extension IRCollection {
     public func verify() throws {
         _ = try analysis(from: Verifier<Self>.self)
     }
 }
 
 /// Verifier pass
-public enum Verifier<Unit : IRUnit> : AnalysisPass {
+public enum Verifier<Unit : IRCollection> : AnalysisPass {
     public typealias Body = Unit
     
     public static func run(on body: Body) throws {
