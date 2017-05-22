@@ -18,7 +18,7 @@
 //
 
 /// IRCollection
-public protocol IRCollection : class, RandomAccessCollection, Verifiable {
+public protocol IRCollection : class, RandomAccessCollection, Verifiable, AnalysisCacheable {
     associatedtype Base : OrderedSetCollection
     associatedtype Element : Hashable = Base.Element
     associatedtype Index = Base.Index
@@ -27,7 +27,6 @@ public protocol IRCollection : class, RandomAccessCollection, Verifiable {
     associatedtype Indices = Base.Indices
     associatedtype SubSequence : Collection = Base.SubSequence
     var elements: Base { get set }
-    var analysisManager: AnalysisManager<Self> { get }
 }
 
 public extension IRCollection

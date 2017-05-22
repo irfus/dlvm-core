@@ -1,5 +1,5 @@
 //
-//  TransformManager.swift
+//  Transform.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
