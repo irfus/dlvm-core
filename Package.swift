@@ -28,7 +28,6 @@ let package = Package(
 //        Target(name: "telc", dependencies: ["TEL", "DLVM", "DLVMCodeGen"])
     ],
     dependencies: [
-      	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 8),
       	.Package(url: "https://github.com/rxwei/LLVM_C", majorVersion: 2, minor: 1),
       	.Package(url: "https://github.com/rxwei/CommandLine", majorVersion: 3, minor: 0),
       	.Package(url: "https://github.com/rxwei/CoreTensor", majorVersion: 0, minor: 3)
