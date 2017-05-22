@@ -174,4 +174,43 @@ public extension Literal {
         case .null, .undefined, .zero, .scalar: return self
         }
     }
+
+    var isZero: Bool {
+        switch self {
+        case .scalar(.int(0)), .scalar(.float(0)), .zero:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isOne: Bool {
+        switch self {
+        case .scalar(.int(1)), .scalar(.float(1)):
+            return true
+        default:
+            return false
+        }
+    }
+
+    static func ~= (pattern: IntegerLiteralType, value: Literal) -> Bool {
+        switch value {
+        case .scalar(.int(pattern)):
+            return true
+        case let .scalar(.float(v)) where v == FloatLiteralType(pattern):
+            return true
+        case .zero where pattern == 0:
+            return true
+        default:
+            return false
+        }
+    }
+
+    static func ~= (pattern: FloatLiteralType, value: Literal) -> Bool {
+        switch (pattern, value) {
+        case (0.0, .zero): return true
+        case (let v1, .scalar(.float(let v2))): return v1 == v2
+        default: return false
+        }
+    }
 }
