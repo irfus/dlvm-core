@@ -45,7 +45,7 @@ internal struct PreservedAnalyses {
     }
 }
 
-public class AnalysisManager<Body : IRCollection> {
+public class AnalysisManager<Body> {
     fileprivate var analyses: PreservedAnalyses = PreservedAnalyses()
     internal init() {}
 }
@@ -69,6 +69,11 @@ public extension AnalysisManager {
     }
 }
 
+public protocol AnalysisCacheable {
+    var analysisManager: AnalysisManager<Self> { get }
+    func invalidateAnalyses()
+}
+
 public extension IRCollection {
     func analysis<Pass : AnalysisPass>(from pass: Pass.Type) throws -> Pass.Result
         where Pass.Body == Self
@@ -82,19 +87,38 @@ public extension IRCollection {
     }
 }
 
-internal extension IRCollection {
+extension AnalysisCacheable {
     func invalidateLocalAnalyses() {
         analysisManager.invalidateAll()
     }
+}
 
-    func invalidateAnalyses() {
+extension Module : AnalysisCacheable {
+    public func invalidateAnalyses() {
         invalidateLocalAnalyses()
+        for child in self {
+            child.invalidateLocalAnalyses()
+            for grandchild in self {
+                grandchild.invalidateLocalAnalyses()
+            }
+        }
     }
 }
 
-internal extension IRCollection where Self : IRUnit {
-    func invalidateAnalyses() {
+extension Function : AnalysisCacheable {
+    public func invalidateAnalyses() {
         invalidateLocalAnalyses()
-        parent.invalidateAnalyses()
+        parent.invalidateLocalAnalyses()
+        for child in self {
+            child.invalidateLocalAnalyses()
+        }
+    }
+}
+
+extension BasicBlock : AnalysisCacheable {
+    public func invalidateAnalyses() {
+        invalidateLocalAnalyses()
+        parent.invalidateLocalAnalyses()
+        parent.parent.invalidateLocalAnalyses()
     }
 }

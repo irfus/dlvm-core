@@ -18,13 +18,13 @@
 //
 
 import XCTest
-@testable import struct DLVM.OrderedMapSet
+@testable import struct DLVM.OrderedSet
 
 class ADTTests: XCTestCase {
 
-    func testOrderedMapSet() {
+    func testOrderedSet() {
         /// Test CoW
-        var set = OrderedMapSet<Int>()
+        var set = OrderedSet<Int>()
         set.append(1)
         var setCopy = set
         setCopy.append(2)
@@ -43,7 +43,7 @@ class ADTTests: XCTestCase {
 
     static var allTests : [(String, (ADTTests) -> () throws -> Void)] {
         return [
-            ("testOrderedMapSet", testOrderedMapSet)
+            ("testOrderedSet", testOrderedSet)
         ]
     }
 
