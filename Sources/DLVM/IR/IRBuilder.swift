@@ -54,15 +54,6 @@ public extension IRBuilder {
 
 }
 
-// MARK: - Helpers
-extension IRBuilder {
-    func makeVariableName(in basicBlock: BasicBlock, index: Int? = nil) -> String {
-        let bbn = basicBlock.indexInParent
-        let index = index ?? basicBlock.count
-        return "\(bbn), \(index)"
-    }
-}
-
 // MARK: - Main builder API
 extension IRBuilder {
 
@@ -115,13 +106,18 @@ extension IRBuilder {
     }
 
     @discardableResult
+    open func buildEntry(in function: Function) -> BasicBlock {
+        let entry = BasicBlock(asEntryOf: function)
+        function.insert(entry, at: 0)
+        return entry
+    }
+
+    @discardableResult
     open func buildInstruction(_ kind: InstructionKind, name: String? = nil) -> Instruction {
         guard let block = currentBlock else {
             preconditionFailure("Builder isn't positioned at a basic block")
         }
-        let function = block.parent
-        let inst = Instruction(name: kind.type.isVoid ? nil : (name ?? makeVariableName(in: block)),
-                               kind: kind, parent: block)
+        let inst = Instruction(name: name, kind: kind, parent: block)
         block.append(inst)
         return inst
     }

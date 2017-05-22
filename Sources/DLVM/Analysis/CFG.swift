@@ -107,6 +107,6 @@ open class ControlFlowGraphAnalysis : AnalysisPass {
     public typealias Body = Function
 
     open class func run(on body: Function) -> DirectedGraph<BasicBlock> {
-        return DirectedGraph<BasicBlock>()
+        return DirectedGraph<BasicBlock>(nodes: body)
     }
 }
