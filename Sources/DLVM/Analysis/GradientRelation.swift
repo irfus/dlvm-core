@@ -61,6 +61,7 @@ public extension GradientRelationInfo {
 
 open class GradientRelationAnalysis: AnalysisPass {
     public typealias Body = Module
+    public typealias Result = GradientRelationInfo
     
     open class func run(on module: Module) -> GradientRelationInfo {
         var ggi = GradientRelationInfo()

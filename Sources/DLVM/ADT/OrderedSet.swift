@@ -1,5 +1,5 @@
 //
-//  MapSet.swift
+//  OrderedSet.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -19,96 +19,51 @@
 
 import Foundation
 
-fileprivate protocol MapSetImplementation: SetImplementation {
-    var nameTable: [String : Element] { get set }
-}
-
-public protocol MapSetProtocol {
-    associatedtype Element
-    associatedtype Index
-    subscript(name: String) -> Element? { get }
+public protocol OrderedSetCollection : RangeReplaceableCollection, RandomAccessCollection
+    where Element : Hashable {
     mutating func remove(_ element: Element)
-    func contains(_ element: Element) -> Bool
-    func element(named name: String) -> Element?
-    @discardableResult mutating func removeElement(named name: String) -> Element?
-}
-
-public protocol OrderedMapSetProtocol: MapSetProtocol {
-    mutating func append(_ element: Element)
-    mutating func append<S: Sequence>(contentsOf elements: S) where S.Iterator.Element == Element
-    mutating func insert(_ element: Element, at index: Index)
     mutating func insert(_ element: Element, after other: Element)
     mutating func insert(_ element: Element, before other: Element)
-    func index(of element: Element) -> Int?
 }
 
-public extension MapSetProtocol {
-    public func containsElement(named name: String) -> Bool {
-        return element(named: name) != nil
+public struct OrderedSet<Element : Hashable> : OrderedSetCollection {
+    fileprivate var elements = NSMutableOrderedSet()
+    fileprivate var mutatingElements: NSMutableOrderedSet {
+        mutating get {
+            if !isKnownUniquelyReferenced(&elements) {
+                elements = NSMutableOrderedSet(orderedSet: elements, copyItems: true)
+            }
+            return elements
+        }
     }
-}
-
-public struct OrderedMapSet<Element> : OrderedMapSetProtocol, MapSetImplementation, ExpressibleByArrayLiteral {
-    internal var elements = NSMutableOrderedSet()
-    fileprivate var nameTable: [String : Element] = [:]
     public init() {}
 
-    public init<S : Sequence>(_ elements: S) where S.Iterator.Element == Element {
+    public init<S : Sequence>(_ elements: S) where S.Element == Element {
         append(contentsOf: elements)
     }
+}
 
+extension OrderedSet : ExpressibleByArrayLiteral {
     public init(arrayLiteral elements: Element...) {
         self.init(elements)
     }
 }
 
-// MARK: - Name map management
-fileprivate extension OrderedMapSet {
-
-    func name(of element: Element) -> String? {
-        return (element as? Named)?.name ?? (element as? MaybeNamed)?.name
-    }
-
-    mutating func insertName(of element: Element) {
-        if let name = name(of: element) {
-            nameTable[name] = element
-        }
-    }
-
-    mutating func removeName(of element: Element) {
-        if let name = name(of: element) {
-            nameTable[name] = nil
-        }
-    }
-
-    mutating func removeDuplicate(of element: Element) {
-        if let name = name(of: element), let dup = self.element(named: name) {
-            remove(dup)
-        }
-    }
-
-}
-
-
 // MARK: - Mutation
-public extension OrderedMapSet {
+public extension OrderedSet {
 
     mutating func append(_ element: Element) {
-        removeDuplicate(of: element)
         mutatingElements.add(element)
-        insertName(of: element)
     }
 
-    mutating func append<S: Sequence>(contentsOf elements: S) where S.Iterator.Element == Element {
+    mutating func append<S: Sequence>(contentsOf elements: S) where S.Element == Element {
         for element in elements {
             append(element)
         }
     }
 
     mutating func insert(_ element: Element, at index: Int) {
-        removeDuplicate(of: element)
         mutatingElements.insert(element, at: index)
-        insertName(of: element)
     }
 
     mutating func insert(_ element: Element, after other: Element) {
@@ -127,36 +82,19 @@ public extension OrderedMapSet {
 
     mutating func remove(_ element: Element) {
         mutatingElements.remove(element)
-        removeName(of: element)
     }
 
     mutating func removeAll() {
         mutatingElements.removeAllObjects()
-        nameTable.removeAll()
-    }
-
-    @discardableResult
-    mutating func removeElement(named name: String) -> Element? {
-        guard let element = element(named: name) else { return nil }
-        remove(element)
-        return element
     }
 
 }
 
-
-public extension OrderedMapSet {
+// MARK: - Predicates
+public extension OrderedSet {
 
     func contains(_ element: Element) -> Bool {
         return elements.contains(element)
-    }
-
-    func element(named name: String) -> Element? {
-        return nameTable[name]
-    }
-
-    subscript(name: String) -> Element? {
-        return element(named: name)
     }
 
     func index(of element: Element) -> Int? {
@@ -169,8 +107,17 @@ public extension OrderedMapSet {
 
 }
 
+// MARK: - Sequence
+extension OrderedSet : Sequence {
+    public func makeIterator() -> IndexingIterator<[Element]> {
+        return array.makeIterator()
+    }
+}
+
 // MARK: - RandomAccessCollection
-extension OrderedMapSet : RandomAccessCollection {
+extension OrderedSet : RandomAccessCollection {
+
+    public typealias SubSequence = RangeReplaceableRandomAccessSlice<OrderedSet<Element>>
 
     public func index(after i: Int) -> Int {
         return i + 1
@@ -194,8 +141,8 @@ extension OrderedMapSet : RandomAccessCollection {
 
 }
 
-// MARK: - MutableCollection
-extension OrderedMapSet : MutableCollection {
+// MARK: - RangeReplaceableCollection
+extension OrderedSet : RangeReplaceableCollection {
     public subscript(position: Int) -> Element {
         get {
             return elements[position] as! Element

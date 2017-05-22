@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-public final class Function : Named, IRCollection, IRSubUnit {
+public final class Function : Named, IRCollection, IRUnit {
     public enum Attribute {
         case differentiable
         case inline
@@ -28,21 +28,12 @@ public final class Function : Named, IRCollection, IRSubUnit {
 
     public var name: String
     public var result: Type
-    public var arguments: OrderedMapSet<Argument> = []
+    public var arguments: OrderedSet<Argument> = []
     public var attributes: Set<Attribute> = []
     public unowned var parent: Module
 
-    public var elements: OrderedMapSet<BasicBlock> = []
+    public var elements: OrderedSet<BasicBlock> = []
     public internal(set) var analysisManager: AnalysisManager<Function> = AnalysisManager()
-
-    public unowned var entry: BasicBlock {
-        if let entry = elements["entry"] {
-            return entry
-        }
-        let bb = BasicBlock(asEntryOf: self)
-        elements.append(bb)
-        return bb
-    }
 
     public init(name: String, arguments: [(String, Type)],
                 result: Type, attributes: Set<Attribute>, parent: Module) {
@@ -51,7 +42,6 @@ public final class Function : Named, IRCollection, IRSubUnit {
         self.result = result
         self.attributes = attributes
         self.parent = parent
-        _ = entry
     }
 }
 
@@ -104,18 +94,6 @@ public extension Function {
         return zip(types, arguments).forAll{$0.0.conforms(to: $0.1.type)}
     }
 
-    func argument(named name: String) -> Argument? {
-        return arguments.element(named: name)
-    }
-
-    func argumentValue(named name: String) -> Use? {
-        return argument(named: name).flatMap { .argument($0.type, $0) }
-    }
-
-    func containsArgument(named name: String) -> Bool {
-        return arguments.containsElement(named: name)
-    }
-    
 }
 
 // MARK: - Control flow
@@ -123,25 +101,6 @@ public extension Function {
 
     var instructions: LazyCollection<FlattenBidirectionalCollection<Function>> {
         return lazy.joined()
-    }
-
-    func instruction(named name: String) -> Instruction? {
-        for bb in self {
-            if let inst = bb.element(named: name) {
-                return inst
-            }
-        }
-        return nil
-    }
-
-    func containsInstruction(named name: String) -> Bool {
-        return instruction(named: name) != nil
-    }
-
-    func containsName(_ name: String) -> Bool {
-        return containsElement(named: name) || contains(where: {
-            $0.containsArgument(named: name) || $0.containsElement(named: name)
-        })
     }
 
 }

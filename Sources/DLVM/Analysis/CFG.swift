@@ -63,7 +63,7 @@ public extension Instruction {
 public extension Function {
 
     /// Compute and returns back edges in function
-    var backEdges: [(BasicBlock, BasicBlock)] {
+    func backEdges(fromEntry entry: BasicBlock) -> [(BasicBlock, BasicBlock)] {
         var bb = entry
         var visited: ObjectSet<BasicBlock> = []
         var visitStack: [BasicBlock] = []

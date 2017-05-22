@@ -27,7 +27,7 @@ public enum Scope {
 }
 
 /// Value base
-public protocol Value : SelfVerifiable {
+public protocol Value : Verifiable {
     var type: Type { get }
     func makeUse() -> Use
 }

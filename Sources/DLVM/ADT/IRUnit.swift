@@ -32,18 +32,12 @@ public extension HashableByReference {
     }
 }
 
-public protocol IRUnit : class, HashableByReference, SelfVerifiable {
-    var analysisManager: AnalysisManager<Self> { get }
-    func invalidateAnalyses()
-}
-
-public protocol IRSubUnit : IRUnit {
+public protocol IRUnit : class, HashableByReference, Verifiable {
     associatedtype Parent : IRCollection where Parent.Element == Self
     unowned var parent: Parent { get set }
 }
 
-public extension IRSubUnit {
-    
+public extension IRUnit {
     var indexInParent: Int {
         guard let index = parent.index(of: self) else {
             preconditionFailure("Self does not exist in parent basic block")
@@ -54,5 +48,4 @@ public extension IRSubUnit {
     func removeFromParent() {
         parent.remove(self)
     }
-
 }

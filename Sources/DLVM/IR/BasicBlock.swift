@@ -32,14 +32,14 @@ public class Argument : Value, Named, HashableByReference {
     }
 }
 
-public final class BasicBlock : IRCollection, IRSubUnit, Named {
+public final class BasicBlock : IRCollection, IRUnit, Named {
 
     public typealias Element = Instruction
 
     /// Name of the basic block
     open var name: String
-    open var arguments: OrderedMapSet<Argument> = []
-    open var elements: OrderedMapSet<Instruction> = []
+    open var arguments: OrderedSet<Argument> = []
+    open var elements: OrderedSet<Instruction> = []
     open unowned var parent: Function
     public internal(set) var analysisManager: AnalysisManager<BasicBlock> = AnalysisManager()
 
@@ -100,24 +100,14 @@ public extension BasicBlock {
     }
 
     var isEntry: Bool {
-        return parent.entry === self
+        return name == "entry"
     }
 
 }
 
 // MARK: - Arguments
 public extension BasicBlock {
-
     func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type {
         return types.elementsEqual(arguments.map{$0.type})
     }
-
-    func argument(named name: String) -> Argument? {
-        return arguments.element(named: name)
-    }
-
-    func containsArgument(named name: String) -> Bool {
-        return arguments.containsElement(named: name)
-    }
-    
 }

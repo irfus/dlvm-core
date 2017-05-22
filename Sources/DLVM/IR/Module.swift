@@ -18,7 +18,7 @@
 //
 
 /// Module representing a neural network
-public final class Module : IRCollection, IRUnit {
+public final class Module : IRCollection {
     public enum Stage {
         case raw, canonical
     }
@@ -28,10 +28,10 @@ public final class Module : IRCollection, IRUnit {
     
     public var name: String
     public internal(set) var stage: Stage = .raw
-    public var elements: OrderedMapSet<Function> = []
-    public var globalValues: OrderedMapSet<GlobalValue> = []
-    public var structs: OrderedMapSet<StructType> = []
-    public var typeAliases: OrderedMapSet<TypeAlias> = []
+    public var elements: OrderedSet<Function> = []
+    public var globalValues: OrderedSet<GlobalValue> = []
+    public var structs: OrderedSet<StructType> = []
+    public var typeAliases: OrderedSet<TypeAlias> = []
     public let analysisManager: AnalysisManager<Module> = AnalysisManager()
 
     public init(name: String) {
