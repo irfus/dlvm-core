@@ -50,7 +50,6 @@ public class AnalysisManager<Body : IRCollection> {
     internal init() {}
 }
 
-
 public extension AnalysisManager {
     func invalidateAll() {
         analyses.removeAll()
@@ -87,17 +86,15 @@ internal extension IRCollection {
     func invalidateLocalAnalyses() {
         analysisManager.invalidateAll()
     }
-}
 
-public extension IRCollection where Self : IRUnit {
     func invalidateAnalyses() {
         invalidateLocalAnalyses()
-        parent.invalidateAnalyses()
     }
 }
 
-public extension Module {
+internal extension IRCollection where Self : IRUnit {
     func invalidateAnalyses() {
         invalidateLocalAnalyses()
+        parent.invalidateAnalyses()
     }
 }

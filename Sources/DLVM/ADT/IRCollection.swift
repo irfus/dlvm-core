@@ -18,14 +18,13 @@
 //
 
 /// IRCollection
-public protocol IRCollection : class, RandomAccessCollection, Verifiable
-    where Element : IRUnit, Element.Parent == Self {
+public protocol IRCollection : class, RandomAccessCollection, Verifiable where Index == Int {
     associatedtype Base : OrderedSetCollection
-        where Base.Index == Index, Base.Element == Element,
+        where Base.Index == Index, Base.Element == Element, Base.SubSequence == SubSequence,
               Base.Indices == Indices, Base.IndexDistance == IndexDistance
     var elements: Base { get set }
     var analysisManager: AnalysisManager<Self> { get }
-    func invalidateAnalyses()
+    // func invalidateAnalyses()
 }
 
 public extension IRCollection {
@@ -60,7 +59,7 @@ public extension IRCollection {
 
     func remove(_ element: Element) {
         elements.remove(element)
-        invalidateAnalyses()
+        // invalidateAnalyses()
     }
 
     func contains(_ element: Element) -> Bool {
@@ -70,25 +69,25 @@ public extension IRCollection {
     func append(_ newElement: Element) {
         elements.append(newElement)
         // newElement.parent = self
-        invalidateAnalyses()
+        // invalidateAnalyses()
     }
 
     func insert(_ newElement: Element, at index: Index) {
         elements.insert(newElement, at: index)
         // newElement.parent = self
-        invalidateAnalyses()
+        // invalidateAnalyses()
     }
 
     func insert(_ newElement: Element, after other: Element) {
         elements.insert(newElement, after: other)
         // newElement.parent = self
-        invalidateAnalyses()
+        // invalidateAnalyses()
     }
 
     func insert(_ newElement: Element, before other: Element) {
         elements.insert(newElement, before: other)
         // newElement.parent = self
-        invalidateAnalyses()
+        // invalidateAnalyses()
     }
 
 }
