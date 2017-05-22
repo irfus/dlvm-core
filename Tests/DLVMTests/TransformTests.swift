@@ -70,7 +70,7 @@ class TransformTests: XCTestCase {
         ///     return %x: i32
         /// }
         try builder.module.mapTransform(DeadCodeElimination.self)
-        let after = "func @bar: (f32, f32) -> i32 {\nentry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, 8: i32\n    %0.1 = equal %0.0: i32, 1: i32\n    conditional %v1: bool then then(0: i32) else else(1: i32)\nthen(%x: i32):\n    branch cont(%x: i32)\nelse(%x: i32):\n    branch cont(%x: i32)\ncont(%x: i32):\n    return %x: i32\n}"
+        let after = "func @bar: (f32, f32) -> i32 {\nentry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, 8: i32\n    %0.1 = equal %0.0: i32, 1: i32\n    conditional %0.1: bool then then(0: i32) else else(1: i32)\nthen(%x: i32):\n    branch cont(%x: i32)\nelse(%x: i32):\n    branch cont(%x: i32)\ncont(%x: i32):\n    return %x: i32\n}"
         XCTAssertEqual(fun.description, after)
         /// Reapplying shouldn't mutate the function
 
