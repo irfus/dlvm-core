@@ -34,15 +34,11 @@ public enum ArithmeticOp {
     case truncateDivide, floorDivide, modulo, power, mean
 }
 
-public enum ElementwiseOp {
+public enum UnaryOp {
     case tanh, log, exp, neg, sign, square, sqrt
     case round, rsqrt, ceil, floor
     case tan, cos, sin, acos, asin, atan
     case lgamma, digamma, erf, erfc, rint
-}
-
-public enum UnaryOp {
-    case elementwise(ElementwiseOp)
 }
 
 public enum AssociativeOp {

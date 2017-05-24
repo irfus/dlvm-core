@@ -164,14 +164,6 @@ extension BinaryOp: TextOutputStreamable {
     }
 }
 
-extension UnaryOp : TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case let .elementwise(fun): String(describing: fun).write(to: &target)
-        }
-    }
-}
-
 extension ReductionCombinator : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {

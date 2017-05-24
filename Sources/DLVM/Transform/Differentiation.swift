@@ -201,13 +201,13 @@ fileprivate extension Differentiation {
 
 
         /* Unary elementwise transformations */
-        case let .unary(.elementwise(.exp), x):
+        case let .unary(.exp, x):
             let cloned = instruction.makeUse()
             grad = [
                 (x, cloned)
             ]
 
-        case let .unary(.elementwise(.tanh), x):
+        case let .unary(.tanh, x):
             let cloned = instruction.makeUse()
             grad = [
                 (x, %bd.subtract(cloned, %bd.subtract(x.makeScalar(1),
