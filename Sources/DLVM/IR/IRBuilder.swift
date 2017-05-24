@@ -180,8 +180,8 @@ public extension IRBuilder {
         return buildInstruction(.transpose(use))
     }
 
-    func transform(_ operation: ElementwiseOp, _ use: Use) -> Instruction {
-        return buildInstruction(.unary(.elementwise(operation), use))
+    func transform(_ operation: UnaryOp, _ use: Use) -> Instruction {
+        return buildInstruction(.unary(operation, use))
     }
 
     func `return`(_ use: Use? = nil) {
