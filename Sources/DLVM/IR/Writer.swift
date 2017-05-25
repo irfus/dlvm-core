@@ -108,7 +108,7 @@ extension Type : TextOutputStreamable {
             target.write("(\(subtypes.joinedDescription))")
         case .void:
             target.write("void")
-        case let .array(subtype, n):
+        case let .array(n, subtype):
             target.write("[\(n) x \(subtype)]")
         case let .pointer(subtype):
             target.write("*\(subtype)")

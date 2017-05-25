@@ -112,7 +112,7 @@ public indirect enum Type {
     /// or in some cases a vector. LLGen target decides this.
     case tensor(TensorShape, DataType)
     /// Fixed sized array
-    case array(Type, Int)
+    case array(Int, Type)
     /// N-ary tuple, corresponding to LLVM unpacked struct type
     case tuple([Type])
     /// Struct, corresponding to LLVM struct type
@@ -223,7 +223,7 @@ public extension Type {
             return ty
         case let (.tensor(shape, dt), .index(i)) where shape.rank > 0 && i < shape[0]:
             return .tensor(shape.dropFirst(), dt)
-        case let (.array(t, n), .index(i)) where i < n:
+        case let (.array(n, t), .index(i)) where i < n:
             return t
         case let (.pointer(t), .index(_)):
             return t
@@ -243,7 +243,7 @@ public extension Type {
 public extension Type {
     var canonical: Type {
         switch self {
-        case let .array(subT, i): return .array(subT.canonical, i)
+        case let .array(i, subT): return .array(i, subT.canonical)
         case let .tuple(tt): return .tuple(tt.map{$0.canonical})
         case let .pointer(t): return .pointer(t.canonical)
         case let .box(t): return .box(t.canonical)
@@ -314,7 +314,7 @@ public extension Type {
             return false
         case .tensor, .void:
             return true
-        case let .array(subtype, _),
+        case let .array(_, subtype),
              let .pointer(subtype),
              let .box(subtype):
             return subtype.isValid
