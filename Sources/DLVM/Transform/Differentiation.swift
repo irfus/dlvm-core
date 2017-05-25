@@ -75,7 +75,7 @@ fileprivate extension Type {
         case let .tuple(subtypes):
             let sublits = subtypes.map{$0.makeLiteral(number)}
             return .literal(self, .tuple(sublits))
-        case let .array(subtype, i):
+        case let .array(i, subtype):
             let sublit = subtype.makeLiteral(number)
             let sublits = Array(repeating: sublit, count: i)
             return .literal(self, .array(sublits))

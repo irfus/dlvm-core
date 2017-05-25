@@ -42,14 +42,14 @@ class IRTests: XCTestCase {
         let struct1 = builder.buildStruct(named: "TestStruct1", fields: [
             "foo" : .int(32),
             "bar" : .tensor([1, 3, 4], .float(.double)),
-            "baz" : .array(.array(.tensor([3], .int(32)), 3), 4)
+            "baz" : .array(4, .array(3, .tensor([3], .int(32))))
         ], attributes: [ .packed ])
         XCTAssertEqual(struct1.description,
                        "!packed\nstruct $TestStruct1 {\n    foo: i32\n    bar: <1x3x4.f64>\n    baz: [4 x [3 x <3.i32>]]\n}")
         let structLit : Literal = .struct([
             ("foo", 100000 ~ .int(32)),
             ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),
-            ("baz", .undefined ~ .array(.array(.tensor([3], .int(32)), 3), 4))
+            ("baz", .undefined ~ .array(4, .array(3, .tensor([3], .int(32)))))
         ])
         let structGlobal = builder.buildGlobalValue(named: "struct1.value",
                                                     kind: .variable,

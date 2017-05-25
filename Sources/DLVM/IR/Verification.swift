@@ -187,7 +187,7 @@ extension LiteralValue : Verifiable {
             }
 
         /// Array literal
-        case let (.array(subtype, n), .array(elements)) where n == elements.count:
+        case let (.array(n, subtype), .array(elements)) where n == elements.count:
             for use in elements {
                 try verifyUse(use, subtype)
             }
