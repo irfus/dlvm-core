@@ -41,3 +41,7 @@ import Foundation
 public func environmentVariable(named name: String) -> String? {
     return ProcessInfo.processInfo.environment[name]
 }
+
+func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
+    fatalError("\(function) is not fully implemented. \(file):\(line)")
+}
