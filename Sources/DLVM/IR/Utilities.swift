@@ -19,6 +19,6 @@
 
 import Foundation
 
-public func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
+func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
     fatalError("\(function) is not fully implemented. \(file):\(line)")
 }
