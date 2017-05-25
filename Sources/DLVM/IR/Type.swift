@@ -57,10 +57,16 @@ public class StructType : Named, HashableByReference {
 
 /// - TODO: add enum type
 
+prefix operator ^
+
 // MARK: - Accessors
 public extension StructType {
     var type: Type {
         return .struct(self)
+    }
+
+    static prefix func ^ (type: StructType) -> Type {
+        return .struct(type)
     }
     
     var isPacked: Bool {
@@ -98,8 +104,14 @@ public class TypeAlias : Named, HashableByReference {
         self.name = name
         self.type = type
     }
+}
 
-    public var isOpaque: Bool {
+public extension TypeAlias {
+    static prefix func ^ (alias: TypeAlias) -> Type {
+        return .alias(alias)
+    }
+    
+    var isOpaque: Bool {
         return type == nil
     }
 }
@@ -132,6 +144,8 @@ public indirect enum Type {
     case invalid
 }
 
+prefix operator *
+
 // MARK: - Factories
 public extension Type {
     static func int(_ size: UInt) -> Type {
@@ -152,6 +166,14 @@ public extension Type {
 
     var pointer: Type {
         return .pointer(self)
+    }
+
+    static prefix func * (type: Type) -> Type {
+        return type.pointer
+    }
+
+    static func * (count: Int, elementType: Type) -> Type {
+        return .array(count, elementType)
     }
 }
 

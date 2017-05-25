@@ -168,7 +168,7 @@ extension DLVM.`Type` : LLEmittable {
             return ^subtt.map{$0.emit(to: &context, in: &env)}
         case let .struct(structTy):
             return structTy.emit(to: &context, in: &env)
-        case let .array(subt, n):
+        case let .array(n, subt):
             return n * subt.emit(to: &context, in: &env)
         case let .function(args, ret):
             return args.map{$0.emit(to: &context, in: &env)} => ret.emit(to: &context, in: &env)
