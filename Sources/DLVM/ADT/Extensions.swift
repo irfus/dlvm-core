@@ -34,8 +34,8 @@ public extension Sequence {
     }
     
     /// `mapM`
-    func liftedMap(_ transform: (Iterator.Element) -> Iterator.Element?) -> [Iterator.Element]? {
-        var result: [Iterator.Element] = []
+    func liftedMap<Result>(_ transform: (Iterator.Element) -> Result?) -> [Result]? {
+        var result: [Result] = []
         for x in self {
             guard let new = transform(x) else { return nil }
             result.append(new)
