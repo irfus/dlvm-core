@@ -186,7 +186,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .binary(f, op1, op2, nil):
             target.write("\(f) \(op1), \(op2)")
         case let .binary(f, op1, op2, bc?):
-            target.write("\(f) \(op1), \(op2) broadcasting")
+            target.write("\(f) \(op1), \(op2) broadcast")
             if !bc.isEmpty {
                 target.write(" ")
                 target.write(bc.joinedDescription)
@@ -213,7 +213,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .apply(f, args):
             target.write("apply \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
         case let .extract(use, indices):
-            target.write("extract \(use) at \(indices.map{"\($0)"}.joined(separator: ", "))")
+            target.write("extract \(indices.map{"\($0)"}.joined(separator: ", ")) from \(use)")
         case let .insert(src, to: dest, at: indices):
             target.write("insert \(src) to \(dest) at \(indices.map{"\($0)"}.joined(separator: ", "))")
         case let .allocateStack(t, n):
