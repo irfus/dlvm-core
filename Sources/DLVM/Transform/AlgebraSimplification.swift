@@ -77,7 +77,7 @@ open class AlgebraSimplification : TransformPass {
                             where users[lrrhs].isEmpty:
                             switch lrrhs.kind {
                             case .binary(.associative(.arithmetic(.subtract)), .literal(_, 0), x, _),
-                                 .unary(.neg, x):
+                                 .unary(.negate, x):
                                 /// Insert sinh or cosh
                                 let newOp: UnaryOp = lhsOp == .add ? .cos : .sin
                                 let simplified = Instruction(kind: .unary(newOp, x), parent: body)
