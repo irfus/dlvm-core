@@ -156,7 +156,7 @@ public extension Type {
         return .scalar(.float(size))
     }
 
-    static func bool() -> Type {
+    static var bool: Type {
         return .scalar(.bool)
     }
     
