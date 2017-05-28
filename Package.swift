@@ -30,7 +30,7 @@ let package = Package(
     dependencies: [
       	.Package(url: "https://github.com/rxwei/LLVM_C", majorVersion: 2, minor: 1),
       	.Package(url: "https://github.com/rxwei/CommandLine", majorVersion: 3, minor: 0),
-      	.Package(url: "https://github.com/rxwei/CoreTensor", majorVersion: 0, minor: 3)
+      	.Package(url: "https://github.com/rxwei/CoreTensor", majorVersion: 0, minor: 4)
     ],
     exclude: [
         "Sources/TEL",

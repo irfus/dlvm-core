@@ -211,7 +211,7 @@ fileprivate extension Differentiation {
             let cloned = instruction.makeUse()
             grad = [
                 (x, %bd.subtract(cloned, %bd.subtract(x.makeScalar(1),
-                                                      %bd.multiply(cloned, cloned)), broadcasting: [0]))
+                                                      %bd.multiply(cloned, cloned)), broadcasting: [0]=>))
             ]
 
         case let .extract(from: x, at: _):

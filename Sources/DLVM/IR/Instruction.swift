@@ -163,22 +163,31 @@ public extension InstructionKind {
     }
 }
 
-func isMutuallyBroadcastable(_ lhs: TensorShape, _ rhs: TensorShape,
-                             at bc: BroadcastingConfig) -> Bool {
-    return lhs.isBroadcastable(to: rhs, at: bc)
-        || rhs.isBroadcastable(to: lhs, at: bc)
+public extension BroadcastingConfig {
+    func canBroadcast(_ lhs: TensorShape, _ rhs: TensorShape) -> Bool {
+        switch direction {
+        case .right where lhs.isBroadcastable(to: rhs, at: indices),
+             .left where rhs.isBroadcastable(to: lhs, at: indices):
+            return true
+        default:
+            return false
+        }
+    }
 }
 
-func mutuallyBroadcast(_ lhs: TensorShape, _ rhs: TensorShape,
-                       at bc: BroadcastingConfig) -> TensorShape? {
-    if lhs.isBroadcastable(to: rhs, at: bc) { return rhs }
-    else if rhs.isBroadcastable(to: lhs, at: bc) { return lhs }
-    else { return nil }
+prefix operator <=
+postfix operator =>
+
+public prefix func <= (indices: [Int]) -> BroadcastingConfig {
+    return BroadcastingConfig(indices: indices, direction: .right)
 }
 
-extension InstructionKind {
+public postfix func => (indices: [Int]) -> BroadcastingConfig {
+    return BroadcastingConfig(indices: indices, direction: .right)
+}
 
-    public var type: Type {
+public extension InstructionKind {
+
         switch self {
         case let .binary(.associative(assoc), v1, v2, nil):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
