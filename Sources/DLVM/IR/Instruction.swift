@@ -528,11 +528,15 @@ public extension InstructionKind {
     }
 
     enum Parameter {
-        case value(Use)
+        case values([Use])
+        case argumentList([Use])
         case keyword(Keyword)
         case basicBlock(BasicBlock)
         case number(Int)
-        case name(String)
+        case keys([ElementKey])
+        case indexList([Int])
+        case range(Range<Int>)
+        case associativeOp(AssociativeOp)
     }
 
     var opcode: Opcode {
@@ -571,9 +575,9 @@ public extension InstructionKind {
 }
 
 extension InstructionKind.Parameter {
-    var value: Use? {
-        guard case let .value(op) = self else { return nil }
-        return op
+    var values: [Use]? {
+        guard case let .values(vals) = self else { return nil }
+        return vals
     }
 
     var number: Int? {
@@ -581,9 +585,24 @@ extension InstructionKind.Parameter {
         return num
     }
 
-    var name: String? {
-        guard case let .name(name) = self else { return nil }
-        return name
+    var argumentList: [Use]? {
+        guard case let .argumentList(args) = self else { return nil }
+        return args
+    }
+
+    var keys: [ElementKey]? {
+        guard case let .keys(keys) = self else { return nil }
+        return keys
+    }
+
+    var indexList: [Int]? {
+        guard case let .indexList(ii) = self else { return nil }
+        return ii
+    }
+
+    var range: Range<Int>? {
+        guard case let .range(range) = self else { return nil }
+        return range
     }
 
     var basicBlock: BasicBlock? {
@@ -594,6 +613,11 @@ extension InstructionKind.Parameter {
     var keyword: InstructionKind.Keyword? {
         guard case let .keyword(kw) = self else { return nil }
         return kw
+    }
+
+    var associativeOp: AssociativeOp? {
+        guard case let .associativeOp(op) = self else { return nil }
+        return op
     }
 }
 
@@ -628,39 +652,65 @@ public extension InstructionKind {
         switch opcode {
         /// branch <bb>(<arg0>, <arg1>, ...)
         case .branch:
-            guard parameters.count >= 1 else { return nil }
+            guard parameters.count == 2 else { return nil }
             guard let bb = parameters[0].basicBlock,
-                let args = parameters.dropFirst().liftedMap({$0.value}) else {
-                return nil
-            }
+                let args = parameters[1].argumentList
+                else { return nil }
             self = .branch(bb, args)
         /// conditional <cond> then <then_bb>(<then_arg_0>, ...) else <else_bb>(<else_arg_0>, ...)
         case .conditional:
             guard parameters.count >= 3,
                 let partitions = parameters.split(by: .then, .else),
-                let cond = partitions[0].first?.value,
+                let condList = partitions[0].first?.values,
+                let cond = condList.first,
                 let thenBB = partitions[1].first?.basicBlock,
-                let thenArgs = partitions[1].dropFirst().liftedMap({$0.value}),
+                let thenArgs = partitions[1].dropFirst().first?.argumentList,
                 let elseBB = partitions[2].first?.basicBlock,
-                let elseArgs = partitions[2].dropFirst().liftedMap({$0.value})
+                let elseArgs = partitions[2].dropFirst().first?.argumentList
                 else { return nil }
             self = .conditional(cond, thenBB, thenArgs, elseBB, elseArgs)
         /// return <val>?
         case .return:
-            guard parameters.count <= 1 else { return nil }
-            self = .return(parameters.first?.value)
+            guard parameters.count <= 1, parameters[0].argumentList?.count == 1 else { return nil }
+            self = .return(parameters[0].values?.first)
         /// matrixMultiply <left>, <right>
         case .matrixMultiply:
-            guard parameters.count == 2,
-                let operands = parameters.liftedMap({$0.value})
+            guard parameters.count == 1,
+                let operands = parameters[0].argumentList,
+                operands.count == 2
                 else { return nil }
             self = .matrixMultiply(operands[0], operands[1])
         /// <unary_op> <val>
         case let .unaryOp(op):
             guard parameters.count == 1,
-                let operand = parameters[0].value
+                let args = parameters[0].argumentList,
+                args.count == 1
                 else { return nil }
-            self = .map(op, operand)
+            self = .map(op, args[0])
+        /// <binary_op> <val>, <val>
+        /// <binary_op> <val>, <val> broadcast <left|right> [<index_0, index_1, ...>]
+        case let .binaryOp(op):
+            switch parameters.count {
+            case 1:
+                guard let args = parameters[0].argumentList, args.count == 2 else { return nil }
+                self = .zipWith(op, args[0], args[1], nil)
+            case 4:
+                guard let args = parameters[0].argumentList, args.count == 2,
+                    parameters[1].keyword == .broadcast,
+                    let dirKw = parameters[2].keyword,
+                    let indices = parameters[3].indexList
+                    else { return nil }
+                switch dirKw {
+                case .left:
+                     self = .zipWith(op, args[0], args[1], indices=>)
+                case .right:
+                     self = .zipWith(op, args[0], args[1], <=indices)
+                default:
+                    return nil
+                }
+            default:
+                return nil
+            }
         /// TODO: more opcodes
         default: return nil
         }
