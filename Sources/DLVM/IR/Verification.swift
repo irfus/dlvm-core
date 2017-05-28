@@ -396,7 +396,7 @@ extension InstructionKind {
         case let .binary(_, lhs, rhs, bc?):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                   case let .tensor(s2, t2) = rhs.type.unaliased,
-                  isMutuallyBroadcastable(s1, s2, at: bc), t1 == t2 else {
+                  bc.canBroadcast(s1, s2), t1 == t2 else {
                 throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
             }
 
