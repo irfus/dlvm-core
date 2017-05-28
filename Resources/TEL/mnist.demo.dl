@@ -7,22 +7,22 @@ stage raw
 /// Differentiable compute function
 !compute
 !differentiable
-func @mnist.inference.impl : (|<1x784.f32>|, |<784x10.f32>|, |<1x10.f32>|) -> |<1x10.f32>| {
-entry(%x : |<1x784.f32>|, %w : |<784x10.f32>|, %b : |<1x10.f32>|):
-    %v0 = matrixMultiply %x : |<1x784.f32>|, %w : |<784x10.f32>|
-    %y = add %v0 : |<1x10.f32>|, %b : |<1x10.f32>|
-    return %y : |<1x10.f32>|
+func @mnist.inference.impl : (<1x784.f32>, <784x10.f32>, <1x10.f32>) -> <1x10.f32> {
+entry(%x : <1x784.f32>, %w : <784x10.f32>, %b : <1x10.f32>):
+    %v0 = matrixMultiply %x : <1x784.f32>, %w : <784x10.f32>
+    %y = add %v0 : <1x10.f32>, %b : <1x10.f32>
+    return %y : <1x10.f32>
 }
 
 /// Differentiable loss function using mean squared error
 !compute
 !differentiable
-func @mnist.loss.impl : (|<1x10.f32>|, |<1x10.f32>|) -> |<1x1.f32>| {
-entry(%y : |<1x10.f32>|, %ref : |<1x10.f32>|):
-    %diff = subtract %ref : |<1x10.f32>|, %y : |<1x10.f32>|
-    %squared = multiply %diff : |<1x10.f32>|, %diff : |<1x10.f32>|
-    %loss = reduce mean %squared : |<1x10.f32>|
-    return %loss : |<1x1.f32>|
+func @mnist.loss.impl : (<1x10.f32>, <1x10.f32>) -> <1x1.f32> {
+entry(%y : <1x10.f32>, %ref : <1x10.f32>):
+    %diff = subtract %ref : <1x10.f32>, %y : <1x10.f32>
+    %squared = multiply %diff : <1x10.f32>, %diff : <1x10.f32>
+    %loss = reduce mean %squared : <1x10.f32>
+    return %loss : <1x1.f32>
 }
 
 /// Gradient of @mnist.inference.impl with respect to the second and the third arguments
@@ -30,26 +30,26 @@ entry(%y : |<1x10.f32>|, %ref : |<1x10.f32>|):
 !compute
 !differentiable
 !differentiating(@mnist.inference.impl, from: 1, wrt: [1, 2])
-declare func @mnist.inference.impl.gradient : (|<1x784.f32>|, |<784x10.f32>|, |<1x10.f32>|)
-                                              -> (|<784x10.f32>|, |<1x10.f32>|)
+declare func @mnist.inference.impl.gradient : (<1x784.f32>, <784x10.f32>, <1x10.f32>)
+                                              -> (<784x10.f32>, <1x10.f32>)
 
 /// Gradient of @mnist.loss.impl with respect to the first argument
 !compute
 !differentiable
 !differentiating(@mnist.loss.impl, from: 1, wrt: [0])
-declare func @mnist.loss.impl.gradient : (|<1x10.f32>|, |<1x10.f32>|) -> |<1x10.f32>|
+declare func @mnist.loss.impl.gradient : (<1x10.f32>, <1x10.f32>) -> <1x10.f32>
 
 /// Type aliases
-type $mnist.inference.type = (|<1x784.f32>|, |<784x10.f32>|, |<1x10.f32>|) -> |<1x10.f32>|
-type $mnist.inference.gradient.type = (|<1x784.f32>|, |<784x10.f32>|, |<1x10.f32>|)
-                                      -> (|<784x10.f32>|, |<1x10.f32>|)
-type $mnist.loss.type = (|<1x10.f32>|, |<1x10.f32>|) -> |<1x10.f32>|
-type $mnist.loss.gradient.type = (|<1x10.f32>|, |<1x10.f32>|) -> |<1x10.f32>|
+type $mnist.inference.type = (<1x784.f32>, <784x10.f32>, <1x10.f32>) -> <1x10.f32>
+type $mnist.inference.gradient.type = (<1x784.f32>, <784x10.f32>, <1x10.f32>)
+                                      -> (<784x10.f32>, <1x10.f32>)
+type $mnist.loss.type = (<1x10.f32>, <1x10.f32>) -> <1x10.f32>
+type $mnist.loss.gradient.type = (<1x10.f32>, <1x10.f32>) -> <1x10.f32>
 
 /// NN object structure
 type $mnist = {
-    #weight               : |<784x10.f32>|
-    #bias                 : |<1x10.f32>|
+    #weight               : <784x10.f32>
+    #bias                 : <1x10.f32>
     #inference_graph      : compute{@mnist.inference.impl}
     #inference_grad_graph : compute{@mnist.inference.impl.gradient}
     #loss_graph           : compute{@mnist.loss.impl}
@@ -62,27 +62,27 @@ func @mnist.init : () -> $mnist {
     %inference_grad_graph = allocateCompute @mnist.inference.impl.gradient : $mnist.inference.gradient.type
     %loss_graph = allocateCompute @mnist.loss.impl : $mnist.loss.type
     %loss_grad_graph = allocateCompute @mnist.loss.impl.gradient : $mnist.loss.gradient.type
-    return { #weight = zero : |<784x10.f32>|,
-             #bias = zero : |<1x10.f32>|,
+    return { #weight = zero : <784x10.f32>,
+             #bias = zero : <1x10.f32>,
              #inference_graph = %inference_graph : compute{@mnist.inference.impl},
              #inference_grad_graph = %inference }
 }
 
 /// NN inference without batch
-func @mnist.inference : ($mnist, |<1x784.f32>|) -> |<1x10.f32>| {
-entry(%self : $mnist, %x: |<1x784.f32>|) {
+func @mnist.inference : ($mnist, <1x784.f32>) -> <1x10.f32> {
+entry(%self : $mnist, %x: <1x784.f32>) {
     %w = extract #weight from %self : $mnist
     %b = extract #bias from %self : $mnist
     %graph = extract #inference_graph from %self
-    %y = compute @mnist.inference.impl(%x : |<1x784.f32>|, %w : |<1x784.f32>|, %b : |<1x10.f32>|)
+    %y = compute @mnist.inference.impl(%x : <1x784.f32>, %w : <1x784.f32>, %b : <1x10.f32>)
          in %graph : compute{@mnist.inference.impl}
-    return %y : |<1x10.f32>|
+    return %y : <1x10.f32>
 }
 
 /// NN loss function without batch
-func @mnist.loss : ($mnist, |<1x10.f32>|, |<1x10.f32>|) -> void {
-entry(%self : $mnist, %x : |<1x10.f32>|, %y : |<1x10.f32>|):
+func @mnist.loss : ($mnist, <1x10.f32>, <1x10.f32>) -> void {
+entry(%self : $mnist, %x : <1x10.f32>, %y : <1x10.f32>):
     %graph = extract #loss_graph from %self
-    %y = compute @mnist.loss.impl(%x : |<1x10.f32>|, %y : |<1x10.f32>|) in %graph : compute{@mnist.loss.impl}
-    return %y : |<1x10.f32>|
+    %y = compute @mnist.loss.impl(%x : <1x10.f32>, %y : <1x10.f32>) in %graph : compute{@mnist.loss.impl}
+    return %y : <1x10.f32>
 }
