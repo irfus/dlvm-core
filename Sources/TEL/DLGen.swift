@@ -147,11 +147,11 @@ class CodeGenerator {
             return builder.buildInstruction(kind, name: name)
         case let .infixOp(op, lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)
-            let operation: InstructionKind = .binary(.associative(.arithmetic(op.instructionOperator)), lhsOp, rhsOp)
+            let operation: InstructionKind = .zipWith(.associative(.arithmetic(op.instructionOperator)), lhsOp, rhsOp)
             return builder.buildInstruction(operation, name: name)
         case let .negate(expr, _):
             let exprOp = build(expr)
-            let operation: InstructionKind = .unary(.elementwise(.neg), exprOp)
+            let operation: InstructionKind = .map(.elementwise(.neg), exprOp)
             return builder.buildInstruction(operation, name: name)
         case let .product(lhs, rhs, _):
             let lhsOp = build(lhs), rhsOp = build(rhs)

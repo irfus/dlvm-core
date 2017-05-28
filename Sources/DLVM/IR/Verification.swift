@@ -381,19 +381,19 @@ extension InstructionKind {
 
         case .return: break /// Verified at Function
 
-        case let .unary(_, v1), let .transpose(v1):
+        case let .map(_, v1), let .transpose(v1):
             guard case .tensor(_, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
 
-        case let .binary(_, lhs, rhs, nil):
+        case let .zipWith(_, lhs, rhs, nil):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                   case let .tensor(s2, t2) = rhs.type.unaliased,
                   s1 == s2, t1 == t2 else {
                 throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
             }
 
-        case let .binary(_, lhs, rhs, bc?):
+        case let .zipWith(_, lhs, rhs, bc?):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                   case let .tensor(s2, t2) = rhs.type.unaliased,
                   bc.canBroadcast(s1, s2), t1 == t2 else {
