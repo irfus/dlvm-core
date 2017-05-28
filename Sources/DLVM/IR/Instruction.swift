@@ -482,3 +482,193 @@ public extension InstructionKind {
         }
     }
 }
+
+/// Instruction ADT decomposition (opcodes, keywords, operands)
+/// - Note: When adding a new instruction, you should insert its
+/// corresponding opcode here
+public extension InstructionKind {
+    enum Opcode {
+        case branch
+        case conditional
+        case `return`
+        case dataTypeCast
+        case scan
+        case reduce
+        case matrixMultiply
+        case concatenate
+        case transpose
+        case shapeCast
+        case bitCast
+        case extract
+        case insert
+        case apply
+        case gradient
+        case allocateStack
+        case allocateHeap
+        case allocateBox
+        case projectBox
+        case retain
+        case release
+        case deallocate
+        case load
+        case store
+        case elementPointer
+        case copy
+        case trap
+        case binaryOp(BinaryOp)
+        case unaryOp(UnaryOp)
+    }
+
+    enum Keyword {
+        case at, to, from
+        case then, `else`
+        case broadcast
+        case wrt, keeping
+        case left, right
+    }
+
+    enum Parameter {
+        case value(Use)
+        case keyword(Keyword)
+        case basicBlock(BasicBlock)
+        case number(Int)
+        case name(String)
+    }
+
+    var opcode: Opcode {
+        switch self {
+        case .branch: return .branch
+        case .conditional: return .conditional
+        case .return: return .return
+        case .map(let op, _): return .unaryOp(op)
+        case .zipWith(let op, _, _, _): return .binaryOp(op)
+        case .dataTypeCast: return .dataTypeCast
+        case .scan: return .scan
+        case .reduce: return .reduce
+        case .matrixMultiply: return .matrixMultiply
+        case .concatenate: return .concatenate
+        case .transpose: return .transpose
+        case .shapeCast: return .shapeCast
+        case .bitCast: return .bitCast
+        case .extract: return .extract
+        case .insert: return .insert
+        case .apply: return .apply
+        case .gradient: return .gradient
+        case .allocateStack: return .allocateStack
+        case .allocateHeap: return .allocateHeap
+        case .allocateBox: return .allocateBox
+        case .projectBox: return .projectBox
+        case .retain: return .retain
+        case .release: return .release
+        case .deallocate: return .deallocate
+        case .load: return .load
+        case .store: return .store
+        case .elementPointer: return .elementPointer
+        case .copy: return .copy
+        case .trap: return .trap
+        }
+    }
+}
+
+extension InstructionKind.Parameter {
+    var value: Use? {
+        guard case let .value(op) = self else { return nil }
+        return op
+    }
+
+    var number: Int? {
+        guard case let .number(num) = self else { return nil }
+        return num
+    }
+
+    var name: String? {
+        guard case let .name(name) = self else { return nil }
+        return name
+    }
+
+    var basicBlock: BasicBlock? {
+        guard case let .basicBlock(bb) = self else { return nil }
+        return bb
+    }
+
+    var keyword: InstructionKind.Keyword? {
+        guard case let .keyword(kw) = self else { return nil }
+        return kw
+    }
+}
+
+private extension Array where Element == InstructionKind.Parameter {
+    typealias Parameter = InstructionKind.Parameter
+    typealias Keyword = InstructionKind.Keyword
+
+    /// Split a sequence of parameters by keywords. If keywords do not appear
+    /// in specified order, return nil.
+    func split(by keywords: Keyword...) -> [ArraySlice<Parameter>]? {
+        var partitions: [ArraySlice<Parameter>] = []
+        var parameters = ArraySlice(self)
+        var keywords = ArraySlice(keywords)
+        while let kw = keywords.popFirst() {
+            guard let kwIndex = parameters.index(where: { $0.keyword == kw }) else {
+                return nil
+            }
+            partitions.append(parameters.prefix(upTo: kwIndex))
+            parameters = parameters.suffix(from: kwIndex + 1)
+        }
+        partitions.append(parameters)
+        return partitions
+    }
+}
+
+public extension InstructionKind {
+
+    /// Initialize an instruction kind with the opcode by parsing
+    /// a sequence of parameters
+    /// - Returns: nil if parameters have invalid syntax
+    init?(opcode: Opcode, parameters: [Parameter]) {
+        switch opcode {
+        /// branch <bb>(<arg0>, <arg1>, ...)
+        case .branch:
+            guard parameters.count >= 1 else { return nil }
+            guard let bb = parameters[0].basicBlock,
+                let args = parameters.dropFirst().liftedMap({$0.value}) else {
+                return nil
+            }
+            self = .branch(bb, args)
+        /// conditional <cond> then <then_bb>(<then_arg_0>, ...) else <else_bb>(<else_arg_0>, ...)
+        case .conditional:
+            guard parameters.count >= 3,
+                let partitions = parameters.split(by: .then, .else),
+                let cond = partitions[0].first?.value,
+                let thenBB = partitions[1].first?.basicBlock,
+                let thenArgs = partitions[1].dropFirst().liftedMap({$0.value}),
+                let elseBB = partitions[2].first?.basicBlock,
+                let elseArgs = partitions[2].dropFirst().liftedMap({$0.value})
+                else { return nil }
+            self = .conditional(cond, thenBB, thenArgs, elseBB, elseArgs)
+        /// return <val>?
+        case .return:
+            guard parameters.count <= 1 else { return nil }
+            self = .return(parameters.first?.value)
+        /// matrixMultiply <left>, <right>
+        case .matrixMultiply:
+            guard parameters.count == 2,
+                let operands = parameters.liftedMap({$0.value})
+                else { return nil }
+            self = .matrixMultiply(operands[0], operands[1])
+        /// <unary_op> <val>
+        case let .unaryOp(op):
+            guard parameters.count == 1,
+                let operand = parameters[0].value
+                else { return nil }
+            self = .map(op, operand)
+        /// TODO: more opcodes
+        default: return nil
+        }
+    }
+}
+
+public extension InstructionKind.Opcode {
+    func makeInstructionKind(with parameters: [InstructionKind.Parameter]) -> InstructionKind? {
+        return InstructionKind(opcode: self, parameters: parameters)
+    }
+}
