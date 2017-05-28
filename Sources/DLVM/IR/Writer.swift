@@ -189,13 +189,13 @@ extension InstructionKind : TextOutputStreamable {
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }
-        case let .binary(f, op1, op2, nil):
+        case let .zipWith(f, op1, op2, nil):
             target.write("\(f) \(op1), \(op2)")
-        case let .binary(f, op1, op2, bc?):
+        case let .zipWith(f, op1, op2, bc?):
             target.write("\(f) \(op1), \(op2) broadcast \(bc)")
         case let .matrixMultiply(op1, op2):
             target.write("matrixMultiply \(op1), \(op2)")
-        case let .unary(f, op):
+        case let .map(f, op):
             target.write("\(f) \(op)")
         case let .reduce(comb, op, dims):
             target.write("reduce \(comb) \(op) along \(dims)")

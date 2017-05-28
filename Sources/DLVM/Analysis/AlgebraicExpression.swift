@@ -43,9 +43,9 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
             return .atom(%inst)
         }
         switch inst.kind {
-        case let .unary(op, v):
+        case let .map(op, v):
             return .unary(op, try subexpression(from: v), inst)
-        case let .binary(op, lhs, rhs, _):
+        case let .zipWith(op, lhs, rhs, _):
             return try .binary(op, subexpression(from: lhs), subexpression(from: rhs), inst)
         case let .matrixMultiply(lhs, rhs):
             return try .matrixMultiply(subexpression(from: lhs), subexpression(from: rhs), inst)

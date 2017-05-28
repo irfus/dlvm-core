@@ -136,27 +136,27 @@ extension IRBuilder {
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
     func add(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.binary(.associative(.arithmetic(.add)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.arithmetic(.add)), lhs, rhs, bc))
     }
 
     func subtract(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.binary(.associative(.arithmetic(.subtract)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.arithmetic(.subtract)), lhs, rhs, bc))
     }
 
     func multiply(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.binary(.associative(.arithmetic(.multiply)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.arithmetic(.multiply)), lhs, rhs, bc))
     }
 
     func divide(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.binary(.associative(.arithmetic(.divide)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.arithmetic(.divide)), lhs, rhs, bc))
     }
 
     func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.binary(.associative(.arithmetic(.power)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.arithmetic(.power)), lhs, rhs, bc))
     }
 
     func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.binary(.comparison(`operator`), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.comparison(`operator`), lhs, rhs, bc))
     }
 
     func apply(_ function: Use, _ arguments: [Use]) -> Instruction {
@@ -180,8 +180,8 @@ public extension IRBuilder {
         return buildInstruction(.transpose(use))
     }
 
-    func transform(_ operation: UnaryOp, _ use: Use) -> Instruction {
-        return buildInstruction(.unary(operation, use))
+    func map(_ operation: UnaryOp, _ use: Use) -> Instruction {
+        return buildInstruction(.map(operation, use))
     }
 
     func `return`(_ use: Use? = nil) {

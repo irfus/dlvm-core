@@ -30,9 +30,9 @@ public enum InstructionKind {
 
     /** Tensor operations **/
     /// Monomorphic unary operation (map)
-    case unary(UnaryOp, Use)
+    case map(UnaryOp, Use)
     /// Monomorphic binary operation (zipWith)
-    case binary(BinaryOp, Use, Use, BroadcastingConfig?)
+    case zipWith(BinaryOp, Use, Use, BroadcastingConfig?)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
     /// Scan operation with optional axis
@@ -188,8 +188,9 @@ public postfix func => (indices: [Int]) -> BroadcastingConfig {
 
 public extension InstructionKind {
 
+    var type: Type {
         switch self {
-        case let .binary(.associative(assoc), v1, v2, nil):
+        case let .zipWith(.associative(assoc), v1, v2, nil):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
                   t1 == t2, s1 == s2 else {
@@ -197,15 +198,15 @@ public extension InstructionKind {
             }
             return .tensor(s1, assoc.isBoolean ? .bool : t1)
 
-        case let .binary(.associative(assoc), v1, v2, bc?):
+        case let .zipWith(.associative(assoc), v1, v2, bc?):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2, isMutuallyBroadcastable(s1, s2, at: bc) else {
+                  t1 == t2, bc.canBroadcast(s1, s2) else {
                 return .invalid
             }
             return .tensor(s1, assoc.isBoolean ? .bool : t1)
 
-        case let .binary(.comparison(_), v1, v2, nil):
+        case let .zipWith(.comparison(_), v1, v2, nil):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
                   t1 == t2 && s1 == s2 && t1.isNumeric else {
@@ -213,10 +214,10 @@ public extension InstructionKind {
             }
             return .tensor(s1, .bool)
 
-        case let .binary(.comparison(_), v1, v2, bc?):
+        case let .zipWith(.comparison(_), v1, v2, bc?):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1.isNumeric, t1 == t2, isMutuallyBroadcastable(s1, s2, at: bc) else {
+                  t1.isNumeric, t1 == t2, bc.canBroadcast(s1, s2) else {
                 return .invalid
             }
             return .tensor(s1, .bool)
@@ -228,7 +229,7 @@ public extension InstructionKind {
                   t1 == t2 else { return .invalid }
             return .tensor(newShape, t1)
 
-        case let .unary(_, v1):
+        case let .map(_, v1):
             guard case .tensor(_, _) = v1.type.unaliased else { return .invalid }
             return v1.type
 
@@ -342,7 +343,7 @@ public extension InstructionKind {
         }
     }
 
-    public static var scope: Scope = .local
+    static var scope: Scope = .local
 
 }
 
@@ -355,11 +356,11 @@ extension Instruction : User {
 extension InstructionKind {
     public var operands: [Use] {
         switch self {
-        case let .binary(_, op1, op2, _),
+        case let .zipWith(_, op1, op2, _),
              let .matrixMultiply(op1, op2),
              let .insert(op1, to: op2, at: _):
             return [op1, op2]
-        case let .unary(_, op), let .reduce(_, op, _), let .scan(_, op, _), let .transpose(op),
+        case let .map(_, op), let .reduce(_, op, _), let .scan(_, op, _), let .transpose(op),
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
              let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
@@ -404,14 +405,14 @@ public extension InstructionKind {
                                 elseBB, elseArgs.map(condSubst))
         case .return(old?):
             return .return(new)
-        case .unary(let fun, old):
-            return .unary(fun, new)
-        case .binary(let fun, old, old, let bc):
-            return .binary(fun, new, new, bc)
-        case .binary(let fun, old, let use2, let bc):
-            return .binary(fun, new, use2, bc)
-        case .binary(let fun, let use1, old, let bc):
-            return .binary(fun, use1, new, bc)
+        case .map(let fun, old):
+            return .map(fun, new)
+        case .zipWith(let fun, old, old, let bc):
+            return .zipWith(fun, new, new, bc)
+        case .zipWith(let fun, old, let use2, let bc):
+            return .zipWith(fun, new, use2, bc)
+        case .zipWith(let fun, let use1, old, let bc):
+            return .zipWith(fun, use1, new, bc)
         case let .concatenate(uses, axis: axis):
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):

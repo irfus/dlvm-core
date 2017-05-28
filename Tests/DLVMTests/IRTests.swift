@@ -27,7 +27,7 @@ class IRTests: XCTestCase {
     func testWriteGlobal() {
         let val1 = builder.buildGlobalValue(named: "one", kind: .constant,
                                             type: .int(32),
-                                            initializer: %InstructionKind.binary(
+                                            initializer: %InstructionKind.zipWith(
                                                 .associative(.arithmetic(.add)),
                                                 .literal(.int(32), .scalar(.int(10))),
                                                 .literal(.int(32), .scalar(.int(20))), nil))
@@ -66,9 +66,9 @@ class IRTests: XCTestCase {
         builder.move(to: builder.buildEntry(in: fun))
         _ = builder.multiply(.literal(.int(32), 5),
                              .literal(.int(32), .tensor([.literal(.int(32), 1), .literal(.int(32), 2)])),
-                             broadcasting: [])
+                             broadcasting: []=>)
         builder.return(.null ~ .tensor([3], .bool))
-        XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3.bool> {\nentry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32 broadcasting\n    return null: <3.bool>\n}")
+        XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3.bool> {\nentry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32 broadcast right []\n    return null: <3.bool>\n}")
     }
 
     func testWriteMultiBBFunction() {
