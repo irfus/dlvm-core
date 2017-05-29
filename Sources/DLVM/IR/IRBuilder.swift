@@ -136,23 +136,23 @@ extension IRBuilder {
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
     func add(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.add)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.add), lhs, rhs, bc))
     }
 
     func subtract(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.subtract)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.subtract), lhs, rhs, bc))
     }
 
     func multiply(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.multiply)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.multiply), lhs, rhs, bc))
     }
 
     func divide(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.divide)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.divide), lhs, rhs, bc))
     }
 
     func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.power)), lhs, rhs, bc))
+        return buildInstruction(.zipWith(.associative(.power), lhs, rhs, bc))
     }
 
     func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {

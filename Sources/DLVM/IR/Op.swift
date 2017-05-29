@@ -25,25 +25,18 @@ public enum ComparisonOp {
     case equal, notEqual
 }
 
-public enum BooleanOp {
-    case and, or, xor
-}
-
-public enum ArithmeticOp {
-    case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, modulo, power, mean
-}
-
 public enum UnaryOp {
     case tanh, log, exp, negate, sign, square, sqrt
     case round, rsqrt, ceil, floor
     case tan, cos, sin, acos, asin, atan
     case lgamma, digamma, erf, erfc, rint
+    case not
 }
 
 public enum AssociativeOp {
-    case boolean(BooleanOp)
-    case arithmetic(ArithmeticOp)
+    case and, or
+    case add, subtract, multiply, divide, min, max
+    case truncateDivide, floorDivide, modulo, power, mean
 }
 
 public enum BinaryOp {
@@ -69,8 +62,10 @@ public enum OpKind {
 
 public extension AssociativeOp {
     var isBoolean: Bool {
-        guard case .boolean(_) = self else { return false }
-        return true
+        switch self {
+        case .and, .or: return true
+        default: return false
+        }
     }
 }
 
