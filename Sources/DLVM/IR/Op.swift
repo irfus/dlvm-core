@@ -69,6 +69,16 @@ public extension AssociativeOp {
     }
 }
 
+extension BinaryOp : Equatable {
+    public static func == (lhs: BinaryOp, rhs: BinaryOp) -> Bool {
+        switch (lhs, rhs) {
+        case let (.associative(o1), .associative(o2)): return o1 == o2
+        case let (.comparison(o1), .comparison(o2)): return o1 == o2
+        default: return false
+        }
+    }
+}
+
 public extension OpKind {
 
     var argumentCount: Int {
