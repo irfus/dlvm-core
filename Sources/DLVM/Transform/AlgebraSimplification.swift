@@ -40,7 +40,7 @@ open class AlgebraSimplification : TransformPass {
                 /// Match patterns
                 switch inst.kind {
                 /// x^k
-                case let .zipWith(.associative(.arithmetic(.power)), x, .literal(_,  lit), _):
+                case let .zipWith(.associative(.power), x, .literal(_,  lit), _):
                     switch lit {
                     case 0:
                         substWorkList.append((old: %inst, new: .scalar(.int(1)) ~ x.type))
@@ -65,10 +65,10 @@ open class AlgebraSimplification : TransformPass {
                     substWorkList.append((old: %inst, new: .scalar(.int(0)) ~ ty))
                 /// (e^x - e^(-x)) / 2 => sinh(x)
                 /// (e^x + e^(-x)) / 2 => cosh(x)
-                case let .zipWith(.associative(.arithmetic(.divide)),
+                case let .zipWith(.associative(.divide),
                                   .instruction(_, lhs), .literal(_, 2), _) where users[lhs].isEmpty:
                     switch lhs.kind {
-                    case let .zipWith(.associative(.arithmetic(lhsOp)),
+                    case let .zipWith(.associative(lhsOp),
                                       .instruction(_, llhs), .instruction(_, lrhs), _)
                         where (lhsOp == .add || lhsOp == .subtract) &&  users[llhs].isEmpty && users[lrhs].isEmpty:
                         switch (llhs.kind, lrhs.kind) {
@@ -76,7 +76,7 @@ open class AlgebraSimplification : TransformPass {
                               .map(.exp, .instruction(_, let lrrhs)))
                             where users[lrrhs].isEmpty:
                             switch lrrhs.kind {
-                            case .zipWith(.associative(.arithmetic(.subtract)), .literal(_, 0), x, _),
+                            case .zipWith(.associative(.subtract), .literal(_, 0), x, _),
                                  .map(.negate, x):
                                 /// Insert sinh or cosh
                                 let newOp: UnaryOp = lhsOp == .add ? .cos : .sin

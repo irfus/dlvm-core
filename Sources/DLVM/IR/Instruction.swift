@@ -235,11 +235,11 @@ public extension InstructionKind {
 
         case let .reduce(op, v1, dims):
             switch (op, v1.type.unaliased) {
-            case (.op(.boolean), .tensor(let s1, .bool))
-                where dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            case let (.op(op), .tensor(s1, .bool))
+                where op.isBoolean && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), .bool)
-            case let (.op(.arithmetic), .tensor(s1, t1))
-                where t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            case let (.op(op), .tensor(s1, t1))
+                where !op.isBoolean && t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
             case let (.function(f), .tensor(s1, t1))
                 where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):

@@ -28,7 +28,7 @@ class IRTests: XCTestCase {
         let val1 = builder.buildGlobalValue(named: "one", kind: .constant,
                                             type: .int(32),
                                             initializer: %InstructionKind.zipWith(
-                                                .associative(.arithmetic(.add)),
+                                                .associative(.add),
                                                 .literal(.int(32), .scalar(.int(10))),
                                                 .literal(.int(32), .scalar(.int(20))), nil))
         XCTAssertEqual("\(val1)", "let @one: i32 = (add 10: i32, 20: i32): i32")

@@ -421,17 +421,17 @@ extension InstructionKind {
                 accShape = newShape
             }
 
-        case let .reduce(.op(.arithmetic), v1, dims):
-            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
-                throw VerificationError.dataTypeNotNumeric(v1, instruction)
+        case let .reduce(.op(op), v1, dims) where op.isBoolean:
+            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
             }
             guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
 
-        case let .reduce(.op(.boolean), v1, dims):
-            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
-                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+        case let .reduce(.op(_), v1, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
             guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)

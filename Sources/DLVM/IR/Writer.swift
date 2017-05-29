@@ -146,20 +146,11 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension AssociativeOp: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case let .arithmetic(fun): String(describing: fun).write(to: &target)
-        case let .boolean(fun): String(describing: fun).write(to: &target)
-        }
-    }
-}
-
 extension BinaryOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .associative(fun): fun.write(to: &target)
-        case let .comparison(fun): String(describing: fun).write(to: &target)
+        case let .associative(op): String(describing: op).write(to: &target)
+        case let .comparison(op): String(describing: op).write(to: &target)
         }
     }
 }
@@ -168,7 +159,7 @@ extension ReductionCombinator : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
         case let .function(f): f.write(to: &target)
-        case let .op(op): op.write(to: &target)
+        case let .op(op): String(describing: op).write(to: &target)
         }
     }
 }

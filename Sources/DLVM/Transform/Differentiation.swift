@@ -164,22 +164,22 @@ fileprivate extension Differentiation {
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {
         /* Basic arithmetic */
-        case let .zipWith(.associative(.arithmetic(.add)), lhs, rhs, _):
+        case let .zipWith(.associative(.add), lhs, rhs, _):
             grad = [
                 (lhs, adjoint), /// ∂f/∂x = D
                 (rhs, adjoint), /// ∂f/∂y = D
             ]
-        case let .zipWith(.associative(.arithmetic(.subtract)), lhs, rhs, bc):
+        case let .zipWith(.associative(.subtract), lhs, rhs, bc):
             grad = [
                 (lhs, adjoint),                                     /// ∂f/∂x = D
                 (rhs, %bd.subtract(adjoint.makeScalar(0), adjoint, broadcasting: bc)), /// ∂f/∂y = -D
             ]
-        case let .zipWith(.associative(.arithmetic(.multiply)), lhs, rhs, _):
+        case let .zipWith(.associative(.multiply), lhs, rhs, _):
             grad = [
                 (lhs, rhs), /// ∂f/∂x = y
                 (rhs, lhs), /// ∂f/∂y = x
             ]
-        case let .zipWith(.associative(.arithmetic(.divide)), lhs, rhs, _):
+        case let .zipWith(.associative(.divide), lhs, rhs, _):
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
