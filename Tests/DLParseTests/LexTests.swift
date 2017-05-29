@@ -23,36 +23,57 @@ import XCTest
 class LexTests : XCTestCase {
 
     func testBasicLexing() throws {
-        let code = "func @mnist.inference.impl.gradient: (<1 x 784 x f32>) // comments\n\n"
-        var stream = LexStream(code)
-        let tokens = try stream.lex().map{$0.kind}
-        let expectedTokens: [TokenKind] = [
-            .keyword(.func),
-            .identifier(.global, "mnist.inference.impl.gradient"),
-            .punctuation(.colon),
-            .punctuation(.leftParenthesis),
-            .punctuation(.leftAngleBracket),
-            .integer(1),
-            .punctuation(.times),
-            .integer(784),
-            .punctuation(.times),
-            .dataType(.float(.single)),
-            .punctuation(.rightAngleBracket),
-            .punctuation(.rightParenthesis),
-            .newLine,
-            .newLine
-        ]
-        XCTAssertEqual(tokens, expectedTokens)
+        do {
+            let code = "func @mnist.inference.impl.gradient: (<1 x 784 x f32>) // comments\n\n"
+            let lexer = Lexer(text: code)
+            let tokens = try lexer.performLexing().map{$0.kind}
+            let expectedTokens: [TokenKind] = [
+                .keyword(.func),
+                .identifier(.global, "mnist.inference.impl.gradient"),
+                .punctuation(.colon),
+                .punctuation(.leftParenthesis),
+                .punctuation(.leftAngleBracket),
+                .integer(1),
+                .punctuation(.times),
+                .integer(784),
+                .punctuation(.times),
+                .dataType(.float(.single)),
+                .punctuation(.rightAngleBracket),
+                .punctuation(.rightParenthesis),
+                .newLine,
+                .newLine
+            ]
+            XCTAssertEqual(tokens, expectedTokens)
+        } catch {
+            XCTFail(String(describing: error))
+        }
+    }
+
+    func testStructLexing() throws {
+        do {
+            let code = "!packed\nstruct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}"
+            let lexer = Lexer(text: code)
+            _ = try lexer.performLexing()
+        } catch {
+            XCTFail(String(describing: error))
+        }
     }
 
     func testFunctionLexing() throws {
-        let code = "func @bar: (f32, f32) -> i32 {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, 8: i32\n    %0.1 = equal %0.0: i32, 1: i32\n    conditional %0.1: bool then 'then(0: i32) else 'else(1: i32)\n'then(%x: i32):\n    branch 'cont(%x: i32)\n'else(%x: i32):\n    branch 'cont(%x: i32)\n'cont(%x: i32):\n    return %x: i32\n"
-        var stream = LexStream(code)
-        try stream.lex()
+        do {
+            let code = "func @bar: (f32, f32) -> i32 {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, 8: i32\n    %0.1 = equal %0.0: i32, 1: i32\n    conditional %0.1: bool then 'then(0: i32) else 'else(1: i32)\n'then(%x: i32):\n    branch 'cont(%x: i32)\n'else(%x: i32):\n    branch 'cont(%x: i32)\n'cont(%x: i32):\n    return %x: i32\n"
+            let lexer = Lexer(text: code)
+            _ = try lexer.performLexing()
+        } catch {
+            XCTFail(String(describing: error))
+        }
     }
 
     static var allTests : [(String, (LexTests) -> () throws -> Void)] {
         return [
+            ("testBasicLexing", testBasicLexing),
+            ("testFunctionLexing", testFunctionLexing),
+            ("testStructLexing", testStructLexing),
         ]
     }
 }
