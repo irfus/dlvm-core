@@ -519,6 +519,8 @@ public extension InstructionKind {
         case unaryOp(UnaryOp)
     }
 
+    /*
+
     enum Keyword {
         case at, to, from
         case then, `else`
@@ -538,6 +540,8 @@ public extension InstructionKind {
         case range(Range<Int>)
         case associativeOp(AssociativeOp)
     }
+
+    */
 
     var opcode: Opcode {
         switch self {
@@ -573,6 +577,45 @@ public extension InstructionKind {
         }
     }
 }
+
+extension InstructionKind.Opcode : Equatable {
+    public static func == (lhs: InstructionKind.Opcode, rhs: InstructionKind.Opcode) -> Bool {
+        switch (lhs, rhs) {
+        case (.branch, .branch): return true
+        case (.conditional, .conditional): return true
+        case (.return, .return): return true
+        case (.dataTypeCast, .dataTypeCast): return true
+        case (.scan, .scan): return true
+        case (.reduce, .reduce): return true
+        case (.matrixMultiply, .matrixMultiply): return true
+        case (.concatenate, .concatenate): return true
+        case (.transpose, .transpose): return true
+        case (.shapeCast, .shapeCast): return true
+        case (.bitCast, .bitCast): return true
+        case (.extract, .extract): return true
+        case (.insert, .insert): return true
+        case (.apply, .apply): return true
+        case (.gradient, .gradient): return true
+        case (.allocateStack, .allocateStack): return true
+        case (.allocateHeap, .allocateHeap): return true
+        case (.allocateBox, .allocateBox): return true
+        case (.projectBox, .projectBox): return true
+        case (.retain, .retain): return true
+        case (.release, .release): return true
+        case (.deallocate, .deallocate): return true
+        case (.load, .load): return true
+        case (.store, .store): return true
+        case (.elementPointer, .elementPointer): return true
+        case (.copy, .copy): return true
+        case (.trap, .trap): return true
+        case let (.binaryOp(o1), .binaryOp(o2)): return o1 == o2
+        case let (.unaryOp(o1), .unaryOp(o2)): return o1 == o2
+        default: return false
+        }
+    }
+}
+
+/*
 
 extension InstructionKind.Parameter {
     var values: [Use]? {
@@ -722,3 +765,5 @@ public extension InstructionKind.Opcode {
         return InstructionKind(opcode: self, parameters: parameters)
     }
 }
+
+*/

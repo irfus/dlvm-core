@@ -60,7 +60,7 @@ extension Literal : TextOutputStreamable {
 
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(map{String($0)}.joined(separator: "x"))")
+        target.write("\(map{String($0)}.joined(separator: " x "))")
     }
 }
 
@@ -103,7 +103,7 @@ extension Type : TextOutputStreamable {
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("<\(s).\(t)>")
+            target.write("<\(s) x \(t)>")
         case let .tuple(subtypes):
             target.write("(\(subtypes.joinedDescription))")
         case .void:
@@ -174,9 +174,9 @@ extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .branch(bb, args):
-            target.write("branch \(bb.name)(\(args.joinedDescription))")
+            target.write("branch '\(bb.name)(\(args.joinedDescription))")
         case let .conditional(op, thenBB, thenArgs, elseBB, elseArgs):
-            target.write("conditional \(op) then \(thenBB.name)(\(thenArgs.joinedDescription)) else \(elseBB.name)(\(elseArgs.joinedDescription))")
+            target.write("conditional \(op) then '\(thenBB.name)(\(thenArgs.joinedDescription)) else '\(elseBB.name)(\(elseArgs.joinedDescription))")
         case let .`return`(op):
             target.write("return")
             if let op = op { target.write(" \(op)") }
@@ -313,7 +313,7 @@ extension BasicBlock : TextOutputStreamable {
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
         /// Begin block
-        target.write("\(name)(\(arguments.map{"\($0)"}.joined(separator: ", "))):\n")
+        target.write("'\(name)(\(arguments.map{"\($0)"}.joined(separator: ", "))):\n")
         for inst in elements {
             /// Write indentation
             makeIndentation().write(to: &target)
