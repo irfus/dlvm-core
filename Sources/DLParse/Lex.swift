@@ -22,7 +22,7 @@ import enum DLVM.DataType
 
 public enum Keyword {
     case module
-    case stage
+    case stage, raw, canonical
     case `struct`, `func`, `var`, `let`
     case at, to, from, by
     case then, `else`
@@ -40,7 +40,6 @@ public enum Punctuation {
     case leftCurlyBracket, rightCurlyBracket
     case colon
     case equal
-    case pound
     case rightArrow
     case comma
     case times
@@ -51,7 +50,9 @@ public enum IdentifierKind {
     case attribute
     case basicBlock
     case temporary
+    case type
     case global
+    case key
 }
 
 public enum TokenKind {
@@ -95,18 +96,25 @@ public struct Token {
     public let range: SourceRange
 }
 
-public extension TokenKind {
+extension TokenKind {
     func makeToken(in range: SourceRange) -> Token {
         return Token(kind: self, range: range)
     }
 }
 
-struct LexStream {
-    var characters: String.UnicodeScalarView
-    var location: SourceLocation
+public class Lexer {
+    public fileprivate(set) var characters: String.UnicodeScalarView
+    public fileprivate(set) var location = SourceLocation()
+
+    public init(text: String) {
+        characters = text.unicodeScalars
+    }
 }
 
-extension String.UnicodeScalarView {
+import class Foundation.NSRegularExpression
+import struct Foundation.NSRange
+
+private extension String.UnicodeScalarView {
     static func ~= (pattern: String, value: String.UnicodeScalarView) -> Bool {
         return pattern.unicodeScalars.elementsEqual(value)
     }
@@ -123,22 +131,7 @@ extension String.UnicodeScalarView {
     }
 }
 
-import class Foundation.NSRegularExpression
-import struct Foundation.NSRange
-
-extension LexStream {
-    init(_ text: String) {
-        characters = text.unicodeScalars
-        location = SourceLocation()
-    }
-    
-    mutating func consume(_ n: Int) {
-        characters.removeFirst(n)
-        location.advance(by: n)
-    }
-}
-
-extension UnicodeScalar {
+private extension UnicodeScalar {
     var isNewLine: Bool {
         switch self {
         case "\n", "\r": return true
@@ -173,50 +166,77 @@ extension UnicodeScalar {
 private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z0-9_][a-zA-Z0-9_.]*",
                                                          options: [ .dotMatchesLineSeparators ])
 
-extension LexStream {
-    private mutating func scanPunctuation() throws -> Token {
-        let loc = location
-        let tok: Token
-        switch characters[characters.startIndex] {
-        case "(": tok = Token(kind: .punctuation(.leftParenthesis), range: loc..<loc+1)
-        case ")": tok = Token(kind: .punctuation(.rightParenthesis), range: loc..<loc+1)
-        case "[": tok = Token(kind: .punctuation(.leftSquareBracket), range: loc..<loc+1)
-        case "]": tok = Token(kind: .punctuation(.rightSquareBracket), range: loc..<loc+1)
-        case "<": tok = Token(kind: .punctuation(.leftAngleBracket), range: loc..<loc+1)
-        case ">": tok = Token(kind: .punctuation(.rightAngleBracket), range: loc..<loc+1)
-        case "{": tok = Token(kind: .punctuation(.leftCurlyBracket), range: loc..<loc+1)
-        case "}": tok = Token(kind: .punctuation(.rightCurlyBracket), range: loc..<loc+1)
-        case ":": tok = Token(kind: .punctuation(.colon), range: loc..<loc+1)
-        case "=": tok = Token(kind: .punctuation(.equal), range: loc..<loc+1)
-        case ",": tok = Token(kind: .punctuation(.comma), range: loc..<loc+1)
-        case "#": tok = Token(kind: .punctuation(.pound), range: loc..<loc+1)
-        case "x": tok = Token(kind: .punctuation(.times), range: loc..<loc+1)
-        case "*": tok = Token(kind: .punctuation(.star), range: loc..<loc+1)
-        case "!": consume(1); return try lexIdentifier(ofKind: .attribute)
-        case "@": consume(1); return try lexIdentifier(ofKind: .global)
-        case "%": consume(1); return try lexIdentifier(ofKind: .temporary)
-        case "'": consume(1); return try lexIdentifier(ofKind: .basicBlock)
-        case "-":
-            guard characters.dropFirst().first == ">" else {
-                throw TokenError.illegalToken(loc.advanced(by: 1))
-            }
-            consume(1)
-            tok = Token(kind: .punctuation(.rightArrow), range: loc..<loc+2)
-        default:
-            throw TokenError.illegalToken(loc)
-        }
-        consume(1)
-        return tok
+private extension Lexer {
+    
+    func advance(by n: Int) {
+        characters.removeFirst(n)
+        location.advance(by: n)
     }
 
-    private mutating func scanNumber() throws -> Token {
+    func advanceToNewLine() {
+        characters.removeFirst()
+        location.advanceToNewLine()
+    }
+
+    func lexIdentifier(ofKind kind: IdentifierKind) throws -> Token {
+        let prefix = characters.prefix(while: {
+            !($0.isWhitespace || $0.isNewLine || $0.isPunctuation)
+        })
+        let startLoc = location
+        guard prefix.matchesRegex(identifierPattern) else {
+            throw TokenError.illegalToken(location)
+        }
+        advance(by: prefix.count)
+        return Token(kind: .identifier(kind, String(prefix)), range: startLoc..<location)
+    }
+
+    func scanPunctuation() throws -> Token {
+        let startLoc = location
+        let kind: TokenKind
+        let first = characters[characters.startIndex]
+        advance(by: 1)
+        var count = 1
+        switch first {
+        case "(": kind = .punctuation(.leftParenthesis)
+        case ")": kind = .punctuation(.rightParenthesis)
+        case "[": kind = .punctuation(.leftSquareBracket)
+        case "]": kind = .punctuation(.rightSquareBracket)
+        case "<": kind = .punctuation(.leftAngleBracket)
+        case ">": kind = .punctuation(.rightAngleBracket)
+        case "{": kind = .punctuation(.leftCurlyBracket)
+        case "}": kind = .punctuation(.rightCurlyBracket)
+        case ":": kind = .punctuation(.colon)
+        case "=": kind = .punctuation(.equal)
+        case ",": kind = .punctuation(.comma)
+        case "x": kind = .punctuation(.times)
+        case "*": kind = .punctuation(.star)
+        case "#": return try lexIdentifier(ofKind: .key)
+        case "!": return try lexIdentifier(ofKind: .attribute)
+        case "@": return try lexIdentifier(ofKind: .global)
+        case "%": return try lexIdentifier(ofKind: .temporary)
+        case "$": return try lexIdentifier(ofKind: .type)
+        case "'": return try lexIdentifier(ofKind: .basicBlock)
+        case "-":
+            guard characters.first == ">" else {
+                throw TokenError.illegalToken(location)
+            }
+            advance(by: 1)
+            count += 1
+            kind = .punctuation(.rightArrow)
+        default:
+            throw TokenError.illegalToken(startLoc)
+        }
+        return Token(kind: kind, range: startLoc..<startLoc.advanced(by: count))
+    }
+
+    func scanNumber() throws -> Token {
         let endOfWhole = characters.index(where: { !$0.isNumber }) ?? characters.endIndex
         var number = characters.prefix(upTo: endOfWhole)
         let startLoc = location
-        consume(number.count)
+        advance(by: number.count)
         /// If there's a dot, lex float literal
         if endOfWhole < characters.endIndex, characters[endOfWhole] == "." {
-            consume(1)
+            advance(by: 1)
             number.append(".")
             /// Has decimal dot
             let afterDot = characters.index(after: endOfWhole)
@@ -224,7 +244,7 @@ extension LexStream {
                 throw TokenError.illegalNumber(startLoc..<location)
             }
             let decimal = characters.prefix(while: { $0.isNumber })
-            consume(decimal.count)
+            advance(by: decimal.count)
             number.append(contentsOf: decimal)
             guard let float = FloatLiteralType(String(number)) else {
                 throw TokenError.illegalNumber(startLoc..<location)
@@ -238,17 +258,19 @@ extension LexStream {
         return Token(kind: .integer(integer), range: location..<location+characters.count)
     }
 
-    private mutating func scanLetter() throws -> Token {
+    func scanLetter() throws -> Token {
         let prefix = characters.prefix(while: {
             !($0.isWhitespace || $0.isNewLine || $0.isPunctuation)
         })
         let startLoc = location
-        consume(prefix.count)
+        advance(by: prefix.count)
         let kind: TokenKind
         switch prefix {
         /// Keywords
         case "module": kind = .keyword(.module)
         case "stage": kind = .keyword(.stage)
+        case "raw": kind = .keyword(.raw)
+        case "canonical": kind = .keyword(.canonical)
         case "func": kind = .keyword(.func)
         case "struct": kind = .keyword(.struct)
         case "var": kind = .keyword(.var)
@@ -348,7 +370,7 @@ extension LexStream {
         case _ where prefix.first == "i":
             let rest = prefix.dropFirst()
             guard rest.forAll({$0.isNumber}), let size = Int(String(rest)) else {
-                throw TokenError.illegalToken(startLoc)
+                throw TokenError.illegalNumber(startLoc+1..<location)
             }
             kind = .dataType(.int(UInt(size)))
         default:
@@ -357,47 +379,42 @@ extension LexStream {
         return Token(kind: kind, range: startLoc..<location)
     }
 
-    mutating func lexIdentifier(ofKind kind: IdentifierKind) throws -> Token {
-        let prefix = characters.prefix(while: {
-            !($0.isWhitespace || $0.isNewLine || $0.isPunctuation)
-        })
-        let startLoc = location
-        guard prefix.matchesRegex(identifierPattern) else {
-            throw TokenError.illegalToken(location)
-        }
-        consume(prefix.count)
-        return Token(kind: .identifier(kind, String(prefix)), range: startLoc..<location)
-    }
+}
 
-    mutating func lex() throws -> [Token] {
+public extension Lexer {
+    func performLexing() throws -> [Token] {
         var tokens: [Token] = []
         while let first = characters.first {
             let tok: Token
+            /// Parse tokens starting with a punctuation
             if first.isPunctuation {
                 tok = try scanPunctuation()
             }
+            /// Parse tokens starting with a number
             else if first.isNumber {
                 tok = try scanNumber()
             }
+            /// Parse tokens starting with a letter
             else if first.isAlphabet {
                 tok = try scanLetter()
             }
+            /// Parse new line
             else if first.isNewLine {
-                characters.removeFirst()
                 tok = Token(kind: .newLine, range: location..<location)
-                location.advanceToNewLine()
+                advanceToNewLine()
             }
-            /// Ignore whitespaces
+            /// Ignore whitespace
             else if first.isWhitespace {
-                consume(1)
+                advance(by: 1)
                 continue
             }
-            /// Ignore comments
+            /// Ignore line comment
             else if characters.starts(with: "//") {
                 let comment = characters.prefix(while: { !$0.isNewLine })
-                consume(comment.count)
+                advance(by: comment.count)
                 continue
             }
+            /// Illegal start character
             else {
                 throw TokenError.illegalToken(location)
             }

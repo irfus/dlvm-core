@@ -45,7 +45,7 @@ class IRTests: XCTestCase {
             "baz" : .array(4, .array(3, .tensor([3], .int(32))))
         ], attributes: [ .packed ])
         XCTAssertEqual(struct1.description,
-                       "!packed\nstruct $TestStruct1 {\n    foo: i32\n    bar: <1 x 3 x 4 x f64>\n    baz: [4 x [3 x <3 x i32>]]\n}")
+                       "!packed\nstruct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}")
         let structLit : Literal = .struct([
             ("foo", 100000 ~ .int(32)),
             ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),

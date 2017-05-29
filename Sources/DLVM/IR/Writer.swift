@@ -89,7 +89,7 @@ extension StructType : TextOutputStreamable {
         }
         target.write("struct $\(name) {\n")
         for (name, type) in fields {
-            target.write("    \(name): \(type)\n")
+            target.write("    #\(name): \(type)\n")
         }
         target.write("}")
     }
@@ -277,11 +277,10 @@ extension TypeAlias : TextOutputStreamable {
 
 extension ElementKey : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("#")
         switch self {
         case let .index(i): target.write("\(i)")
-        case let .name(n): target.write(n)
-        case let .value(v): target.write("(\(v))")
+        case let .name(n): target.write("#" + n)
+        case let .value(v): target.write("\(v)")
         }
     }
 }
