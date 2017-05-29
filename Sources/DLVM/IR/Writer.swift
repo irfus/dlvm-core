@@ -198,7 +198,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .map(f, op):
             target.write("\(f) \(op)")
         case let .reduce(comb, op, dims):
-            target.write("reduce \(comb) \(op) along \(dims)")
+            target.write("reduce \(op) by \(comb) along \(dims)")
         case let .scan(f, op, axis: axis):
             target.write("scan \(f) \(op)")
             if let axis = axis {
