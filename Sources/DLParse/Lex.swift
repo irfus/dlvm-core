@@ -31,6 +31,8 @@ public enum Keyword {
     case left, right
     case void
     case zero, undefined, null
+    case `true`, `false`
+    case scalar
 }
 
 public enum Punctuation {
@@ -66,6 +68,23 @@ public enum TokenKind {
     case newLine
 }
 
+public extension TokenKind {
+    func isIdentifier(ofKind kind: IdentifierKind) -> Bool {
+        guard case .identifier(kind, _) = self else { return false }
+        return true
+    }
+
+    var isInteger: Bool {
+        guard case .integer(_) = self else { return false }
+        return true
+    }
+
+    var isFloat: Bool {
+        guard case .float(_) = self else { return false }
+        return true
+    }
+}
+
 extension TokenKind : Equatable {
     public static func == (lhs: TokenKind, rhs: TokenKind) -> Bool {
         switch (lhs, rhs) {
@@ -99,6 +118,16 @@ public struct Token {
 extension TokenKind {
     func makeToken(in range: SourceRange) -> Token {
         return Token(kind: self, range: range)
+    }
+}
+
+public extension Token {
+    var startLocation: SourceLocation {
+        return range.lowerBound
+    }
+
+    var endLocation: SourceLocation {
+        return range.upperBound
     }
 }
 
@@ -183,10 +212,10 @@ private extension Lexer {
             !($0.isWhitespace || $0.isNewLine || $0.isPunctuation)
         })
         let startLoc = location
-        guard prefix.matchesRegex(identifierPattern) else {
-            throw TokenError.illegalToken(location)
-        }
         advance(by: prefix.count)
+        guard prefix.matchesRegex(identifierPattern) else {
+            throw LexicalError.illegalIdentifier(startLoc..<location)
+        }
         return Token(kind: .identifier(kind, String(prefix)), range: startLoc..<location)
     }
 
@@ -218,13 +247,13 @@ private extension Lexer {
         case "'": return try lexIdentifier(ofKind: .basicBlock)
         case "-":
             guard characters.first == ">" else {
-                throw TokenError.illegalToken(location)
+                throw LexicalError.unexpectedToken(location)
             }
             advance(by: 1)
             count += 1
             kind = .punctuation(.rightArrow)
         default:
-            throw TokenError.illegalToken(startLoc)
+            throw LexicalError.unexpectedToken(startLoc)
         }
         return Token(kind: kind, range: startLoc..<startLoc.advanced(by: count))
     }
@@ -241,19 +270,19 @@ private extension Lexer {
             /// Has decimal dot
             let afterDot = characters.index(after: endOfWhole)
             guard afterDot < characters.endIndex, characters[afterDot].isNumber else {
-                throw TokenError.illegalNumber(startLoc..<location)
+                throw LexicalError.illegalNumber(startLoc..<location)
             }
             let decimal = characters.prefix(while: { $0.isNumber })
             advance(by: decimal.count)
             number.append(contentsOf: decimal)
             guard let float = FloatLiteralType(String(number)) else {
-                throw TokenError.illegalNumber(startLoc..<location)
+                throw LexicalError.illegalNumber(startLoc..<location)
             }
             return Token(kind: .float(float), range: startLoc..<location)
         }
         /// Integer literal
         guard let integer = Int(String(number)) else {
-            throw TokenError.illegalNumber(startLoc..<location)
+            throw LexicalError.illegalNumber(startLoc..<location)
         }
         return Token(kind: .integer(integer), range: location..<location+characters.count)
     }
@@ -290,6 +319,9 @@ private extension Lexer {
         case "zero": kind = .keyword(.zero)
         case "undefined": kind = .keyword(.undefined)
         case "null": kind = .keyword(.null)
+        case "true": kind = .keyword(.true)
+        case "false": kind = .keyword(.false)
+        case "scalar": kind = .keyword(.scalar)
         /// Opcode
         case "branch": kind = .opcode(.branch)
         case "conditional": kind = .opcode(.conditional)
@@ -370,11 +402,11 @@ private extension Lexer {
         case _ where prefix.first == "i":
             let rest = prefix.dropFirst()
             guard rest.forAll({$0.isNumber}), let size = Int(String(rest)) else {
-                throw TokenError.illegalNumber(startLoc+1..<location)
+                throw LexicalError.illegalNumber(startLoc+1..<location)
             }
             kind = .dataType(.int(UInt(size)))
         default:
-            throw TokenError.illegalToken(startLoc)
+            throw LexicalError.unexpectedToken(startLoc)
         }
         return Token(kind: kind, range: startLoc..<location)
     }
@@ -416,7 +448,7 @@ public extension Lexer {
             }
             /// Illegal start character
             else {
-                throw TokenError.illegalToken(location)
+                throw LexicalError.unexpectedToken(location)
             }
             tokens.append(tok)
         }
