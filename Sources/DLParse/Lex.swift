@@ -24,6 +24,7 @@ public enum Keyword {
     case module
     case stage, raw, canonical
     case `struct`, `func`, `var`, `let`
+    case type
     case at, to, from, by
     case then, `else`
     case broadcast
@@ -71,6 +72,11 @@ public enum TokenKind {
 public extension TokenKind {
     func isIdentifier(ofKind kind: IdentifierKind) -> Bool {
         guard case .identifier(kind, _) = self else { return false }
+        return true
+    }
+
+    var isOpcode: Bool {
+        guard case .opcode(_) = self else { return false }
         return true
     }
 
@@ -304,6 +310,7 @@ private extension Lexer {
         case "struct": kind = .keyword(.struct)
         case "var": kind = .keyword(.var)
         case "let": kind = .keyword(.let)
+        case "type": kind = .keyword(.type)
         case "at": kind = .keyword(.at)
         case "to": kind = .keyword(.to)
         case "from": kind = .keyword(.from)
