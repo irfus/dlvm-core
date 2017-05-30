@@ -60,7 +60,7 @@ extension Literal : TextOutputStreamable {
 
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(map{String($0)}.joined(separator: " x "))")
+        target.write(isScalar ? "scalar" : "\(map{String($0)}.joined(separator: " x "))")
     }
 }
 
