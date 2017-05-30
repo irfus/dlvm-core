@@ -26,9 +26,32 @@ public class Parser {
     public init(tokens: [Token]) {
         self.tokens = ArraySlice(tokens)
     }
+
+    public init(text: String) throws {
+        let lexer = Lexer(text: text)
+        tokens = try ArraySlice(lexer.performLexing())
+    }
 }
 
 private extension Parser {
+
+    var currentToken: Token? {
+        guard let first = tokens.first else { return nil }
+        return first
+    }
+
+    var nextToken: Token? {
+        return tokens.dropFirst().first
+    }
+
+    var currentLocation: SourceLocation? {
+        return currentToken?.range.lowerBound
+    }
+
+    var isEOF: Bool {
+        return tokens.isEmpty
+    }
+    
     func consume(if predicate: (TokenKind) throws -> Bool) rethrows {
         guard let token = tokens.first else { return }
         if try predicate(token.kind) {
@@ -82,7 +105,7 @@ private extension Parser {
         return tok
     }
 
-    func consumeInteger() throws -> (Int, SourceRange) {
+    func parseInteger() throws -> (Int, SourceRange) {
         let name: String = "an integer"
         let tok = try consumeOrDiagnose(name)
         switch tok.kind {
@@ -91,7 +114,7 @@ private extension Parser {
         }
     }
 
-    func consumeDataType() throws -> (DataType, SourceRange) {
+    func parseDataType() throws -> (DataType, SourceRange) {
         let name: String = "a data type"
         let tok = try consumeOrDiagnose(name)
         switch tok.kind {
@@ -100,17 +123,12 @@ private extension Parser {
         }
     }
 
-    func consumeIdentifier(ofKind kind: IdentifierKind) throws -> String {
+    func parseIdentifier(ofKind kind: IdentifierKind) throws -> String {
         let tok = try consumeOrDiagnose("an identifier")
         switch tok.kind {
         case .identifier(kind, let id): return id
         default: throw ParseError.unexpectedIdentifierKind(kind, tok)
         }
-    }
-
-    var currentToken: Token? {
-        guard let first = tokens.first else { return nil }
-        return first
     }
 
     @discardableResult
@@ -124,26 +142,12 @@ private extension Parser {
         }
     }
 
-    var currentLocation: SourceLocation? {
-        return currentToken?.range.lowerBound
-    }
-
-    var nextToken: Token? {
-        return tokens.dropFirst().first
-    }
-
-    var isEOF: Bool {
-        return tokens.isEmpty
-    }
-
     func consumeAnyNewLines() {
         consume(while: {$0 == .newLine})
     }
-}
 
-private extension Parser {
     func parseMany<T>(_ parser: () throws -> T,
-                   separatedBy: () throws -> ()) -> [T] {
+                      separatedBy: () throws -> ()) -> [T] {
         var uses: [T] = []
         guard let first = try? parser() else { return uses }
         uses.append(first)
@@ -154,6 +158,9 @@ private extension Parser {
         return uses
     }
     
+}
+
+extension Parser {
     /// Parse one of many Uses separated by ','
     func parseUseList() -> [UseNode] {
         return parseMany({ try parseUse() },
@@ -204,7 +211,7 @@ private extension Parser {
         case .punctuation(.leftCurlyBracket):
             var fields: [(String, UseNode)] = []
             while let field: (String, UseNode) = try? withBacktracking(execute: {
-                let key = try consumeIdentifier(ofKind: .key)
+                let key = try parseIdentifier(ofKind: .key)
                 try consume(.punctuation(.colon))
                 consumeAnyNewLines()
                 let val = try parseUse()
@@ -219,12 +226,12 @@ private extension Parser {
 
     /// Parse a shape
     func parseNonScalarShape() throws -> (TensorShape, SourceRange) {
-        let (first, firstRange) = try consumeInteger()
+        let (first, firstRange) = try parseInteger()
         var dims = [first]
         var lastLoc = firstRange.upperBound
         while let dim: Int = try? withBacktracking(execute: {
             try consume(.punctuation(.times))
-            let (num, range) = try consumeInteger()
+            let (num, range) = try parseInteger()
             lastLoc = range.upperBound
             return num
         }) { dims.append(dim) }
@@ -242,7 +249,8 @@ private extension Parser {
             return .tensor([], dt, tok.range)
         /// Array
         case .punctuation(.leftSquareBracket):
-            let (count, _) = try consumeInteger()
+            let (count, _) = try parseInteger()
+            try consume(.punctuation(.times))
             let elementType = try parseType()
             let rightBkt = try consume(.punctuation(.rightSquareBracket))
             return .array(count, elementType, tok.startLocation..<rightBkt.endLocation)
@@ -250,7 +258,7 @@ private extension Parser {
         case .punctuation(.leftAngleBracket):
             let (shape, _) = try parseNonScalarShape()
             try consume(.punctuation(.times))
-            let (dt, _) = try consumeDataType()
+            let (dt, _) = try parseDataType()
             let rightBkt = try consume(.punctuation(.rightAngleBracket))
             return .tensor(shape, dt, tok.startLocation..<rightBkt.endLocation)
         /// Tuple
@@ -271,7 +279,7 @@ private extension Parser {
     }
 
     func parseUse() throws -> UseNode {
-        let tok = try peekOrDiagnose("a use")
+        let tok = try peekOrDiagnose("a use of value")
         let useKind: UseNode.Kind
         switch tok.kind {
         /// Identifier
@@ -283,7 +291,24 @@ private extension Parser {
             case .temporary: useKind = .temporary(id)
             default: throw ParseError.unexpectedIdentifierKind(kind, tok)
             }
-        /// - todo: more cases
+        /// Unambiguous literals
+        case .float(_), .integer(_), .keyword(.true), .keyword(.false),
+             .punctuation(.leftAngleBracket),
+             .punctuation(.leftCurlyBracket),
+             .punctuation(.leftSquareBracket):
+            useKind = try .literal(parseLiteral())
+        /// Tuple literal OR constant expression
+        case .punctuation(.leftParenthesis):
+            if let next = nextToken, next.kind.isOpcode {
+                /// Constant expression
+                consumeToken()
+                useKind = try .constant(parseInstructionKind())
+                try consume(.punctuation(.rightParenthesis))
+            } else {
+                useKind = try .literal(parseLiteral())
+            }
+        default:
+            throw ParseError.unexpectedToken(expected: "a use of value", tok)
         }
         try consume(.punctuation(.colon))
         consumeAnyNewLines()

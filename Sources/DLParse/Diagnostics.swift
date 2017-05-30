@@ -56,9 +56,9 @@ extension ParseError : CustomStringConvertible {
         case let .unexpectedEndOfInput(expected: expected):
             return "Expected \(expected) but reached the end of input"
         case let .unexpectedToken(expected: expected, tok):
-            return "Expected \(expected) but found token at \(tok.startLocation)"
+            return "Expected \(expected) but found the token at \(tok.startLocation)"
         case let .noDimensionsInTensorShape(tok):
-            return "No dimensions in tensor type. If you'd like it to be a scalar, use the data type (e.g. f32) directly."
+            return "No dimensions in tensor type at \(tok.startLocation). If you'd like it to be a scalar, use the data type (e.g. f32) directly."
         }
     }
 }

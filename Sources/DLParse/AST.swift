@@ -41,7 +41,7 @@ public struct UseNode : ASTNode {
         case argument(String)
         case temporary(String)
         case global(String)
-        case literal(Literal)
+        case literal(LiteralNode)
         case function(String)
         case constant(InstructionKind)
     }
