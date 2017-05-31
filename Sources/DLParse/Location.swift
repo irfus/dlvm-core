@@ -91,7 +91,7 @@ public extension TextLocation {
     }
 
     var isBeginningOfLine: Bool {
-        return column == 0
+        return column == Self.initialPosition
     }
 }
 

@@ -152,13 +152,13 @@ extension TokenKind : CustomStringConvertible {
         case let .dataType(dt): return String(describing: dt)
         case let .float(val): return val.description
         case let .integer(val): return val.description
-        case .newLine: return "a new line"
         case let .keyword(kw): return String(describing: kw)
         case let .opcode(op): return String(describing: op)
         case let .identifier(kind, id):
             return String(describing: kind) + "identifier \"\(id)\""
-        case let .stringLiteral(str):
-            return "\"\(str)\""
+        case let .stringLiteral(str): return "\"\(str)\""
+        case .newLine: return "a new line"
+        case .indent: return "an indentation"
         }
     }
 }
