@@ -66,6 +66,7 @@ public enum TokenKind {
     case float(FloatLiteralType)
     case identifier(IdentifierKind, String)
     case dataType(DataType)
+    case stringLiteral(String)
     case newLine
 }
 
@@ -228,7 +229,9 @@ private extension Lexer {
     func scanPunctuation() throws -> Token {
         let startLoc = location
         let kind: TokenKind
-        let first = characters[characters.startIndex]
+        guard let first = characters.first else {
+            preconditionFailure("Character stream is empty")
+        }
         advance(by: 1)
         var count = 1
         switch first {
@@ -251,6 +254,41 @@ private extension Lexer {
         case "%": return try lexIdentifier(ofKind: .temporary)
         case "$": return try lexIdentifier(ofKind: .type)
         case "'": return try lexIdentifier(ofKind: .basicBlock)
+        case "\"":
+            guard !characters.isEmpty else {
+                throw LexicalError.unclosedStringLiteral(startLoc..<location)
+            }
+            var chars = String.UnicodeScalarView()
+            while let current = characters.first, current != "\"" {
+                switch current {
+                /// Escape character
+                case "\\":
+                    advance(by: 1)
+                    guard let escaped = characters.first else {
+                        throw LexicalError.unclosedStringLiteral(startLoc..<location)
+                    }
+                    switch escaped {
+                    case "\\": chars.append("\\")
+                    case "n": chars.append("\n")
+                    case "t": chars.append("\t")
+                    case "r": chars.append("\r")
+                    default: throw LexicalError.invalidEscapeCharacter(escaped, location)
+                    }
+                /// New line
+                case "\n":
+                    throw LexicalError.unclosedStringLiteral(startLoc..<location)
+                /// Normal character
+                default:
+                    chars.append(current)
+                }
+                advance(by: 1)
+            }
+            /// Check for end
+            guard characters.first == "\"" else {
+                throw LexicalError.unclosedStringLiteral(startLoc..<location)
+            }
+            advance(by: 1)
+            kind = .stringLiteral(String(chars))
         case "-":
             guard characters.first == ">" else {
                 throw LexicalError.unexpectedToken(location)

@@ -23,6 +23,8 @@ public enum LexicalError : Error {
     case unexpectedToken(SourceLocation)
     case illegalNumber(SourceRange)
     case illegalIdentifier(SourceRange)
+    case invalidEscapeCharacter(UnicodeScalar, SourceLocation)
+    case unclosedStringLiteral(SourceRange)
 }
 
 public enum ParseError : Error {
@@ -52,14 +54,20 @@ extension ParseError : CustomStringConvertible {
     public var description : String {
         switch self {
         case let .unexpectedIdentifierKind(kind, tok):
-            return "Unexpected kind of identifier (\(kind)) at \(tok.startLocation)"
+            return "Identifier \(tok) has unexpected kind \(kind)"
         case let .unexpectedEndOfInput(expected: expected):
             return "Expected \(expected) but reached the end of input"
         case let .unexpectedToken(expected: expected, tok):
-            return "Expected \(expected) but found the token at \(tok.startLocation)"
+            return "Expected \(expected) but found the token \(tok)"
         case let .noDimensionsInTensorShape(tok):
             return "No dimensions in tensor type at \(tok.startLocation). If you'd like it to be a scalar, use the data type (e.g. f32) directly."
         }
+    }
+}
+
+extension Token : CustomStringConvertible {
+    public var description: String {
+        return "\(kind) at \(range)"
     }
 }
 
@@ -72,6 +80,10 @@ extension LexicalError : CustomStringConvertible {
             return "Illegal number at \(range)"
         case let .unexpectedToken(loc):
             return "Unexpected token at \(loc)"
+        case let .invalidEscapeCharacter(char, loc):
+            return "Invalid escape character '\(char)' at \(loc)"
+        case let .unclosedStringLiteral(range):
+            return "String literal at \(range) is not terminated"
         }
     }
 }
@@ -145,6 +157,8 @@ extension TokenKind : CustomStringConvertible {
         case let .opcode(op): return String(describing: op)
         case let .identifier(kind, id):
             return String(describing: kind) + "identifier \"\(id)\""
+        case let .stringLiteral(str):
+            return "\"\(str)\""
         }
     }
 }

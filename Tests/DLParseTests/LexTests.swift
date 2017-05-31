@@ -49,6 +49,16 @@ class LexTests : XCTestCase {
         }
     }
 
+    func testStringLiteralLexing() throws {
+        do {
+            let code = "\"dasdasa\"\n\n\"das\\n\\t\\rdasa\""
+            let lexer = Lexer(text: code)
+            _ = try lexer.performLexing()
+        } catch {
+            XCTFail(String(describing: error))
+        }
+    }
+
     func testStructLexing() throws {
         do {
             let code = "!packed\nstruct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}"
@@ -72,6 +82,7 @@ class LexTests : XCTestCase {
     static var allTests : [(String, (LexTests) -> () throws -> Void)] {
         return [
             ("testBasicLexing", testBasicLexing),
+            ("testStringLiteralLexing", testStringLiteralLexing),
             ("testFunctionLexing", testFunctionLexing),
             ("testStructLexing", testStructLexing),
         ]
