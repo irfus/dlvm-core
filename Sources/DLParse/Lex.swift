@@ -68,6 +68,7 @@ public enum TokenKind {
     case dataType(DataType)
     case stringLiteral(String)
     case newLine
+    case indent
 }
 
 public extension TokenKind {
@@ -256,9 +257,12 @@ private extension Lexer {
         case "'": return try lexIdentifier(ofKind: .basicBlock)
         case "\"":
             guard !characters.isEmpty else {
+                /// EOF
                 throw LexicalError.unclosedStringLiteral(startLoc..<location)
             }
+            /// Character accumulator
             var chars = String.UnicodeScalarView()
+            /// Loop until we reach EOF or '"'
             while let current = characters.first, current != "\"" {
                 switch current {
                 /// Escape character
@@ -275,7 +279,7 @@ private extension Lexer {
                     default: throw LexicalError.invalidEscapeCharacter(escaped, location)
                     }
                 /// New line
-                case "\n":
+                case "\n", "\r":
                     throw LexicalError.unclosedStringLiteral(startLoc..<location)
                 /// Normal character
                 default:
@@ -287,6 +291,7 @@ private extension Lexer {
             guard characters.first == "\"" else {
                 throw LexicalError.unclosedStringLiteral(startLoc..<location)
             }
+            /// Advance through '"'
             advance(by: 1)
             kind = .stringLiteral(String(chars))
         case "-":
@@ -462,6 +467,7 @@ public extension Lexer {
     func performLexing() throws -> [Token] {
         var tokens: [Token] = []
         while let first = characters.first {
+            let startLoc = location
             let tok: Token
             /// Parse tokens starting with a punctuation
             if first.isPunctuation {
@@ -477,8 +483,13 @@ public extension Lexer {
             }
             /// Parse new line
             else if first.isNewLine {
-                tok = Token(kind: .newLine, range: location..<location)
                 advanceToNewLine()
+                tok = Token(kind: .newLine, range: startLoc..<startLoc+1)
+            }
+            /// If located at the beginning of a new line, parse whitespaces as indent
+            else if location.isBeginningOfLine, first.isWhitespace {
+                advance(by: 1)
+                tok = Token(kind: .indent, range: startLoc..<location)
             }
             /// Ignore whitespace
             else if first.isWhitespace {
