@@ -35,9 +35,8 @@ public enum InstructionKind {
     case zipWith(BinaryOp, Use, Use, BroadcastingConfig?)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
-    /// Scan operation with optional axis
-    /// If axis is not given, scan is performed on contiguous elements
-    case scan(AssociativeOp, Use, axis: Int?)
+    /// Scan operation
+    case scan(ReductionCombinator, Use, [Int])
     /// Reduction operation
     case reduce(ReductionCombinator, Use, [Int])
     /// Matrix multiplication operation

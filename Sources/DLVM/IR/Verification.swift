@@ -422,23 +422,26 @@ extension InstructionKind {
                 accShape = newShape
             }
 
-        case let .reduce(.op(op), v1, dims) where op.isBoolean:
-            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
-                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+        case let .reduce(.op(op), v1, dims),
+             let .scan(.op(op), v1, dims):
+            let shape: TensorShape
+            if op.isBoolean {
+                guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                    throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+                }
+                shape = s1
+            } else {
+                guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                    throw VerificationError.dataTypeNotNumeric(v1, instruction)
+                }
+                shape = s1
             }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
 
-        case let .reduce(.op(_), v1, dims):
-            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
-                throw VerificationError.dataTypeNotNumeric(v1, instruction)
-            }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
-                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
-            }
-
-        case let .reduce(.function(f), v1, dims):
+        case let .reduce(.function(f), v1, dims),
+             let .scan(.function(f), v1, dims):
             guard case let .tensor(s1, t1) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
@@ -448,14 +451,6 @@ extension InstructionKind {
             }
             guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
-            }
-
-        case let .scan(_, v1, axis: axis):
-            guard case let .tensor(s1, _) = v1.type.unaliased else {
-                throw VerificationError.notTensor(v1, instruction)
-            }
-            if let axis = axis, !s1.indices.contains(axis) {
-                throw VerificationError.axisOutOfBounds(axis, v1, instruction)
             }
 
         case let .shapeCast(v1, target):
