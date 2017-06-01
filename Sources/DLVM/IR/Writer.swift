@@ -193,11 +193,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("\(f) \(op)")
         case let .reduce(comb, op, dims):
             target.write("reduce \(op) by \(comb) along \(dims.joinedDescription)")
-        case let .scan(f, op, axis: axis):
-            target.write("scan \(op) by \(f)")
-            if let axis = axis {
-                target.write(" along \(axis)")
-            }
+        case let .scan(f, op, dims):
+            target.write("scan \(op) by \(f) along \(dims.joinedDescription)")
         case let .concatenate(ops, axis: axis):
             target.write("concatenate \(ops.joinedDescription) along \(axis)")
         case let .transpose(op):
