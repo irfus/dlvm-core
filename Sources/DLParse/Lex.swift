@@ -65,6 +65,7 @@ public enum TokenKind {
     case integer(IntegerLiteralType)
     case float(FloatLiteralType)
     case identifier(IdentifierKind, String)
+    case anonymousIdentifier(Int, Int)
     case dataType(DataType)
     case stringLiteral(String)
     case newLine
@@ -190,7 +191,7 @@ private extension UnicodeScalar {
             || (123...126).contains(value)
     }
 
-    var isNumber: Bool {
+    var isDigit: Bool {
         return (48...57).contains(value)
     }
 
@@ -252,7 +253,31 @@ private extension Lexer {
         case "#": return try lexIdentifier(ofKind: .key)
         case "!": return try lexIdentifier(ofKind: .attribute)
         case "@": return try lexIdentifier(ofKind: .global)
-        case "%": return try lexIdentifier(ofKind: .temporary)
+        case "%":
+            guard let nameStart = characters.first else {
+                throw LexicalError.expectingIdentifierName(location)
+            }
+            /// If starting with a number, then it's an anonymous local identifier
+            if nameStart.isDigit {
+                let fst = characters.prefix(while: {$0.isDigit})
+                advance(by: fst.count)
+                guard let bbIndex = Int(String(fst)) else {
+                    throw LexicalError.invalidBasicBlockIndex(startLoc)
+                }
+                guard characters.first == "." else {
+                    throw LexicalError.invalidAnonymousLocalIdentifier(startLoc)
+                }
+                advance(by: 1)
+                let snd = characters.prefix(while: {$0.isDigit})
+                advance(by: snd.count)
+                guard let instIndex = Int(String(snd)) else {
+                    throw LexicalError.invalidInstructionIndex(startLoc)
+                }
+                return Token(kind: .anonymousIdentifier(bbIndex, instIndex),
+                             range: startLoc..<location)
+            }
+            /// Otherwise it's just a nonimal identifier
+            return try lexIdentifier(ofKind: .temporary)
         case "$": return try lexIdentifier(ofKind: .type)
         case "'": return try lexIdentifier(ofKind: .basicBlock)
         case "\"":
@@ -272,6 +297,7 @@ private extension Lexer {
                         throw LexicalError.unclosedStringLiteral(startLoc..<location)
                     }
                     switch escaped {
+                    case "\"": chars.append("\"")
                     case "\\": chars.append("\\")
                     case "n": chars.append("\n")
                     case "t": chars.append("\t")
@@ -308,7 +334,7 @@ private extension Lexer {
     }
 
     func scanNumber() throws -> Token {
-        let endOfWhole = characters.index(where: { !$0.isNumber }) ?? characters.endIndex
+        let endOfWhole = characters.index(where: { !$0.isDigit }) ?? characters.endIndex
         var number = characters.prefix(upTo: endOfWhole)
         let startLoc = location
         advance(by: number.count)
@@ -318,10 +344,10 @@ private extension Lexer {
             number.append(".")
             /// Has decimal dot
             let afterDot = characters.index(after: endOfWhole)
-            guard afterDot < characters.endIndex, characters[afterDot].isNumber else {
+            guard afterDot < characters.endIndex, characters[afterDot].isDigit else {
                 throw LexicalError.illegalNumber(startLoc..<location)
             }
-            let decimal = characters.prefix(while: { $0.isNumber })
+            let decimal = characters.prefix(while: { $0.isDigit })
             advance(by: decimal.count)
             number.append(contentsOf: decimal)
             guard let float = FloatLiteralType(String(number)) else {
@@ -451,7 +477,7 @@ private extension Lexer {
         case "bool": kind = .dataType(.bool)
         case _ where prefix.first == "i":
             let rest = prefix.dropFirst()
-            guard rest.forAll({$0.isNumber}), let size = Int(String(rest)) else {
+            guard rest.forAll({$0.isDigit}), let size = Int(String(rest)) else {
                 throw LexicalError.illegalNumber(startLoc+1..<location)
             }
             kind = .dataType(.int(UInt(size)))
@@ -474,7 +500,7 @@ public extension Lexer {
                 tok = try scanPunctuation()
             }
             /// Parse tokens starting with a number
-            else if first.isNumber {
+            else if first.isDigit {
                 tok = try scanNumber()
             }
             /// Parse tokens starting with a letter

@@ -25,6 +25,10 @@ public enum LexicalError : Error {
     case illegalIdentifier(SourceRange)
     case invalidEscapeCharacter(UnicodeScalar, SourceLocation)
     case unclosedStringLiteral(SourceRange)
+    case expectingIdentifierName(SourceLocation)
+    case invalidAnonymousLocalIdentifier(SourceLocation)
+    case invalidBasicBlockIndex(SourceLocation)
+    case invalidInstructionIndex(SourceLocation)
 }
 
 public enum ParseError : Error {
@@ -32,6 +36,28 @@ public enum ParseError : Error {
     case unexpectedEndOfInput(expected: String)
     case unexpectedToken(expected: String, Token)
     case noDimensionsInTensorShape(Token)
+    case undefinedIdentifier(Token)
+    case typeMismatch(expected: Type, SourceRange)
+    case undefinedNominalType(Token)
+    case redefinedIdentifier(Token)
+}
+
+public extension LexicalError {
+    var location: SourceLocation? {
+        switch self {
+        case .expectingIdentifierName(let loc),
+             .invalidEscapeCharacter(_, let loc),
+             .unexpectedToken(let loc),
+             .invalidBasicBlockIndex(let loc),
+             .invalidInstructionIndex(let loc),
+             .invalidAnonymousLocalIdentifier(let loc):
+            return loc
+        case .illegalIdentifier(let range),
+             .illegalNumber(let range),
+             .unclosedStringLiteral(let range):
+            return range.lowerBound
+        }
+    }
 }
 
 public extension ParseError {
@@ -46,44 +72,82 @@ public extension ParseError {
             return tok.startLocation
         case let .noDimensionsInTensorShape(tok):
             return tok.startLocation
+        case let .undefinedIdentifier(tok):
+            return tok.startLocation
+        case let .typeMismatch(_, range):
+            return range.lowerBound
+        case let .undefinedNominalType(tok):
+            return tok.startLocation
+        case let .redefinedIdentifier(tok):
+            return tok.startLocation
         }
     }
 }
 
 extension ParseError : CustomStringConvertible {
     public var description : String {
+        var desc = "Error at "
+        if let location = location {
+            desc += location.description
+        } else {
+            desc += "the end of file"
+        }
+        desc += ": "
         switch self {
         case let .unexpectedIdentifierKind(kind, tok):
-            return "Identifier \(tok) has unexpected kind \(kind)"
+            return "identifier \(tok) has unexpected kind \(kind)"
         case let .unexpectedEndOfInput(expected: expected):
-            return "Expected \(expected) but reached the end of input"
+            return "expected \(expected) but reached the end of input"
         case let .unexpectedToken(expected: expected, tok):
-            return "Expected \(expected) but found the token \(tok)"
+            return "expected \(expected) but found the token \(tok)"
         case let .noDimensionsInTensorShape(tok):
-            return "No dimensions in tensor type at \(tok.startLocation). If you'd like it to be a scalar, use the data type (e.g. f32) directly."
+            return "no dimensions in tensor type at \(tok.startLocation). If you'd like it to be a scalar, use the data type (e.g. f32) directly."
+        case let .undefinedIdentifier(tok):
+            return "undefined identifier \(tok)"
+        case let .typeMismatch(expected: ty, range):
+            return "value at \(range) should have type \(ty)"
+        case let .undefinedNominalType(tok):
+            return "nominal type \(tok) is undefined"
+        case let .redefinedIdentifier(tok):
+            return "identifier \(tok) is redefined"
         }
     }
 }
 
 extension Token : CustomStringConvertible {
     public var description: String {
-        return "\(kind) at \(range)"
+        return kind.description
     }
 }
 
 extension LexicalError : CustomStringConvertible {
     public var description: String {
+        var desc = "Error at "
+        if let location = location {
+            desc += location.description
+        } else {
+            desc += "the end of file"
+        }
+        desc += ": "
         switch self {
         case let .illegalIdentifier(range):
-            return "Illegal identifier at \(range)"
+            return "illegal identifier at \(range)"
         case let .illegalNumber(range):
-            return "Illegal number at \(range)"
-        case let .unexpectedToken(loc):
-            return "Unexpected token at \(loc)"
-        case let .invalidEscapeCharacter(char, loc):
-            return "Invalid escape character '\(char)' at \(loc)"
+            return "illegal number at \(range)"
+        case .unexpectedToken(_):
+            return "unexpected token"
+        case let .invalidEscapeCharacter(char, _):
+            return "invalid escape character '\(char)'"
         case let .unclosedStringLiteral(range):
-            return "String literal at \(range) is not terminated"
+            return "string literal at \(range) is not terminated"
+        case .expectingIdentifierName(_):
+            return "expecting identifier name"
+        case .invalidAnonymousLocalIdentifier(_):
+            return "invalid anonymous loacl identifier. It should look like %<bb_index>.<inst_index>, e.g. %0.1"
+        case .invalidBasicBlockIndex(_):
+            return "invalid index for basic block in anonymous local identifier"
+        case .invalidInstructionIndex(_):
+            return "invalid index for instruction in anonymous local identifier"
         }
     }
 }
@@ -155,10 +219,21 @@ extension TokenKind : CustomStringConvertible {
         case let .keyword(kw): return String(describing: kw)
         case let .opcode(op): return String(describing: op)
         case let .identifier(kind, id):
-            return String(describing: kind) + "identifier \"\(id)\""
+            let kindDesc: String
+            switch kind {
+            case .attribute: kindDesc = "!"
+            case .basicBlock: kindDesc = "'"
+            case .global: kindDesc = "@"
+            case .key: kindDesc = "#"
+            case .temporary: kindDesc = "%"
+            case .type: kindDesc = "$"
+            }
+            return kindDesc + id
         case let .stringLiteral(str): return "\"\(str)\""
         case .newLine: return "a new line"
         case .indent: return "an indentation"
+        case let .anonymousIdentifier(b, i):
+            return "%\(b).\(i)"
         }
     }
 }
