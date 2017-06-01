@@ -34,6 +34,7 @@ public enum Keyword {
     case zero, undefined, null
     case `true`, `false`
     case scalar
+    case count
 }
 
 public enum Punctuation {
@@ -398,6 +399,7 @@ private extension Lexer {
         case "true": kind = .keyword(.true)
         case "false": kind = .keyword(.false)
         case "scalar": kind = .keyword(.scalar)
+        case "count": kind = .keyword(.count)
         /// Opcode
         case "branch": kind = .opcode(.branch)
         case "conditional": kind = .opcode(.conditional)
