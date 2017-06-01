@@ -179,24 +179,27 @@ extension InstructionKind : TextOutputStreamable {
             target.write("conditional \(op) then '\(thenBB.name)(\(thenArgs.joinedDescription)) else '\(elseBB.name)(\(elseArgs.joinedDescription))")
         case let .`return`(op):
             target.write("return")
-            if let op = op { target.write(" \(op)") }
-        case let .zipWith(f, op1, op2, nil):
+            if let op = op {
+                target.write(" \(op)")
+            }
+        case let .zipWith(f, op1, op2, bc):
             target.write("\(f) \(op1), \(op2)")
-        case let .zipWith(f, op1, op2, bc?):
-            target.write("\(f) \(op1), \(op2) broadcast \(bc)")
+            if let bc = bc {
+                target.write("  broadcast \(bc)")
+            }
         case let .matrixMultiply(op1, op2):
             target.write("matrixMultiply \(op1), \(op2)")
         case let .map(f, op):
             target.write("\(f) \(op)")
         case let .reduce(comb, op, dims):
-            target.write("reduce \(op) by \(comb) along \(dims)")
+            target.write("reduce \(op) by \(comb) along \(dims.joinedDescription)")
         case let .scan(f, op, axis: axis):
-            target.write("scan \(f) \(op)")
+            target.write("scan \(op) by \(f)")
             if let axis = axis {
                 target.write(" along \(axis)")
             }
         case let .concatenate(ops, axis: axis):
-            target.write("concatenate \(ops.map{"\($0)"}.joined(separator: ", ")) along \(axis)")
+            target.write("concatenate \(ops.joinedDescription) along \(axis)")
         case let .transpose(op):
             target.write("transpose \(op)")
         case let .dataTypeCast(op, t):
@@ -204,25 +207,28 @@ extension InstructionKind : TextOutputStreamable {
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):
-            target.write("apply \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+            target.write("apply \(f)(\(args.joinedDescription))")
         case let .extract(use, indices):
-            target.write("extract \(indices.map{"\($0)"}.joined(separator: ", ")) from \(use)")
+            target.write("extract \(indices.joinedDescription) from \(use)")
         case let .insert(src, to: dest, at: indices):
-            target.write("insert \(src) to \(dest) at \(indices.map{"\($0)"}.joined(separator: ", "))")
+            target.write("insert \(src) to \(dest) at \(indices.joinedDescription)")
         case let .allocateStack(t, n):
-            target.write("allocateStack \(t), \(n)")
+            target.write("allocateStack \(t) count \(n)")
         case let .store(v, p):
             target.write("store \(v) to \(p)")
         case let .load(v):
             target.write("load \(v)")
-        case let .elementPointer(v, i):
-            target.write("elementPointer \(v), \(i)")
+        case let .elementPointer(v, ii):
+            target.write("elementPointer \(v) at \(ii.joinedDescription)")
         case let .bitCast(v, t):
             target.write("bitCast \(v) to \(t)")
         case let .gradient(f, from: diff, wrt: vars, keeping: outputIndices):
-            target.write("gradient \(f) from \(diff) wrt \(vars) keeping \(outputIndices)")
+            target.write("gradient \(f) from \(diff) wrt \(vars.joinedDescription)")
+            if !outputIndices.isEmpty {
+                target.write(" keeping \(outputIndices)")
+            }
         case let .allocateHeap(t, count: c):
-            target.write("allocateHeap \(t), \(c)")
+            target.write("allocateHeap \(t) count \(c)")
         case let .allocateBox(t):
             target.write("allocateBox \(t)")
         case let .deallocate(v):
@@ -234,7 +240,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .release(v):
             target.write("release \(v)")
         case let .copy(from: src, to: dest, count: count):
-            target.write("copy from \(src) to \(dest), \(count)")
+            target.write("copy from \(src) to \(dest) count \(count)")
         case .trap:
             target.write("trap")
         }
