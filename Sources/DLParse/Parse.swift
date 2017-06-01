@@ -340,7 +340,30 @@ extension Parser {
             guard type == use.type else {
                 throw ParseError.typeMismatch(expected: type, range)
             }
-        /// Literals
+        /// Anonymous local identifier in a basic block
+        case let .anonymousIdentifier(bbIndex, instIndex):
+            guard let bb = basicBlock else {
+                throw ParseError.anonymousIdentifierNotInLocal(tok)
+            }
+            consumeToken()
+            let function = bb.parent
+            /// Criteria for identifier index:
+            /// - BB referred to must precede the current BB
+            /// - Instruction referred to must precede the current instruction
+            guard function.indices.contains(bbIndex), bbIndex <= bb.indexInParent else {
+                throw ParseError.invalidAnonymousIdentifierIndex(tok)
+            }
+            let refBB = function[bbIndex]
+            guard refBB.indices.contains(instIndex) else {
+                throw ParseError.invalidAnonymousIdentifierIndex(tok)
+            }
+            use = %refBB[instIndex]
+            let (type, typeSigRange) = try parseTypeSignature()
+            range = tok.startLocation..<typeSigRange.upperBound
+            guard type == use.type else {
+                throw ParseError.typeMismatch(expected: type, range)
+            }
+        /// Literal
         case .float(_), .integer(_), .keyword(.true), .keyword(.false),
              .punctuation(.leftAngleBracket),
              .punctuation(.leftCurlyBracket),
@@ -410,13 +433,25 @@ extension Parser {
         let inst: Instruction
         switch tok.kind {
         case let .identifier(.temporary, name):
+            consumeToken()
             try consumeWrappablePunctuation(.equal)
             let kind = try parseInstructionKind()
             guard !symbolTable.locals.keys.contains(name) else {
                 throw ParseError.redefinedIdentifier(tok)
             }
-            /// Verify non-name
             inst = Instruction(name: name, kind: kind, parent: basicBlock)
+        case let .anonymousIdentifier(bbIndex, instIndex):
+            /// Check BB index and instruction index
+            /// - BB index must equal the current BB index
+            /// - Instruction index must equal the next instruction index, 
+            ///   i.e. the current instruction count
+            guard bbIndex == basicBlock.indexInParent, instIndex == basicBlock.endIndex else {
+                throw ParseError.invalidAnonymousIdentifierIndex(tok)
+            }
+            consumeToken()
+            try consumeWrappablePunctuation(.equal)
+            let kind = try parseInstructionKind()
+            inst = Instruction(kind: kind, parent: basicBlock)
         default:
             let kind = try parseInstructionKind()
             inst = Instruction(kind: kind, parent: basicBlock)
