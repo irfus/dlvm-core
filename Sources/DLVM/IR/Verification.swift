@@ -78,6 +78,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case structFieldNameMismatch(StructType, Use, Node)
     case invalidReductionDimensions([Int], Use, Node)
     case dataTypeNotNumeric(Use, Node)
+    case invalidAllocationSize(Node)
 }
 
 public protocol Verifiable {
@@ -570,7 +571,12 @@ extension InstructionKind {
                 throw VerificationError.invalidGradientArguments(v, instruction)
             }
 
-        case .allocateStack, .trap, .allocateBox: break
+        case let .allocateStack(_, n):
+            guard n > 0 else {
+                throw VerificationError.invalidAllocationSize(instruction)
+            }
+            
+        case .trap, .allocateBox: break
         }
     }
 }

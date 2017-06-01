@@ -247,7 +247,8 @@ public extension Type {
             return .tensor(shape.dropFirst(), dt)
         case let (.array(n, t), .index(i)) where i < n:
             return t
-        case let (.pointer(t), .index(_)):
+        case let (.pointer(t), .index(_)),
+             let (.pointer(t), .value(_)):
             return t
         default:
             return nil

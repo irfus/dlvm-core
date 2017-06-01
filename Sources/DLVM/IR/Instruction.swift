@@ -69,7 +69,7 @@ public enum InstructionKind {
     /** Heap memory of host and device **/
     /** Memory **/
     /// Allocate host stack memory, returning a pointer
-    case allocateStack(Type, Use) /// => *T
+    case allocateStack(Type, Int) /// => *T
     case allocateHeap(Type, count: Use) /// => *T
     /// Reference-counted box
     case allocateBox(Type) /// => box{T}
@@ -312,7 +312,8 @@ public extension InstructionKind {
             }
             return dest.type
 
-        case let .allocateStack(type, _):
+        case let .allocateStack(type, n):
+            guard n > 0 else { return .invalid }
             return .pointer(type)
 
         case let .load(v):
@@ -364,7 +365,7 @@ extension InstructionKind {
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
              let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
-             let .deallocate(op), let .allocateStack(_, op), let .allocateHeap(_, count: op),
+             let .deallocate(op), let .allocateHeap(_, count: op),
              let .projectBox(op), let .release(op), let .retain(op),
              let .gradient(op, _, _, _):
             return [op]
@@ -377,7 +378,7 @@ extension InstructionKind {
             return [f] + args
         case let .copy(from: op1, to: op2, count: op3):
             return [op1, op2, op3]
-        case .return(nil), .allocateBox, .trap:
+        case .return(nil), .allocateBox, .trap, .allocateStack:
             return []
         }
     }
@@ -457,8 +458,6 @@ public extension InstructionKind {
             return .store(val, to: new)
         case .load(old):
             return .load(new)
-        case .allocateStack(let ty, old):
-            return .allocateStack(ty, new)
         case .allocateHeap(let ty, count: old):
             return .allocateHeap(ty, count: new)
         case .deallocate(old):
