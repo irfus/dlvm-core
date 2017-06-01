@@ -358,6 +358,28 @@ extension Function : TextOutputStreamable {
     }
 }
 
+extension String {
+    var literal: String {
+        var out = ""
+        for char in characters {
+            switch char {
+            case "\"", "\\":
+                out.append("\\")
+                out.append(char)
+            case "\n":
+                out.append("\\n")
+            case "\t":
+                out.append("\\t")
+            case "\r":
+                out.append("\\r")
+            default:
+                out.append(char)
+            }
+        }
+        return out
+    }
+}
+
 extension Module : TextOutputStreamable {
     func write<C, T>(_ elements: C, to target: inout T)
         where C : Collection, T : TextOutputStream,
@@ -370,7 +392,7 @@ extension Module : TextOutputStreamable {
     }
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("module \(name)\n")
+        target.write("module \"\(name.literal)\"\n")
         target.write("stage \(stage)\n\n")
         write(structs, to: &target)
         write(typeAliases, to: &target)
