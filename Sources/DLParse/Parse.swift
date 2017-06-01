@@ -386,35 +386,59 @@ extension Parser {
         }
         /// - todo: parse instruction kind
         switch opcode {
-        /// branch <bb>(<arg0>, <arg1>, ...)
+        /// 'branch' <bb> '(' (<val> (',' <val>)*)? ')'
         case .branch: break
-        /// conditional <cond> then <then_bb>(<then_arg_0>, ...) else <else_bb>(<else_arg_0>, ...)
+        /// 'conditional' <bb> 'then' <bb> '(' (<val> (',' <val>)*)? ')'
+        ///                    'else' <bb> '(' (<val> (',' <val>)*)? ')'
         case .conditional: break
-        /// return <val>?
+        /// 'return' <val>?
         case .return: break
+        /// 'dataTypeCast' <val> 'to' <data_type>
         case .dataTypeCast: break
+        /// 'scan' <val> 'by' <func|assoc_op> 'along' <num> (',' <num>)*
         case .scan: break
+        /// 'reduce' <val> 'by' <func|assoc_op> 'along' <num> (',' <num>)*
         case .reduce: break
-        /// matrixMultiply <left>, <right>
+        /// 'matrixMultiply' <val> ',' <val>
         case .matrixMultiply: break
+        /// 'concatenate' <val> (',' <val>)* along <num>
         case .concatenate: break
+        /// 'transpose' <val>
         case .transpose: break
+        /// 'shapeCast' <val> 'to' <shape>
         case .shapeCast: break
+        /// 'bitCast' <val> 'to' <type>
         case .bitCast: break
+        /// 'extract' <num|key|val> (',' <num|key|val>)* 'from' <val>
         case .extract: break
+        /// 'insert' <val> 'to' <val> 'at' <num|key|val> (',' <num|key|val>)*
         case .insert: break
+        /// 'apply' <val> '(' <val>+ ')' 
         case .apply: break
+        /// 'gradient' <val> 'from' <idx> 'wrt' <idx> (',' <idx>)*
+        ///            ('keeping' <idx> (',' <idx>)*)?
         case .gradient: break
+        /// 'allocateStack' <type> 'count' <num>
         case .allocateStack: break
+        /// 'allocateHeap' <type> 'count' <val>
         case .allocateHeap: break
+        /// 'allocateBox' <type>
         case .allocateBox: break
+        /// 'projectBox' <val>
         case .projectBox: break
+        /// 'retain' <val>
         case .retain: break
+        /// 'release' <val>
         case .release: break
+        /// 'deallocate' <val>
         case .deallocate: break
+        /// 'load' <val>
         case .load: break
+        /// 'store' <val> 'to' <val>
         case .store: break
+        /// 'elementPointer' <val> 'at' <num|key|val> (<num|key|val> ',')*
         case .elementPointer: break
+        /// 'copy' 'from' <val> 'to' <val> 'count' <val>
         case .copy: break
         case .trap: break
         /// <binary_op> <val>, <val>
