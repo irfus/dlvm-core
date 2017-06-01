@@ -40,6 +40,8 @@ public enum ParseError : Error {
     case typeMismatch(expected: Type, SourceRange)
     case undefinedNominalType(Token)
     case redefinedIdentifier(Token)
+    case anonymousIdentifierNotInLocal(Token)
+    case invalidAnonymousIdentifierIndex(Token)
 }
 
 public extension LexicalError {
@@ -64,22 +66,19 @@ public extension ParseError {
     /// Location of the error, nil if EOF
     var location: SourceLocation? {
         switch self {
-        case let .unexpectedIdentifierKind(_, tok):
-            return tok.range.lowerBound
         case .unexpectedEndOfInput(_):
             return nil
-        case let .unexpectedToken(_, tok):
-            return tok.startLocation
-        case let .noDimensionsInTensorShape(tok):
-            return tok.startLocation
-        case let .undefinedIdentifier(tok):
+        case let .unexpectedIdentifierKind(_, tok),
+             let .unexpectedToken(_, tok),
+             let .noDimensionsInTensorShape(tok),
+             let .undefinedIdentifier(tok),
+             let .undefinedNominalType(tok),
+             let .redefinedIdentifier(tok),
+             let .anonymousIdentifierNotInLocal(tok),
+             let .invalidAnonymousIdentifierIndex(tok):
             return tok.startLocation
         case let .typeMismatch(_, range):
             return range.lowerBound
-        case let .undefinedNominalType(tok):
-            return tok.startLocation
-        case let .redefinedIdentifier(tok):
-            return tok.startLocation
         }
     }
 }
@@ -110,6 +109,10 @@ extension ParseError : CustomStringConvertible {
             return "nominal type \(tok) is undefined"
         case let .redefinedIdentifier(tok):
             return "identifier \(tok) is redefined"
+        case let .anonymousIdentifierNotInLocal(tok):
+            return "anonymous identifier \(tok) is not in a local (basic block) context"
+        case let .invalidAnonymousIdentifierIndex(tok):
+            return "anonymous identifier \(tok) has invalid index"
         }
     }
 }
