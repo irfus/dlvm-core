@@ -20,28 +20,36 @@
 import CoreTensor
 import DLVM
 
+private struct SymbolTable {
+    var locals: [String : Value] = [:]
+    var globals: [String : Value] = [:]
+    var nominalTypes: [String : Type] = [:]
+}
+
 public class Parser {
-    public fileprivate(set) var tokens: ArraySlice<Token>
+    public let tokens: [Token]
+    fileprivate lazy var restTokens: ArraySlice<Token> = ArraySlice(self.tokens)
+    fileprivate var symbolTable = SymbolTable()
 
     public init(tokens: [Token]) {
-        self.tokens = ArraySlice(tokens)
+        self.tokens = tokens
     }
 
     public init(text: String) throws {
         let lexer = Lexer(text: text)
-        tokens = try ArraySlice(lexer.performLexing())
+        tokens = try lexer.performLexing()
     }
 }
 
 private extension Parser {
 
     var currentToken: Token? {
-        guard let first = tokens.first else { return nil }
+        guard let first = restTokens.first else { return nil }
         return first
     }
 
     var nextToken: Token? {
-        return tokens.dropFirst().first
+        return restTokens.dropFirst().first
     }
 
     var currentLocation: SourceLocation? {
@@ -49,48 +57,48 @@ private extension Parser {
     }
 
     var isEOF: Bool {
-        return tokens.isEmpty
+        return restTokens.isEmpty
     }
-    
+
+    @discardableResult
+    func consumeToken() -> Token {
+        return restTokens.removeFirst()
+    }
+
     func consume(if predicate: (TokenKind) throws -> Bool) rethrows {
-        guard let token = tokens.first else { return }
+        guard let token = currentToken else { return }
         if try predicate(token.kind) {
-            tokens.removeFirst()
+            consumeToken()
         }
     }
 
     func consume(while predicate: (TokenKind) throws -> Bool) rethrows {
-        while let first = tokens.first, try predicate(first.kind) {
-            tokens.removeFirst()
+        while let first = currentToken, try predicate(first.kind) {
+            consumeToken()
         }
     }
 
     @discardableResult
     func consumeIfAny(_ tokenKind: TokenKind) -> Token? {
-        if let tok = tokens.first, tok.kind == tokenKind {
-            return tokens.removeFirst()
+        if let tok = currentToken, tok.kind == tokenKind {
+            return restTokens.removeFirst()
         }
         return nil
     }
 
     @discardableResult
     func consume(_ tokenKind: TokenKind) throws -> Token {
-        guard let first = tokens.first else {
+        guard let first = restTokens.first else {
             throw ParseError.unexpectedEndOfInput(expected: String(describing: tokenKind))
         }
         guard first.kind == tokenKind else {
             throw ParseError.unexpectedToken(expected: String(describing: tokenKind), first)
         }
-        return tokens.removeFirst()
+        return restTokens.removeFirst()
     }
 
     @discardableResult
-    func consumeToken() -> Token {
-        return tokens.removeFirst()
-    }
-
-    @discardableResult
-    func consumeOrDiagnose(_ expected: String) throws -> Token {
+    func consumepOrDiagnose(_ expected: String) throws -> Token {
         guard currentToken != nil else {
             throw ParseError.unexpectedEndOfInput(expected: expected)
         }
@@ -107,7 +115,7 @@ private extension Parser {
 
     func parseInteger() throws -> (Int, SourceRange) {
         let name: String = "an integer"
-        let tok = try consumeOrDiagnose(name)
+        let tok = try consumepOrDiagnose(name)
         switch tok.kind {
         case let .integer(i): return (i, tok.range)
         default: throw ParseError.unexpectedToken(expected: name, tok)
@@ -116,7 +124,7 @@ private extension Parser {
 
     func parseDataType() throws -> (DataType, SourceRange) {
         let name: String = "a data type"
-        let tok = try consumeOrDiagnose(name)
+        let tok = try consumepOrDiagnose(name)
         switch tok.kind {
         case let .dataType(dt): return (dt, tok.range)
         default: throw ParseError.unexpectedToken(expected: name, tok)
@@ -124,7 +132,7 @@ private extension Parser {
     }
 
     func parseIdentifier(ofKind kind: IdentifierKind) throws -> String {
-        let tok = try consumeOrDiagnose("an identifier")
+        let tok = try consumepOrDiagnose("an identifier")
         switch tok.kind {
         case .identifier(kind, let id): return id
         default: throw ParseError.unexpectedIdentifierKind(kind, tok)
@@ -133,17 +141,38 @@ private extension Parser {
 
     @discardableResult
     func withBacktracking<T>(execute: () throws -> T) rethrows -> T {
-        let originalTokens = tokens
+        let originalTokens = restTokens
         do {
             return try execute()
         } catch let error {
-            tokens = originalTokens
+            restTokens = originalTokens
             throw error
         }
     }
 
+    @discardableResult
+    func consumeWrappablePunctuation(_ punct: Punctuation) throws -> Token {
+        consumeAnyNewLines()
+        let tok = try consume(.punctuation(punct))
+        consumeAnyNewLines()
+        return tok
+    }
+
+    func consumeStringLiteral() throws -> String {
+        let tok = try consumepOrDiagnose("a string literal")
+        guard case let .stringLiteral(str) = tok.kind else {
+            throw ParseError.unexpectedToken(expected: "a string literal", tok)
+        }
+        return str
+    }
+
     func consumeAnyNewLines() {
         consume(while: {$0 == .newLine})
+    }
+
+    func consumeOneOrMore(_ kind: TokenKind) throws {
+        try consume(kind)
+        consume(while: { $0 == kind })
     }
 
     func parseMany<T>(_ parser: () throws -> T,
@@ -152,7 +181,7 @@ private extension Parser {
         guard let first = try? parser() else { return uses }
         uses.append(first)
         while let use: T = try? withBacktracking(execute: {
-            try consume(.punctuation(.comma))
+            try consumeWrappablePunctuation(.comma)
             return try parser()
         }) { uses.append(use) }
         return uses
@@ -162,63 +191,63 @@ private extension Parser {
 
 extension Parser {
     /// Parse one of many Uses separated by ','
-    func parseUseList() -> [UseNode] {
-        return parseMany({ try parseUse() },
-                         separatedBy: { try consume(.punctuation(.comma)) })
+    func parseUseList() -> [Use] {
+        return parseMany({ try parseUse().0 },
+                         separatedBy: { try consumeWrappablePunctuation(.comma) })
     }
 
     /// Parse a literal
-    func parseLiteral() throws -> LiteralNode {
-        let tok = try consumeOrDiagnose("a literal")
+    func parseLiteral() throws -> (Literal, SourceRange) {
+        let tok = try consumepOrDiagnose("a literal")
         switch tok.kind {
         /// Float
         case let .float(f):
-            return .scalar(.float(f))
+            return (.scalar(.float(f)), tok.range)
         /// Integer
         case let .integer(i):
-            return .scalar(.int(i))
+            return (.scalar(.int(i)), tok.range)
         /// Boolean `true`
         case .keyword(.true):
-            return .scalar(.bool(true))
+            return (.scalar(.bool(true)), tok.range)
         /// Boolean `false`
         case .keyword(.false):
-            return .scalar(.bool(false))
+            return (.scalar(.bool(false)), tok.range)
         /// `null`
         case .keyword(.null):
-            return .null
+            return (.null, tok.range)
         /// `undefined`
         case .keyword(.undefined):
-            return .undefined
+            return (.undefined, tok.range)
         /// `zero`
         case .keyword(.zero):
-            return .zero
+            return (.zero, tok.range)
         /// Array
         case .punctuation(.leftSquareBracket):
             let elements = parseUseList()
-            try consume(.punctuation(.rightSquareBracket))
-            return .array(elements)
+            try consumeWrappablePunctuation(.rightSquareBracket)
+            return (.array(elements), tok.range)
         /// Tuple
         case .punctuation(.leftParenthesis):
             let elements = parseUseList()
-            try consume(.punctuation(.rightParenthesis))
-            return .tuple(elements)
+            try consumeWrappablePunctuation(.rightParenthesis)
+            return (.tuple(elements), tok.range)
         /// Tensor
         case .punctuation(.leftAngleBracket):
             let elements = parseUseList()
-            try consume(.punctuation(.rightAngleBracket))
-            return .tensor(elements)
+            try consumeWrappablePunctuation(.rightAngleBracket)
+            return (.tensor(elements), tok.range)
         /// Struct
         case .punctuation(.leftCurlyBracket):
-            var fields: [(String, UseNode)] = []
-            while let field: (String, UseNode) = try? withBacktracking(execute: {
+            var fields: [(String, Use)] = []
+            while let field: (String, Use) = try? withBacktracking(execute: {
                 let key = try parseIdentifier(ofKind: .key)
-                try consume(.punctuation(.colon))
+                try consumeWrappablePunctuation(.colon)
                 consumeAnyNewLines()
-                let val = try parseUse()
+                let (val, _) = try parseUse()
                 return (key, val)
             }) { fields.append(field) }
-            try consume(.punctuation(.rightCurlyBracket))
-            return .struct(fields)
+            let rightBkt = try consumeWrappablePunctuation(.rightCurlyBracket)
+            return (.struct(fields), tok.startLocation..<rightBkt.endLocation)
         default:
             throw ParseError.unexpectedToken(expected: "a literal", tok)
         }
@@ -230,7 +259,7 @@ extension Parser {
         var dims = [first]
         var lastLoc = firstRange.upperBound
         while let dim: Int = try? withBacktracking(execute: {
-            try consume(.punctuation(.times))
+            try consumeWrappablePunctuation(.times)
             let (num, range) = try parseInteger()
             lastLoc = range.upperBound
             return num
@@ -238,98 +267,112 @@ extension Parser {
         return (TensorShape(dims), firstRange.lowerBound..<lastLoc)
     }
 
-    func parseType() throws -> TypeNode {
-        let tok = try consumeOrDiagnose("a type")
+    func parseType() throws -> (Type, SourceRange) {
+        let tok = try consumepOrDiagnose("a type")
         switch tok.kind {
         /// Void
         case .keyword(.void):
-            return .void(tok.range)
+            return (.void, tok.range)
         /// Scalar
         case .dataType(let dt):
-            return .tensor([], dt, tok.range)
+            return (.tensor([], dt), tok.range)
         /// Array
         case .punctuation(.leftSquareBracket):
             let (count, _) = try parseInteger()
-            try consume(.punctuation(.times))
-            let elementType = try parseType()
-            let rightBkt = try consume(.punctuation(.rightSquareBracket))
-            return .array(count, elementType, tok.startLocation..<rightBkt.endLocation)
+            try consumeWrappablePunctuation(.times)
+            let (elementType, _) = try parseType()
+            let rightBkt = try consumeWrappablePunctuation(.rightSquareBracket)
+            return (.array(count, elementType), tok.startLocation..<rightBkt.endLocation)
         /// Tensor
         case .punctuation(.leftAngleBracket):
             let (shape, _) = try parseNonScalarShape()
-            try consume(.punctuation(.times))
+            try consumeWrappablePunctuation(.times)
             let (dt, _) = try parseDataType()
-            let rightBkt = try consume(.punctuation(.rightAngleBracket))
-            return .tensor(shape, dt, tok.startLocation..<rightBkt.endLocation)
+            let rightBkt = try consumeWrappablePunctuation(.rightAngleBracket)
+            return (.tensor(shape, dt), tok.startLocation..<rightBkt.endLocation)
         /// Tuple
         case .punctuation(.leftParenthesis):
             let elementTypes = parseMany({
-                try parseType()
+                try parseType().0
             }, separatedBy: {
-                try consume(.punctuation(.comma))
+                try consumeWrappablePunctuation(.comma)
             })
-            let rightBkt = try consume(.punctuation(.rightParenthesis))
-            return .tuple(elementTypes, tok.startLocation..<rightBkt.endLocation)
+            let rightBkt = try consumeWrappablePunctuation(.rightParenthesis)
+            return (.tuple(elementTypes), tok.startLocation..<rightBkt.endLocation)
         /// Nominal type
         case .identifier(.type, let typeName):
-            return .nominal(typeName, tok.range)
+            guard let type = symbolTable.nominalTypes[typeName] else {
+                throw ParseError.undefinedNominalType(tok)
+            }
+            return (type, tok.range)
         default:
             throw ParseError.unexpectedToken(expected: "a type", tok)
         }
     }
 
-    func parseUse() throws -> UseNode {
+    func parseTypeSignature() throws -> (Type, SourceRange) {
+        try consumeWrappablePunctuation(.colon)
+        consumeAnyNewLines()
+        return try parseType()
+    }
+
+    func parseUse(in basicBlock: BasicBlock? = nil) throws -> (Use, SourceRange) {
         let tok = try peekOrDiagnose("a use of value")
-        let useKind: UseNode.Kind
+        let use: Use
+        let range: SourceRange
         switch tok.kind {
         /// Identifier
         case let .identifier(kind, id):
             consumeToken()
             /// Either a global or a local
+            let maybeVal: Value?
             switch kind {
-            case .global: useKind = .global(id)
-            case .temporary: useKind = .temporary(id)
+            case .global: maybeVal = symbolTable.globals[id]
+            case .temporary: maybeVal = symbolTable.locals[id]
             default: throw ParseError.unexpectedIdentifierKind(kind, tok)
             }
-        /// Unambiguous literals
+            guard let val = maybeVal else {
+                throw ParseError.undefinedIdentifier(tok)
+            }
+            use = val.makeUse()
+            let (type, typeSigRange) = try parseTypeSignature()
+            range = tok.startLocation..<typeSigRange.upperBound
+            guard type == use.type else {
+                throw ParseError.typeMismatch(expected: type, range)
+            }
+        /// Literals
         case .float(_), .integer(_), .keyword(.true), .keyword(.false),
              .punctuation(.leftAngleBracket),
              .punctuation(.leftCurlyBracket),
-             .punctuation(.leftSquareBracket):
-            useKind = try .literal(parseLiteral())
-        /// Tuple literal OR constant expression
-        case .punctuation(.leftParenthesis):
-            if let next = nextToken, next.kind.isOpcode {
-                /// Constant expression
-                consumeToken()
-                useKind = try .constant(parseInstructionKind())
-                try consume(.punctuation(.rightParenthesis))
-            } else {
-                useKind = try .literal(parseLiteral())
-            }
+             .punctuation(.leftSquareBracket),
+             .punctuation(.leftParenthesis):
+            let (lit, _) = try parseLiteral()
+            let (type, typeSigRange) = try parseTypeSignature()
+            range = tok.startLocation..<typeSigRange.upperBound
+            use = .literal(type, lit)
         default:
             throw ParseError.unexpectedToken(expected: "a use of value", tok)
         }
-        try consume(.punctuation(.colon))
-        consumeAnyNewLines()
-        let type = try parseType()
-        return UseNode(type: type, kind: useKind,
-                       range: tok.startLocation..<type.range.upperBound)
+        return (use, range)
     }
 
     func parseInstructionKind() throws -> InstructionKind {
-        let tok = try consumeOrDiagnose("an opcode")
+        let tok = try consumepOrDiagnose("an opcode")
         guard case let .opcode(opcode) = tok.kind else {
             throw ParseError.unexpectedToken(expected: "an opcode", tok)
         }
         /// - todo: parse instruction kind
         switch opcode {
+        /// branch <bb>(<arg0>, <arg1>, ...)
         case .branch: break
+        /// conditional <cond> then <then_bb>(<then_arg_0>, ...) else <else_bb>(<else_arg_0>, ...)
         case .conditional: break
+        /// return <val>?
         case .return: break
         case .dataTypeCast: break
         case .scan: break
         case .reduce: break
+        /// matrixMultiply <left>, <right>
         case .matrixMultiply: break
         case .concatenate: break
         case .transpose: break
@@ -351,9 +394,56 @@ extension Parser {
         case .elementPointer: break
         case .copy: break
         case .trap: break
+        /// <binary_op> <val>, <val>
+        /// <binary_op> <val>, <val> broadcast <left|right> [<index_0, index_1, ...>]
         case .binaryOp(_): break
+        /// <unary_op> <val>
         case .unaryOp(_): break
         }
         fatalError("Unimplemented")
+    }
+
+    func parseInstruction(in basicBlock: BasicBlock) throws -> Instruction {
+        /// Instruction must start with an indentation
+        try consume(.indent)
+        let tok = try peekOrDiagnose("an instruction or a local identifier")
+        let inst: Instruction
+        switch tok.kind {
+        case let .identifier(.temporary, name):
+            try consumeWrappablePunctuation(.equal)
+            let kind = try parseInstructionKind()
+            guard !symbolTable.locals.keys.contains(name) else {
+                throw ParseError.redefinedIdentifier(tok)
+            }
+            /// Verify non-name
+            inst = Instruction(name: name, kind: kind, parent: basicBlock)
+        default:
+            let kind = try parseInstructionKind()
+            inst = Instruction(kind: kind, parent: basicBlock)
+        }
+        try consumeOneOrMore(.newLine)
+        basicBlock.append(inst)
+        return inst
+    }
+
+    func parseBasicBlock(in function: Function) throws -> BasicBlock {
+        fatalError("Unimplemented")
+    }
+
+    func parseFunction(in module: Module) throws -> Function {
+        fatalError("Unimplemented")
+    }
+}
+
+public extension Parser {
+    /// Parser entry
+    func parseModule() throws -> Module {
+        consumeAnyNewLines()
+        try consume(.keyword(.module))
+        let name = try consumeStringLiteral()
+        let module = Module(name: name)
+        
+        /// ... end of input
+        return module
     }
 }
