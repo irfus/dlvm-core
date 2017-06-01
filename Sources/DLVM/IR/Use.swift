@@ -50,14 +50,32 @@ extension Use : Equatable {
 public extension Use {
 
     var type: Type {
-        switch self {
-        case .argument(let t, _),
-             .instruction(let t, _),
-             .global(let t, _),
-             .literal(let t, _),
-             .function(let t, _),
-             .constant(let t, _):
-            return t
+        get {
+            switch self {
+            case .argument(let t, _),
+                 .instruction(let t, _),
+                 .global(let t, _),
+                 .literal(let t, _),
+                 .function(let t, _),
+                 .constant(let t, _):
+                return t
+            }
+        }
+        set(newType) {
+            switch self {
+            case let .argument(_, x):
+                self = .argument(newType, x)
+            case let .instruction(_, x):
+                self = .instruction(newType, x)
+            case let .global(_, x):
+                self = .global(newType, x)
+            case let .literal(_, x):
+                self = .literal(newType, x)
+            case let .function(_, x):
+                self = .function(newType, x)
+            case let .constant(_, x):
+                self = .constant(newType, x)
+            }
         }
     }
 
