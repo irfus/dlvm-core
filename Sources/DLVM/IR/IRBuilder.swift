@@ -84,12 +84,12 @@ extension IRBuilder {
 
     @discardableResult
     open func buildFunction(named name: String,
-                            arguments: DictionaryLiteral<String, Type>,
-                            result: Type = .void,
+                            argumentTypes: [Type],
+                            returnType: Type = .void,
                             attributes: Set<Function.Attribute> = []) -> Function {
         let fun = Function(name: name,
-                           arguments: Array(arguments),
-                           result: result,
+                           argumentTypes: argumentTypes,
+                           returnType: returnType,
                            attributes: attributes,
                            parent: module)
         module.append(fun)
@@ -100,14 +100,18 @@ extension IRBuilder {
     open func buildBasicBlock(named name: String,
                               arguments: DictionaryLiteral<String, Type>,
                               in function: Function) -> BasicBlock {
-        let block = BasicBlock(name: name, arguments: Array(arguments), parent: function)
+        let block = BasicBlock(name: name,
+                               arguments: arguments.map{($0.0, $0.1)},
+                               parent: function)
         function.append(block)
         return block
     }
 
     @discardableResult
-    open func buildEntry(in function: Function) -> BasicBlock {
-        let entry = BasicBlock(asEntryOf: function)
+    open func buildEntry(argumentNames: [String], in function: Function) -> BasicBlock {
+        let entry = BasicBlock(name: "entry",
+                               arguments: Array(zip(argumentNames, function.argumentTypes)),
+                               parent: function)
         function.insert(entry, at: 0)
         return entry
     }

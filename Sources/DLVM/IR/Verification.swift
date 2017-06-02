@@ -231,7 +231,7 @@ extension Function : Verifiable {
                 throw VerificationError.redeclared(bb)
             }
             /// Check entry block arguments
-            guard !bb.isEntry || bb.arguments.elementsEqual(arguments) else {
+            guard !bb.isEntry || bb.arguments.map({$0.type}).elementsEqual(argumentTypes) else {
                 throw VerificationError.functionEntryArgumentMismatch(bb, self)
             }
             bbNames.insert(bb.name)
@@ -242,9 +242,9 @@ extension Function : Verifiable {
             let bbPremise = try bb.premise()
             if case let .return(retVal) = bbPremise.terminator.kind {
                 switch retVal {
-                case let use? where use.type != result:
+                case let use? where use.type != returnType:
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
-                case nil where !result.isVoid:
+                case nil where !returnType.isVoid:
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
                 default:
                     break

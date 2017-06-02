@@ -27,19 +27,19 @@ public final class Function : Named, IRCollection, IRUnit {
     public typealias Element = BasicBlock
 
     public var name: String
-    public var result: Type
-    public var arguments: OrderedSet<Argument> = []
+    public var argumentTypes: [Type]
+    public var returnType: Type
     public var attributes: Set<Attribute> = []
     public unowned var parent: Module
 
     public var elements: OrderedSet<BasicBlock> = []
     public internal(set) var analysisManager: AnalysisManager<Function> = AnalysisManager()
 
-    public init(name: String, arguments: [(String, Type)],
-                result: Type, attributes: Set<Attribute>, parent: Module) {
+    public init(name: String, argumentTypes: [Type],
+                returnType: Type, attributes: Set<Attribute>, parent: Module) {
         self.name = name
-        self.arguments.append(contentsOf: arguments.map { Argument(name: $0.0, type: $0.1) })
-        self.result = result
+        self.argumentTypes = argumentTypes
+        self.returnType = returnType
         self.attributes = attributes
         self.parent = parent
     }
@@ -78,7 +78,7 @@ public extension Function {
 // MARK: - Value
 extension Function : Value {
     public var type: Type {
-        return .function(arguments.map{$0.type}, result)
+        return .function(argumentTypes, returnType)
     }
 
     public func makeUse() -> Use {
@@ -90,8 +90,10 @@ extension Function : Value {
 public extension Function {
 
     func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type, C.IndexDistance == Int {
-        guard types.count == arguments.count else { return false }
-        return zip(types, arguments).forAll{$0.0.conforms(to: $0.1.type)}
+        guard types.count == argumentTypes.count else { return false }
+        return zip(types, argumentTypes).forAll { actual, formal in
+            actual.conforms(to: formal)
+        }
     }
 
 }
@@ -113,7 +115,7 @@ public extension Function {
                       keepingOutputs outputIndices: [Int]) -> Type? {
         var keptOutputs: [Type]
         /// Check output index
-        switch result {
+        switch returnType {
         /// Tuple output is treated as multiplt-out
         case let .tuple(subtypes):
             guard
@@ -128,21 +130,19 @@ public extension Function {
         /// Other output is treated as single out
         case _ where
                 /// Result must be differentiable
-                result.isDifferentiable
+                returnType.isDifferentiable
                 /// Index must be 0
                 && diffIndex == 0
                 /// Indices of the outputs to keep must be either [] or [0] 
                 && (outputIndices.isEmpty || outputIndices == [0]):
-            keptOutputs = outputIndices.isEmpty ? [] : [result]
+            keptOutputs = outputIndices.isEmpty ? [] : [returnType]
         /// Bad differentiation case
         default:
             return nil
         }
-        /// Check variable indices
-        let argTypes = arguments.map{$0.type}
         guard
             /// Indices of diff variables must be in bounds
-            let diffVars = argTypes.subcollection(atIndices: varIndices),
+            let diffVars = argumentTypes.subcollection(atIndices: varIndices),
             /// All diff variables must be diff'able arguments
             diffVars.forAll({$0.isDifferentiable})
             else { return nil }
@@ -150,7 +150,7 @@ public extension Function {
         /// Output type is `(k1, ..., kn, d1, ..., dn)` where `k1...kn` are outputs of the 
         /// original function to keep, `d1...dn` are derivatives of the output at `diffIndex`
         /// with respect to arguments at indices `varIndices`, respectively.
-        return .function(argTypes, .tuple(keptOutputs + diffVars))
+        return .function(argumentTypes, .tuple(keptOutputs + diffVars))
     }
     
 }

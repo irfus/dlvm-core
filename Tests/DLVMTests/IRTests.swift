@@ -60,23 +60,21 @@ class IRTests: XCTestCase {
 
     func testWriteSimpleFunction() {
         let fun = builder.buildFunction(named: "foo",
-                                        arguments: [ "x" : .scalar(.float(.single)),
-                                                     "y" : .scalar(.float(.single)) ],
-                                        result: .tensor([3], .bool))
-        builder.move(to: builder.buildEntry(in: fun))
+                                        argumentTypes: [.scalar(.float(.single)), .scalar(.float(.single))],
+                                        returnType: .tensor([3], .bool))
+        builder.move(to: builder.buildEntry(argumentNames: ["x", "y"], in: fun))
         _ = builder.multiply(.literal(.int(32), 5),
                              .literal(.int(32), .tensor([.literal(.int(32), 1), .literal(.int(32), 2)])),
                              broadcasting: []=>)
         builder.return(.null ~ .tensor([3], .bool))
-        XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3 x bool> {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32 broadcast right []\n    return null: <3 x bool>\n}")
+        XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3 x bool> {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32 broadcast right\n    return null: <3 x bool>\n}")
     }
 
     func testWriteMultiBBFunction() {
         let fun = builder.buildFunction(named: "bar",
-                                        arguments: [ "x" : .scalar(.float(.single)),
-                                                     "y" : .scalar(.float(.single)) ],
-                                        result: .int(32))
-        builder.move(to: builder.buildEntry(in: fun))
+                                        argumentTypes: [.scalar(.float(.single)), .scalar(.float(.single))],
+                                        returnType: .int(32))
+        builder.move(to: builder.buildEntry(argumentNames: ["x", "y"], in: fun))
         let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
         let cmp = builder.compare(.equal, %mult, .literal(.int(32), 1))
         let thenBB = builder.buildBasicBlock(named: "then", arguments: [ "x" : .int(32) ], in: fun)
