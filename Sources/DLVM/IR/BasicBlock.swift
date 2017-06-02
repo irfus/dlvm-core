@@ -55,12 +55,12 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
         }
     }
 
-    internal convenience init(asEntryOf parent: Function) {
-        self.init(name: "entry", arguments: parent.arguments, parent: parent)
-    }
-
-    public convenience init(name: String, arguments: [(String, Type)], parent: Function) {
-        self.init(name: name, arguments: arguments.map { Argument(name: $0.0, type: $0.1) }, parent: parent)
+    public convenience init<C: Collection>(name: String, arguments: C, parent: Function)
+        where C.Iterator.Element == (String, Type)
+    {
+        self.init(name: name,
+                  arguments: arguments.map { Argument(name: $0.0, type: $0.1) },
+                  parent: parent)
     }
 
 }
