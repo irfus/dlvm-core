@@ -285,8 +285,7 @@ public extension Type {
 
     var isDifferentiable: Bool {
         switch self {
-        case let .tensor([], dt),
-             let .tensor(_, dt) where dt.isNumeric:
+        case let .tensor(_, dt) where dt.isNumeric:
             return true
         default:
             return false

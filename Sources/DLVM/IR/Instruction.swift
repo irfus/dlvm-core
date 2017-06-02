@@ -297,10 +297,11 @@ public extension InstructionKind {
             }
 
         case let .gradient(f, from: diffIndex, wrt: varIndices, keeping: outputIndices):
-            guard case let .function(_, fref) = f, fref.isDifferentiable else { return .invalid }
+            guard case let .function(_, fref) = f else { return .invalid }
             return fref.gradientType(fromOutput: diffIndex,
                                      withRespectTo: varIndices,
-                                     keepingOutputs: outputIndices) ?? .invalid
+                                     keepingOutputs: outputIndices,
+                                     isSeedable: false) ?? .invalid
 
         case let .extract(from: v, at: indices):
             return v.type.subtype(at: indices) ?? .invalid

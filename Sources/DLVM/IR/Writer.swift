@@ -338,10 +338,10 @@ extension Function.Attribute : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("!")
         switch self {
-        case .differentiable: target.write("differentiable")
         case .inline: target.write("inline")
-        case let .differentiating(f, from: diffIndex, wrt: varIndices, keepingOutputs: outputIndices):
-            target.write("differentiating(@\(f.name), from: \(diffIndex), wrt: \(varIndices)), keepingOutputs: \(outputIndices)")
+        case let .gradient(f, from: diffIndex, wrt: varIndices,
+                           keeping: outputIndices, seedable: isSeedable):
+            target.write("differentiating(@\(f.name), from: \(diffIndex), wrt: \(varIndices)), keeping: \(outputIndices), seedable: \(isSeedable)")
         }
     }
 }

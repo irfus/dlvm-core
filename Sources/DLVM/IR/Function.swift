@@ -19,9 +19,17 @@
 
 public final class Function : Named, IRCollection, IRUnit {
     public enum Attribute {
-        case differentiable
+        /// Inline the function during LLGen
         case inline
-        case differentiating(Function, from: Int, wrt: [Int], keepingOutputs: [Int])
+        /// Mark the function as the gradient of another with given configuration
+        /// - Parameters:
+        ///   - from: index of tuple element to differentiate, when the return type is
+        ///           a tuple; otherwise must be 0
+        ///   - wrt: indices of arguments to differentiate the function with respect to
+        ///   - keeping: indices of return values to kept in the gradient function, when
+        ///              the return type is a tuple; otherwise can be [0] or []
+        /// - Note: The type of the function must match that given by the configuration
+        case gradient(Function, from: Int, wrt: [Int], keeping: [Int], seedable: Bool)
     }
 
     public typealias Element = BasicBlock
@@ -50,9 +58,8 @@ extension Function.Attribute : Hashable {
     public static func == (lhs: Function.Attribute, rhs: Function.Attribute) -> Bool {
         switch (lhs, rhs) {
         /// Equality by case handle
-        case (.differentiable, .differentiable),
-             (.inline, .inline),
-             (.differentiating, .differentiating):
+        case (.inline, .inline),
+             (.gradient, .gradient):
             return true
         default:
             return false
@@ -61,17 +68,9 @@ extension Function.Attribute : Hashable {
     
     public var hashValue: Int {
         switch self {
-        case .differentiable:  return 1
-        case .inline:          return 2
-        case .differentiating: return 3
+        case .inline:          return 0
+        case .gradient: return 1
         }
-    }
-}
-
-// MARK: - Attribute helper
-public extension Function {
-    var isDifferentiable: Bool {
-        return attributes.contains(.differentiable)
     }
 }
 
@@ -112,11 +111,13 @@ public extension Function {
 
     func gradientType(fromOutput diffIndex: Int,
                       withRespectTo varIndices: [Int],
-                      keepingOutputs outputIndices: [Int]) -> Type? {
+                      keepingOutputs outputIndices: [Int],
+                      isSeedable: Bool) -> Type? {
         var keptOutputs: [Type]
+        let diffSourceType: Type
         /// Check output index
         switch returnType {
-        /// Tuple output is treated as multiplt-out
+        /// Tuple output is treated as multiple-out
         case let .tuple(subtypes):
             guard
                 /// Diff index must be in bounds
@@ -126,6 +127,7 @@ public extension Function {
                 /// Indices of the outputs to keep must not contain any duplicate
                 !outputIndices.containsDuplicate
                 else { return nil }
+            diffSourceType = subtypes[diffIndex]
             keptOutputs = someOutputs
         /// Other output is treated as single out
         case _ where
@@ -135,6 +137,7 @@ public extension Function {
                 && diffIndex == 0
                 /// Indices of the outputs to keep must be either [] or [0] 
                 && (outputIndices.isEmpty || outputIndices == [0]):
+            diffSourceType = returnType
             keptOutputs = outputIndices.isEmpty ? [] : [returnType]
         /// Bad differentiation case
         default:
@@ -146,11 +149,12 @@ public extension Function {
             /// All diff variables must be diff'able arguments
             diffVars.forAll({$0.isDifferentiable})
             else { return nil }
-        /// Result of differentiation has the same input types but different output types 
+        /// Result of differentiation has the same input types but different output types
         /// Output type is `(k1, ..., kn, d1, ..., dn)` where `k1...kn` are outputs of the 
         /// original function to keep, `d1...dn` are derivatives of the output at `diffIndex`
         /// with respect to arguments at indices `varIndices`, respectively.
-        return .function(argumentTypes, .tuple(keptOutputs + diffVars))
+        return .function(isSeedable ? argumentTypes + [diffSourceType] : argumentTypes,
+                         .tuple(keptOutputs + diffVars))
     }
     
 }
