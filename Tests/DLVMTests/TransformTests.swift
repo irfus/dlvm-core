@@ -16,10 +16,9 @@ class TransformTests: XCTestCase {
     /// - TODO: Fix bug in dominance analysis that causes crash
     func testDCE() throws {
         let fun = builder.buildFunction(named: "bar",
-                                        arguments: [ "x" : .scalar(.float(.single)),
-                                                     "y" : .scalar(.float(.single)) ],
-                                        result: .int(32))
-        builder.move(to: builder.buildEntry(in: fun))
+                                        argumentTypes: [.scalar(.float(.single)), .scalar(.float(.single))],
+                                        returnType: .int(32))
+        builder.move(to: builder.buildEntry(argumentNames: ["x", "y"], in: fun))
         let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
         let dead1 = builder.buildInstruction(.zipWith(.associative(.multiply),
                                                       .literal(.int(32), 10000), .literal(.int(32), 20000), nil),

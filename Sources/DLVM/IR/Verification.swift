@@ -208,8 +208,9 @@ extension LiteralValue : Verifiable {
 }
 
 extension Function : Verifiable {
-    private func verifyDifferentiability() throws {
-        guard isDifferentiable else { return }
+    private func verifyDifferentiability(from: Int, wrt: [Int]) throws {
+        /// - TODO: Check along the differentiation floow
+        /// let dfg = try analysis(from: DataFlowGraphAnalysis.self)
         /// All arguments have to be tensors or aggregate types of tensors
         /// No explicit pointer semantics are allowed
         /// - TODO: Check arguments
@@ -261,18 +262,17 @@ extension Function : Verifiable {
             }
         }
 
-        /// Verify differentiability
-        try verifyDifferentiability()
-
         /// Verify attributes
         for attr in attributes {
             switch attr {
             /// Gradient function
-            case let .differentiating(antigrad, from: diffIndex, wrt: varIndices, keepingOutputs: outputIndices):
+            case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
+                               keeping: outputIndices, seedable: isSeedable):
                 /// Check for type mismatch
                 guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
                                                                withRespectTo: varIndices,
-                                                               keepingOutputs: outputIndices) else {
+                                                               keepingOutputs: outputIndices,
+                                                               isSeedable: isSeedable) else {
                     throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
                 }
                 guard type == expectedType else {
@@ -562,7 +562,7 @@ extension InstructionKind {
                 throw VerificationError.notFunction(v, instruction)
             }
             guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars,
-                                            keepingOutputs: outputIndices) else {
+                                            keepingOutputs: outputIndices, isSeedable: false) else {
                 throw VerificationError.invalidGradientArguments(v, instruction)
             }
 

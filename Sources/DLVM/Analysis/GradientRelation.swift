@@ -22,6 +22,7 @@ fileprivate struct GradientConfig {
     let differentiationIndex: Int
     let variableIndices: [Int]
     let outputIndices: [Int]
+    let isSeedable: Bool
 }
 
 extension GradientConfig : Equatable, Hashable {
@@ -30,6 +31,7 @@ extension GradientConfig : Equatable, Hashable {
             && lhs.differentiationIndex == rhs.differentiationIndex
             && lhs.variableIndices == rhs.variableIndices
             && lhs.outputIndices == rhs.outputIndices
+            && lhs.isSeedable == rhs.isSeedable
     }
 
     var hashValue: Int {
@@ -46,11 +48,13 @@ public extension GradientRelationInfo {
     func gradient(of function: Function,
                   from diffIndex: Int,
                   wrt varIndices: [Int],
-                  keepingOutputs outputIndices: [Int]) -> Function? {
+                  keeping outputIndices: [Int],
+                  isSeedable: Bool) -> Function? {
         let key = GradientConfig(function: function,
                               differentiationIndex: diffIndex,
                               variableIndices: varIndices,
-                              outputIndices: outputIndices)
+                              outputIndices: outputIndices,
+                              isSeedable: isSeedable)
         return gradientMap[key]
     }
 
@@ -67,14 +71,16 @@ open class GradientRelationAnalysis: AnalysisPass {
         var ggi = GradientRelationInfo()
         for grad in module {
             guard let key: GradientConfig = grad.attributes.flatMap({ attr in
-                guard case let .differentiating(f, from: diffIndex,
-                                                wrt: varIndices,
-                                                keepingOutputs: outputIndices) = attr
+                guard case let .gradient(f, from: diffIndex,
+                                         wrt: varIndices,
+                                         keeping: outputIndices,
+                                         seedable: isSeedable) = attr
                     else { return nil }
                 return GradientConfig(function: f,
                                       differentiationIndex: diffIndex,
                                       variableIndices: varIndices,
-                                      outputIndices: outputIndices)
+                                      outputIndices: outputIndices,
+                                      isSeedable: isSeedable)
             }).first else { continue }
             ggi.gradientMap[key] = grad
             ggi.antigradientMap[grad] = key.function

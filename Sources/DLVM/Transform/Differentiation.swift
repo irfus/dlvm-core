@@ -38,12 +38,12 @@ open class Differentiation: TransformPass {
                 if case let .gradient(.function(_, funcToDiff),
                                       from: diffIndex,
                                       wrt: varIndices,
-                                      keeping: outputIndices) = instruction.kind,
-                   funcToDiff.isDifferentiable {
+                                      keeping: outputIndices) = instruction.kind {
                     if let _ = globalGradInfo.gradient(of: function,
                                                        from: diffIndex,
                                                        wrt: varIndices,
-                                                       keepingOutputs: outputIndices) {
+                                                       keeping: outputIndices,
+                                                       isSeedable: false) {
                         continue
                     }
                 }
