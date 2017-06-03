@@ -71,7 +71,7 @@ open class GradientRelationAnalysis: AnalysisPass {
         var ggi = GradientRelationInfo()
         for grad in module {
             guard let key: GradientConfig = grad.attributes.flatMap({ attr in
-                guard case let .gradient(f, from: diffIndex,
+                guard case let .gradient(.function(_, f), from: diffIndex,
                                          wrt: varIndices,
                                          keeping: outputIndices,
                                          seedable: isSeedable) = attr

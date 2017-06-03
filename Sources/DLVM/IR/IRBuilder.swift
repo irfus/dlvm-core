@@ -167,15 +167,6 @@ public extension IRBuilder {
         return buildInstruction(.apply(function, arguments))
     }
 
-    func gradient(_ function: Function, from output: Int,
-                  withRespectTo variables: [Int],
-                  keepingOutputs outputIndices: [Int]) -> Instruction {
-        return buildInstruction(.gradient(%function,
-                                          from: output,
-                                          wrt: variables,
-                                          keeping: outputIndices))
-    }
-
     func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.matrixMultiply(lhs, rhs))
     }
