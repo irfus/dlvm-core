@@ -29,6 +29,7 @@ public enum LexicalError : Error {
     case invalidAnonymousLocalIdentifier(SourceLocation)
     case invalidBasicBlockIndex(SourceLocation)
     case invalidInstructionIndex(SourceLocation)
+    case unknownAttribute(SourceRange)
 }
 
 public enum ParseError : Error {
@@ -42,6 +43,8 @@ public enum ParseError : Error {
     case redefinedIdentifier(Token)
     case anonymousIdentifierNotInLocal(Token)
     case invalidAnonymousIdentifierIndex(Token)
+    case notFunctionType(SourceRange)
+    case invalidAttributeArguments(SourceLocation)
 }
 
 public extension LexicalError {
@@ -56,7 +59,8 @@ public extension LexicalError {
             return loc
         case .illegalIdentifier(let range),
              .illegalNumber(let range),
-             .unclosedStringLiteral(let range):
+             .unclosedStringLiteral(let range),
+             .unknownAttribute(let range):
             return range.lowerBound
         }
     }
@@ -77,8 +81,11 @@ public extension ParseError {
              let .anonymousIdentifierNotInLocal(tok),
              let .invalidAnonymousIdentifierIndex(tok):
             return tok.startLocation
-        case let .typeMismatch(_, range):
+        case let .typeMismatch(_, range),
+             let .notFunctionType(range):
             return range.lowerBound
+        case let .invalidAttributeArguments(loc):
+            return loc
         }
     }
 }
@@ -113,6 +120,10 @@ extension ParseError : CustomStringConvertible {
             return "anonymous identifier \(tok) is not in a local (basic block) context"
         case let .invalidAnonymousIdentifierIndex(tok):
             return "anonymous identifier \(tok) has invalid index"
+        case let .notFunctionType(range):
+            return "type signature at \(range) is not a function type"
+        case .invalidAttributeArguments(_):
+            return "invalid attribute arguments"
         }
     }
 }
@@ -151,6 +162,8 @@ extension LexicalError : CustomStringConvertible {
             return "invalid index for basic block in anonymous local identifier"
         case .invalidInstructionIndex(_):
             return "invalid index for instruction in anonymous local identifier"
+        case let .unknownAttribute(range):
+            return "unknown attribute at \(range)"
         }
     }
 }
@@ -193,7 +206,6 @@ extension InstructionKind.Opcode : CustomStringConvertible {
         case .extract: return "extract"
         case .insert: return "insert"
         case .apply: return "apply"
-        case .gradient: return "gradient"
         case .allocateStack: return "allocateStack"
         case .allocateHeap: return "allocateHeap"
         case .allocateBox: return "allocateBox"
@@ -224,7 +236,6 @@ extension TokenKind : CustomStringConvertible {
         case let .identifier(kind, id):
             let kindDesc: String
             switch kind {
-            case .attribute: kindDesc = "!"
             case .basicBlock: kindDesc = "'"
             case .global: kindDesc = "@"
             case .key: kindDesc = "#"
@@ -237,6 +248,8 @@ extension TokenKind : CustomStringConvertible {
         case .indent: return "an indentation"
         case let .anonymousIdentifier(b, i):
             return "%\(b).\(i)"
+        case let .attribute(attr):
+            return "!" + String(describing: attr)
         }
     }
 }

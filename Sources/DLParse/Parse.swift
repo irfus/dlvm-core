@@ -24,6 +24,7 @@ private struct SymbolTable {
     var locals: [String : Value] = [:]
     var globals: [String : Value] = [:]
     var nominalTypes: [String : Type] = [:]
+    var basicBlocks: [String : BasicBlock] = [:]
 }
 
 public class Parser {
@@ -131,12 +132,26 @@ private extension Parser {
         }
     }
 
-    func parseIdentifier(ofKind kind: IdentifierKind) throws -> String {
+    func parseIdentifier(ofKind kind: IdentifierKind, isDefinition: Bool = false) throws -> String {
         let tok = try consumepOrDiagnose("an identifier")
+        let name: String
         switch tok.kind {
-        case .identifier(kind, let id): return id
+        case .identifier(kind, let id): name = id
         default: throw ParseError.unexpectedIdentifierKind(kind, tok)
         }
+        /// If we are parsing a name definition, check for its uniqueness
+        let contains: (String) -> Bool
+        switch kind {
+        case .basicBlock: contains = symbolTable.basicBlocks.keys.contains
+        case .global: contains = symbolTable.globals.keys.contains
+        case .temporary: contains = symbolTable.locals.keys.contains
+        case .type: contains = symbolTable.nominalTypes.keys.contains
+        default: return name
+        }
+        guard isDefinition ? !contains(name) : contains(name) else {
+            throw ParseError.redefinedIdentifier(tok)
+        }
+        return name
     }
 
     @discardableResult
@@ -166,6 +181,14 @@ private extension Parser {
         return str
     }
 
+    func consumeAttribute() throws -> Function.Attribute {
+        let tok = try consumepOrDiagnose("an attribute")
+        guard case let .attribute(attr) = tok.kind else {
+            throw ParseError.unexpectedToken(expected: "an attribute", tok)
+        }
+        return attr
+    }
+
     func consumeAnyNewLines() {
         consume(while: {$0 == .newLine})
     }
@@ -176,12 +199,12 @@ private extension Parser {
     }
 
     func parseMany<T>(_ parser: () throws -> T,
-                      separatedBy: () throws -> ()) -> [T] {
+                      separatedBy parseSeparator: (() throws -> ())? = nil) -> [T] {
         var uses: [T] = []
         guard let first = try? parser() else { return uses }
         uses.append(first)
         while let use: T = try? withBacktracking(execute: {
-            try consumeWrappablePunctuation(.comma)
+            try parseSeparator?()
             return try parser()
         }) { uses.append(use) }
         return uses
@@ -193,7 +216,7 @@ extension Parser {
     /// Parse one of many Uses separated by ','
     func parseUseList() -> [Use] {
         return parseMany({ try parseUse().0 },
-                         separatedBy: { try consumeWrappablePunctuation(.comma) })
+                         separatedBy: { try self.consumeWrappablePunctuation(.comma) })
     }
 
     /// Parse a literal
@@ -295,7 +318,7 @@ extension Parser {
             let elementTypes = parseMany({
                 try parseType().0
             }, separatedBy: {
-                try consumeWrappablePunctuation(.comma)
+                try self.consumeWrappablePunctuation(.comma)
             })
             let rightBkt = try consumeWrappablePunctuation(.rightParenthesis)
             return (.tuple(elementTypes), tok.startLocation..<rightBkt.endLocation)
@@ -312,7 +335,6 @@ extension Parser {
 
     func parseTypeSignature() throws -> (Type, SourceRange) {
         try consumeWrappablePunctuation(.colon)
-        consumeAnyNewLines()
         return try parseType()
     }
 
@@ -415,9 +437,6 @@ extension Parser {
         case .insert: break
         /// 'apply' <val> '(' <val>+ ')' 
         case .apply: break
-        /// 'gradient' <val> 'from' <idx> 'wrt' <idx> (',' <idx>)*
-        ///            ('keeping' <idx> (',' <idx>)*)?
-        case .gradient: break
         /// 'allocateStack' <type> 'count' <num>
         case .allocateStack: break
         /// 'allocateHeap' <type> 'count' <val>
@@ -441,8 +460,7 @@ extension Parser {
         /// 'copy' 'from' <val> 'to' <val> 'count' <val>
         case .copy: break
         case .trap: break
-        /// <binary_op> <val>, <val>
-        /// <binary_op> <val>, <val> broadcast <left|right> [<index_0, index_1, ...>]
+        /// <binary_op> <val>, <val> (broadcast [left|right] <num> (',' <num>)*)?
         case .binaryOp(_): break
         /// <unary_op> <val>
         case .unaryOp(_): break
@@ -464,6 +482,7 @@ extension Parser {
                 throw ParseError.redefinedIdentifier(tok)
             }
             inst = Instruction(name: name, kind: kind, parent: basicBlock)
+            symbolTable.locals[name] = inst
         case let .anonymousIdentifier(bbIndex, instIndex):
             /// Check BB index and instruction index
             /// - BB index must equal the current BB index
@@ -486,11 +505,64 @@ extension Parser {
     }
 
     func parseBasicBlock(in function: Function) throws -> BasicBlock {
-        fatalError("Unimplemented")
+        /// Parse basic block header
+        let name = try parseIdentifier(ofKind: .basicBlock, isDefinition: true)
+        try consumeWrappablePunctuation(.leftParenthesis)
+        let args: [(String, Type)] = parseMany({
+            let name = try parseIdentifier(ofKind: .temporary, isDefinition: true)
+            let (type, _) = try parseTypeSignature()
+            return (name, type)
+        }, separatedBy: {
+            try self.consumeWrappablePunctuation(.comma)
+        })
+        try consumeWrappablePunctuation(.rightParenthesis)
+        try consume(.punctuation(.colon))
+        try consumeOneOrMore(.newLine)
+        let bb = BasicBlock(name: name, arguments: args, parent: function)
+        /// Insert args into symbol table
+        for arg in bb.arguments {
+            symbolTable.locals[arg.name] = arg
+        }
+        /// Parse instructions
+        _ = parseMany({
+            try parseInstruction(in: bb)
+        }, separatedBy: {
+            try self.consumeOneOrMore(.newLine)
+        })
+        /// Insert BB into symbol table
+        symbolTable.basicBlocks[name] = bb
+        return bb
+    }
+
+    func parseIndexList() throws -> [Int] {
+        return parseMany({
+            try parseInteger().0
+        }, separatedBy: {
+            try self.consumeWrappablePunctuation(.comma)
+        })
     }
 
     func parseFunction(in module: Module) throws -> Function {
-        fatalError("Unimplemented")
+        try consume(.keyword(.func))
+        let name = try parseIdentifier(ofKind: .global, isDefinition: true)
+        let (type, typeSigRange) = try parseTypeSignature()
+        guard case let .function(args, ret) = type.canonical else {
+            throw ParseError.notFunctionType(typeSigRange)
+        }
+        let attributes = parseMany({ try consumeAttribute() })
+        /// - TODO: parse declaration kind
+        let function = Function(name: name, argumentTypes: args, returnType: ret,
+                                attributes: Set(attributes), parent: module)
+        /// Insert function to symbol table
+        symbolTable.globals[name] = function
+        try consumeWrappablePunctuation(.leftCurlyBracket)
+        _ = parseMany({
+            try parseBasicBlock(in: function)
+        }, separatedBy: {
+            try self.consumeOneOrMore(.newLine)
+        })
+        try consume(.punctuation(.rightCurlyBracket))
+        return function
     }
 }
 
