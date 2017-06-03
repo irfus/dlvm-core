@@ -334,9 +334,6 @@ extension Function.Attribute : TextOutputStreamable {
         target.write("!")
         switch self {
         case .inline: target.write("inline")
-        case let .gradient(of: f, from: diffIndex, wrt: varIndices,
-                           keeping: outputIndices, seedable: isSeedable):
-            target.write("gradient(of: \(f), from: \(diffIndex), wrt: \(varIndices)), keeping: \(outputIndices), seedable: \(isSeedable)")
         }
     }
 }
@@ -347,12 +344,35 @@ extension Function : TextOutputStreamable {
             attr.write(to: &target)
             target.write("\n")
         }
-        target.write("func ")
-        target.write("@\(name): \(type) {\n")
-        for bb in self {
-            bb.write(to: &target)
+        switch declarationKind {
+        case .external?:
+            target.write("[extern]\n")
+        case let .gradient(of: f, from: diffSrc, wrt: diffArgs,
+                           keeping: keptRets, seedable: isSeedable)?:
+            target.write("[gradient \(%f)")
+            diffSrc.ifAny {
+                target.write(" from \($0)")
+            }
+            target.write(" wrt \(diffArgs.joinedDescription)")
+            if !keptRets.isEmpty {
+                target.write(" keeping \(keptRets.joinedDescription)")
+            }
+            if isSeedable {
+                target.write(" seedable")
+            }
+            target.write("]\n")
+        default:
+            break
         }
-        target.write("}")
+        target.write("func ")
+        target.write("@\(name): \(type)")
+        if isDefinition {
+            target.write(" {\n")
+            for bb in self {
+                bb.write(to: &target)
+            }
+            target.write("}")
+        }
     }
 }
 

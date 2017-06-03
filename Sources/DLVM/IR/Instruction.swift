@@ -488,7 +488,6 @@ public extension InstructionKind {
         case extract
         case insert
         case apply
-        case gradient
         case allocateStack
         case allocateHeap
         case allocateBox
@@ -556,7 +555,6 @@ extension InstructionKind.Opcode : Equatable {
         case (.extract, .extract): return true
         case (.insert, .insert): return true
         case (.apply, .apply): return true
-        case (.gradient, .gradient): return true
         case (.allocateStack, .allocateStack): return true
         case (.allocateHeap, .allocateHeap): return true
         case (.allocateBox, .allocateBox): return true

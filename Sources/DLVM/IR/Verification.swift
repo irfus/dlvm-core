@@ -45,7 +45,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
     case functionArgumentMismatch([Use], Type, Node)
     case notAFunctionCall(Use, Function, Node)
-    case gradientArgumentMismatch(Function, Int, [Int], Node)
+    case gradientArgumentMismatch(Function, Int?, [Int], Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
     case invalidIndex(Use, Int, Node)
     case multipleExits([BasicBlock], Node)
@@ -64,7 +64,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case notPointer(Use, Node)
     case invalidIndices(Use, [ElementKey], Node)
     case invalidOffsets(Use, [ElementKey], Node)
-    case gradientTypeMismatch(Function.Attribute, Type, Node)
+    case gradientTypeMismatch(Function.DeclarationKind, Type, Node)
     case invalidLiteral(Type, Literal, Node)
     case missingIndices(Use, Node)
     case notDifferentiable(Node)
@@ -262,25 +262,19 @@ extension Function : Verifiable {
             }
         }
 
-        /// Verify attributes
-        for attr in attributes {
-            switch attr {
-            /// Gradient function
-            case let .gradient(.function(_, antigrad), from: diffIndex, wrt: varIndices,
-                               keeping: outputIndices, seedable: isSeedable):
-                /// Check for type mismatch
-                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
-                                                               withRespectTo: varIndices,
-                                                               keepingOutputs: outputIndices,
-                                                               isSeedable: isSeedable) else {
-                    throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
-                }
-                guard type == expectedType else {
-                    throw VerificationError.gradientTypeMismatch(attr, expectedType, self)
-                }
-                
-            default:
-                break
+        /// Verify gradient function's type signature
+        if let declarationKind = declarationKind,
+            case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
+                               keeping: outputIndices, seedable: isSeedable) = declarationKind {
+            /// Check for type mismatch
+            guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
+                                                           withRespectTo: varIndices,
+                                                           keepingOutputs: outputIndices,
+                                                           isSeedable: isSeedable) else {
+                throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
+            }
+            guard type == expectedType else {
+                throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
             }
         }
     }

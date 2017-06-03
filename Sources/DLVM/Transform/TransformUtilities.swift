@@ -25,6 +25,7 @@ public extension Function {
                                argumentTypes: argumentTypes,
                                returnType: returnType,
                                attributes: attributes,
+                               declarationKind: declarationKind,
                                parent: parent)
 
         /// Mappings from old IR units to new IR units
