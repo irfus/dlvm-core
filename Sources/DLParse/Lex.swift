@@ -19,6 +19,7 @@
 
 import enum DLVM.InstructionKind
 import enum DLVM.DataType
+import class DLVM.Function
 
 public enum Keyword {
     case module
@@ -35,6 +36,8 @@ public enum Keyword {
     case `true`, `false`
     case scalar
     case count
+    case seedable
+    case extern, gradient
 }
 
 public enum Punctuation {
@@ -51,7 +54,6 @@ public enum Punctuation {
 }
 
 public enum IdentifierKind {
-    case attribute
     case basicBlock
     case temporary
     case type
@@ -69,6 +71,7 @@ public enum TokenKind {
     case anonymousIdentifier(Int, Int)
     case dataType(DataType)
     case stringLiteral(String)
+    case attribute(Function.Attribute)
     case newLine
     case indent
 }
@@ -202,7 +205,7 @@ private extension UnicodeScalar {
     }
 }
 
-private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z0-9_][a-zA-Z0-9_.]*",
+private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z_][a-zA-Z0-9_.]*",
                                                          options: [ .dotMatchesLineSeparators ])
 
 private extension Lexer {
@@ -252,7 +255,18 @@ private extension Lexer {
         case "x": kind = .punctuation(.times)
         case "*": kind = .punctuation(.star)
         case "#": return try lexIdentifier(ofKind: .key)
-        case "!": return try lexIdentifier(ofKind: .attribute)
+        case "!":
+            let prefix = characters.prefix(while: {
+                !($0.isWhitespace || $0.isNewLine || $0.isPunctuation)
+            })
+            advance(by: prefix.count)
+            switch prefix {
+            case "inline":
+                kind = .attribute(.inline)
+            default:
+                throw LexicalError.unknownAttribute(startLoc..<location)
+            }
+
         case "@": return try lexIdentifier(ofKind: .global)
         case "%":
             guard let nameStart = characters.first else {
@@ -400,6 +414,9 @@ private extension Lexer {
         case "false": kind = .keyword(.false)
         case "scalar": kind = .keyword(.scalar)
         case "count": kind = .keyword(.count)
+        case "seedable": kind = .keyword(.seedable)
+        case "extern": kind = .keyword(.extern)
+        case "gradient": kind = .keyword(.gradient)
         /// Opcode
         case "branch": kind = .opcode(.branch)
         case "conditional": kind = .opcode(.conditional)
@@ -415,7 +432,6 @@ private extension Lexer {
         case "extract": kind = .opcode(.extract)
         case "insert": kind = .opcode(.insert)
         case "apply": kind = .opcode(.apply)
-        case "gradient": kind = .opcode(.gradient)
         case "allocateStack": kind = .opcode(.allocateStack)
         case "allocateHeap": kind = .opcode(.allocateHeap)
         case "allocateBox": kind = .opcode(.allocateBox)
