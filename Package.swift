@@ -37,7 +37,6 @@ let package = Package(
     exclude: [
         "Sources/TEL",
         "Sources/telc",
-        "Sources/DLVMReader",
         "Sources/dlc",
         "Sources/dli",
         "Compute",
