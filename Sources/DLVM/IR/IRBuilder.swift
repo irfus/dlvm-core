@@ -86,11 +86,13 @@ extension IRBuilder {
     open func buildFunction(named name: String,
                             argumentTypes: [Type],
                             returnType: Type = .void,
-                            attributes: Set<Function.Attribute> = []) -> Function {
+                            attributes: Set<Function.Attribute> = [],
+                            declarationKind: Function.DeclarationKind? = nil) -> Function {
         let fun = Function(name: name,
                            argumentTypes: argumentTypes,
                            returnType: returnType,
                            attributes: attributes,
+                           declarationKind: declarationKind,
                            parent: module)
         module.append(fun)
         return fun

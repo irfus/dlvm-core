@@ -27,31 +27,19 @@ open class Differentiation: TransformPass {
     
     open class func run(on module: Module) throws -> Bool {
         var changed = false
-        /// Run analysis before the transformation
-        /// Only to check if this pass has been previously run
-        let globalGradInfo = try module.analysis(from: GradientRelationAnalysis.self)
 
         var expanded: [Function : Function] = [:]
 
         for function in module {
-            for case let .gradient(.function(_, funcToDiff),
+            if case let .gradient(funcToDiff,
                                    from: diffIndex,
                                    wrt: varIndices,
                                    keeping: outputIndices,
-                                   seedable: isSeedable) in function.attributes {
-                                    DLUnimplemented()
+                                   seedable: isSeedable)? = function.declarationKind {
+                DLUnimplemented()
             }
         }
 
-            /// If function is not differentiable, do nothing
-//            guard function.isDifferentiable else { continue }
-//            /// If gradient function exists, do nothing
-//            if let _ = globalGradInfo.gradient(of: function) { continue }
-//            /// Clone function
-////            let grad = function.makeClone(named: func)
-//            /// Expand this function
-//            try expand(function)
-//            changed = true
         return changed
     }
 }

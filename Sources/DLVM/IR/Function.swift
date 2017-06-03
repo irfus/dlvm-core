@@ -21,7 +21,13 @@ public final class Function : Named, IRCollection, IRUnit {
     public enum Attribute {
         /// Inline the function during LLGen
         case inline
-        /// Mark the function as the gradient of another with given configuration
+    }
+
+    public enum DeclarationKind {
+        /// Externally defined
+        case external
+        /// Mark the function as the gradient of another with given configuration. To be
+        /// materialized as a normally defined function by AD.
         /// - Parameters:
         ///   - from: index of tuple element to differentiate, when the return type is
         ///           a tuple; otherwise must be 0
@@ -29,7 +35,7 @@ public final class Function : Named, IRCollection, IRUnit {
         ///   - keeping: indices of return values to kept in the gradient function, when
         ///              the return type is a tuple; otherwise can be [0] or []
         /// - Note: The type of the function must match that given by the configuration
-        case gradient(of: Use, from: Int, wrt: [Int], keeping: [Int], seedable: Bool)
+        case gradient(of: Function, from: Int?, wrt: [Int], keeping: [Int], seedable: Bool)
     }
 
     public typealias Element = BasicBlock
@@ -38,39 +44,21 @@ public final class Function : Named, IRCollection, IRUnit {
     public var argumentTypes: [Type]
     public var returnType: Type
     public var attributes: Set<Attribute> = []
+    public var declarationKind: DeclarationKind?
     public unowned var parent: Module
 
     public var elements: OrderedSet<BasicBlock> = []
     public internal(set) var analysisManager: AnalysisManager<Function> = AnalysisManager()
 
     public init(name: String, argumentTypes: [Type],
-                returnType: Type, attributes: Set<Attribute>, parent: Module) {
+                returnType: Type, attributes: Set<Attribute> = [],
+                declarationKind: DeclarationKind? = nil, parent: Module) {
         self.name = name
         self.argumentTypes = argumentTypes
         self.returnType = returnType
         self.attributes = attributes
+        self.declarationKind = declarationKind
         self.parent = parent
-    }
-}
-
-// MARK: - Hashable
-extension Function.Attribute : Hashable {
-    public static func == (lhs: Function.Attribute, rhs: Function.Attribute) -> Bool {
-        switch (lhs, rhs) {
-        /// Equality by case handle
-        case (.inline, .inline),
-             (.gradient, .gradient):
-            return true
-        default:
-            return false
-        }
-    }
-    
-    public var hashValue: Int {
-        switch self {
-        case .inline:          return 0
-        case .gradient: return 1
-        }
     }
 }
 
@@ -87,29 +75,35 @@ extension Function : Value {
 
 // MARK: - Arguments
 public extension Function {
-
     func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type, C.IndexDistance == Int {
         guard types.count == argumentTypes.count else { return false }
         return zip(types, argumentTypes).forAll { actual, formal in
             actual.conforms(to: formal)
         }
     }
+}
 
+// MARK: - Predicates
+public extension Function {
+    var isDeclaration: Bool {
+        return declarationKind != nil
+    }
+
+    var isDefinition: Bool {
+        return declarationKind == nil
+    }
 }
 
 // MARK: - Control flow
 public extension Function {
-
     var instructions: LazyCollection<FlattenBidirectionalCollection<Function>> {
         return lazy.joined()
     }
-
 }
 
 // MARK: - Gradient information
 public extension Function {
-
-    func gradientType(fromOutput diffIndex: Int,
+    func gradientType(fromOutput diffIndex: Int?,
                       withRespectTo varIndices: [Int],
                       keepingOutputs outputIndices: [Int],
                       isSeedable: Bool) -> Type? {
@@ -119,7 +113,7 @@ public extension Function {
         switch returnType {
         /// Tuple output is treated as multiple-out
         case let .tuple(subtypes):
-            guard
+            guard let diffIndex = diffIndex,
                 /// Diff index must be in bounds
                 subtypes.indices.contains(diffIndex),
                 /// Indices of the outputs to keep must be in bounds
@@ -130,9 +124,9 @@ public extension Function {
             diffSourceType = subtypes[diffIndex]
             keptOutputs = someOutputs
         /// Other output is treated as single out
-        case _ where
+        case _ where diffIndex == nil
                 /// Result must be differentiable
-                returnType.isDifferentiable
+                && returnType.isDifferentiable
                 /// Index must be 0
                 && diffIndex == 0
                 /// Indices of the outputs to keep must be either [] or [0] 
@@ -156,5 +150,4 @@ public extension Function {
         return .function(isSeedable ? argumentTypes + [diffSourceType] : argumentTypes,
                          .tuple(keptOutputs + diffVars))
     }
-    
 }
