@@ -34,19 +34,12 @@ open class Differentiation: TransformPass {
         var expanded: [Function : Function] = [:]
 
         for function in module {
-            for instruction in function.instructions {
-                if case let .gradient(.function(_, funcToDiff),
-                                      from: diffIndex,
-                                      wrt: varIndices,
-                                      keeping: outputIndices) = instruction.kind {
-                    if let _ = globalGradInfo.gradient(of: function,
-                                                       from: diffIndex,
-                                                       wrt: varIndices,
-                                                       keeping: outputIndices,
-                                                       isSeedable: false) {
-                        continue
-                    }
-                }
+            for case let .gradient(.function(_, funcToDiff),
+                                   from: diffIndex,
+                                   wrt: varIndices,
+                                   keeping: outputIndices,
+                                   seedable: isSeedable) in function.attributes {
+                                    DLUnimplemented()
             }
         }
 

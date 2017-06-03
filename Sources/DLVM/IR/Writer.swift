@@ -222,11 +222,6 @@ extension InstructionKind : TextOutputStreamable {
             target.write("elementPointer \(v) at \(ii.joinedDescription)")
         case let .bitCast(v, t):
             target.write("bitCast \(v) to \(t)")
-        case let .gradient(f, from: diff, wrt: vars, keeping: outputIndices):
-            target.write("gradient \(f) from \(diff) wrt \(vars.joinedDescription)")
-            if !outputIndices.isEmpty {
-                target.write(" keeping \(outputIndices)")
-            }
         case let .allocateHeap(t, count: c):
             target.write("allocateHeap \(t) count \(c)")
         case let .allocateBox(t):
@@ -339,9 +334,9 @@ extension Function.Attribute : TextOutputStreamable {
         target.write("!")
         switch self {
         case .inline: target.write("inline")
-        case let .gradient(f, from: diffIndex, wrt: varIndices,
+        case let .gradient(of: f, from: diffIndex, wrt: varIndices,
                            keeping: outputIndices, seedable: isSeedable):
-            target.write("differentiating(@\(f.name), from: \(diffIndex), wrt: \(varIndices)), keeping: \(outputIndices), seedable: \(isSeedable)")
+            target.write("gradient(of: \(f), from: \(diffIndex), wrt: \(varIndices)), keeping: \(outputIndices), seedable: \(isSeedable)")
         }
     }
 }

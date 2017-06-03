@@ -29,7 +29,7 @@ public final class Function : Named, IRCollection, IRUnit {
         ///   - keeping: indices of return values to kept in the gradient function, when
         ///              the return type is a tuple; otherwise can be [0] or []
         /// - Note: The type of the function must match that given by the configuration
-        case gradient(Function, from: Int, wrt: [Int], keeping: [Int], seedable: Bool)
+        case gradient(of: Use, from: Int, wrt: [Int], keeping: [Int], seedable: Bool)
     }
 
     public typealias Element = BasicBlock

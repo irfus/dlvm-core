@@ -266,7 +266,7 @@ extension Function : Verifiable {
         for attr in attributes {
             switch attr {
             /// Gradient function
-            case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
+            case let .gradient(.function(_, antigrad), from: diffIndex, wrt: varIndices,
                                keeping: outputIndices, seedable: isSeedable):
                 /// Check for type mismatch
                 guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
@@ -278,6 +278,7 @@ extension Function : Verifiable {
                 guard type == expectedType else {
                     throw VerificationError.gradientTypeMismatch(attr, expectedType, self)
                 }
+                
             default:
                 break
             }
@@ -555,15 +556,6 @@ extension InstructionKind {
         case let .retain(v), let .release(v):
             guard case .box = v.type else {
                 throw VerificationError.notBox(v, instruction)
-            }
-
-        case let .gradient(v, from: diff, wrt: vars, keeping: outputIndices):
-            guard case let .function(_, fref) = v else {
-                throw VerificationError.notFunction(v, instruction)
-            }
-            guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars,
-                                            keepingOutputs: outputIndices, isSeedable: false) else {
-                throw VerificationError.invalidGradientArguments(v, instruction)
             }
 
         case let .allocateStack(_, n):

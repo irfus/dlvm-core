@@ -61,9 +61,6 @@ public enum InstructionKind {
     /** Function invocation **/
     /// Function application
     case apply(Use, [Use])
-    /// Gradient transformer
-    /// - Note: This will be canonicalized to a function reference
-    case gradient(Use, from: Int, wrt: [Int], keeping: [Int])
 
     /** Heap memory of host and device **/
     /** Memory **/
@@ -296,13 +293,6 @@ public extension InstructionKind {
                 return .invalid
             }
 
-        case let .gradient(f, from: diffIndex, wrt: varIndices, keeping: outputIndices):
-            guard case let .function(_, fref) = f else { return .invalid }
-            return fref.gradientType(fromOutput: diffIndex,
-                                     withRespectTo: varIndices,
-                                     keepingOutputs: outputIndices,
-                                     isSeedable: false) ?? .invalid
-
         case let .extract(from: v, at: indices):
             return v.type.subtype(at: indices) ?? .invalid
 
@@ -366,8 +356,7 @@ extension InstructionKind {
              let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateHeap(_, count: op),
-             let .projectBox(op), let .release(op), let .retain(op),
-             let .gradient(op, _, _, _):
+             let .projectBox(op), let .release(op), let .retain(op):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -436,8 +425,6 @@ public extension InstructionKind {
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
             return .dataTypeCast(new, type)
-        case .gradient(old, from: let diff, wrt: let wrt, keeping: let outputIndices):
-            return .gradient(new, from: diff, wrt: wrt, keeping: outputIndices)
         case let .apply(f, uses):
             return .apply(f, uses.map(condSubst))
         case .extract(from: old, at: let i):
@@ -536,7 +523,6 @@ public extension InstructionKind {
         case .extract: return .extract
         case .insert: return .insert
         case .apply: return .apply
-        case .gradient: return .gradient
         case .allocateStack: return .allocateStack
         case .allocateHeap: return .allocateHeap
         case .allocateBox: return .allocateBox
