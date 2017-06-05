@@ -61,7 +61,7 @@ class LexTests : XCTestCase {
 
     func testStructLexing() throws {
         do {
-            let code = "!packed\nstruct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}"
+            let code = "struct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}"
             let lexer = Lexer(text: code)
             _ = try lexer.performLexing()
         } catch {
