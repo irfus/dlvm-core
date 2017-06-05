@@ -45,6 +45,7 @@ public enum ParseError : Error {
     case invalidAnonymousIdentifierIndex(Token)
     case notFunctionType(SourceRange)
     case invalidAttributeArguments(SourceLocation)
+    case declarationCannotHaveBody(declaration: SourceRange, body: Token)
 }
 
 public extension LexicalError {
@@ -79,7 +80,8 @@ public extension ParseError {
              let .undefinedNominalType(tok),
              let .redefinedIdentifier(tok),
              let .anonymousIdentifierNotInLocal(tok),
-             let .invalidAnonymousIdentifierIndex(tok):
+             let .invalidAnonymousIdentifierIndex(tok),
+             let .declarationCannotHaveBody(_, body: tok):
             return tok.startLocation
         case let .typeMismatch(_, range),
              let .notFunctionType(range):
@@ -101,30 +103,33 @@ extension ParseError : CustomStringConvertible {
         desc += ": "
         switch self {
         case let .unexpectedIdentifierKind(kind, tok):
-            return "identifier \(tok) has unexpected kind \(kind)"
+            desc += "identifier \(tok) has unexpected kind \(kind)"
         case let .unexpectedEndOfInput(expected: expected):
-            return "expected \(expected) but reached the end of input"
+            desc += "expected \(expected) but reached the end of input"
         case let .unexpectedToken(expected: expected, tok):
-            return "expected \(expected) but found the token \(tok)"
+            desc += "expected \(expected) but found \(tok)"
         case let .noDimensionsInTensorShape(tok):
-            return "no dimensions in tensor type at \(tok.startLocation). If you'd like it to be a scalar, use the data type (e.g. f32) directly."
+            desc += "no dimensions in tensor type at \(tok.startLocation). If you'd like it to be a scalar, use the data type (e.g. f32) directly."
         case let .undefinedIdentifier(tok):
-            return "undefined identifier \(tok)"
+            desc += "undefined identifier \(tok)"
         case let .typeMismatch(expected: ty, range):
-            return "value at \(range) should have type \(ty)"
+            desc += "value at \(range) should have type \(ty)"
         case let .undefinedNominalType(tok):
-            return "nominal type \(tok) is undefined"
+            desc += "nominal type \(tok) is undefined"
         case let .redefinedIdentifier(tok):
-            return "identifier \(tok) is redefined"
+            desc += "identifier \(tok) is redefined"
         case let .anonymousIdentifierNotInLocal(tok):
-            return "anonymous identifier \(tok) is not in a local (basic block) context"
+            desc += "anonymous identifier \(tok) is not in a local (basic block) context"
         case let .invalidAnonymousIdentifierIndex(tok):
-            return "anonymous identifier \(tok) has invalid index"
+            desc += "anonymous identifier \(tok) has invalid index"
         case let .notFunctionType(range):
-            return "type signature at \(range) is not a function type"
+            desc += "type signature at \(range) is not a function type"
         case .invalidAttributeArguments(_):
-            return "invalid attribute arguments"
+            desc += "invalid attribute arguments"
+        case let .declarationCannotHaveBody(declaration: declRange, _):
+            desc += "Declaration at \(declRange) cannot have a body"
         }
+        return desc
     }
 }
 
@@ -145,26 +150,27 @@ extension LexicalError : CustomStringConvertible {
         desc += ": "
         switch self {
         case let .illegalIdentifier(range):
-            return "illegal identifier at \(range)"
+            desc += "illegal identifier at \(range)"
         case let .illegalNumber(range):
-            return "illegal number at \(range)"
+            desc += "illegal number at \(range)"
         case .unexpectedToken(_):
-            return "unexpected token"
+            desc += "unexpected token"
         case let .invalidEscapeCharacter(char, _):
-            return "invalid escape character '\(char)'"
+            desc += "invalid escape character '\(char)'"
         case let .unclosedStringLiteral(range):
-            return "string literal at \(range) is not terminated"
+            desc += "string literal at \(range) is not terminated"
         case .expectingIdentifierName(_):
-            return "expecting identifier name"
+            desc += "expecting identifier name"
         case .invalidAnonymousLocalIdentifier(_):
-            return "invalid anonymous loacl identifier. It should look like %<bb_index>.<inst_index>, e.g. %0.1"
+            desc += "invalid anonymous loacl identifier. It should look like %<bb_index>.<inst_index>, e.g. %0.1"
         case .invalidBasicBlockIndex(_):
-            return "invalid index for basic block in anonymous local identifier"
+            desc += "invalid index for basic block in anonymous local identifier"
         case .invalidInstructionIndex(_):
-            return "invalid index for instruction in anonymous local identifier"
+            desc += "invalid index for instruction in anonymous local identifier"
         case let .unknownAttribute(range):
-            return "unknown attribute at \(range)"
+            desc += "unknown attribute at \(range)"
         }
+        return desc
     }
 }
 
@@ -245,7 +251,6 @@ extension TokenKind : CustomStringConvertible {
             return kindDesc + id
         case let .stringLiteral(str): return "\"\(str)\""
         case .newLine: return "a new line"
-        case .indent: return "an indentation"
         case let .anonymousIdentifier(b, i):
             return "%\(b).\(i)"
         case let .attribute(attr):

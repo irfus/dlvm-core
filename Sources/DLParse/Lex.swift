@@ -73,7 +73,6 @@ public enum TokenKind {
     case stringLiteral(String)
     case attribute(Function.Attribute)
     case newLine
-    case indent
 }
 
 public extension TokenKind {
@@ -355,10 +354,10 @@ private extension Lexer {
         advance(by: number.count)
         /// If there's a dot, lex float literal
         if endOfWhole < characters.endIndex, characters[endOfWhole] == "." {
-            advance(by: 1)
             number.append(".")
             /// Has decimal dot
             let afterDot = characters.index(after: endOfWhole)
+            advance(by: 1)
             guard afterDot < characters.endIndex, characters[afterDot].isDigit else {
                 throw LexicalError.illegalNumber(startLoc..<location)
             }
@@ -530,11 +529,13 @@ public extension Lexer {
                 advanceToNewLine()
                 tok = Token(kind: .newLine, range: startLoc..<startLoc+1)
             }
+            /*
             /// If located at the beginning of a new line, parse whitespaces as indent
             else if location.isBeginningOfLine, first.isWhitespace {
                 advance(by: 1)
                 tok = Token(kind: .indent, range: startLoc..<location)
             }
+            */
             /// Ignore whitespace
             else if first.isWhitespace {
                 advance(by: 1)

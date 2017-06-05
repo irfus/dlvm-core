@@ -99,7 +99,7 @@ private extension Parser {
     }
 
     @discardableResult
-    func consumepOrDiagnose(_ expected: String) throws -> Token {
+    func consumeOrDiagnose(_ expected: String) throws -> Token {
         guard currentToken != nil else {
             throw ParseError.unexpectedEndOfInput(expected: expected)
         }
@@ -116,7 +116,7 @@ private extension Parser {
 
     func parseInteger() throws -> (Int, SourceRange) {
         let name: String = "an integer"
-        let tok = try consumepOrDiagnose(name)
+        let tok = try consumeOrDiagnose(name)
         switch tok.kind {
         case let .integer(i): return (i, tok.range)
         default: throw ParseError.unexpectedToken(expected: name, tok)
@@ -125,7 +125,7 @@ private extension Parser {
 
     func parseDataType() throws -> (DataType, SourceRange) {
         let name: String = "a data type"
-        let tok = try consumepOrDiagnose(name)
+        let tok = try consumeOrDiagnose(name)
         switch tok.kind {
         case let .dataType(dt): return (dt, tok.range)
         default: throw ParseError.unexpectedToken(expected: name, tok)
@@ -133,7 +133,7 @@ private extension Parser {
     }
 
     func parseIdentifier(ofKind kind: IdentifierKind, isDefinition: Bool = false) throws -> String {
-        let tok = try consumepOrDiagnose("an identifier")
+        let tok = try consumeOrDiagnose("an identifier")
         let name: String
         switch tok.kind {
         case .identifier(kind, let id): name = id
@@ -165,6 +165,12 @@ private extension Parser {
         }
     }
 
+    func withPreservedState(execute: () throws -> ()) {
+        let originalTokens = restTokens
+        _ = try? execute()
+        restTokens = originalTokens
+    }
+
     @discardableResult
     func consumeWrappablePunctuation(_ punct: Punctuation) throws -> Token {
         consumeAnyNewLines()
@@ -174,7 +180,7 @@ private extension Parser {
     }
 
     func consumeStringLiteral() throws -> String {
-        let tok = try consumepOrDiagnose("a string literal")
+        let tok = try consumeOrDiagnose("a string literal")
         guard case let .stringLiteral(str) = tok.kind else {
             throw ParseError.unexpectedToken(expected: "a string literal", tok)
         }
@@ -182,7 +188,7 @@ private extension Parser {
     }
 
     func consumeAttribute() throws -> Function.Attribute {
-        let tok = try consumepOrDiagnose("an attribute")
+        let tok = try consumeOrDiagnose("an attribute")
         guard case let .attribute(attr) = tok.kind else {
             throw ParseError.unexpectedToken(expected: "an attribute", tok)
         }
@@ -221,7 +227,7 @@ extension Parser {
 
     /// Parse a literal
     func parseLiteral() throws -> (Literal, SourceRange) {
-        let tok = try consumepOrDiagnose("a literal")
+        let tok = try consumeOrDiagnose("a literal")
         switch tok.kind {
         /// Float
         case let .float(f):
@@ -261,14 +267,14 @@ extension Parser {
             return (.tensor(elements), tok.range)
         /// Struct
         case .punctuation(.leftCurlyBracket):
-            var fields: [(String, Use)] = []
-            while let field: (String, Use) = try? withBacktracking(execute: {
+            let fields: [(String, Use)] = parseMany({
                 let key = try parseIdentifier(ofKind: .key)
-                try consumeWrappablePunctuation(.colon)
-                consumeAnyNewLines()
+                try consumeWrappablePunctuation(.equal)
                 let (val, _) = try parseUse()
                 return (key, val)
-            }) { fields.append(field) }
+            }, separatedBy: {
+                try self.consumeWrappablePunctuation(.comma)
+            })
             let rightBkt = try consumeWrappablePunctuation(.rightCurlyBracket)
             return (.struct(fields), tok.startLocation..<rightBkt.endLocation)
         default:
@@ -291,7 +297,7 @@ extension Parser {
     }
 
     func parseType() throws -> (Type, SourceRange) {
-        let tok = try consumepOrDiagnose("a type")
+        let tok = try consumeOrDiagnose("a type")
         switch tok.kind {
         /// Void
         case .keyword(.void):
@@ -402,7 +408,7 @@ extension Parser {
     }
 
     func parseInstructionKind() throws -> InstructionKind {
-        let tok = try consumepOrDiagnose("an opcode")
+        let tok = try consumeOrDiagnose("an opcode")
         guard case let .opcode(opcode) = tok.kind else {
             throw ParseError.unexpectedToken(expected: "an opcode", tok)
         }
@@ -469,8 +475,6 @@ extension Parser {
     }
 
     func parseInstruction(in basicBlock: BasicBlock) throws -> Instruction {
-        /// Instruction must start with an indentation
-        try consume(.indent)
         let tok = try peekOrDiagnose("an instruction or a local identifier")
         let inst: Instruction
         switch tok.kind {
@@ -518,7 +522,12 @@ extension Parser {
         try consumeWrappablePunctuation(.rightParenthesis)
         try consume(.punctuation(.colon))
         try consumeOneOrMore(.newLine)
-        let bb = BasicBlock(name: name, arguments: args, parent: function)
+        /// Retrieve previously added BB during scanning
+        guard let bb = symbolTable.basicBlocks[name] else {
+            preconditionFailure("Should've been added during the symbol scanning stage")
+        }
+        /// Mutate BB's args
+        bb.arguments = OrderedSet(args.lazy.map(Argument.init))
         /// Insert args into symbol table
         for arg in bb.arguments {
             symbolTable.locals[arg.name] = arg
@@ -529,8 +538,6 @@ extension Parser {
         }, separatedBy: {
             try self.consumeOneOrMore(.newLine)
         })
-        /// Insert BB into symbol table
-        symbolTable.basicBlocks[name] = bb
         return bb
     }
 
@@ -543,25 +550,38 @@ extension Parser {
     }
 
     func parseFunction(in module: Module) throws -> Function {
-        try consume(.keyword(.func))
+        /// - TODO: parse declaration kind
+        let startLoc = try consume(.keyword(.func)).startLocation
         let name = try parseIdentifier(ofKind: .global, isDefinition: true)
         let (type, typeSigRange) = try parseTypeSignature()
         guard case let .function(args, ret) = type.canonical else {
             throw ParseError.notFunctionType(typeSigRange)
         }
         let attributes = parseMany({ try consumeAttribute() })
-        /// - TODO: parse declaration kind
-        let function = Function(name: name, argumentTypes: args, returnType: ret,
-                                attributes: Set(attributes), parent: module)
-        /// Insert function to symbol table
-        symbolTable.globals[name] = function
-        try consumeWrappablePunctuation(.leftCurlyBracket)
-        _ = parseMany({
-            try parseBasicBlock(in: function)
-        }, separatedBy: {
-            try self.consumeOneOrMore(.newLine)
-        })
-        try consume(.punctuation(.rightCurlyBracket))
+        /// Retrieve previous added function during scanning
+        guard let function = symbolTable.globals[name] as? Function else {
+            preconditionFailure("Should've been added during the symbol scanning stage")
+        }
+        /// Complete function's properties
+        function.argumentTypes = args
+        function.returnType = ret
+        function.attributes = Set(attributes)
+        /// Parse definition in `{...}` when it's not a declaration
+        if function.isDefinition {
+            try consumeWrappablePunctuation(.leftCurlyBracket)
+            _ = parseMany({
+                try parseBasicBlock(in: function)
+            }, separatedBy: {
+                try self.consumeOneOrMore(.newLine)
+            })
+            try consume(.punctuation(.rightCurlyBracket))
+            return function
+        }
+        /// Otherwise if `{` follows the declaration, emit proper diagnostics
+        else if let tok = currentToken, tok.kind == .punctuation(.leftCurlyBracket) {
+            throw ParseError.declarationCannotHaveBody(declaration: startLoc..<typeSigRange.upperBound,
+                                                       body: tok)
+        }
         return function
     }
 }
