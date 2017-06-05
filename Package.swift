@@ -32,7 +32,7 @@ let package = Package(
       	.Package(url: "https://github.com/rxwei/LLVM_C", majorVersion: 2, minor: 1),
       	.Package(url: "https://github.com/rxwei/Parsey", majorVersion: 1, minor: 7),
       	.Package(url: "https://github.com/rxwei/CommandLine", majorVersion: 3, minor: 0),
-      	.Package(url: "https://github.com/rxwei/CoreTensor", majorVersion: 0, minor: 4)
+      	.Package(url: "https://github.com/rxwei/CoreTensor", majorVersion: 0, minor: 5)
     ],
     exclude: [
         "Sources/TEL",

@@ -21,10 +21,10 @@ class TransformTests: XCTestCase {
         builder.move(to: builder.buildEntry(argumentNames: ["x", "y"], in: fun))
         let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
         let dead1 = builder.buildInstruction(.zipWith(.associative(.multiply),
-                                                      .literal(.int(32), 10000), .literal(.int(32), 20000), nil),
+                                                      .literal(.int(32), 10000), .literal(.int(32), 20000)),
                                  name: "dead1")
         builder.buildInstruction(.zipWith(.associative(.add),
-                                          %dead1, 20000 ~ Type.int(32), nil),
+                                          %dead1, 20000 ~ Type.int(32)),
                                  name: "dead2")
         let cmp = builder.compare(.equal, %mult, .literal(.int(32), 1))
         let thenBB = builder.buildBasicBlock(named: "then", arguments: [ "x" : .int(32) ], in: fun)

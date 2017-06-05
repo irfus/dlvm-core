@@ -140,28 +140,28 @@ extension IRBuilder {
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
-    func add(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.add), lhs, rhs, bc))
+    func add(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.add), lhs, rhs))
     }
 
-    func subtract(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.subtract), lhs, rhs, bc))
+    func subtract(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.subtract), lhs, rhs))
     }
 
-    func multiply(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.multiply), lhs, rhs, bc))
+    func multiply(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.multiply), lhs, rhs))
     }
 
-    func divide(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.divide), lhs, rhs, bc))
+    func divide(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.divide), lhs, rhs))
     }
 
-    func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.power), lhs, rhs, bc))
+    func power(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.power), lhs, rhs))
     }
 
-    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.comparison(`operator`), lhs, rhs, bc))
+    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.comparison(`operator`), lhs, rhs))
     }
 
     func apply(_ function: Use, _ arguments: [Use]) -> Instruction {

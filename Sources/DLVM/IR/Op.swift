@@ -52,7 +52,7 @@ public enum ReductionCombinator {
 /// - TODO: Add custom op
 public enum OpKind {
     case unary(UnaryOp)        /// Monomorphic
-    case binary(BinaryOp, BroadcastingConfig?)  /// Monomorphic
+    case binary(BinaryOp)      /// Monomorphic
     case scan(AssociativeOp)   /// Scan
     case reduce(AssociativeOp) /// Reduce
     case matrixMultiply        /// Matrix multiplication
@@ -100,13 +100,8 @@ public extension OpKind {
             return args.dropFirst().reduce(args[0], { acc, x in acc?.concatenating(with: x) })
         case .unary where args.count == 1:
             return args[0]
-        case .binary(_, let bc?) where args.count == 2 && bc.canBroadcast(args[0], args[1]):
-            switch bc.direction {
-            case .left: return args[0]
-            case .right: return args[1]
-            }
-        case .binary(_, nil) where args.count == 2:
-            return args[0] == args[1] ? args[0] : nil
+        case .binary(_) where args.count == 2:
+            return args[0].broadcast(with: args[1])
         case .scan, .reduce:
             return args[0]
         case .matrixMultiply:
