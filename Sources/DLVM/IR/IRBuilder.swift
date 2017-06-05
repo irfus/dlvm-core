@@ -58,9 +58,8 @@ public extension IRBuilder {
 extension IRBuilder {
 
     @discardableResult
-    open func buildStruct(named name: String, fields: DictionaryLiteral<String, Type>,
-                          attributes: Set<StructType.Attribute> = []) -> StructType {
-        let structTy = StructType(name: name, fields: fields.map{$0}, attributes: attributes)
+    open func buildStruct(named name: String, fields: DictionaryLiteral<String, Type>) -> StructType {
+        let structTy = StructType(name: name, fields: fields.map{$0})
         module.structs.append(structTy)
         return structTy
     }

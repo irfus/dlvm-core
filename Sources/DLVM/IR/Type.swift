@@ -40,18 +40,13 @@ extension ElementKey : Equatable {
 
 /// Nominal type
 public class StructType : Named, HashableByReference {
-    public enum Attribute {
-        case packed
-    }
     public typealias Field = (name: String, type: Type)
     public var name: String
     public var fields: [Field]
-    public var attributes: Set<Attribute> = []
 
-    public init(name: String, fields: [Field], attributes: Set<Attribute>) {
+    public init(name: String, fields: [Field]) {
         self.name = name
         self.fields = fields
-        self.attributes = attributes
     }
 }
 
@@ -67,10 +62,6 @@ public extension StructType {
 
     static prefix func ^ (type: StructType) -> Type {
         return .struct(type)
-    }
-    
-    var isPacked: Bool {
-        return attributes.contains(.packed)
     }
     
     func field(named name: String) -> Field? {
