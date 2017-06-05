@@ -30,7 +30,7 @@ class IRTests: XCTestCase {
                                             initializer: %InstructionKind.zipWith(
                                                 .associative(.add),
                                                 .literal(.int(32), .scalar(.int(10))),
-                                                .literal(.int(32), .scalar(.int(20))), nil))
+                                                .literal(.int(32), .scalar(.int(20)))))
         XCTAssertEqual("\(val1)", "let @one: i32 = (add 10: i32, 20: i32): i32")
         let val2 = builder.buildGlobalValue(named: "two", kind: .constant,
                                             type: Type.int(32).pointer,
@@ -43,9 +43,9 @@ class IRTests: XCTestCase {
             "foo" : .int(32),
             "bar" : .tensor([1, 3, 4], .float(.double)),
             "baz" : .array(4, .array(3, .tensor([3], .int(32))))
-        ], attributes: [ .packed ])
+        ])
         XCTAssertEqual(struct1.description,
-                       "!packed\nstruct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}")
+                       "struct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}")
         let structLit : Literal = .struct([
             ("foo", 100000 ~ .int(32)),
             ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),
@@ -64,10 +64,9 @@ class IRTests: XCTestCase {
                                         returnType: .tensor([3], .bool))
         builder.move(to: builder.buildEntry(argumentNames: ["x", "y"], in: fun))
         _ = builder.multiply(.literal(.int(32), 5),
-                             .literal(.int(32), .tensor([.literal(.int(32), 1), .literal(.int(32), 2)])),
-                             broadcasting: []=>)
+                             .literal(.int(32), .tensor([.literal(.int(32), 1), .literal(.int(32), 2)])))
         builder.return(.null ~ .tensor([3], .bool))
-        XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3 x bool> {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32 broadcast right\n    return null: <3 x bool>\n}")
+        XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3 x bool> {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32\n    return null: <3 x bool>\n}")
     }
 
     func testWriteMultiBBFunction() {

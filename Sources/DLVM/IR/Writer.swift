@@ -151,15 +151,6 @@ extension ReductionCombinator : TextOutputStreamable {
     }
 }
 
-extension BroadcastingConfig : TextOutputStreamable {
-    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("\(String(describing: direction))")
-        if !indices.isEmpty {
-            target.write(" \(indices.joinedDescription)")
-        }
-    }
-}
-
 extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
@@ -172,11 +163,8 @@ extension InstructionKind : TextOutputStreamable {
             if let op = op {
                 target.write(" \(op)")
             }
-        case let .zipWith(f, op1, op2, bc):
+        case let .zipWith(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
-            if let bc = bc {
-                target.write(" broadcast \(bc)")
-            }
         case let .matrixMultiply(op1, op2):
             target.write("matrixMultiply \(op1), \(op2)")
         case let .map(f, op):

@@ -382,17 +382,10 @@ extension InstructionKind {
                 throw VerificationError.notTensor(v1, instruction)
             }
 
-        case let .zipWith(_, lhs, rhs, nil):
+        case let .zipWith(_, lhs, rhs):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                   case let .tensor(s2, t2) = rhs.type.unaliased,
-                  s1 == s2, t1 == t2 else {
-                throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
-            }
-
-        case let .zipWith(_, lhs, rhs, bc?):
-            guard case let .tensor(s1, t1) = lhs.type.unaliased,
-                  case let .tensor(s2, t2) = rhs.type.unaliased,
-                  bc.canBroadcast(s1, s2), t1 == t2 else {
+                  s1.isCompatible(with: s2), t1 == t2 else {
                 throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
             }
 

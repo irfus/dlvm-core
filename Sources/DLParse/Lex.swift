@@ -28,9 +28,7 @@ public enum Keyword {
     case type
     case at, to, from, by
     case then, `else`
-    case broadcast
     case wrt, keeping
-    case left, right
     case void
     case zero, undefined, null
     case `true`, `false`
@@ -400,11 +398,8 @@ private extension Lexer {
         case "by": kind = .keyword(.by)
         case "then": kind = .keyword(.then)
         case "else": kind = .keyword(.else)
-        case "broadcast": kind = .keyword(.broadcast)
         case "wrt": kind = .keyword(.wrt)
         case "keeping": kind = .keyword(.keeping)
-        case "left": kind = .keyword(.left)
-        case "right": kind = .keyword(.right)
         case "void": kind = .keyword(.void)
         case "zero": kind = .keyword(.zero)
         case "undefined": kind = .keyword(.undefined)

@@ -32,7 +32,7 @@ public enum InstructionKind {
     /// Monomorphic unary operation (map)
     case map(UnaryOp, Use)
     /// Monomorphic binary operation (zipWith)
-    case zipWith(BinaryOp, Use, Use, BroadcastingConfig?)
+    case zipWith(BinaryOp, Use, Use)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
     /// Scan operation
@@ -159,61 +159,22 @@ public extension InstructionKind {
     }
 }
 
-public extension BroadcastingConfig {
-    func canBroadcast(_ lhs: TensorShape, _ rhs: TensorShape) -> Bool {
-        switch direction {
-        case .right where lhs.isBroadcastable(to: rhs, at: indices),
-             .left where rhs.isBroadcastable(to: lhs, at: indices):
-            return true
-        default:
-            return false
-        }
-    }
-}
-
-prefix operator <=
-postfix operator =>
-
-public prefix func <= (indices: [Int]) -> BroadcastingConfig {
-    return BroadcastingConfig(indices: indices, direction: .right)
-}
-
-public postfix func => (indices: [Int]) -> BroadcastingConfig {
-    return BroadcastingConfig(indices: indices, direction: .right)
-}
-
 public extension InstructionKind {
 
     var type: Type {
         switch self {
-        case let .zipWith(.associative(assoc), v1, v2, nil):
+        case let .zipWith(.associative(assoc), v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2, s1 == s2 else {
+                  t1 == t2, s1.isCompatible(with: s2) else {
                 return .invalid
             }
             return .tensor(s1, assoc.isBoolean ? .bool : t1)
 
-        case let .zipWith(.associative(assoc), v1, v2, bc?):
+        case let .zipWith(.comparison(_), v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2, bc.canBroadcast(s1, s2) else {
-                return .invalid
-            }
-            return .tensor(s1, assoc.isBoolean ? .bool : t1)
-
-        case let .zipWith(.comparison(_), v1, v2, nil):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2 && s1 == s2 && t1.isNumeric else {
-                return .invalid
-            }
-            return .tensor(s1, .bool)
-
-        case let .zipWith(.comparison(_), v1, v2, bc?):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1.isNumeric, t1 == t2, bc.canBroadcast(s1, s2) else {
+                  t1.isNumeric, t1 == t2, s1.isCompatible(with: s2) else {
                 return .invalid
             }
             return .tensor(s1, .bool)
@@ -347,7 +308,7 @@ extension Instruction : User {
 extension InstructionKind {
     public var operands: [Use] {
         switch self {
-        case let .zipWith(_, op1, op2, _),
+        case let .zipWith(_, op1, op2),
              let .matrixMultiply(op1, op2),
              let .insert(op1, to: op2, at: _):
             return [op1, op2]
@@ -397,12 +358,12 @@ public extension InstructionKind {
             return .return(new)
         case .map(let fun, old):
             return .map(fun, new)
-        case .zipWith(let fun, old, old, let bc):
-            return .zipWith(fun, new, new, bc)
-        case .zipWith(let fun, old, let use2, let bc):
-            return .zipWith(fun, new, use2, bc)
-        case .zipWith(let fun, let use1, old, let bc):
-            return .zipWith(fun, use1, new, bc)
+        case .zipWith(let fun, old, old):
+            return .zipWith(fun, new, new)
+        case .zipWith(let fun, old, let use2):
+            return .zipWith(fun, new, use2)
+        case .zipWith(let fun, let use1, old):
+            return .zipWith(fun, use1, new)
         case let .concatenate(uses, axis: axis):
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
@@ -510,7 +471,7 @@ public extension InstructionKind {
         case .conditional: return .conditional
         case .return: return .return
         case .map(let op, _): return .unaryOp(op)
-        case .zipWith(let op, _, _, _): return .binaryOp(op)
+        case .zipWith(let op, _, _): return .binaryOp(op)
         case .dataTypeCast: return .dataTypeCast
         case .scan: return .scan
         case .reduce: return .reduce
