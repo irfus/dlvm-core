@@ -36,6 +36,7 @@ public enum Keyword {
     case count
     case seedable
     case extern, gradient
+    case along
 }
 
 public enum Punctuation {
@@ -411,6 +412,7 @@ private extension Lexer {
         case "seedable": kind = .keyword(.seedable)
         case "extern": kind = .keyword(.extern)
         case "gradient": kind = .keyword(.gradient)
+        case "along": kind = .keyword(.along)
         /// Opcode
         case "branch": kind = .opcode(.branch)
         case "conditional": kind = .opcode(.conditional)
@@ -524,13 +526,6 @@ public extension Lexer {
                 advanceToNewLine()
                 tok = Token(kind: .newLine, range: startLoc..<startLoc+1)
             }
-            /*
-            /// If located at the beginning of a new line, parse whitespaces as indent
-            else if location.isBeginningOfLine, first.isWhitespace {
-                advance(by: 1)
-                tok = Token(kind: .indent, range: startLoc..<location)
-            }
-            */
             /// Ignore whitespace
             else if first.isWhitespace {
                 advance(by: 1)
