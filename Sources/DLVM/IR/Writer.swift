@@ -72,21 +72,8 @@ extension TensorIndex : TextOutputStreamable {
     }
 }
 
-extension StructType.Attribute : TextOutputStreamable {
-    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("!")
-        switch self {
-        case .packed: target.write("packed")
-        }
-    }
-}
-
 extension StructType : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        for attr in attributes {
-            attr.write(to: &target)
-            target.write("\n")
-        }
         target.write("struct $\(name) {\n")
         for (name, type) in fields {
             target.write("    #\(name): \(type)\n")
