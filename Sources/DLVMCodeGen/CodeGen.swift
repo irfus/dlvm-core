@@ -95,7 +95,6 @@ extension DLVM.Use : LLEmittable {
                 return v ~ llType
             case .float(_):
                 let llType = type.emit(to: &context, in: &env)
-
                 DLUnimplemented()
                 // return v ~ llType
             }
@@ -113,10 +112,21 @@ extension DLVM.Use : LLEmittable {
             return xx.map { $0.emit(to: &context, in: &env) }.array(ofType: elementTy)
 
         case let .struct(fields):
-            guard case let .struct(structTy) = type else { DLImpossible() }
+            /// Some sanity check
+            guard case let .struct(structTy) = type, structTy.fields.count == fields.count else {
+                DLImpossible()
+            }
+            let declsMatch = zip(structTy.fields, fields).forAll { (tyField, useField) in
+                let (formalName, formalType) = tyField
+                let (actualName, actualUse) = useField
+                return formalName == actualName && formalType == actualUse.type
+            }
+            guard declsMatch else {
+                DLImpossible()
+            }
+            /// Emit LLVM IR
             var elements: [LLVMValueRef?] = fields.map { $0.1.emit(to: &context, in: &env) }
-            return LLVMConstStruct(&elements, UInt32(fields.count),
-                                   structTy.isPacked ? .true : .false)
+            return LLVMConstStruct(&elements, UInt32(fields.count), .false)
 
         case .zero:
             DLUnimplemented()
@@ -148,7 +158,7 @@ extension DLVM.StructType : LLEmittable {
                         in env: inout LLGenEnvironment) -> LLVMTypeRef {
 
         var elements: [LLVMTypeRef?] = subtypes.map { $0.emit(to: &context, in: &env) }
-        return LLVMStructType(&elements, UInt32(elements.count), isPacked ? .true : .false)
+        return LLVMStructType(&elements, UInt32(elements.count), .false)
     }
 }
 
