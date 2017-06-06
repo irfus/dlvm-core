@@ -164,14 +164,13 @@ private extension Parser {
     }
 
     @discardableResult
-    func withBacktracking<T>(execute: () throws -> T) rethrows -> T {
+    func withBacktracking<T>(_ execute: () throws -> T?) rethrows -> T? {
         let originalTokens = restTokens
-        do {
-            return try execute()
-        } catch let error {
+        guard let result = try execute() else {
             restTokens = originalTokens
-            throw error
+            return nil
         }
+        return result
     }
 
     func withPreservedState(execute: () throws -> ()) {
@@ -213,25 +212,30 @@ private extension Parser {
         consume(while: { $0 == kind })
     }
 
-    func parseMany<T>(_ parser: () throws -> T,
-                      separatedBy parseSeparator: (() throws -> ())? = nil) -> [T] {
-        var uses: [T] = []
-        guard let first = try? parser() else { return uses }
-        uses.append(first)
-        while let use: T = try? withBacktracking(execute: {
-            try parseSeparator?()
-            return try parser()
-        }) { uses.append(use) }
-        return uses
+    func parseMany<T>(_ parseElement: () throws -> T?) rethrows -> [T] {
+        var elements: [T] = []
+        while let result = try withBacktracking(parseElement) {
+            elements.append(result)
+        }
+        return elements
     }
-    
+
+    func parseMany<T>(_ parseElement: () throws -> T?,
+                      separatedBy parseSeparator: () throws -> ()) rethrows -> [T] {
+        guard let first = try parseElement() else { return [] }
+        var elements: [T] = []
+        while let _ = try? parseSeparator(), let result = try withBacktracking(parseElement) {
+            elements.append(result)
+        }
+        return [first] + elements
+    }
 }
 
 extension Parser {
     /// Parse one of many Uses separated by ','
-    func parseUseList() -> [Use] {
-        return parseMany({ try parseUse().0 },
-                         separatedBy: { try self.consumeWrappablePunctuation(.comma) })
+    func parseUseList() throws -> [Use] {
+        return try parseMany({ try parseUse().0 },
+                             separatedBy: { try self.consumeWrappablePunctuation(.comma) })
     }
 
     /// Parse a literal
@@ -261,22 +265,22 @@ extension Parser {
             return (.zero, tok.range)
         /// Array
         case .punctuation(.leftSquareBracket):
-            let elements = parseUseList()
+            let elements = try parseUseList()
             try consumeWrappablePunctuation(.rightSquareBracket)
             return (.array(elements), tok.range)
         /// Tuple
         case .punctuation(.leftParenthesis):
-            let elements = parseUseList()
+            let elements = try parseUseList()
             try consumeWrappablePunctuation(.rightParenthesis)
             return (.tuple(elements), tok.range)
         /// Tensor
         case .punctuation(.leftAngleBracket):
-            let elements = parseUseList()
+            let elements = try parseUseList()
             try consumeWrappablePunctuation(.rightAngleBracket)
             return (.tensor(elements), tok.range)
         /// Struct
         case .punctuation(.leftCurlyBracket):
-            let fields: [(String, Use)] = parseMany({
+            let fields: [(String, Use)] = try parseMany({
                 let (key, _) = try parseIdentifier(ofKind: .key)
                 try consumeWrappablePunctuation(.equal)
                 let (val, _) = try parseUse()
@@ -296,9 +300,10 @@ extension Parser {
         let (first, firstRange) = try parseInteger()
         var dims = [first]
         var lastLoc = firstRange.upperBound
-        while let dim: Int = try? withBacktracking(execute: {
+        while let dim: Int = try withBacktracking({
             try consumeWrappablePunctuation(.times)
-            let (num, range) = try parseInteger()
+            /// If following 'x' isn't an integer, backtrack
+            guard let (num, range) = try? parseInteger() else { return nil }
             lastLoc = range.upperBound
             return num
         }) { dims.append(dim) }
@@ -345,7 +350,7 @@ extension Parser {
             return (.tensor(shape, dt), tok.startLocation..<rightBkt.endLocation)
         /// Tuple
         case .punctuation(.leftParenthesis):
-            let elementTypes = parseMany({
+            let elementTypes = try parseMany({
                 try parseType().0
             }, separatedBy: {
                 try self.consumeWrappablePunctuation(.comma)
@@ -358,6 +363,10 @@ extension Parser {
                 throw ParseError.undefinedNominalType(tok)
             }
             return (type, tok.range)
+        /// Pointer
+        case .punctuation(.star):
+            let (pointeeType, range) = try parseType()
+            return (.pointer(pointeeType), tok.startLocation..<range.upperBound)
         default:
             throw ParseError.unexpectedToken(expected: "a type", tok)
         }
@@ -448,7 +457,7 @@ extension Parser {
                 throw ParseError.undefinedIdentifier(bbTok)
             }
             try consume(.punctuation(.leftParenthesis))
-            let args = parseUseList()
+            let args = try parseUseList()
             try consume(.punctuation(.rightParenthesis))
             return .branch(bb, args)
 
@@ -463,7 +472,7 @@ extension Parser {
                 throw ParseError.undefinedIdentifier(thenBBTok)
             }
             try consume(.punctuation(.leftParenthesis))
-            let thenArgs = parseUseList()
+            let thenArgs = try parseUseList()
             try consume(.punctuation(.rightParenthesis))
             /// Else
             try consume(.keyword(.else))
@@ -472,7 +481,7 @@ extension Parser {
                 throw ParseError.undefinedIdentifier(elseBBTok)
             }
             try consume(.punctuation(.leftParenthesis))
-            let elseArgs = parseUseList()
+            let elseArgs = try parseUseList()
             try consume(.punctuation(.rightParenthesis))
             return .conditional(cond, thenBB, thenArgs, elseBB, elseArgs)
             
@@ -503,7 +512,7 @@ extension Parser {
             })
             try consume(.keyword(.along))
             let (firstDim, _) = try parseInteger()
-            let restDims: [Int] = parseMany({
+            let restDims: [Int] = try parseMany({
                 try consumeWrappablePunctuation(.comma)
                 return try parseInteger().0
             })
@@ -525,7 +534,7 @@ extension Parser {
             })
             try consume(.keyword(.along))
             let (firstDim, _) = try parseInteger()
-            let restDims: [Int] = parseMany({
+            let restDims: [Int] = try parseMany({
                 try consumeWrappablePunctuation(.comma)
                 return try parseInteger().0
             })
@@ -541,7 +550,7 @@ extension Parser {
         /// 'concatenate' <val> (',' <val>)* along <num>
         case .concatenate:
             let (firstVal, _) = try parseUse()
-            let restVals: [Use] = parseMany({
+            let restVals: [Use] = try parseMany({
                 try consumeWrappablePunctuation(.comma)
                 return try parseUse().0
             })
@@ -579,8 +588,10 @@ extension Parser {
         /// 'extract' <num|key|val> (',' <num|key|val>)* 'from' <val>
         case .extract:
             let (firstKey, _) = try parseElementKey()
-            let restKeys: [ElementKey] = parseMany({
-                try consumeWrappablePunctuation(.comma)
+            let restKeys: [ElementKey] = try parseMany({
+                guard let _ = try? consumeWrappablePunctuation(.comma) else {
+                    return nil
+                }
                 return try parseElementKey().0
             })
             try consume(.keyword(.from))
@@ -593,19 +604,38 @@ extension Parser {
             let (destVal, _) = try parseUse()
             try consume(.keyword(.at))
             let (firstKey, _) = try parseElementKey()
-            let restKeys: [ElementKey] = parseMany({
-                try consumeWrappablePunctuation(.comma)
+            let restKeys: [ElementKey] = try parseMany({
+                guard let _ = try? consumeWrappablePunctuation(.comma) else {
+                    return nil
+                }
                 return try parseElementKey().0
             })
             return .insert(srcVal, to: destVal, at: [firstKey] + restKeys)
 
         /// 'apply' <val> '(' <val>+ ')'
         case .apply:
-            let (funcVal, _) = try parseUse()
-            try consume(.punctuation(.leftParenthesis))
-            let args = parseUseList()
-            try consume(.punctuation(.rightParenthesis))
-            return .apply(funcVal, args)
+            return try withPeekedToken("a function identifier") { tok in
+                guard case let .identifier(kind, name) = tok.kind else { return nil }
+                let fn: Value
+                switch kind {
+                case .global:
+                    guard let val = symbolTable.globals[name] else { return nil }
+                    fn = val
+                case .temporary:
+                    guard let val = symbolTable.locals[name] else { return nil }
+                    fn = val
+                default:
+                    return nil
+                }
+                try consume(.punctuation(.leftParenthesis))
+                let args = try parseUseList()
+                try consume(.punctuation(.rightParenthesis))
+                let (typeSig, typeSigRange) = try parseTypeSignature()
+                guard typeSig == fn.type else {
+                    throw ParseError.typeMismatch(expected: fn.type, typeSigRange)
+                }
+                return .apply(fn.makeUse(), args)
+            }
 
         /// 'allocateStack' <type> 'count' <num>
         case .allocateStack:
@@ -657,8 +687,10 @@ extension Parser {
             let (base, _) = try parseUse()
             try consume(.keyword(.at))
             let (firstKey, _) = try parseElementKey()
-            let restKeys: [ElementKey] = parseMany({
-                try consumeWrappablePunctuation(.comma)
+            let restKeys: [ElementKey] = try parseMany({
+                guard let _ = try? consumeWrappablePunctuation(.comma) else {
+                    return nil
+                }
                 return try parseElementKey().0
             })
             return .elementPointer(base, [firstKey] + restKeys)
@@ -689,8 +721,8 @@ extension Parser {
         }
     }
 
-    func parseInstruction(in basicBlock: BasicBlock) throws -> Instruction {
-        let tok = try peekOrDiagnose("an instruction or a local identifier")
+    func parseInstruction(in basicBlock: BasicBlock) throws -> Instruction? {
+        guard let tok = currentToken else { return nil }
         let inst: Instruction
         switch tok.kind {
         case let .identifier(.temporary, name):
@@ -723,17 +755,23 @@ extension Parser {
         return inst
     }
 
-    func parseBasicBlock(in function: Function) throws -> BasicBlock {
-        /// Parse basic block header
-        let (name, _) = try parseIdentifier(ofKind: .basicBlock, isDefinition: true)
-        try consumeWrappablePunctuation(.leftParenthesis)
-        let args: [(String, Type)] = parseMany({
+    func parseArgumentList() throws -> [(String, Type)] {
+        return try parseMany({
             let (name, _) = try parseIdentifier(ofKind: .temporary, isDefinition: true)
             let (type, _) = try parseTypeSignature()
             return (name, type)
         }, separatedBy: {
             try self.consumeWrappablePunctuation(.comma)
         })
+    }
+
+    func parseBasicBlock(in function: Function) throws -> BasicBlock? {
+        /// Parse basic block header
+        guard let (name, _) = try? parseIdentifier(ofKind: .basicBlock, isDefinition: true) else {
+            return nil
+        }
+        try consumeWrappablePunctuation(.leftParenthesis)
+        let args = try parseArgumentList()
         try consumeWrappablePunctuation(.rightParenthesis)
         try consume(.punctuation(.colon))
         try consumeOneOrMore(.newLine)
@@ -748,31 +786,34 @@ extension Parser {
             symbolTable.locals[arg.name] = arg
         }
         /// Parse instructions
-        _ = parseMany({
+        _ = try parseMany({
             try parseInstruction(in: bb)
         }, separatedBy: {
             try self.consumeOneOrMore(.newLine)
         })
+        function.append(bb)
         return bb
     }
 
     func parseIndexList() throws -> [Int] {
-        return parseMany({
+        return try parseMany({
             try parseInteger().0
         }, separatedBy: {
             try self.consumeWrappablePunctuation(.comma)
         })
     }
 
-    func parseFunction(in module: Module) throws -> Function {
+    func parseFunction(in module: Module) throws -> Function? {
         /// - TODO: parse declaration kind
-        let startLoc = try consume(.keyword(.func)).startLocation
+        guard let funcTok = try? consume(.keyword(.func)) else {
+            return nil /// backtrack
+        }
         let (name, _) = try parseIdentifier(ofKind: .global, isDefinition: true)
         let (type, typeSigRange) = try parseTypeSignature()
         guard case let .function(args, ret) = type.canonical else {
             throw ParseError.notFunctionType(typeSigRange)
         }
-        let attributes = parseMany({ try consumeAttribute() })
+        let attributes = try parseMany({ try consumeAttribute() })
         /// Retrieve previous added function during scanning
         guard let function = symbolTable.globals[name] as? Function else {
             preconditionFailure("Should've been added during the symbol scanning stage")
@@ -784,7 +825,7 @@ extension Parser {
         /// Parse definition in `{...}` when it's not a declaration
         if function.isDefinition {
             try consumeWrappablePunctuation(.leftCurlyBracket)
-            _ = parseMany({
+            _ = try parseMany({
                 try parseBasicBlock(in: function)
             }, separatedBy: {
                 try self.consumeOneOrMore(.newLine)
@@ -794,10 +835,51 @@ extension Parser {
         }
         /// Otherwise if `{` follows the declaration, emit proper diagnostics
         else if let tok = currentToken, tok.kind == .punctuation(.leftCurlyBracket) {
-            throw ParseError.declarationCannotHaveBody(declaration: startLoc..<typeSigRange.upperBound,
-                                                       body: tok)
+            throw ParseError.declarationCannotHaveBody(
+                declaration: funcTok.startLocation..<typeSigRange.upperBound,
+                body: tok
+            )
         }
+        /// Append to module
+        module.append(function)
         return function
+    }
+
+    func parseTypeAlias(in module: Module) throws -> TypeAlias? {
+        guard let _ = try? consume(.keyword(.type)) else { return nil }
+        let (name, _) = try parseIdentifier(ofKind: .type)
+        try consumeWrappablePunctuation(.equal)
+        let type: Type? = try withPeekedToken("a type") { tok in
+            switch tok.kind {
+            case .keyword(.opaque):
+                consumeToken()
+                return nil as Type?
+            default:
+                return try parseType().0
+            }
+        }
+        let alias = TypeAlias(name: name, type: type)
+        module.typeAliases.append(alias)
+        symbolTable.nominalTypes[name] = .alias(alias)
+        return alias
+    }
+
+    func parseStruct(in module: Module) throws -> StructType {
+        try consume(.keyword(.struct))
+        let (name, _) = try parseIdentifier(ofKind: .type)
+        try consumeWrappablePunctuation(.leftCurlyBracket)
+        let fields: [StructType.Field] = try parseMany({
+            let (name, _) = try parseIdentifier(ofKind: .key)
+            let (type, _) = try parseTypeSignature()
+            return (name: name, type: type)
+        }, separatedBy: {
+            try self.consumeWrappablePunctuation(.comma)
+        })
+        try consumeWrappablePunctuation(.rightCurlyBracket)
+        let structTy = StructType(name: name, fields: fields)
+        module.structs.append(structTy)
+        symbolTable.nominalTypes[name] = .struct(structTy)
+        return structTy
     }
 }
 
@@ -807,8 +889,26 @@ public extension Parser {
         consumeAnyNewLines()
         try consume(.keyword(.module))
         let name = try consumeStringLiteral()
-        let module = Module(name: name)
+        try consumeOneOrMore(.newLine)
+        /// Stage
+        try consume(.keyword(.stage))
+        let stage: Module.Stage = try withPeekedToken("'raw' or 'canonical'", { tok in
+            switch tok.kind {
+            case .keyword(.raw): return .raw
+            case .keyword(.canonical): return .canonical
+            default: return nil
+            }
+        })
+        let module = Module(name: name, stage: stage)
+
+        /// Parse type definitions
+
+        /// Scan function symbols and create prototypes in the symbol table
         
+        /// Parse functions
+        
+        consumeAnyNewLines()
+
         /// ... end of input
         return module
     }

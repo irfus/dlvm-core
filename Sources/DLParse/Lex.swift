@@ -25,7 +25,7 @@ public enum Keyword {
     case module
     case stage, raw, canonical
     case `struct`, `func`, `var`, `let`
-    case type
+    case type, opaque
     case at, to, from, by
     case then, `else`
     case wrt, keeping
@@ -393,6 +393,7 @@ private extension Lexer {
         case "var": kind = .keyword(.var)
         case "let": kind = .keyword(.let)
         case "type": kind = .keyword(.type)
+        case "opaque": kind = .keyword(.opaque)
         case "at": kind = .keyword(.at)
         case "to": kind = .keyword(.to)
         case "from": kind = .keyword(.from)

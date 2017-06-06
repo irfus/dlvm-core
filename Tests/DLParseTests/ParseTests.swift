@@ -14,7 +14,7 @@ class ParseTests: XCTestCase {
         let types = [
             "f32",
             "[1 x f32]",
-            "<4 x 3 x 10 x i64>",
+            "*<4 x 3 x 10 x i64>",
             "[1 x <4 x 3 x i8>]",
             "(i8, <4 x 3 x bool>)"
         ]
@@ -23,7 +23,7 @@ class ParseTests: XCTestCase {
                 let parser = try Parser(text: type)
                 _ = try parser.parseType()
             } catch {
-                XCTFail(String(describing: error) + " when parsing " + type)
+                XCTFail(String(describing: error) + " when parsing \"\(type)\"")
             }
         }
     }
@@ -44,7 +44,22 @@ class ParseTests: XCTestCase {
                 let parser = try Parser(text: type)
                 _ = try parser.parseUse()
             } catch {
-                XCTFail(String(describing: error) + " when parsing " + type)
+                XCTFail(String(describing: error) + " when parsing \"\(type)\"")
+            }
+        }
+    }
+
+    func testInstructionKind() throws {
+        let uses = [
+            "add 1: f32, <2: f32, 3: f32>: <2 x f32>",
+            "elementPointer 1: *f32 at #name1, #name2, 3, 4",
+        ]
+        for type in uses {
+            do {
+                let parser = try Parser(text: type)
+                _ = try parser.parseInstructionKind()
+            } catch {
+                XCTFail(String(describing: error) + " when parsing \"\(type)\"")
             }
         }
     }
