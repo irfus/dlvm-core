@@ -103,7 +103,7 @@ extension ParseError : CustomStringConvertible {
         desc += ": "
         switch self {
         case let .unexpectedIdentifierKind(kind, tok):
-            desc += "identifier \(tok) has unexpected kind \(kind)"
+            desc += "identifier \(tok) has unexpected \(kind)"
         case let .unexpectedEndOfInput(expected: expected):
             desc += "expected \(expected) but reached the end of input"
         case let .unexpectedToken(expected: expected, tok):
@@ -254,7 +254,7 @@ extension TokenKind : CustomStringConvertible {
         case let .anonymousIdentifier(b, i):
             return "%\(b).\(i)"
         case let .attribute(attr):
-            return "!" + String(describing: attr)
+            return String(describing: attr)
         }
     }
 }
