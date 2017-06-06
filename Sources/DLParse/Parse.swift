@@ -506,7 +506,10 @@ extension Parser {
             
         /// 'return' <val>?
         case .return:
-            return .return(try? parseUse(in: basicBlock).0)
+            if case .newLine? = currentToken?.kind {
+                return .return(nil)
+            }
+            return .return(try parseUse(in: basicBlock).0)
 
         /// 'dataTypeCast' <val> 'to' <data_type>
         case .dataTypeCast:
@@ -606,15 +609,13 @@ extension Parser {
             
         /// 'extract' <num|key|val> (',' <num|key|val>)* 'from' <val>
         case .extract:
-            let (firstKey, _) = try parseElementKey(in: basicBlock)
-            let restKeys: [ElementKey] = try parseMany({
-                guard let _ = try? consumeWrappablePunctuation(.comma) else {
-                    return nil
-                }
-                return try parseElementKey(in: basicBlock).0
+            let keys: [ElementKey] = try parseMany({
+                try parseElementKey(in: basicBlock).0
+            }, separatedBy: {
+                try consumeWrappablePunctuation(.comma)
             })
             try consume(.keyword(.from))
-            return .extract(from: try parseUse(in: basicBlock).0, at: [firstKey] + restKeys)
+            return .extract(from: try parseUse(in: basicBlock).0, at: keys)
 
         /// 'insert' <val> 'to' <val> 'at' <num|key|val> (',' <num|key|val>)*
         case .insert:
@@ -622,14 +623,12 @@ extension Parser {
             try consume(.keyword(.to))
             let (destVal, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.at))
-            let (firstKey, _) = try parseElementKey(in: basicBlock)
-            let restKeys: [ElementKey] = try parseMany({
-                guard let _ = try? consumeWrappablePunctuation(.comma) else {
-                    return nil
-                }
-                return try parseElementKey(in: basicBlock).0
+            let keys: [ElementKey] = try parseMany({
+                try parseElementKey(in: basicBlock).0
+            }, separatedBy: {
+                try consumeWrappablePunctuation(.comma)
             })
-            return .insert(srcVal, to: destVal, at: [firstKey] + restKeys)
+            return .insert(srcVal, to: destVal, at: keys)
 
         /// 'apply' <val> '(' <val>+ ')'
         case .apply:
@@ -711,14 +710,12 @@ extension Parser {
         case .elementPointer:
             let (base, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.at))
-            let (firstKey, _) = try parseElementKey(in: basicBlock)
-            let restKeys: [ElementKey] = try parseMany({
-                guard let _ = try? consumeWrappablePunctuation(.comma) else {
-                    return nil
-                }
-                return try parseElementKey(in: basicBlock).0
+            let keys: [ElementKey] = try parseMany({
+                try parseElementKey(in: basicBlock).0
+            }, separatedBy: {
+                try consumeWrappablePunctuation(.comma)
             })
-            return .elementPointer(base, [firstKey] + restKeys)
+            return .elementPointer(base, keys)
 
         /// 'copy' 'from' <val> 'to' <val> 'count' <val>
         case .copy:
@@ -807,7 +804,7 @@ extension Parser {
             preconditionFailure("Should've been added during the symbol scanning stage")
         }
         for (name, type) in args {
-            let arg = Argument(name: name, type: type)
+            let arg = Argument(name: name, type: type, parent: bb)
             bb.arguments.append(arg)
             /// Insert args into symbol table
             symbolTable.locals[arg.name] = arg

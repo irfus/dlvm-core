@@ -20,11 +20,12 @@
 public class Argument : Value, Named, HashableByReference {
     public var name: String
     public var type: Type
-    public weak var parent: BasicBlock?
+    public unowned var parent: BasicBlock
 
-    public init(name: String, type: Type) {
+    public init(name: String, type: Type, parent: BasicBlock) {
         self.name = name
         self.type = type
+        self.parent = parent
     }
 
     public func makeUse() -> Use {
@@ -58,9 +59,11 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
     public convenience init<C: Collection>(name: String, arguments: C, parent: Function)
         where C.Iterator.Element == (String, Type)
     {
-        self.init(name: name,
-                  arguments: arguments.map { Argument(name: $0.0, type: $0.1) },
-                  parent: parent)
+        self.init(name: name, arguments: [] as [Argument], parent: parent)
+        for (name, type) in arguments {
+            let arg = Argument(name: name, type: type, parent: self)
+            self.arguments.append(arg)
+        }
     }
 
 }
