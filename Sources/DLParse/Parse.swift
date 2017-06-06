@@ -162,7 +162,7 @@ private extension Parser {
         case .type: contains = symbolTable.nominalTypes.keys.contains
         default: return (name, tok)
         }
-        guard isDefinition ? !contains(name) : contains(name) else {
+        if isDefinition && contains(name) {
             throw ParseError.redefinedIdentifier(tok)
         }
         return (name, tok)

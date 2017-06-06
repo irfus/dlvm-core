@@ -223,6 +223,33 @@ extension Function : Verifiable {
     public func performVerification() throws {
         try verifyIdentifier(name, in: self)
 
+        /// Verify declaration
+        if let declarationKind = declarationKind {
+            /// Declarations cannot have body
+            guard isEmpty else {
+                throw VerificationError.declarationCannotHaveBody(self)
+            }
+            switch declarationKind {
+            /// Verify gradient function's type signature
+            case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
+                               keeping: outputIndices, seedable: isSeedable):
+                /// Check for type mismatch
+                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
+                                                               withRespectTo: varIndices,
+                                                               keepingOutputs: outputIndices,
+                                                               isSeedable: isSeedable) else {
+                    throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
+                }
+                guard type == expectedType else {
+                    throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
+                }
+            case .external:
+                break
+            }
+            /// Skip all CFG/DFG verifications because it's a declaration!
+            return
+        }
+
         let domTree = try analysis(from: DominanceAnalysis.self)
 
         var bbNames: Set<String> = []
@@ -263,27 +290,6 @@ extension Function : Verifiable {
             }
         }
 
-        /// Verify declaration
-        if let declarationKind = declarationKind {
-            /// Declarations cannot have body
-            guard isEmpty else {
-                throw VerificationError.declarationCannotHaveBody(self)
-            }
-            /// Verify gradient function's type signature
-            if case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
-                                  keeping: outputIndices, seedable: isSeedable) = declarationKind {
-                /// Check for type mismatch
-                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
-                                                               withRespectTo: varIndices,
-                                                               keepingOutputs: outputIndices,
-                                                               isSeedable: isSeedable) else {
-                                                                throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
-                }
-                guard type == expectedType else {
-                    throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
-                }
-            }
-        }
     }
 }
 
