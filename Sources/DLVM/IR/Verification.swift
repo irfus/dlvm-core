@@ -79,6 +79,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case invalidReductionDimensions([Int], Use, Node)
     case dataTypeNotNumeric(Use, Node)
     case invalidAllocationSize(Node)
+    case declarationCannotHaveBody(Node)
 }
 
 public protocol Verifiable {
@@ -168,8 +169,8 @@ extension LiteralValue : Verifiable {
         /// Any tensor can be zero initialized
         case (.tensor, .zero): break
 
-        /// Scalar tensor with scalar literal
-        case (.tensor([], let dt), .scalar(let lit)) where lit.typeBase == dt.base:
+        /// Any tensor with scalar literal
+        case (.tensor(_, let dt), .scalar(let lit)) where dt.isExpressible(as: lit):
             break
 
         /* Aggregate literals */
@@ -227,7 +228,7 @@ extension Function : Verifiable {
         var bbNames: Set<String> = []
         /// Verify basic blocks
         for bb in self {
-            /// Check for redeclaration
+            /// Check for redeclaration/redefinition
             guard !bbNames.contains(bb.name) else {
                 throw VerificationError.redeclared(bb)
             }
@@ -262,19 +263,25 @@ extension Function : Verifiable {
             }
         }
 
-        /// Verify gradient function's type signature
-        if let declarationKind = declarationKind,
-            case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
-                               keeping: outputIndices, seedable: isSeedable) = declarationKind {
-            /// Check for type mismatch
-            guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
-                                                           withRespectTo: varIndices,
-                                                           keepingOutputs: outputIndices,
-                                                           isSeedable: isSeedable) else {
-                throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
+        /// Verify declaration
+        if let declarationKind = declarationKind {
+            /// Declarations cannot have body
+            guard isEmpty else {
+                throw VerificationError.declarationCannotHaveBody(self)
             }
-            guard type == expectedType else {
-                throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
+            /// Verify gradient function's type signature
+            if case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
+                                  keeping: outputIndices, seedable: isSeedable) = declarationKind {
+                /// Check for type mismatch
+                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
+                                                               withRespectTo: varIndices,
+                                                               keepingOutputs: outputIndices,
+                                                               isSeedable: isSeedable) else {
+                                                                throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
+                }
+                guard type == expectedType else {
+                    throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
+                }
             }
         }
     }

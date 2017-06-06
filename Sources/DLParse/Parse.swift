@@ -17,9 +17,13 @@
 //  limitations under the License.
 //
 
+/// This file contains a hand-written LL parser with reasonably fine-tuned 
+/// diagnostics. The parser entry is `Parser.parseModule`.
+
 import CoreTensor
 import DLVM
 
+/// Table storing definitions for parsing
 private struct SymbolTable {
     var locals: [String : Value] = [:]
     var globals: [String : Value] = [:]
@@ -27,6 +31,7 @@ private struct SymbolTable {
     var basicBlocks: [String : BasicBlock] = [:]
 }
 
+/// Main parser of textual DLVM IR
 public class Parser {
     public let tokens: [Token]
     fileprivate lazy var restTokens: ArraySlice<Token> = ArraySlice(self.tokens)
@@ -195,14 +200,6 @@ private extension Parser {
         return str
     }
 
-    func consumeAttribute() throws -> Function.Attribute {
-        let tok = try consumeOrDiagnose("an attribute")
-        guard case let .attribute(attr) = tok.kind else {
-            throw ParseError.unexpectedToken(expected: "an attribute", tok)
-        }
-        return attr
-    }
-
     func consumeAnyNewLines() {
         consume(while: {$0 == .newLine})
     }
@@ -212,6 +209,8 @@ private extension Parser {
         consume(while: { $0 == kind })
     }
 
+    /// Parse one or more with optional backtracking
+    /// - Note: In the closure, return `nil` to backtrack
     func parseMany<T>(_ parseElement: () throws -> T?) rethrows -> [T] {
         var elements: [T] = []
         while let result = try withBacktracking(parseElement) {
@@ -220,6 +219,8 @@ private extension Parser {
         return elements
     }
 
+    /// Parse one or more with optional backtracking
+    /// - Note: In the first closure, return `nil` to backtrack
     func parseMany<T>(_ parseElement: () throws -> T?, unless: ((Token) -> Bool)? = nil,
                       separatedBy parseSeparator: () throws -> ()) rethrows -> [T] {
         guard let tok = currentToken else { return [] }
@@ -825,12 +826,76 @@ extension Parser {
         })
     }
 
+    func parseFunctionDeclarationKind() throws -> Function.DeclarationKind {
+        return try withPeekedToken("a declaration kind ('extern' or 'gradient')", { tok in
+            switch tok.kind {
+            case .keyword(.gradient):
+                consumeToken()
+                let (fnName, tok) = try parseIdentifier(ofKind: .global)
+                guard let fn = symbolTable.globals[fnName] as? Function else {
+                    throw ParseError.undefinedIdentifier(tok)
+                }
+                /// from
+                var from: Int?
+                if case .keyword(.from)? = currentToken?.kind {
+                    consumeToken()
+                    from = try parseInteger().0
+                }
+                /// wrt
+                try consume(.keyword(.wrt))
+                let wrt = try parseMany({
+                    try parseInteger().0
+                }, separatedBy: {
+                    try consume(.punctuation(.comma))
+                })
+                /// keeping
+                var keeping: [Int] = []
+                if case .keyword(.keeping)? = currentToken?.kind {
+                    consumeToken()
+                    keeping = try parseMany({
+                        try parseInteger().0
+                    }, separatedBy: {
+                        try consume(.punctuation(.comma))
+                    })
+                }
+                /// seedable
+                var isSeedable = false
+                if case .keyword(.seedable)? = currentToken?.kind {
+                    consumeToken()
+                    isSeedable = true
+                }
+                return .gradient(of: fn, from: from, wrt: wrt, keeping: keeping, seedable: isSeedable)
+                
+            case .keyword(.extern):
+                consumeToken()
+                return .external
+            default:
+                return nil
+            }
+        })
+    }
+    
     func parseFunction(in module: Module) throws -> Function {
-        /// - TODO: parse declaration kind
+        /// Parse attributes
+        var attributes: Set<Function.Attribute> = []
+        while case let .attribute(attr)? = currentToken?.kind {
+            attributes.insert(attr)
+            consumeToken()
+            consumeAnyNewLines()
+        }
+        /// Parse declaration kind
+        var declKind: Function.DeclarationKind?
+        if case .punctuation(.leftSquareBracket)? = currentToken?.kind {
+            consumeToken()
+            declKind = try parseFunctionDeclarationKind()
+            try consume(.punctuation(.rightSquareBracket))
+            consumeAnyNewLines()
+        }
+        /// Parse main function declaration/definition
         let funcTok = try consume(.keyword(.func))
         let (name, _) = try parseIdentifier(ofKind: .global)
         let (type, typeSigRange) = try parseTypeSignature()
-        // let attributes = try parseMany(consumeAttribute)
+        /// Ensure it's a function type
         guard case let .function(args, ret) = type.canonical else {
             throw ParseError.notFunctionType(typeSigRange)
         }
@@ -839,9 +904,10 @@ extension Parser {
             preconditionFailure("Should've been added during the symbol scanning stage")
         }
         /// Complete function's properties
+        function.declarationKind = declKind
         function.argumentTypes = args
         function.returnType = ret
-        // function.attributes = Set(attributes)
+        function.attributes = attributes
         /// Scan basic block symbols and create prototypes in the symbol table
         withPreservedState {
             while restTokens.count >= 2 {
@@ -902,11 +968,15 @@ extension Parser {
         let (name, _) = try parseIdentifier(ofKind: .type, isDefinition: true)
         try consumeWrappablePunctuation(.leftCurlyBracket)
         let fields: [StructType.Field] = try parseMany({
+            /// If '}' follows the last comma, accept (backtrack)
+            if currentToken?.kind == .punctuation(.rightCurlyBracket) {
+                return nil
+            }
             let (name, _) = try parseIdentifier(ofKind: .key)
             let (type, _) = try parseTypeSignature()
             return (name: name, type: type)
         }, separatedBy: {
-            try self.consumeWrappablePunctuation(.comma)
+            try consumeWrappablePunctuation(.comma)
         })
         consumeAnyNewLines()
         try consume(.punctuation(.rightCurlyBracket))
@@ -965,13 +1035,13 @@ public extension Parser {
                 let structure = try parseStruct(in: module)
                 module.structs.append(structure)
 
-            case .keyword(.func):
+            case .keyword(.func), .attribute(_), .punctuation(.leftSquareBracket):
                 let fn = try parseFunction(in: module)
                 module.append(fn)
 
             default:
                 throw ParseError.unexpectedToken(
-                    expected: "a type alias, a struct, or a function", tok
+                    expected: "a type alias, a struct or a function", tok
                 )
             }
             if isEOF { break }
