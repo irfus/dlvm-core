@@ -1,0 +1,26 @@
+module "mnist"
+stage raw
+
+struct $MNIST {
+    #w: <784 x 10 x f32>,
+    #b: <1 x 10 x f32>,
+}
+
+type $MyMnist = $MNIST
+
+func @inference: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 10 x f32> {
+'entry(%x: <1 x 784 x f32>, %w: <784 x 10 x f32>, %b: <1 x 10 x f32>):
+    %0.0 = matrixMultiply %x: <1 x 784 x f32>, %w: <784 x 10 x f32>
+    %0.1 = add %0.0: <1 x 10 x f32>, %b: <1 x 10 x f32>
+    return %0.1: <1 x 10 x f32>
+}
+
+!inline
+func @foo: () -> <1 x 10 x f32> {
+'entry():
+    %0.0 = apply @inference(1: <1 x 784 x f32>, 2: <784 x 10 x f32>, 3: <1 x 10 x f32>): (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 10 x f32>
+    return %0.0: <1 x 10 x f32>
+}
+
+[gradient @inference wrt 0 seedable]
+func @baz: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>) -> (<1 x 784 x f32>)
