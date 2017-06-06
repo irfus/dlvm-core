@@ -42,7 +42,7 @@ class ParseTests: XCTestCase {
         for type in uses {
             do {
                 let parser = try Parser(text: type)
-                _ = try parser.parseUse()
+                _ = try parser.parseUse(in: nil)
             } catch {
                 XCTFail(String(describing: error) + " when parsing \"\(type)\"")
             }
@@ -57,7 +57,7 @@ class ParseTests: XCTestCase {
         for type in uses {
             do {
                 let parser = try Parser(text: type)
-                _ = try parser.parseInstructionKind()
+                _ = try parser.parseInstructionKind(in: nil)
             } catch {
                 XCTFail(String(describing: error) + " when parsing \"\(type)\"")
             }

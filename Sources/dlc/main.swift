@@ -73,12 +73,8 @@ func main() throws {
         /// Read IR and verify
         let irSource = try String(contentsOfFile: filePath, encoding: .utf8)
         print("Source file:", filePath)
-        let lexer = Lexer(text: irSource)
-        let tokens = try lexer.performLexing()
-        for tok in tokens {
-            print(tok)
-        }
-        let parser = Parser(tokens: tokens)
+        /// Lex and parse
+        let parser = try Parser(text: irSource)
         let module = try parser.parseModule()
         print("Module \"\(module.name)\"")
         try module.verify()

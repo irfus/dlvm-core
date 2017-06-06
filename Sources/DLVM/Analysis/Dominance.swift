@@ -106,7 +106,7 @@ public extension DominatorTree where Node == BasicBlock {
         case .global, .literal, .function: return true
             
         case let .argument(_, arg):
-            return arg.parent.flatMap { bb in self.dominates(bb, instruction.parent) } ?? false
+            return self.dominates(arg.parent, instruction.parent)
 
         case let .instruction(_, usee):
             return properlyDominates(usee, instruction)
