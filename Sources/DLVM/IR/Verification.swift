@@ -45,7 +45,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
     case functionArgumentMismatch([Use], Type, Node)
     case notAFunctionCall(Use, Function, Node)
-    case gradientArgumentMismatch(Function, Int, [Int], Node)
+    case gradientArgumentMismatch(Function, Int?, [Int], Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
     case invalidIndex(Use, Int, Node)
     case multipleExits([BasicBlock], Node)
@@ -64,7 +64,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case notPointer(Use, Node)
     case invalidIndices(Use, [ElementKey], Node)
     case invalidOffsets(Use, [ElementKey], Node)
-    case gradientTypeMismatch(Function.Attribute, Type, Node)
+    case gradientTypeMismatch(Function.DeclarationKind, Type, Node)
     case invalidLiteral(Type, Literal, Node)
     case missingIndices(Use, Node)
     case notDifferentiable(Node)
@@ -78,6 +78,8 @@ public enum VerificationError<Node : Verifiable> : Error {
     case structFieldNameMismatch(StructType, Use, Node)
     case invalidReductionDimensions([Int], Use, Node)
     case dataTypeNotNumeric(Use, Node)
+    case invalidAllocationSize(Node)
+    case declarationCannotHaveBody(Node)
 }
 
 public protocol Verifiable {
@@ -167,8 +169,8 @@ extension LiteralValue : Verifiable {
         /// Any tensor can be zero initialized
         case (.tensor, .zero): break
 
-        /// Scalar tensor with scalar literal
-        case (.tensor([], let dt), .scalar(let lit)) where lit.typeBase == dt.base:
+        /// Any tensor with scalar literal
+        case (.tensor(_, let dt), .scalar(let lit)) where dt.isExpressible(as: lit):
             break
 
         /* Aggregate literals */
@@ -207,8 +209,9 @@ extension LiteralValue : Verifiable {
 }
 
 extension Function : Verifiable {
-    private func verifyDifferentiability() throws {
-        guard isDifferentiable else { return }
+    private func verifyDifferentiability(from: Int, wrt: [Int]) throws {
+        /// - TODO: Check along the differentiation floow
+        /// let dfg = try analysis(from: DataFlowGraphAnalysis.self)
         /// All arguments have to be tensors or aggregate types of tensors
         /// No explicit pointer semantics are allowed
         /// - TODO: Check arguments
@@ -220,17 +223,44 @@ extension Function : Verifiable {
     public func performVerification() throws {
         try verifyIdentifier(name, in: self)
 
+        /// Verify declaration
+        if let declarationKind = declarationKind {
+            /// Declarations cannot have body
+            guard isEmpty else {
+                throw VerificationError.declarationCannotHaveBody(self)
+            }
+            switch declarationKind {
+            /// Verify gradient function's type signature
+            case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
+                               keeping: outputIndices, seedable: isSeedable):
+                /// Check for type mismatch
+                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
+                                                               withRespectTo: varIndices,
+                                                               keepingOutputs: outputIndices,
+                                                               isSeedable: isSeedable) else {
+                    throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
+                }
+                guard type == expectedType else {
+                    throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
+                }
+            case .external:
+                break
+            }
+            /// Skip all CFG/DFG verifications because it's a declaration!
+            return
+        }
+
         let domTree = try analysis(from: DominanceAnalysis.self)
 
         var bbNames: Set<String> = []
         /// Verify basic blocks
         for bb in self {
-            /// Check for redeclaration
+            /// Check for redeclaration/redefinition
             guard !bbNames.contains(bb.name) else {
                 throw VerificationError.redeclared(bb)
             }
             /// Check entry block arguments
-            guard !bb.isEntry || bb.arguments.elementsEqual(arguments) else {
+            guard !bb.isEntry || bb.arguments.map({$0.type}).elementsEqual(argumentTypes) else {
                 throw VerificationError.functionEntryArgumentMismatch(bb, self)
             }
             bbNames.insert(bb.name)
@@ -241,9 +271,9 @@ extension Function : Verifiable {
             let bbPremise = try bb.premise()
             if case let .return(retVal) = bbPremise.terminator.kind {
                 switch retVal {
-                case let use? where use.type != result:
+                case let use? where use.type != returnType:
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
-                case nil where !result.isVoid:
+                case nil where !returnType.isVoid:
                     throw VerificationError.returnTypeMismatch(bbPremise.terminator, self)
                 default:
                     break
@@ -260,27 +290,6 @@ extension Function : Verifiable {
             }
         }
 
-        /// Verify differentiability
-        try verifyDifferentiability()
-
-        /// Verify attributes
-        for attr in attributes {
-            switch attr {
-            /// Gradient function
-            case let .differentiating(antigrad, from: diffIndex, wrt: varIndices, keepingOutputs: outputIndices):
-                /// Check for type mismatch
-                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
-                                                               withRespectTo: varIndices,
-                                                               keepingOutputs: outputIndices) else {
-                    throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
-                }
-                guard type == expectedType else {
-                    throw VerificationError.gradientTypeMismatch(attr, expectedType, self)
-                }
-            default:
-                break
-            }
-        }
     }
 }
 
@@ -386,17 +395,10 @@ extension InstructionKind {
                 throw VerificationError.notTensor(v1, instruction)
             }
 
-        case let .zipWith(_, lhs, rhs, nil):
+        case let .zipWith(_, lhs, rhs):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                   case let .tensor(s2, t2) = rhs.type.unaliased,
-                  s1 == s2, t1 == t2 else {
-                throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
-            }
-
-        case let .zipWith(_, lhs, rhs, bc?):
-            guard case let .tensor(s1, t1) = lhs.type.unaliased,
-                  case let .tensor(s2, t2) = rhs.type.unaliased,
-                  bc.canBroadcast(s1, s2), t1 == t2 else {
+                  s1.isCompatible(with: s2), t1 == t2 else {
                 throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
             }
 
@@ -421,23 +423,26 @@ extension InstructionKind {
                 accShape = newShape
             }
 
-        case let .reduce(.op(.arithmetic), v1, dims):
-            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
-                throw VerificationError.dataTypeNotNumeric(v1, instruction)
+        case let .reduce(.op(op), v1, dims),
+             let .scan(.op(op), v1, dims):
+            let shape: TensorShape
+            if op.isBoolean {
+                guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                    throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+                }
+                shape = s1
+            } else {
+                guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                    throw VerificationError.dataTypeNotNumeric(v1, instruction)
+                }
+                shape = s1
             }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
 
-        case let .reduce(.op(.boolean), v1, dims):
-            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
-                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
-            }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
-                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
-            }
-
-        case let .reduce(.function(f), v1, dims):
+        case let .reduce(.function(f), v1, dims),
+             let .scan(.function(f), v1, dims):
             guard case let .tensor(s1, t1) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
@@ -447,14 +452,6 @@ extension InstructionKind {
             }
             guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
-            }
-
-        case let .scan(_, v1, axis: axis):
-            guard case let .tensor(s1, _) = v1.type.unaliased else {
-                throw VerificationError.notTensor(v1, instruction)
-            }
-            if let axis = axis, !s1.indices.contains(axis) {
-                throw VerificationError.axisOutOfBounds(axis, v1, instruction)
             }
 
         case let .shapeCast(v1, target):
@@ -561,16 +558,12 @@ extension InstructionKind {
                 throw VerificationError.notBox(v, instruction)
             }
 
-        case let .gradient(v, from: diff, wrt: vars, keeping: outputIndices):
-            guard case let .function(_, fref) = v else {
-                throw VerificationError.notFunction(v, instruction)
+        case let .allocateStack(_, n):
+            guard n > 0 else {
+                throw VerificationError.invalidAllocationSize(instruction)
             }
-            guard let _ = fref.gradientType(fromOutput: diff, withRespectTo: vars,
-                                            keepingOutputs: outputIndices) else {
-                throw VerificationError.invalidGradientArguments(v, instruction)
-            }
-
-        case .allocateStack, .trap, .allocateBox: break
+            
+        case .trap, .allocateBox: break
         }
     }
 }

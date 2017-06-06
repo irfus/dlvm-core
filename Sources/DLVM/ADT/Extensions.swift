@@ -44,6 +44,13 @@ public extension Sequence {
     }
 }
 
+public extension Optional {
+    @discardableResult
+    func ifAny<T>(_ execute: (Wrapped) throws -> T) rethrows -> T? {
+        return try flatMap(execute)
+    }
+}
+
 public extension Collection where Index == Int, IndexDistance == Int {
     func subcollection(atIndices indices: [Int]) -> [Iterator.Element]? {
         guard indices.count <= count else { return nil }

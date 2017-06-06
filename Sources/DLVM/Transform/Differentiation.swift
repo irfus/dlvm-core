@@ -27,38 +27,19 @@ open class Differentiation: TransformPass {
     
     open class func run(on module: Module) throws -> Bool {
         var changed = false
-        /// Run analysis before the transformation
-        /// Only to check if this pass has been previously run
-        let globalGradInfo = try module.analysis(from: GradientRelationAnalysis.self)
 
         var expanded: [Function : Function] = [:]
 
         for function in module {
-            for instruction in function.instructions {
-                if case let .gradient(.function(_, funcToDiff),
-                                      from: diffIndex,
-                                      wrt: varIndices,
-                                      keeping: outputIndices) = instruction.kind,
-                   funcToDiff.isDifferentiable {
-                    if let _ = globalGradInfo.gradient(of: function,
-                                                       from: diffIndex,
-                                                       wrt: varIndices,
-                                                       keepingOutputs: outputIndices) {
-                        continue
-                    }
-                }
+            if case let .gradient(funcToDiff,
+                                   from: diffIndex,
+                                   wrt: varIndices,
+                                   keeping: outputIndices,
+                                   seedable: isSeedable)? = function.declarationKind {
+                DLUnimplemented()
             }
         }
 
-            /// If function is not differentiable, do nothing
-//            guard function.isDifferentiable else { continue }
-//            /// If gradient function exists, do nothing
-//            if let _ = globalGradInfo.gradient(of: function) { continue }
-//            /// Clone function
-////            let grad = function.makeClone(named: func)
-//            /// Expand this function
-//            try expand(function)
-//            changed = true
         return changed
     }
 }
@@ -164,22 +145,22 @@ fileprivate extension Differentiation {
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {
         /* Basic arithmetic */
-        case let .zipWith(.associative(.arithmetic(.add)), lhs, rhs, _):
+        case let .zipWith(.associative(.add), lhs, rhs):
             grad = [
                 (lhs, adjoint), /// ∂f/∂x = D
                 (rhs, adjoint), /// ∂f/∂y = D
             ]
-        case let .zipWith(.associative(.arithmetic(.subtract)), lhs, rhs, bc):
+        case let .zipWith(.associative(.subtract), lhs, rhs):
             grad = [
                 (lhs, adjoint),                                     /// ∂f/∂x = D
-                (rhs, %bd.subtract(adjoint.makeScalar(0), adjoint, broadcasting: bc)), /// ∂f/∂y = -D
+                (rhs, %bd.subtract(adjoint.makeScalar(0), adjoint)), /// ∂f/∂y = -D
             ]
-        case let .zipWith(.associative(.arithmetic(.multiply)), lhs, rhs, _):
+        case let .zipWith(.associative(.multiply), lhs, rhs):
             grad = [
                 (lhs, rhs), /// ∂f/∂x = y
                 (rhs, lhs), /// ∂f/∂y = x
             ]
-        case let .zipWith(.associative(.arithmetic(.divide)), lhs, rhs, _):
+        case let .zipWith(.associative(.divide), lhs, rhs):
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
@@ -211,7 +192,7 @@ fileprivate extension Differentiation {
             let cloned = instruction.makeUse()
             grad = [
                 (x, %bd.subtract(cloned, %bd.subtract(x.makeScalar(1),
-                                                      %bd.multiply(cloned, cloned)), broadcasting: [0]=>))
+                                                      %bd.multiply(cloned, cloned))))
             ]
 
         case let .extract(from: x, at: _):

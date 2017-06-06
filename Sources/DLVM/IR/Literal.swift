@@ -162,6 +162,22 @@ public extension Use {
     }
 }
 
+public extension DataType {
+    func isExpressible(as scalar: Literal.Scalar) -> Bool {
+        /// - TODO: Currently we are only checking type base,
+        /// but we should really verify bit width as well
+        switch (base, scalar) {
+        case (.float, .float),
+             (.float, .int),
+             (.int, .int),
+             (.bool, .bool):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 public extension Literal {
     func substituting(_ new: Use, for old: Use) -> Literal {
         let condSubst = {$0 == old ? new : $0}

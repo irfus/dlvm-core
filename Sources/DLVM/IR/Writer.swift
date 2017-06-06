@@ -60,7 +60,7 @@ extension Literal : TextOutputStreamable {
 
 extension TensorShape : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("\(map{String($0)}.joined(separator: "x"))")
+        target.write(isScalar ? "scalar" : "\(map{String($0)}.joined(separator: " x "))")
     }
 }
 
@@ -72,24 +72,11 @@ extension TensorIndex : TextOutputStreamable {
     }
 }
 
-extension StructType.Attribute : TextOutputStreamable {
-    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("!")
-        switch self {
-        case .packed: target.write("packed")
-        }
-    }
-}
-
 extension StructType : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        for attr in attributes {
-            attr.write(to: &target)
-            target.write("\n")
-        }
         target.write("struct $\(name) {\n")
         for (name, type) in fields {
-            target.write("    \(name): \(type)\n")
+            target.write("    #\(name): \(type),\n")
         }
         target.write("}")
     }
@@ -103,7 +90,7 @@ extension Type : TextOutputStreamable {
         case let .tensor([], t):
             t.write(to: &target)
         case let .tensor(s, t):
-            target.write("<\(s).\(t)>")
+            target.write("<\(s) x \(t)>")
         case let .tuple(subtypes):
             target.write("(\(subtypes.joinedDescription))")
         case .void:
@@ -146,20 +133,11 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension AssociativeOp: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case let .arithmetic(fun): String(describing: fun).write(to: &target)
-        case let .boolean(fun): String(describing: fun).write(to: &target)
-        }
-    }
-}
-
 extension BinaryOp: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
-        case let .associative(fun): fun.write(to: &target)
-        case let .comparison(fun): String(describing: fun).write(to: &target)
+        case let .associative(op): String(describing: op).write(to: &target)
+        case let .comparison(op): String(describing: op).write(to: &target)
         }
     }
 }
@@ -168,14 +146,8 @@ extension ReductionCombinator : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
         case let .function(f): f.write(to: &target)
-        case let .op(op): op.write(to: &target)
+        case let .op(op): String(describing: op).write(to: &target)
         }
-    }
-}
-
-extension BroadcastingConfig : TextOutputStreamable {
-    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("\(String(describing: direction)) \(indices)")
     }
 }
 
@@ -183,29 +155,26 @@ extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .branch(bb, args):
-            target.write("branch \(bb.name)(\(args.joinedDescription))")
+            target.write("branch '\(bb.name)(\(args.joinedDescription))")
         case let .conditional(op, thenBB, thenArgs, elseBB, elseArgs):
-            target.write("conditional \(op) then \(thenBB.name)(\(thenArgs.joinedDescription)) else \(elseBB.name)(\(elseArgs.joinedDescription))")
+            target.write("conditional \(op) then '\(thenBB.name)(\(thenArgs.joinedDescription)) else '\(elseBB.name)(\(elseArgs.joinedDescription))")
         case let .`return`(op):
             target.write("return")
-            if let op = op { target.write(" \(op)") }
-        case let .zipWith(f, op1, op2, nil):
+            if let op = op {
+                target.write(" \(op)")
+            }
+        case let .zipWith(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
-        case let .zipWith(f, op1, op2, bc?):
-            target.write("\(f) \(op1), \(op2) broadcast \(bc)")
         case let .matrixMultiply(op1, op2):
             target.write("matrixMultiply \(op1), \(op2)")
         case let .map(f, op):
             target.write("\(f) \(op)")
         case let .reduce(comb, op, dims):
-            target.write("reduce \(comb) \(op) along \(dims)")
-        case let .scan(f, op, axis: axis):
-            target.write("scan \(f) \(op)")
-            if let axis = axis {
-                target.write(" along \(axis)")
-            }
+            target.write("reduce \(op) by \(comb) along \(dims.joinedDescription)")
+        case let .scan(f, op, dims):
+            target.write("scan \(op) by \(f) along \(dims.joinedDescription)")
         case let .concatenate(ops, axis: axis):
-            target.write("concatenate \(ops.map{"\($0)"}.joined(separator: ", ")) along \(axis)")
+            target.write("concatenate \(ops.joinedDescription) along \(axis)")
         case let .transpose(op):
             target.write("transpose \(op)")
         case let .dataTypeCast(op, t):
@@ -213,25 +182,23 @@ extension InstructionKind : TextOutputStreamable {
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):
-            target.write("apply \(f)(\(args.map{"\($0)"}.joined(separator: ", ")))")
+            target.write("apply \(f.identifier)(\(args.joinedDescription)): \(f.type)")
         case let .extract(use, indices):
-            target.write("extract \(indices.map{"\($0)"}.joined(separator: ", ")) from \(use)")
+            target.write("extract \(indices.joinedDescription) from \(use)")
         case let .insert(src, to: dest, at: indices):
-            target.write("insert \(src) to \(dest) at \(indices.map{"\($0)"}.joined(separator: ", "))")
+            target.write("insert \(src) to \(dest) at \(indices.joinedDescription)")
         case let .allocateStack(t, n):
-            target.write("allocateStack \(t), \(n)")
+            target.write("allocateStack \(t) count \(n)")
         case let .store(v, p):
             target.write("store \(v) to \(p)")
         case let .load(v):
             target.write("load \(v)")
-        case let .elementPointer(v, i):
-            target.write("elementPointer \(v), \(i)")
+        case let .elementPointer(v, ii):
+            target.write("elementPointer \(v) at \(ii.joinedDescription)")
         case let .bitCast(v, t):
             target.write("bitCast \(v) to \(t)")
-        case let .gradient(f, from: diff, wrt: vars, keeping: outputIndices):
-            target.write("gradient \(f) from \(diff) wrt \(vars) keeping \(outputIndices)")
         case let .allocateHeap(t, count: c):
-            target.write("allocateHeap \(t), \(c)")
+            target.write("allocateHeap \(t) count \(c)")
         case let .allocateBox(t):
             target.write("allocateBox \(t)")
         case let .deallocate(v):
@@ -243,7 +210,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .release(v):
             target.write("release \(v)")
         case let .copy(from: src, to: dest, count: count):
-            target.write("copy from \(src) to \(dest), \(count)")
+            target.write("copy from \(src) to \(dest) count \(count)")
         case .trap:
             target.write("trap")
         }
@@ -286,32 +253,34 @@ extension TypeAlias : TextOutputStreamable {
 
 extension ElementKey : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
-        target.write("#")
         switch self {
         case let .index(i): target.write("\(i)")
-        case let .name(n): target.write(n)
-        case let .value(v): target.write("(\(v))")
+        case let .name(n): target.write("#" + n)
+        case let .value(v): target.write("\(v)")
         }
     }
 }
 
 extension Use : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write("\(identifier): \(type)")
+    }
+
+    public var identifier: String {
         switch self {
         case let .global(_, ref):
-            target.write("@\(ref.name)")
+            return "@\(ref.name)"
         case let .instruction(_, ref):
-            target.write(ref.printedName.flatMap{"%\($0)"} ?? "%_")
+            return ref.printedName.flatMap{"%\($0)"} ?? "%_"
         case let .argument(_, ref):
-            target.write("%\(ref.name)")
+            return "%\(ref.name)"
         case let .literal(_, lit):
-            lit.write(to: &target)
+            return lit.description
         case let .function(_, ref):
-            target.write("@\(ref.name)")
+            return "@\(ref.name)"
         case let .constant(_, instKind):
-            target.write("(\(instKind))")
+            return "(\(instKind))"
         }
-        target.write(": \(type)")
     }
 }
 
@@ -322,7 +291,7 @@ extension BasicBlock : TextOutputStreamable {
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
         /// Begin block
-        target.write("\(name)(\(arguments.map{"\($0)"}.joined(separator: ", "))):\n")
+        target.write("'\(name)(\(arguments.map{"\($0)"}.joined(separator: ", "))):\n")
         for inst in elements {
             /// Write indentation
             makeIndentation().write(to: &target)
@@ -342,10 +311,7 @@ extension Function.Attribute : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("!")
         switch self {
-        case .differentiable: target.write("differentiable")
         case .inline: target.write("inline")
-        case let .differentiating(f, from: diffIndex, wrt: varIndices, keepingOutputs: outputIndices):
-            target.write("differentiating(@\(f.name), from: \(diffIndex), wrt: \(varIndices)), keepingOutputs: \(outputIndices)")
         }
     }
 }
@@ -356,12 +322,57 @@ extension Function : TextOutputStreamable {
             attr.write(to: &target)
             target.write("\n")
         }
-        target.write("func ")
-        target.write("@\(name): \(type) {\n")
-        for bb in self {
-            bb.write(to: &target)
+        switch declarationKind {
+        case .external?:
+            target.write("[extern]\n")
+        case let .gradient(of: f, from: diffSrc, wrt: diffArgs,
+                           keeping: keptRets, seedable: isSeedable)?:
+            target.write("[gradient @\(f.name)")
+            diffSrc.ifAny {
+                target.write(" from \($0)")
+            }
+            target.write(" wrt \(diffArgs.joinedDescription)")
+            if !keptRets.isEmpty {
+                target.write(" keeping \(keptRets.joinedDescription)")
+            }
+            if isSeedable {
+                target.write(" seedable")
+            }
+            target.write("]\n")
+        default:
+            break
         }
-        target.write("}")
+        target.write("func ")
+        target.write("@\(name): \(type)")
+        if isDefinition {
+            target.write(" {\n")
+            for bb in self {
+                bb.write(to: &target)
+            }
+            target.write("}")
+        }
+    }
+}
+
+extension String {
+    var literal: String {
+        var out = ""
+        for char in characters {
+            switch char {
+            case "\"", "\\":
+                out.append("\\")
+                out.append(char)
+            case "\n":
+                out.append("\\n")
+            case "\t":
+                out.append("\\t")
+            case "\r":
+                out.append("\\r")
+            default:
+                out.append(char)
+            }
+        }
+        return out
     }
 }
 
@@ -371,14 +382,15 @@ extension Module : TextOutputStreamable {
               C.Iterator.Element : TextOutputStreamable
     {
         for element in elements {
+            target.write("\n")
             element.write(to: &target)
             target.write("\n")
         }
     }
 
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        target.write("module \(name)\n")
-        target.write("stage \(stage)\n\n")
+        target.write("module \"\(name.literal)\"\n")
+        target.write("stage \(stage)\n")
         write(structs, to: &target)
         write(typeAliases, to: &target)
         write(globalValues, to: &target)

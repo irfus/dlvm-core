@@ -22,9 +22,10 @@
 public extension Function {
     public func makeClone(named name: String) -> Function {
         let newFunc = Function(name: name,
-                               arguments: arguments.map{($0.name, $0.type)},
-                               result: result,
+                               argumentTypes: argumentTypes,
+                               returnType: returnType,
                                attributes: attributes,
+                               declarationKind: declarationKind,
                                parent: parent)
 
         /// Mappings from old IR units to new IR units

@@ -25,25 +25,18 @@ public enum ComparisonOp {
     case equal, notEqual
 }
 
-public enum BooleanOp {
-    case and, or, xor
-}
-
-public enum ArithmeticOp {
-    case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, modulo, power, mean
-}
-
 public enum UnaryOp {
     case tanh, log, exp, negate, sign, square, sqrt
     case round, rsqrt, ceil, floor
     case tan, cos, sin, acos, asin, atan
     case lgamma, digamma, erf, erfc, rint
+    case not
 }
 
 public enum AssociativeOp {
-    case boolean(BooleanOp)
-    case arithmetic(ArithmeticOp)
+    case and, or
+    case add, subtract, multiply, divide, min, max
+    case truncateDivide, floorDivide, modulo, power, mean
 }
 
 public enum BinaryOp {
@@ -59,7 +52,7 @@ public enum ReductionCombinator {
 /// - TODO: Add custom op
 public enum OpKind {
     case unary(UnaryOp)        /// Monomorphic
-    case binary(BinaryOp, BroadcastingConfig?)  /// Monomorphic
+    case binary(BinaryOp)      /// Monomorphic
     case scan(AssociativeOp)   /// Scan
     case reduce(AssociativeOp) /// Reduce
     case matrixMultiply        /// Matrix multiplication
@@ -69,8 +62,20 @@ public enum OpKind {
 
 public extension AssociativeOp {
     var isBoolean: Bool {
-        guard case .boolean(_) = self else { return false }
-        return true
+        switch self {
+        case .and, .or: return true
+        default: return false
+        }
+    }
+}
+
+extension BinaryOp : Equatable {
+    public static func == (lhs: BinaryOp, rhs: BinaryOp) -> Bool {
+        switch (lhs, rhs) {
+        case let (.associative(o1), .associative(o2)): return o1 == o2
+        case let (.comparison(o1), .comparison(o2)): return o1 == o2
+        default: return false
+        }
     }
 }
 
@@ -95,13 +100,8 @@ public extension OpKind {
             return args.dropFirst().reduce(args[0], { acc, x in acc?.concatenating(with: x) })
         case .unary where args.count == 1:
             return args[0]
-        case .binary(_, let bc?) where args.count == 2 && bc.canBroadcast(args[0], args[1]):
-            switch bc.direction {
-            case .left: return args[0]
-            case .right: return args[1]
-            }
-        case .binary(_, nil) where args.count == 2:
-            return args[0] == args[1] ? args[0] : nil
+        case .binary(_) where args.count == 2:
+            return args[0].broadcast(with: args[1])
         case .scan, .reduce:
             return args[0]
         case .matrixMultiply:
