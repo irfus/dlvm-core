@@ -3,30 +3,50 @@
 
 # Deep Learning Virtual Machine
 
-Welcome to DLVM! DLVM is a compiler framwork for deep learning applications. It
-has an automatically differentiable IR, a set of tensor compute abstractions,
-and a code generator to LLVM IR with compute functions targeting the
-Heterogeneous Parallel Virtual Machine and the LLVM NVPTX backend.
+Welcome to DLVM! DLVM is:
+- a framework for building DSLs
+- an IR for linear algebra and neural networks
+- an automatic backpropagator
+- a GPU code generator (NVPTX, AMDGPU, HPVM)
+- a production-quality infrastructure
 
 ## Targets
 
 ### [DLVM Core](Sources)
 
-| Module      | Description                                                              |
-|-------------|--------------------------------------------------------------------------|
-| DLVM        | Compiler infrastructure (ADT, IR, Analyses, Transforms)                  |
-| DLVMReader  | Textual IR reader                                                        |
-| DLVMCodeGen | LLVM Code Generator                                                      |
-| TEL, telc   | *Deprecated* TEL frontend (Moved to [TEL](https://github.com/rxwei/TEL)) |
-| dlrt        | Runtime routines (reference counting, etc)                               |
+| Module      | Description                                             |
+|-------------|---------------------------------------------------------|
+| DLVM        | Compiler infrastructure (ADT, IR, Analyses, Transforms) |
+| DLParse     | Textual IR parser                                       |
+| DLVMCodeGen | LLVM Code Generator                                     |
+| dlc         | DLVM command line tool                                  |
 
 ### [DLVM Compute Primitives](Compute)
 
-Compute primitives are a set of LLVM Bitcode modules containing HPVM intrinsic
-calls. It's built separately from
-DLVM Core, since the Swift Package Manager does not support LLVM Bitcode targets.
+The DLVM compute primitives (dlcompute) are a set of LLVM Bitcode modules
+containing HPVM intrinsic calls. It's built separately via CMake.
+
+### [DLVM Runtime](Runtime)
+
+The DLVM runtime (dlrt) includes runtime routines including memory tracking,
+reference counting, etc.
+
+## Dependencies
+
+- LLVM 4.0
+- Swift 3.1
 
 ## Build Instructions
+
+### All Targets
+
+For all targets (DLVM Core, Runtime, Compute), please use CMake.
+
+```bash
+mkdir build
+cmake ..
+make
+```
 
 ### DLVM Core
 
@@ -40,16 +60,6 @@ swift build
 
 ```bash
 swift package generate-xcodeproj
-```
-
-### Other Targets
-
-For all other targets, please use CMake.
-
-```bash
-mkdir build
-cmake ..
-make
 ```
 
 ## License
