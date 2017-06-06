@@ -127,9 +127,7 @@ public extension Function {
         case _ where diffIndex == nil
                 /// Result must be differentiable
                 && returnType.isDifferentiable
-                /// Index must be 0
-                && diffIndex == 0
-                /// Indices of the outputs to keep must be either [] or [0] 
+                /// Indices of the outputs to keep must be either [] or [0]
                 && (outputIndices.isEmpty || outputIndices == [0]):
             diffSourceType = returnType
             keptOutputs = outputIndices.isEmpty ? [] : [returnType]
