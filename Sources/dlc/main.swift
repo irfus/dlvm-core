@@ -1,4 +1,4 @@
-import DLVMReader
+import DLParse
 import Foundation
 import CommandLineKit
 
@@ -73,8 +73,9 @@ func main() throws {
         /// Read IR and verify
         let irSource = try String(contentsOfFile: filePath, encoding: .utf8)
         print("Source file:", filePath)
-        let ast = try ModuleNode.parser.parse(irSource)
-        let module = try ast.makeModule()
+        /// Lex and parse
+        let parser = try Parser(text: irSource)
+        let module = try parser.parseModule()
         print("Module \"\(module.name)\"")
         try module.verify()
 

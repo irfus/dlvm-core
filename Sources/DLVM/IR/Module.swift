@@ -27,15 +27,16 @@ public final class Module : IRCollection {
     public typealias Index = Int
     
     public var name: String
-    public internal(set) var stage: Stage = .raw
+    public internal(set) var stage: Stage
     public var elements: OrderedSet<Function> = []
     public var globalValues: OrderedSet<GlobalValue> = []
     public var structs: OrderedSet<StructType> = []
     public var typeAliases: OrderedSet<TypeAlias> = []
     public let analysisManager: AnalysisManager<Module> = AnalysisManager()
 
-    public init(name: String) {
+    public init(name: String, stage: Stage = .raw) {
         self.name = name
+        self.stage = stage
     }
 }
 

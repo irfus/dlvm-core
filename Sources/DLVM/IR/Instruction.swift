@@ -32,12 +32,11 @@ public enum InstructionKind {
     /// Monomorphic unary operation (map)
     case map(UnaryOp, Use)
     /// Monomorphic binary operation (zipWith)
-    case zipWith(BinaryOp, Use, Use, BroadcastingConfig?)
+    case zipWith(BinaryOp, Use, Use)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
-    /// Scan operation with optional axis
-    /// If axis is not given, scan is performed on contiguous elements
-    case scan(AssociativeOp, Use, axis: Int?)
+    /// Scan operation
+    case scan(ReductionCombinator, Use, [Int])
     /// Reduction operation
     case reduce(ReductionCombinator, Use, [Int])
     /// Matrix multiplication operation
@@ -62,14 +61,11 @@ public enum InstructionKind {
     /** Function invocation **/
     /// Function application
     case apply(Use, [Use])
-    /// Gradient transformer
-    /// - Note: This will be canonicalized to a function reference
-    case gradient(Use, from: Int, wrt: [Int], keeping: [Int])
 
     /** Heap memory of host and device **/
     /** Memory **/
     /// Allocate host stack memory, returning a pointer
-    case allocateStack(Type, Use) /// => *T
+    case allocateStack(Type, Int) /// => *T
     case allocateHeap(Type, count: Use) /// => *T
     /// Reference-counted box
     case allocateBox(Type) /// => box{T}
@@ -163,61 +159,22 @@ public extension InstructionKind {
     }
 }
 
-public extension BroadcastingConfig {
-    func canBroadcast(_ lhs: TensorShape, _ rhs: TensorShape) -> Bool {
-        switch direction {
-        case .right where lhs.isBroadcastable(to: rhs, at: indices),
-             .left where rhs.isBroadcastable(to: lhs, at: indices):
-            return true
-        default:
-            return false
-        }
-    }
-}
-
-prefix operator <=
-postfix operator =>
-
-public prefix func <= (indices: [Int]) -> BroadcastingConfig {
-    return BroadcastingConfig(indices: indices, direction: .right)
-}
-
-public postfix func => (indices: [Int]) -> BroadcastingConfig {
-    return BroadcastingConfig(indices: indices, direction: .right)
-}
-
 public extension InstructionKind {
 
     var type: Type {
         switch self {
-        case let .zipWith(.associative(assoc), v1, v2, nil):
+        case let .zipWith(.associative(assoc), v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2, s1 == s2 else {
+                  t1 == t2, s1.isCompatible(with: s2) else {
                 return .invalid
             }
             return .tensor(s1, assoc.isBoolean ? .bool : t1)
 
-        case let .zipWith(.associative(assoc), v1, v2, bc?):
+        case let .zipWith(.comparison(_), v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2, bc.canBroadcast(s1, s2) else {
-                return .invalid
-            }
-            return .tensor(s1, assoc.isBoolean ? .bool : t1)
-
-        case let .zipWith(.comparison(_), v1, v2, nil):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2 && s1 == s2 && t1.isNumeric else {
-                return .invalid
-            }
-            return .tensor(s1, .bool)
-
-        case let .zipWith(.comparison(_), v1, v2, bc?):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1.isNumeric, t1 == t2, bc.canBroadcast(s1, s2) else {
+                  t1.isNumeric, t1 == t2, s1.isCompatible(with: s2) else {
                 return .invalid
             }
             return .tensor(s1, .bool)
@@ -235,11 +192,11 @@ public extension InstructionKind {
 
         case let .reduce(op, v1, dims):
             switch (op, v1.type.unaliased) {
-            case (.op(.boolean), .tensor(let s1, .bool))
-                where dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            case let (.op(op), .tensor(s1, .bool))
+                where op.isBoolean && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), .bool)
-            case let (.op(.arithmetic), .tensor(s1, t1))
-                where t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            case let (.op(op), .tensor(s1, t1))
+                where !op.isBoolean && t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
             case let (.function(f), .tensor(s1, t1))
                 where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):
@@ -297,12 +254,6 @@ public extension InstructionKind {
                 return .invalid
             }
 
-        case let .gradient(f, from: diffIndex, wrt: varIndices, keeping: outputIndices):
-            guard case let .function(_, fref) = f, fref.isDifferentiable else { return .invalid }
-            return fref.gradientType(fromOutput: diffIndex,
-                                     withRespectTo: varIndices,
-                                     keepingOutputs: outputIndices) ?? .invalid
-
         case let .extract(from: v, at: indices):
             return v.type.subtype(at: indices) ?? .invalid
 
@@ -312,7 +263,8 @@ public extension InstructionKind {
             }
             return dest.type
 
-        case let .allocateStack(type, _):
+        case let .allocateStack(type, n):
+            guard n > 0 else { return .invalid }
             return .pointer(type)
 
         case let .load(v):
@@ -356,7 +308,7 @@ extension Instruction : User {
 extension InstructionKind {
     public var operands: [Use] {
         switch self {
-        case let .zipWith(_, op1, op2, _),
+        case let .zipWith(_, op1, op2),
              let .matrixMultiply(op1, op2),
              let .insert(op1, to: op2, at: _):
             return [op1, op2]
@@ -364,9 +316,8 @@ extension InstructionKind {
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
              let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
-             let .deallocate(op), let .allocateStack(_, op), let .allocateHeap(_, count: op),
-             let .projectBox(op), let .release(op), let .retain(op),
-             let .gradient(op, _, _, _):
+             let .deallocate(op), let .allocateHeap(_, count: op),
+             let .projectBox(op), let .release(op), let .retain(op):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -377,7 +328,7 @@ extension InstructionKind {
             return [f] + args
         case let .copy(from: op1, to: op2, count: op3):
             return [op1, op2, op3]
-        case .return(nil), .allocateBox, .trap:
+        case .return(nil), .allocateBox, .trap, .allocateStack:
             return []
         }
     }
@@ -407,12 +358,12 @@ public extension InstructionKind {
             return .return(new)
         case .map(let fun, old):
             return .map(fun, new)
-        case .zipWith(let fun, old, old, let bc):
-            return .zipWith(fun, new, new, bc)
-        case .zipWith(let fun, old, let use2, let bc):
-            return .zipWith(fun, new, use2, bc)
-        case .zipWith(let fun, let use1, old, let bc):
-            return .zipWith(fun, use1, new, bc)
+        case .zipWith(let fun, old, old):
+            return .zipWith(fun, new, new)
+        case .zipWith(let fun, old, let use2):
+            return .zipWith(fun, new, use2)
+        case .zipWith(let fun, let use1, old):
+            return .zipWith(fun, use1, new)
         case let .concatenate(uses, axis: axis):
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
@@ -435,8 +386,6 @@ public extension InstructionKind {
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
             return .dataTypeCast(new, type)
-        case .gradient(old, from: let diff, wrt: let wrt, keeping: let outputIndices):
-            return .gradient(new, from: diff, wrt: wrt, keeping: outputIndices)
         case let .apply(f, uses):
             return .apply(f, uses.map(condSubst))
         case .extract(from: old, at: let i):
@@ -457,8 +406,6 @@ public extension InstructionKind {
             return .store(val, to: new)
         case .load(old):
             return .load(new)
-        case .allocateStack(let ty, old):
-            return .allocateStack(ty, new)
         case .allocateHeap(let ty, count: old):
             return .allocateHeap(ty, count: new)
         case .deallocate(old):
@@ -502,7 +449,6 @@ public extension InstructionKind {
         case extract
         case insert
         case apply
-        case gradient
         case allocateStack
         case allocateHeap
         case allocateBox
@@ -519,29 +465,13 @@ public extension InstructionKind {
         case unaryOp(UnaryOp)
     }
 
-    enum Keyword {
-        case at, to, from
-        case then, `else`
-        case broadcast
-        case wrt, keeping
-        case left, right
-    }
-
-    enum Parameter {
-        case value(Use)
-        case keyword(Keyword)
-        case basicBlock(BasicBlock)
-        case number(Int)
-        case name(String)
-    }
-
     var opcode: Opcode {
         switch self {
         case .branch: return .branch
         case .conditional: return .conditional
         case .return: return .return
         case .map(let op, _): return .unaryOp(op)
-        case .zipWith(let op, _, _, _): return .binaryOp(op)
+        case .zipWith(let op, _, _): return .binaryOp(op)
         case .dataTypeCast: return .dataTypeCast
         case .scan: return .scan
         case .reduce: return .reduce
@@ -553,7 +483,6 @@ public extension InstructionKind {
         case .extract: return .extract
         case .insert: return .insert
         case .apply: return .apply
-        case .gradient: return .gradient
         case .allocateStack: return .allocateStack
         case .allocateHeap: return .allocateHeap
         case .allocateBox: return .allocateBox
@@ -570,105 +499,38 @@ public extension InstructionKind {
     }
 }
 
-extension InstructionKind.Parameter {
-    var value: Use? {
-        guard case let .value(op) = self else { return nil }
-        return op
-    }
-
-    var number: Int? {
-        guard case let .number(num) = self else { return nil }
-        return num
-    }
-
-    var name: String? {
-        guard case let .name(name) = self else { return nil }
-        return name
-    }
-
-    var basicBlock: BasicBlock? {
-        guard case let .basicBlock(bb) = self else { return nil }
-        return bb
-    }
-
-    var keyword: InstructionKind.Keyword? {
-        guard case let .keyword(kw) = self else { return nil }
-        return kw
-    }
-}
-
-private extension Array where Element == InstructionKind.Parameter {
-    typealias Parameter = InstructionKind.Parameter
-    typealias Keyword = InstructionKind.Keyword
-
-    /// Split a sequence of parameters by keywords. If keywords do not appear
-    /// in specified order, return nil.
-    func split(by keywords: Keyword...) -> [ArraySlice<Parameter>]? {
-        var partitions: [ArraySlice<Parameter>] = []
-        var parameters = ArraySlice(self)
-        var keywords = ArraySlice(keywords)
-        while let kw = keywords.popFirst() {
-            guard let kwIndex = parameters.index(where: { $0.keyword == kw }) else {
-                return nil
-            }
-            partitions.append(parameters.prefix(upTo: kwIndex))
-            parameters = parameters.suffix(from: kwIndex + 1)
+extension InstructionKind.Opcode : Equatable {
+    public static func == (lhs: InstructionKind.Opcode, rhs: InstructionKind.Opcode) -> Bool {
+        switch (lhs, rhs) {
+        case (.branch, .branch): return true
+        case (.conditional, .conditional): return true
+        case (.return, .return): return true
+        case (.dataTypeCast, .dataTypeCast): return true
+        case (.scan, .scan): return true
+        case (.reduce, .reduce): return true
+        case (.matrixMultiply, .matrixMultiply): return true
+        case (.concatenate, .concatenate): return true
+        case (.transpose, .transpose): return true
+        case (.shapeCast, .shapeCast): return true
+        case (.bitCast, .bitCast): return true
+        case (.extract, .extract): return true
+        case (.insert, .insert): return true
+        case (.apply, .apply): return true
+        case (.allocateStack, .allocateStack): return true
+        case (.allocateHeap, .allocateHeap): return true
+        case (.allocateBox, .allocateBox): return true
+        case (.projectBox, .projectBox): return true
+        case (.retain, .retain): return true
+        case (.release, .release): return true
+        case (.deallocate, .deallocate): return true
+        case (.load, .load): return true
+        case (.store, .store): return true
+        case (.elementPointer, .elementPointer): return true
+        case (.copy, .copy): return true
+        case (.trap, .trap): return true
+        case let (.binaryOp(o1), .binaryOp(o2)): return o1 == o2
+        case let (.unaryOp(o1), .unaryOp(o2)): return o1 == o2
+        default: return false
         }
-        partitions.append(parameters)
-        return partitions
-    }
-}
-
-public extension InstructionKind {
-
-    /// Initialize an instruction kind with the opcode by parsing
-    /// a sequence of parameters
-    /// - Returns: nil if parameters have invalid syntax
-    init?(opcode: Opcode, parameters: [Parameter]) {
-        switch opcode {
-        /// branch <bb>(<arg0>, <arg1>, ...)
-        case .branch:
-            guard parameters.count >= 1 else { return nil }
-            guard let bb = parameters[0].basicBlock,
-                let args = parameters.dropFirst().liftedMap({$0.value}) else {
-                return nil
-            }
-            self = .branch(bb, args)
-        /// conditional <cond> then <then_bb>(<then_arg_0>, ...) else <else_bb>(<else_arg_0>, ...)
-        case .conditional:
-            guard parameters.count >= 3,
-                let partitions = parameters.split(by: .then, .else),
-                let cond = partitions[0].first?.value,
-                let thenBB = partitions[1].first?.basicBlock,
-                let thenArgs = partitions[1].dropFirst().liftedMap({$0.value}),
-                let elseBB = partitions[2].first?.basicBlock,
-                let elseArgs = partitions[2].dropFirst().liftedMap({$0.value})
-                else { return nil }
-            self = .conditional(cond, thenBB, thenArgs, elseBB, elseArgs)
-        /// return <val>?
-        case .return:
-            guard parameters.count <= 1 else { return nil }
-            self = .return(parameters.first?.value)
-        /// matrixMultiply <left>, <right>
-        case .matrixMultiply:
-            guard parameters.count == 2,
-                let operands = parameters.liftedMap({$0.value})
-                else { return nil }
-            self = .matrixMultiply(operands[0], operands[1])
-        /// <unary_op> <val>
-        case let .unaryOp(op):
-            guard parameters.count == 1,
-                let operand = parameters[0].value
-                else { return nil }
-            self = .map(op, operand)
-        /// TODO: more opcodes
-        default: return nil
-        }
-    }
-}
-
-public extension InstructionKind.Opcode {
-    func makeInstructionKind(with parameters: [InstructionKind.Parameter]) -> InstructionKind? {
-        return InstructionKind(opcode: self, parameters: parameters)
     }
 }

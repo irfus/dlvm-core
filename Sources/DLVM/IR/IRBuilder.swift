@@ -58,9 +58,8 @@ public extension IRBuilder {
 extension IRBuilder {
 
     @discardableResult
-    open func buildStruct(named name: String, fields: DictionaryLiteral<String, Type>,
-                          attributes: Set<StructType.Attribute> = []) -> StructType {
-        let structTy = StructType(name: name, fields: fields.map{$0}, attributes: attributes)
+    open func buildStruct(named name: String, fields: DictionaryLiteral<String, Type>) -> StructType {
+        let structTy = StructType(name: name, fields: fields.map{$0})
         module.structs.append(structTy)
         return structTy
     }
@@ -84,13 +83,15 @@ extension IRBuilder {
 
     @discardableResult
     open func buildFunction(named name: String,
-                            arguments: DictionaryLiteral<String, Type>,
-                            result: Type = .void,
-                            attributes: Set<Function.Attribute> = []) -> Function {
+                            argumentTypes: [Type],
+                            returnType: Type = .void,
+                            attributes: Set<Function.Attribute> = [],
+                            declarationKind: Function.DeclarationKind? = nil) -> Function {
         let fun = Function(name: name,
-                           arguments: Array(arguments),
-                           result: result,
+                           argumentTypes: argumentTypes,
+                           returnType: returnType,
                            attributes: attributes,
+                           declarationKind: declarationKind,
                            parent: module)
         module.append(fun)
         return fun
@@ -100,14 +101,18 @@ extension IRBuilder {
     open func buildBasicBlock(named name: String,
                               arguments: DictionaryLiteral<String, Type>,
                               in function: Function) -> BasicBlock {
-        let block = BasicBlock(name: name, arguments: Array(arguments), parent: function)
+        let block = BasicBlock(name: name,
+                               arguments: arguments.map{($0.0, $0.1)},
+                               parent: function)
         function.append(block)
         return block
     }
 
     @discardableResult
-    open func buildEntry(in function: Function) -> BasicBlock {
-        let entry = BasicBlock(asEntryOf: function)
+    open func buildEntry(argumentNames: [String], in function: Function) -> BasicBlock {
+        let entry = BasicBlock(name: "entry",
+                               arguments: Array(zip(argumentNames, function.argumentTypes)),
+                               parent: function)
         function.insert(entry, at: 0)
         return entry
     }
@@ -135,41 +140,32 @@ extension IRBuilder {
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
-    func add(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.add)), lhs, rhs, bc))
+    func add(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.add), lhs, rhs))
     }
 
-    func subtract(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.subtract)), lhs, rhs, bc))
+    func subtract(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.subtract), lhs, rhs))
     }
 
-    func multiply(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.multiply)), lhs, rhs, bc))
+    func multiply(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.multiply), lhs, rhs))
     }
 
-    func divide(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.divide)), lhs, rhs, bc))
+    func divide(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.divide), lhs, rhs))
     }
 
-    func power(_ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.arithmetic(.power)), lhs, rhs, bc))
+    func power(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.associative(.power), lhs, rhs))
     }
 
-    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use, broadcasting bc: BroadcastingConfig? = nil) -> Instruction {
-        return buildInstruction(.zipWith(.comparison(`operator`), lhs, rhs, bc))
+    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.zipWith(.comparison(`operator`), lhs, rhs))
     }
 
     func apply(_ function: Use, _ arguments: [Use]) -> Instruction {
         return buildInstruction(.apply(function, arguments))
-    }
-
-    func gradient(_ function: Function, from output: Int,
-                  withRespectTo variables: [Int],
-                  keepingOutputs outputIndices: [Int]) -> Instruction {
-        return buildInstruction(.gradient(%function,
-                                          from: output,
-                                          wrt: variables,
-                                          keeping: outputIndices))
     }
 
     func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Instruction {

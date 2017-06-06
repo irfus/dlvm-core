@@ -40,18 +40,13 @@ extension ElementKey : Equatable {
 
 /// Nominal type
 public class StructType : Named, HashableByReference {
-    public enum Attribute {
-        case packed
-    }
     public typealias Field = (name: String, type: Type)
     public var name: String
     public var fields: [Field]
-    public var attributes: Set<Attribute> = []
 
-    public init(name: String, fields: [Field], attributes: Set<Attribute>) {
+    public init(name: String, fields: [Field]) {
         self.name = name
         self.fields = fields
-        self.attributes = attributes
     }
 }
 
@@ -67,10 +62,6 @@ public extension StructType {
 
     static prefix func ^ (type: StructType) -> Type {
         return .struct(type)
-    }
-    
-    var isPacked: Bool {
-        return attributes.contains(.packed)
     }
     
     func field(named name: String) -> Field? {
@@ -247,7 +238,8 @@ public extension Type {
             return .tensor(shape.dropFirst(), dt)
         case let (.array(n, t), .index(i)) where i < n:
             return t
-        case let (.pointer(t), .index(_)):
+        case let (.pointer(t), .index(_)),
+             let (.pointer(t), .value(_)):
             return t
         default:
             return nil
@@ -284,8 +276,7 @@ public extension Type {
 
     var isDifferentiable: Bool {
         switch self {
-        case let .tensor([], dt),
-             let .tensor(_, dt) where dt.isNumeric:
+        case let .tensor(_, dt) where dt.isNumeric:
             return true
         default:
             return false
