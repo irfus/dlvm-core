@@ -435,7 +435,13 @@ extension Parser {
             guard refBB.indices.contains(instIndex) else {
                 throw ParseError.invalidAnonymousIdentifierIndex(tok)
             }
-            use = %refBB[instIndex]
+            let inst = refBB[instIndex]
+            /// This value cannot be named, or have void type
+            guard inst.name == nil, inst.type != .void else {
+                throw ParseError.undefinedIdentifier(tok)
+            }
+            /// Now we can use this value
+            use = %inst
             let (type, typeSigRange) = try parseTypeSignature()
             range = tok.startLocation..<typeSigRange.upperBound
             guard type == use.type else {
@@ -746,11 +752,24 @@ extension Parser {
 
     func parseInstruction(in basicBlock: BasicBlock) throws -> Instruction? {
         guard let tok = currentToken else { return nil }
+        func parseKind(isNamed: Bool) throws -> InstructionKind {
+            let kind = try parseInstructionKind(in: basicBlock)
+            let type = kind.type
+            /// If instruction kind gives invalid result, operands gotta be wrong
+            guard type != .invalid else {
+                throw ParseError.invalidOperands(tok, kind.opcode)
+            }
+            /// Cannot have void type
+            if isNamed, type == .void {
+                throw ParseError.cannotNameVoidValue(tok)
+            }
+            return kind
+        }
         switch tok.kind {
         case let .identifier(.temporary, name):
             consumeToken()
             try consumeWrappablePunctuation(.equal)
-            let kind = try parseInstructionKind(in: basicBlock)
+            let kind = try parseKind(isNamed: true)
             guard !symbolTable.locals.keys.contains(name) else {
                 throw ParseError.redefinedIdentifier(tok)
             }
@@ -767,11 +786,10 @@ extension Parser {
                 else { throw ParseError.invalidAnonymousIdentifierIndex(tok) }
             consumeToken()
             try consumeWrappablePunctuation(.equal)
-            let kind = try parseInstructionKind(in: basicBlock)
+            let kind = try parseKind(isNamed: true)
             return Instruction(kind: kind, parent: basicBlock)
         case .opcode(_):
-            let kind = try parseInstructionKind(in: basicBlock)
-            return Instruction(kind: kind, parent: basicBlock)
+            return Instruction(kind: try parseKind(isNamed: false), parent: basicBlock)
         default:
             return nil
         }
