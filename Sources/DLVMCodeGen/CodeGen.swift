@@ -20,7 +20,7 @@
 import DLVM
 import LLVM_C
 
-public class CodeGenerator<TargetType : LLTarget> {
+public class LLGen<TargetType : LLTarget> {
     public let dlModule: DLVM.Module
     public lazy internal(set) var context: LLGenContext<TargetType> = LLGenContext(module: self.dlModule)
     public internal(set) var environment: LLGenEnvironment = LLGenEnvironment()
@@ -256,16 +256,25 @@ extension DLVM.InstructionKind : LLEmittable {
     }
 }
 
-extension CodeGenerator {
-    public func emit() -> LLVMModuleRef {
-        return dlModule.emit(to: &context, in: &environment)
-    }
+public protocol CodeGenerator {
+    func emitIR()
+    func writeBitcode(toFile file: String) throws
+    var textualIR: String { get }
 }
 
-public extension CodeGenerator {
-    func writeBitcode(toFile file: String) throws {
+extension LLGen : CodeGenerator {
+    public func emitIR() {
+        dlModule.emit(to: &context, in: &environment)
+    }
+    
+    public func writeBitcode(toFile file: String) throws {
         guard LLVMWriteBitcodeToFile(context.module, file) == 0 else {
             throw LLGenError.fileError
         }
+    }
+
+    public var textualIR: String {
+        let cStr = LLVMPrintModuleToString(context.module)!
+        return String(cString: cStr)
     }
 }
