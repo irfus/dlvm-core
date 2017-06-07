@@ -17,59 +17,6 @@
 //  limitations under the License.
 //
 
-/*
-/// Transform queue, a builder API for defining and applying a sequence
-/// of transform passes
-public class TransformQueue<Body : IRCollection> where Body.Iterator.Element : IRUnit {
-    fileprivate enum Action {
-        case apply((Body) throws -> Bool, shouldInvalidate: Bool)
-        case map((Body.Iterator.Element) throws -> Bool, shouldInvalidate: Bool)
-    }
-    fileprivate var workList: [Action] = []
-}
-
-// MARK: - Transform queue builder
-public extension TransformQueue {
-    /// Build a 'map' action to the queue
-    @discardableResult
-    func map<T : TransformPass>(_: T.Type) -> TransformQueue where T.Body == Body.Element {
-        workList.append(.map(T.run, shouldInvalidate: T.shouldInvalidateAnalyses))
-        return self
-    }
-
-    /// Build an 'apply' action to the queue
-    @discardableResult
-    func apply<T : TransformPass>(_: T.Type) -> TransformQueue where T.Body == Body {
-        workList.append(.apply(T.run, shouldInvalidate: T.shouldInvalidateAnalyses))
-        return self
-    }
-
-    /// Apply queued transform passes to
-    @discardableResult
-    func run(on body: Body) throws -> Bool {
-        var changed = false
-        for functor in workList {
-            switch functor {
-            case let .apply(fn, shouldInvalidate: inv):
-                changed = try fn(body) || changed
-                if inv, changed {
-                    body.invalidateAnalyses()
-                }
-            case let .map(fn, shouldInvalidate: inv):
-                changed = try body.reduce(changed, { alreadyChanged, element in
-                    let changed = try fn(element)
-                    if inv, changed {
-                        element.invalidateAnalyses()
-                    }
-                    return changed || alreadyChanged
-                })
-            }
-        }
-        return changed
-    }
-}
- */
-
 public extension IRCollection {
     /// Applies a transform pass on self
     ///
