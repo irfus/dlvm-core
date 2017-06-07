@@ -46,6 +46,8 @@ public enum ParseError : Error {
     case notFunctionType(SourceRange)
     case invalidAttributeArguments(SourceLocation)
     case declarationCannotHaveBody(declaration: SourceRange, body: Token)
+    case cannotNameVoidValue(Token)
+    case invalidOperands(Token, InstructionKind.Opcode)
 }
 
 public extension LexicalError {
@@ -81,7 +83,9 @@ public extension ParseError {
              let .redefinedIdentifier(tok),
              let .anonymousIdentifierNotInLocal(tok),
              let .invalidAnonymousIdentifierIndex(tok),
-             let .declarationCannotHaveBody(_, body: tok):
+             let .declarationCannotHaveBody(_, body: tok),
+             let .cannotNameVoidValue(tok),
+             let .invalidOperands(tok, _):
             return tok.startLocation
         case let .typeMismatch(_, range),
              let .notFunctionType(range):
@@ -127,7 +131,11 @@ extension ParseError : CustomStringConvertible {
         case .invalidAttributeArguments(_):
             desc += "invalid attribute arguments"
         case let .declarationCannotHaveBody(declaration: declRange, _):
-            desc += "Declaration at \(declRange) cannot have a body"
+            desc += "declaration at \(declRange) cannot have a body"
+        case .cannotNameVoidValue(_):
+            desc += "cannot name an instrution value of void type"
+        case let .invalidOperands(_, opcode):
+            desc += "invalid operands to \(opcode)"
         }
         return desc
     }
