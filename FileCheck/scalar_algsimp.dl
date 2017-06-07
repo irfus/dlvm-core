@@ -1,0 +1,13 @@
+module "mnist"
+stage raw
+
+func @inference: (f32, f32, f32) -> f32 {
+'entry(%x: f32, %w: f32, %b: f32):
+    %0.0 = multiply %x: f32, %w: f32
+    %0.1 = add %0.0: f32, %b: f32
+    %0.2 = power %0.1: f32, 0: f32
+    %0.3 = power %0.2: f32, 1: f32
+    %0.4 = power %0.3: f32, 2: f32
+    %0.5 = cos %0.4: f32
+    return %0.5: f32
+}
