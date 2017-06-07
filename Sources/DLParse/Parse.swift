@@ -899,7 +899,7 @@ extension Parser {
         while case let .attribute(attr)? = currentToken?.kind {
             attributes.insert(attr)
             consumeToken()
-            consumeAnyNewLines()
+            try consumeOneOrMore(.newLine)
         }
         /// Parse declaration kind
         var declKind: Function.DeclarationKind?
@@ -907,7 +907,7 @@ extension Parser {
             consumeToken()
             declKind = try parseFunctionDeclarationKind()
             try consume(.punctuation(.rightSquareBracket))
-            consumeAnyNewLines()
+            try consumeOneOrMore(.newLine)
         }
         /// Parse main function declaration/definition
         let funcTok = try consume(.keyword(.func))
@@ -944,7 +944,9 @@ extension Parser {
         }
         /// Parse definition in `{...}` when it's not a declaration
         if function.isDefinition {
-            try consumeWrappablePunctuation(.leftCurlyBracket)
+            consumeAnyNewLines()
+            try consume(.punctuation(.leftCurlyBracket))
+            try consumeOneOrMore(.newLine)
             while let bb = try parseBasicBlock(in: function) {
                 function.append(bb)
             }
