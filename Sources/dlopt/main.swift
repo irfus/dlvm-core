@@ -2,16 +2,8 @@ import DLVM
 import DLParse
 import Foundation
 import CommandLineKit
-import DLVMCodeGen
 
 let cli = CommandLineKit.CommandLine()
-
-enum Target : String {
-    case hpvm = "hpvm"
-    case nvptx = "nvptx"
-    case amdgpu = "amdgpu"
-    case cpu = "cpu"
-}
 
 struct Options {
     /// File
@@ -19,7 +11,7 @@ struct Options {
                                             helpMessage: "Paths to DLVM IR source files")
     /// Print IR
     static let shouldPrintIR = BoolOption(longFlag: "print-ir",
-                                          helpMessage: "Print IR after transformation")
+                                          helpMessage: "Print IR after transformation instead of writing to file")
 
     /// Transform passes
     static let passes = MultiStringOption(shortFlag: "p", longFlag: "passes",
@@ -32,33 +24,13 @@ struct Options {
     static let needsHelp = BoolOption(shortFlag: "h", longFlag: "help",
                                       helpMessage: "Print help message")
 
-    /// Target compute back-end
-    static let target = EnumOption<Target>(shortFlag: "t", longFlag: "target",
-        helpMessage: "Target compute backend [ hpvm | nvptx | amdgpu | cpu ]")
-
-    /// Compile to LLVM
-    static let shouldCompile = BoolOption(shortFlag: "c",
-                                          helpMessage: "Compile to LLVM")
-
-    /// Emit LLVM IR
-    static let shouldEmitLLVM = BoolOption(longFlag: "emit-llvm",
-                                           helpMessage: "Emit LLVM Textual IR")
-
-    /// Emit LLVM Bitcode
-    static let shouldEmitBitcode = BoolOption(longFlag: "emit-bc",
-                                              helpMessage: "Emit LLVM Bitcode")
-
 }
 
 cli.addOptions(Options.filePaths,
                Options.shouldPrintIR,
                Options.passes,
                Options.outputPaths,
-               Options.needsHelp,
-               Options.target,
-               Options.shouldCompile,
-               Options.shouldEmitLLVM,
-               Options.shouldEmitBitcode)
+               Options.needsHelp)
 
 /// Parse command line
 do { try cli.parse(strict: true) }
@@ -96,24 +68,11 @@ func runPass(named name: String, on module: Module) throws {
     }
 }
 
-func codeGenerator(for target: Target, from module: Module) -> CodeGenerator {
-    switch target {
-    case .nvptx:
-        return LLGen<NVVM>(module: module)
-    case .hpvm:
-        return LLGen<HPVM>(module: module)
-    case .amdgpu:
-        error("AMDGPU target is not yet supported")
-    case .cpu:
-        error("Pure CPU target is not yet supported")
-    }
-}
-
 /// Command line entry
 func main() throws {
-    
+
     guard !Options.needsHelp.wasSet else {
-        print("DLVM IR Compiler\n")
+        print("DLVM IR Optimizer\n")
         cli.printUsage()
         return
     }
@@ -144,34 +103,16 @@ func main() throws {
                 try runPass(named: passName, on: module)
             }
         }
-        
-        /// Print IR if requested
+
+        /// Print IR instead of writing to file if requested
         if Options.shouldPrintIR.wasSet {
             print(module)
         }
-        
-        /// Write transformed IR if requested
-        if let outputPaths = outputPaths {
-            try module.write(toFile: outputPaths[i])
-        }
 
-        /// LLGen
-        if Options.shouldCompile.wasSet {
-            guard let target = Options.target.value else {
-                error("No compute target [hpvm | nvptx | amdgpu | cpu] was selected")
-            }
-            let cgen = codeGenerator(for: target, from: module)
-            cgen.emitIR()
-
-            /// Emit LLVM IR
-            if Options.shouldEmitLLVM.wasSet {
-                print(cgen.textualIR)
-            }
-
-            /// Emit bitcode
-            if Options.shouldEmitBitcode.wasSet {
-                try cgen.writeBitcode(toFile: filePath.replacingFileExtension(with: "bc"))
-            }
+        /// Otherwise, write result to IR file by default
+        else {
+            let path = outputPaths?[i] ?? filePath
+            try module.write(toFile: path)
         }
     }
 

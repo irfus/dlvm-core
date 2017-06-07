@@ -104,3 +104,13 @@ public func =? <T> (lhs: inout T, rhs: T?) {
         lhs = rhs
     }
 }
+
+import struct Foundation.URL
+
+public extension String {
+    func replacingFileExtension(with newExtenion: String) -> String {
+        let url = URL(fileURLWithPath: self)
+        let dlUrl = url.deletingPathExtension().appendingPathExtension(newExtenion)
+        return dlUrl.relativePath
+    }
+}
