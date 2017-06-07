@@ -42,11 +42,11 @@ open class AlgebraSimplification : TransformPass {
                 /// x^k
                 case let .zipWith(.associative(.power), x, .literal(_,  lit)):
                     switch lit {
-                    case 0:
+                    case 0: /// x^0 => 1
                         substWorkList.append((old: %inst, new: .scalar(.int(1)) ~ x.type))
-                    case 1:
+                    case 1: /// x^1 => x
                         substWorkList.append((old: %inst, new: x))
-                    case 2:
+                    case 2: /// x^1 => x
                         /// Replace with `multiply`
                         let mult = Instruction(kind: .matrixMultiply(x, x), parent: body)
                         body.insert(mult, before: inst)
@@ -54,13 +54,13 @@ open class AlgebraSimplification : TransformPass {
                     default:
                         continue
                     }
-                /// sin(0)
+                /// sin(0) => 0
                 case let .map(.sin, .literal(ty, 0)):
                     substWorkList.append((old: %inst, new: .scalar(.int(0)) ~ ty))
-                /// cos(0)
+                /// cos(0) => 1
                 case let .map(.cos, .literal(ty, 0)):
                     substWorkList.append((old: %inst, new: .scalar(.int(1)) ~ ty))
-                /// tan(0)
+                /// tan(0) => 0
                 case let .map(.tan, .literal(ty, 0)):
                     substWorkList.append((old: %inst, new: .scalar(.int(0)) ~ ty))
                 /// (e^x - e^(-x)) / 2 => sinh(x)
