@@ -135,7 +135,7 @@ extension ParseError : CustomStringConvertible {
         case .cannotNameVoidValue(_):
             desc += "cannot name an instrution value of void type"
         case let .invalidOperands(_, opcode):
-            desc += "invalid operands to \(opcode)"
+            desc += "invalid operands to the '\(opcode)' instruction"
         }
         return desc
     }
