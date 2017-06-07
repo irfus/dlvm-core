@@ -43,14 +43,16 @@ func error(_ message: String) {
 
 func runPass(named name: String, on module: Module) throws {
     switch name {
+    case "AD", "Differentiation":
+        try module.applyTransform(Differentiation.self)
     case "Canonicalization":
         try module.applyTransform(Canonicalization.self)
+    case "CP", "Checkpointing":
+        try module.mapTransform(Checkpointing.self)
     case "DCE":
         try module.mapTransform(DeadCodeElimination.self)
     case "CSE":
         try module.mapTransform(CommonSubexpressionElimination.self)
-    case "AD", "Differentiation":
-        try module.applyTransform(Differentiation.self)
     case "AS", "AlgebraSimplification":
         try module.forEach { fn in try fn.mapTransform(AlgebraSimplification.self) }
     case "LAF", "LinearAlgebraFusion":
