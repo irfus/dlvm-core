@@ -253,10 +253,10 @@ public extension InstructionKind {
             }
 
         case let .extract(from: v, at: indices):
-            return v.type.subtype(at: indices) ?? .invalid
+            return v.type.elementType(at: indices) ?? .invalid
 
         case let .insert(src, to: dest, at: indices):
-            guard let subtype = dest.type.subtype(at: indices), subtype == src.type else {
+            guard let elementType = dest.type.elementType(at: indices), elementType == src.type else {
                 return .invalid
             }
             return dest.type
@@ -271,7 +271,7 @@ public extension InstructionKind {
 
         case let .elementPointer(v, ii):
             guard case let .pointer(t) = v.type else { return .invalid }
-            return t.subtype(at: ii).flatMap(Type.pointer) ?? .invalid
+            return t.elementType(at: ii).flatMap(Type.pointer) ?? .invalid
 
         case let .bitCast(_, t):
 //            guard v.type.size == t.size else { return .invalid }

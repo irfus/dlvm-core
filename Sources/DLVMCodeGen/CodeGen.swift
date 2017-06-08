@@ -54,7 +54,7 @@ public extension Type {
             default:
                 DLImpossible()
             }
-            current = current.subtype(at: key) ?? DLImpossibleResult()
+            current = current.elementType(at: key) ?? DLImpossibleResult()
         }
         return indices
     }
@@ -157,7 +157,7 @@ extension DLVM.StructType : LLEmittable {
     public func emit<T>(to context: inout LLGenContext<T>,
                         in env: inout LLGenEnvironment) -> LLVMTypeRef {
 
-        var elements: [LLVMTypeRef?] = subtypes.map { $0.emit(to: &context, in: &env) }
+        var elements: [LLVMTypeRef?] = elementTypes.map { $0.emit(to: &context, in: &env) }
         return LLVMStructType(&elements, UInt32(elements.count), .false)
     }
 }

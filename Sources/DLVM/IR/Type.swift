@@ -68,17 +68,17 @@ public extension StructType {
         return fields.first(where: {$0.name == name})
     }
 
-    func subtype(named name: String) -> Type? {
+    func elementType(named name: String) -> Type? {
         return field(named: name)?.type
     }
 
-    var subtypes: [Type] {
+    var elementTypes: [Type] {
         return fields.map {$0.1}
     }
 
-    func subtype(at key: ElementKey) -> Type? {
+    func elementType(at key: ElementKey) -> Type? {
         guard case .name(let name) = key else { return nil }
-        return subtype(named: name)
+        return elementType(named: name)
     }
 
     func indexOfField(named name: String) -> Int? {
@@ -225,14 +225,14 @@ public extension Type {
     }
 }
 
-// MARK: - Subtype extraction
+// MARK: - Element type extraction
 public extension Type {
-    func subtype(at key: ElementKey) -> Type? {
+    func elementType(at key: ElementKey) -> Type? {
         switch (unaliased, key) {
         case let (.tuple(tt), .index(i)) where tt.indices.contains(i):
             return tt[i]
         case let (.struct(structTy), .name(_)):
-            guard let ty = structTy.subtype(at: key) else { return nil }
+            guard let ty = structTy.elementType(at: key) else { return nil }
             return ty
         case let (.tensor(shape, dt), .index(i)) where shape.rank > 0 && i < shape[0]:
             return .tensor(shape.dropFirst(), dt)
@@ -246,9 +246,9 @@ public extension Type {
         }
     }
     
-    func subtype(at keys: [ElementKey]) -> Type? {
+    func elementType(at keys: [ElementKey]) -> Type? {
         return keys.reduce(self, { acc, key in
-            acc.flatMap { $0.subtype(at: key) }
+            acc.flatMap { $0.elementType(at: key) }
         })
     }
 }
@@ -315,7 +315,7 @@ extension Type : Equatable {
 // MARK: - Validation
 public extension StructType {
     var isValid: Bool {
-        return subtypes.forAll { $0.isValid }
+        return elementTypes.forAll { $0.isValid }
     }
 }
 
@@ -327,12 +327,12 @@ public extension Type {
             return false
         case .tensor, .void:
             return true
-        case let .array(_, subtype),
-             let .pointer(subtype),
-             let .box(subtype):
-            return subtype.isValid
-        case let .tuple(subtypes):
-            return subtypes.forAll { $0.isValid }
+        case let .array(_, elementType),
+             let .pointer(elementType),
+             let .box(elementType):
+            return elementType.isValid
+        case let .tuple(elementTypes):
+            return elementTypes.forAll { $0.isValid }
         case let .struct(structTy):
             return structTy.isValid
         case let .function(args, ret):

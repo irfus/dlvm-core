@@ -151,10 +151,10 @@ extension StructType : Verifiable {
 
 extension LiteralValue : Verifiable {
 
-    private func verifyUse(_ use: Use, _ subtype: Type) throws {
+    private func verifyUse(_ use: Use, _ elementType: Type) throws {
         try use.performVerification()
-        guard use.type == subtype else {
-            throw VerificationError.unexpectedType(use, subtype, self)
+        guard use.type == elementType else {
+            throw VerificationError.unexpectedType(use, elementType, self)
         }
     }
     
@@ -176,21 +176,21 @@ extension LiteralValue : Verifiable {
 
         /// Tensor literal
         case let (.tensor(shape, dt), .tensor(elements)) where elements.count == shape.first:
-            let subtype: Type = .tensor(shape.dropFirst(), dt)
+            let elementType: Type = .tensor(shape.dropFirst(), dt)
             for use in elements {
-                try verifyUse(use, subtype)
+                try verifyUse(use, elementType)
             }
 
         /// Tuple literal
-        case let (.tuple(subtypes), .tuple(elements)) where subtypes.count == elements.count:
-            for (subtype, use) in zip(subtypes, elements) {
-                try verifyUse(use, subtype)
+        case let (.tuple(elementTypes), .tuple(elements)) where elementTypes.count == elements.count:
+            for (elementType, use) in zip(elementTypes, elements) {
+                try verifyUse(use, elementType)
             }
 
         /// Array literal
-        case let (.array(n, subtype), .array(elements)) where n == elements.count:
+        case let (.array(n, elementType), .array(elements)) where n == elements.count:
             for use in elements {
-                try verifyUse(use, subtype)
+                try verifyUse(use, elementType)
             }
             
         case let (.struct(structTy), .struct(fields)) where structTy.fields.count == fields.count:
@@ -493,7 +493,7 @@ extension InstructionKind {
             guard !indices.isEmpty else {
                 throw VerificationError.missingIndices(v1, instruction)
             }
-            guard let _ = v1.type.subtype(at: indices) else {
+            guard let _ = v1.type.elementType(at: indices) else {
                 throw VerificationError.invalidIndices(v1, indices, instruction)
             }
 
@@ -501,10 +501,10 @@ extension InstructionKind {
             guard !indices.isEmpty else {
                 throw VerificationError.missingIndices(dest, instruction)
             }
-            guard let subtype = dest.type.subtype(at: indices) else {
+            guard let elementType = dest.type.elementType(at: indices) else {
                 throw VerificationError.invalidIndices(dest, indices, instruction)
             }
-            guard subtype == src.type else {
+            guard elementType == src.type else {
                 throw VerificationError.typeMismatch(src, dest, instruction)
             }
 
@@ -514,10 +514,10 @@ extension InstructionKind {
             }
 
         case let .store(v1, to: v2):
-            guard case let .pointer(subtype) = v2.type.unaliased else {
+            guard case let .pointer(elementType) = v2.type.unaliased else {
                 throw VerificationError.notPointer(v2, instruction)
             }
-            guard v1.type == subtype else {
+            guard v1.type == elementType else {
                 throw VerificationError.typeMismatch(v1, v2, instruction)
             }
 
@@ -525,7 +525,7 @@ extension InstructionKind {
             guard case let .pointer(t) = v.type.unaliased else {
                 throw VerificationError.notPointer(v, instruction)
             }
-            guard let _ = t.subtype(at: ii) else {
+            guard let _ = t.elementType(at: ii) else {
                 throw VerificationError.invalidOffsets(v, ii, instruction)
             }
 

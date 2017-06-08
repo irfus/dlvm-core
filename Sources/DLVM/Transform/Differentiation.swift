@@ -53,11 +53,11 @@ fileprivate extension Type {
         switch canonical {
         case let .tensor(shape, type):
             return .tensor(shape, type, repeating: number)
-        case let .tuple(subtypes):
-            let sublits = subtypes.map{$0.makeLiteral(number)}
+        case let .tuple(elementTypes):
+            let sublits = elementTypes.map{$0.makeLiteral(number)}
             return .literal(self, .tuple(sublits))
-        case let .array(i, subtype):
-            let sublit = subtype.makeLiteral(number)
+        case let .array(i, elementType):
+            let sublit = elementType.makeLiteral(number)
             let sublits = Array(repeating: sublit, count: i)
             return .literal(self, .array(sublits))
         case _:
