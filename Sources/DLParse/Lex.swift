@@ -24,7 +24,7 @@ import class DLVM.Function
 public enum Keyword {
     case module
     case stage, raw, canonical
-    case `struct`, `func`, `var`, `let`
+    case `struct`, `func`, `var`
     case type, opaque
     case at, to, from, by
     case then, `else`
@@ -391,7 +391,6 @@ private extension Lexer {
         case "func": kind = .keyword(.func)
         case "struct": kind = .keyword(.struct)
         case "var": kind = .keyword(.var)
-        case "let": kind = .keyword(.let)
         case "type": kind = .keyword(.type)
         case "opaque": kind = .keyword(.opaque)
         case "at": kind = .keyword(.at)

@@ -965,6 +965,15 @@ extension Parser {
         return function
     }
 
+    func parseVariable(in module: Module) throws -> Variable {
+        try consume(.keyword(.var))
+        let (name, _) = try parseIdentifier(ofKind: .global, isDefinition: true)
+        let (type, _) = try parseTypeSignature()
+        let variable = Variable(name: name, type: type)
+        symbolTable.globals[name] = variable
+        return variable
+    }
+
     func parseTypeAlias(in module: Module) throws -> TypeAlias {
         try consume(.keyword(.type))
         let (name, _) = try parseIdentifier(ofKind: .type, isDefinition: true)
@@ -1059,6 +1068,10 @@ public extension Parser {
                 let fn = try parseFunction(in: module)
                 module.append(fn)
 
+            case .keyword(.var):
+                let variable = try parseVariable(in: module)
+                module.variables.append(variable)
+                
             default:
                 throw ParseError.unexpectedToken(
                     expected: "a type alias, a struct or a function", tok

@@ -24,5 +24,8 @@ func @foo: () -> <1 x 10 x f32> {
     return %0.0: <1 x 10 x f32>
 }
 
+var @x: $MNIST
+var @test_tensor: <10000 x 20000 x f16>
+
 [gradient @inference wrt 0 seedable]
 func @baz: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>) -> (<1 x 784 x f32>)
