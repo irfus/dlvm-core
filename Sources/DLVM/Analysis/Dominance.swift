@@ -103,7 +103,7 @@ public extension DominatorTree where Node == BasicBlock {
 public extension DominatorTree where Node == BasicBlock {
     func properlyDominates(_ use: Use, _ instruction: Instruction) -> Bool {
         switch use {
-        case .global, .literal, .function: return true
+        case .variable, .literal, .function: return true
             
         case let .argument(_, arg):
             return self.dominates(arg.parent, instruction.parent)

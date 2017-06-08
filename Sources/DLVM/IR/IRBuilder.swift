@@ -73,11 +73,9 @@ extension IRBuilder {
 
     @discardableResult
     open func buildGlobalValue(named name: String,
-                               kind: GlobalValue.Kind,
-                               type: Type,
-                               initializer: Use) -> GlobalValue {
-        let value = GlobalValue(name: name, kind: kind, type: type, initializer: initializer)
-        module.globalValues.append(value)
+                               type: Type) -> Variable {
+        let value = Variable(name: name, type: type)
+        module.variables.append(value)
         return value
     }
 
@@ -126,11 +124,12 @@ extension IRBuilder {
         block.append(inst)
         return inst
     }
+
 }
 
 // MARK: - Positioning
-extension IRBuilder {
-    open func move(to basicBlock: BasicBlock?) {
+public extension IRBuilder {
+    func move(to basicBlock: BasicBlock?) {
         currentBlock = basicBlock
     }
 }

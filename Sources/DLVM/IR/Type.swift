@@ -101,7 +101,7 @@ public extension TypeAlias {
     static prefix func ^ (alias: TypeAlias) -> Type {
         return .alias(alias)
     }
-    
+
     var isOpaque: Bool {
         return type == nil
     }

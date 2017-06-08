@@ -24,38 +24,26 @@ class IRTests: XCTestCase {
 
     let builder = IRBuilder(moduleName: "IRTest")
 
+    lazy var struct1: StructType = self.builder.buildStruct(named: "TestStruct1", fields: [
+        "foo" : .int(32),
+        "bar" : .tensor([1, 3, 4], .float(.double)),
+        "baz" : .array(4, .array(3, .tensor([3], .int(32))))
+    ])
+
+    lazy var struct1Global: Variable = self.builder.buildGlobalValue(named: "struct1",
+                                                                     type: self.struct1.type)
+
     func testWriteGlobal() {
-        let val1 = builder.buildGlobalValue(named: "one", kind: .constant,
-                                            type: .int(32),
-                                            initializer: %InstructionKind.zipWith(
-                                                .associative(.add),
-                                                .literal(.int(32), .scalar(.int(10))),
-                                                .literal(.int(32), .scalar(.int(20)))))
-        XCTAssertEqual("\(val1)", "let @one: i32 = (add 10: i32, 20: i32): i32")
-        let val2 = builder.buildGlobalValue(named: "two", kind: .constant,
-                                            type: Type.int(32).pointer,
-                                            initializer: %val1)
-        XCTAssertEqual("\(val2)", "let @two: *i32 = @one: *i32")
+        let val1 = builder.buildGlobalValue(named: "one", type: .int(32))
+        XCTAssertEqual("\(val1)", "var @one: i32")
+        let val2 = builder.buildGlobalValue(named: "two", type: *.int(32))
+        XCTAssertEqual("\(val2)", "var @two: *i32")
     }
 
     func testWriteStruct() {
-        let struct1 = builder.buildStruct(named: "TestStruct1", fields: [
-            "foo" : .int(32),
-            "bar" : .tensor([1, 3, 4], .float(.double)),
-            "baz" : .array(4, .array(3, .tensor([3], .int(32))))
-        ])
         XCTAssertEqual(struct1.description,
                        "struct $TestStruct1 {\n    #foo: i32,\n    #bar: <1 x 3 x 4 x f64>,\n    #baz: [4 x [3 x <3 x i32>]],\n}")
-        let structLit : Literal = .struct([
-            ("foo", 100000 ~ .int(32)),
-            ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),
-            ("baz", .undefined ~ .array(4, .array(3, .tensor([3], .int(32)))))
-        ])
-        let structGlobal = builder.buildGlobalValue(named: "struct1.value",
-                                                    kind: .variable,
-                                                    type: struct1.type,
-                                                    initializer: structLit ~ struct1.type)
-        XCTAssertEqual("\(structGlobal)", "var @struct1.value: $TestStruct1 = {#foo = 100000: i32, #bar = undefined: <1 x 3 x 4 x f64>, #baz = undefined: [4 x [3 x <3 x i32>]]}: $TestStruct1")
+        XCTAssertEqual("\(struct1Global)", "var @struct1: $TestStruct1")
     }
 
     func testWriteSimpleFunction() {
@@ -67,6 +55,22 @@ class IRTests: XCTestCase {
                              .literal(.int(32), .tensor([.literal(.int(32), 1), .literal(.int(32), 2)])))
         builder.return(.null ~ .tensor([3], .bool))
         XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3 x bool> {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32\n    return null: <3 x bool>\n}")
+    }
+
+    func testInitializeGlobal() {
+        let structLit: Literal = .struct([
+            ("foo", 100000 ~ .int(32)),
+            ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),
+            ("baz", .undefined ~ .array(4, .array(3, .tensor([3], .int(32)))))
+        ])
+        let fun = builder.buildFunction(named: "initialize_struct1",
+                                        argumentTypes: [],
+                                        returnType: .void)
+        builder.move(to: builder.buildEntry(argumentNames: [], in: fun))
+        builder.store(structLit ~ .struct(struct1), to: %struct1Global)
+        builder.return()
+        XCTAssertEqual(fun.description,
+            "func @initialize_struct1: () -> void {\n'entry():\n    store {#foo = 100000: i32, #bar = undefined: <1 x 3 x 4 x f64>, #baz = undefined: [4 x [3 x <3 x i32>]]}: $TestStruct1 to @struct1: *$TestStruct1\n    return\n}")
     }
 
     func testWriteMultiBBFunction() {

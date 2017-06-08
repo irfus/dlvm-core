@@ -115,13 +115,12 @@ extension Module : Verifiable {
         try structs.forEach { try self.verify($0, namespace: &typeNameSet) }
         var valueNameSet: Set<String> = []
         try elements.forEach { try self.verify($0, namespace: &valueNameSet) }
-        try globalValues.forEach { try self.verify($0, namespace: &valueNameSet) }
+        try variables.forEach { try self.verify($0, namespace: &valueNameSet) }
     }
 }
 
-extension GlobalValue : Verifiable {
+extension Variable: Verifiable {
     public func performVerification() throws {
-        try initializer.performVerification()
     }
 }
 
@@ -585,7 +584,7 @@ extension Use : Verifiable {
             try verify(ty, def.type)
         case let .instruction(ty, def):
             try verify(ty, def.type)
-        case let .global(ty, gv):
+        case let .variable(ty, gv):
             try verify(ty, gv.type.pointer)
         case .constant, .literal, .function:
             break

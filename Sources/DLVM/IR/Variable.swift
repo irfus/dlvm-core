@@ -1,5 +1,5 @@
 //
-//  Global.swift
+//  GlobalVariable.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -17,24 +17,19 @@
 //  limitations under the License.
 //
 
-/// Global value
-public class GlobalValue : Value, Named, HashableByReference {
-    public enum Kind {
-        case variable, constant
-    }
+/// Global variable
+public class Variable: Named, HashableByReference {
     public var name: String
-    public var kind: Kind
     public var type: Type
-    public var initializer: Use
 
-    public func makeUse() -> Use {
-        return .global(type.pointer, self)
-    }
-
-    public init(name: String, kind: Kind, type: Type, initializer: Use) {
+    public init(name: String, type: Type) {
         self.name = name
-        self.kind = kind
         self.type = type
-        self.initializer = initializer
+    }
+}
+
+extension Variable: Value {
+    public func makeUse() -> Use {
+        return .variable(type.pointer, self)
     }
 }
