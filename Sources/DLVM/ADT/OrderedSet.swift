@@ -144,7 +144,7 @@ extension OrderedSet : RandomAccessCollection {
 // MARK: - RangeReplaceableCollection
 extension OrderedSet : RangeReplaceableCollection {
     public mutating func replaceSubrange<C>(_ subrange: Range<Int>, with newElements: C) where C : Collection, C.Iterator.Element == Element {
-        var newElements = newElements.map{$0} as [AnyObject]
+        var newElements = newElements.map{$0} as! [AnyObject]
         elements.replaceObjects(in: NSRange(subrange), with: &newElements, count: subrange.count)
     }
 
