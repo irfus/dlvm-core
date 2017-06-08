@@ -31,6 +31,7 @@ struct LLGenEnvironment {
     fileprivate var globals: [AnyHashable : LLVMValueRef] = [:]
     fileprivate var locals: [AnyHashable : LLVMValueRef] = [:]
     fileprivate var types: [TypeAlias : LLVMTypeRef] = [:]
+    fileprivate var basicBlocks: [AnyHashable : LLVMBasicBlockRef] = [:]
 }
 
 extension LLGenEnvironment {
@@ -52,12 +53,21 @@ extension LLGenEnvironment {
         types[typeAlias] = type
     }
 
+    mutating func insertBasicBlock(_ basicBlock: LLVMBasicBlockRef,
+                                   for dlvmBasicBlock: BasicBlock) {
+        basicBlocks[dlvmBasicBlock] = basicBlock
+    }
+
     func value<T : Definition & Hashable>(for value: T) -> LLVMValueRef {
         return locals[value] ?? globals[value] ?? DLImpossibleResult()
     }
 
     func type(for alias: DLVM.TypeAlias) -> LLVMTypeRef {
         return types[alias] ?? DLImpossibleResult()
+    }
+
+    func basicBlock(for dlvmBasicBlock: BasicBlock) -> LLVMBasicBlockRef {
+        return basicBlocks[dlvmBasicBlock] ?? DLImpossibleResult()
     }
 }
 
@@ -67,6 +77,7 @@ public class LLGenContext<TargetType : ComputeTarget> {
     public let module: LLVMModuleRef
     public let target: TargetType
     public let builder: LLVMBuilderRef
+    lazy var builtin: Builtin = Builtin(module: self.module)
 
     public init(module: DLVM.Module) {
         dlModule = module
@@ -83,4 +94,3 @@ public class LLGenContext<TargetType : ComputeTarget> {
         LLVMDisposeBuilder(builder)
     }
 }
-

@@ -20,7 +20,7 @@
 import LLVM_C
 import DLVM
 
-public class Builtin {
+public class Builtin : LLFunctionPrototypeCacheable {
     public var functions: [AnyHashable : LLVMValueRef] = [:]
     public var module: LLVMModuleRef
     public required init(module: LLVMModuleRef) {
