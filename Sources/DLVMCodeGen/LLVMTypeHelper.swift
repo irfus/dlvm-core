@@ -1,5 +1,5 @@
 //
-//  Types.swift
+//  LLVMTypeHelper.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -17,10 +17,35 @@
 //  limitations under the License.
 //
 
+/// This file contains syntactic sugar for creating LLVM types for converting 
+/// Swift values to LLVM constants
+
 import DLVM
 import LLVM_C
 
-/// Primitive scalar types
+// MARK: - Operator declarations
+
+/// For creating constants from Swift types
+prefix operator %
+/// For creating packed struct constants from Swift collections
+prefix operator <%>
+/// For creating constants of a specified type from Swift numeric values
+infix operator ~
+/// For creating LLVM types
+prefix operator ^
+/// For forming function types
+infix operator =>
+/// For creating packed struct types
+prefix operator <^>
+/// For creating pointers
+postfix operator *
+/// For creating second-order pointers
+postfix operator **
+/// For creating third-order pointers
+postfix operator ***
+
+// MARK: - LLVM primitive types
+
 var i1: LLVMTypeRef { return LLVMInt1Type() }
 var i8: LLVMTypeRef { return LLVMInt8Type() }
 var i16: LLVMTypeRef { return LLVMInt16Type() }
@@ -31,21 +56,24 @@ var f32: LLVMTypeRef { return LLVMFloatType() }
 var f64: LLVMTypeRef { return LLVMDoubleType() }
 var void: LLVMTypeRef { return LLVMVoidType() }
 
-/// Pointer type sugar
-postfix operator *
-postfix operator **
-postfix operator ***
+// MARK: - Syntactic sugar for creating LLVM types
+
+/// Create a first-order pointer of a type
 postfix func *(type: LLVMTypeRef) -> LLVMTypeRef {
     return LLVMPointerType(type, LLAddressSpace.generic.rawValue)
 }
+
+/// Create a second-order pointer of a type
 postfix func **(type: LLVMTypeRef) -> LLVMTypeRef {
     return LLVMPointerType(type*, LLAddressSpace.generic.rawValue)
 }
+
+/// Create a third-order pointer of a type
 postfix func ***(type: LLVMTypeRef) -> LLVMTypeRef {
     return LLVMPointerType(type**, LLAddressSpace.generic.rawValue)
 }
 
-/// Array type sugar
+/// Create an array type
 func * (lhs: Int, rhs: LLVMTypeRef) -> LLVMTypeRef {
     return LLVMArrayType(rhs, UInt32(lhs))
 }
@@ -59,19 +87,13 @@ extension LLVMBool {
     }
 }
 
-prefix operator ^
-
 extension String {
-    /// Make opaque type
+    /// Make opaque type from string
     static prefix func ^ (value: String) -> LLVMTypeRef {
         return LLVMStructCreateNamed(LLVMGetGlobalContext(), value)
     }
 }
 
-infix operator =>
-prefix operator <^>
-
-// MARK: - Opaque type initializer
 extension Sequence where Iterator.Element == LLVMTypeRef {
 
     /// Form a function type
@@ -94,8 +116,8 @@ extension Sequence where Iterator.Element == LLVMTypeRef {
 
 }
 
+// MARK: - Swift value - LLVM constant conversion
 
-// MARK: - Constant convertible
 protocol LLConstantConvertible {
     var llType: LLVMTypeRef { get }
     var constant: LLVMValueRef { get }
@@ -158,6 +180,26 @@ extension Int : LLConstantConvertible {
     }
 }
 
+extension Float32 : LLConstantConvertible {
+    var llType: LLVMTypeRef {
+        return f32
+    }
+
+    var constant: LLVMValueRef {
+        return LLVMConstReal(llType, Double(self))
+    }
+}
+
+extension Float64 : LLConstantConvertible {
+    var llType: LLVMTypeRef {
+        return f64
+    }
+
+    var constant: LLVMValueRef {
+        return LLVMConstReal(llType, Double(self))
+    }
+}
+
 extension Int16 : LLConstantConvertible {}
 extension Int32 : LLConstantConvertible {}
 extension Int64 : LLConstantConvertible {}
@@ -175,6 +217,7 @@ extension Bool : LLConstantConvertible {
     }
 }
 
+// MARK: - DLVM DataType - LLVM type conversion
 extension DataType {
     var llType: LLVMTypeRef {
         switch self {
@@ -184,5 +227,52 @@ extension DataType {
         case .float(.single): return LLVMFloatType()
         case .float(.double): return LLVMDoubleType()
         }
+    }
+}
+
+#if swift(>=4.0)
+extension FixedWidthInteger where Self : LLConstantConvertible {
+    static func ~ (value: Self, type: LLVMTypeRef) -> LLVMValueRef {
+        return LLVMConstInt(type, UInt64(value), Self.isSigned ? .true : .false)
+    }
+}
+#else
+extension SignedInteger where Self : LLConstantConvertible {
+    static func ~ (value: Self, type: LLVMTypeRef) -> LLVMValueRef {
+        return LLVMConstInt(type, UInt64(bitPattern: Int64(value.toIntMax())), .true)
+    }
+}
+extension UnsignedInteger where Self : LLConstantConvertible {
+    static func ~ (value: Self, type: LLVMTypeRef) -> LLVMValueRef {
+        return LLVMConstInt(type, UInt64(value.toUIntMax()), .false)
+    }
+}
+#endif
+
+extension Double {
+    static func ~ (value: Double, type: LLVMTypeRef) -> LLVMValueRef {
+        return LLVMConstReal(type, value)
+    }
+}
+
+// MARK: - Aggregate value factories
+
+extension Sequence where Iterator.Element == LLVMValueRef {
+    /// Create an array constant
+    func array(ofType elementType: LLVMTypeRef) -> LLVMValueRef {
+        var elements: [LLVMValueRef?] = Array(self)
+        return LLVMConstArray(elementType, &elements, UInt32(elements.count))
+    }
+
+    /// Create a struct constant
+    static prefix func % (values: Self) -> LLVMValueRef {
+        var values: [LLVMValueRef?] = values.map{$0}
+        return LLVMConstStruct(&values, UInt32(values.count), .false)
+    }
+    
+    /// Create a packed struct constant
+    static prefix func <%> (values: Self) -> LLVMValueRef {
+        var values: [LLVMValueRef?] = values.map{$0}
+        return LLVMConstStruct(&values, UInt32(values.count), .true)
     }
 }
