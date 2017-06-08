@@ -91,16 +91,16 @@ extension Type : TextOutputStreamable {
             t.write(to: &target)
         case let .tensor(s, t):
             target.write("<\(s) x \(t)>")
-        case let .tuple(subtypes):
-            target.write("(\(subtypes.joinedDescription))")
+        case let .tuple(elementTypes):
+            target.write("(\(elementTypes.joinedDescription))")
         case .void:
             target.write("void")
-        case let .array(n, subtype):
-            target.write("[\(n) x \(subtype)]")
-        case let .pointer(subtype):
-            target.write("*\(subtype)")
-        case let .box(subtype):
-            target.write("box{\(subtype)}")
+        case let .array(n, elementType):
+            target.write("[\(n) x \(elementType)]")
+        case let .pointer(elementType):
+            target.write("*\(elementType)")
+        case let .box(elementType):
+            target.write("box{\(elementType)}")
         case let .function(args, ret):
             target.write("(\(args.joinedDescription)) -> \(ret)")
         case let .alias(a):

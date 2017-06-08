@@ -112,16 +112,16 @@ public extension Function {
         /// Check output index
         switch returnType {
         /// Tuple output is treated as multiple-out
-        case let .tuple(subtypes):
+        case let .tuple(elementTypes):
             guard let diffIndex = diffIndex,
                 /// Diff index must be in bounds
-                subtypes.indices.contains(diffIndex),
+                elementTypes.indices.contains(diffIndex),
                 /// Indices of the outputs to keep must be in bounds
-                let someOutputs = subtypes.subcollection(atIndices: outputIndices),
+                let someOutputs = elementTypes.subcollection(atIndices: outputIndices),
                 /// Indices of the outputs to keep must not contain any duplicate
                 !outputIndices.containsDuplicate
                 else { return nil }
-            diffSourceType = subtypes[diffIndex]
+            diffSourceType = elementTypes[diffIndex]
             keptOutputs = someOutputs
         /// Other output is treated as single out
         case _ where diffIndex == nil
