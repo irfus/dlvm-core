@@ -46,8 +46,6 @@ public extension Function {
                 return %newArgs[arg]!
             case let .instruction(_, inst):
                 return %newInsts[inst]!
-            case let .constant(_, instKind):
-                return %instKind.substituting(newUse(from: old), for: old)
             }
         }
 
