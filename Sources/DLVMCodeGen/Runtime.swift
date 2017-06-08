@@ -20,14 +20,14 @@
 import Foundation
 import LLVM_C
 
-public var runtimePath: String {
+var runtimePath: String {
     guard let path = environmentVariable(named: "DLRT_PATH") else {
         preconditionFailure("DLVM runtime bitcode path (DLRT_PATH) not defined")
     }
     return path
 }
 
-public var runtimeModule: LLVMModuleRef {
+var runtimeModule: LLVMModuleRef {
     func checkStatus(_ status: LLVMBool, errorMessageBuffer errorBuf: UnsafeMutablePointer<CChar>?) {
         guard status == 0 else {
             if let error = errorBuf.flatMap ({ String(cString: $0) }) {

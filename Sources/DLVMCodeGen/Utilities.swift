@@ -36,9 +36,18 @@ func DLImpossible(function: String = #function,
     fatalError()
 }
 
+func DLAssert(_ condition: @autoclosure () -> Bool,
+              function: String = #function,
+              file: StaticString = #file,
+              line: UInt = #line) {
+    guard condition() else {
+        DLImpossible(function: function, file: file, line: line)
+    }
+}
+
 import Foundation
 
-public func environmentVariable(named name: String) -> String? {
+func environmentVariable(named name: String) -> String? {
     return ProcessInfo.processInfo.environment[name]
 }
 

@@ -20,10 +20,19 @@
 import DLVM
 import LLVM_C
 
-public class LLGen<TargetType : LLTarget> {
+/// Code generator protocol
+/// - Note: This is often used as a target-erased existential for LLGen
+public protocol CodeGenerator {
+    func emitIR()
+    func writeBitcode(toFile file: String) throws
+    var textualIR: String { get }
+}
+
+/// LLGen, the unified LLVM code generator for DLVM modules
+public class LLGen<TargetType :ComputeTarget> {
     public let dlModule: DLVM.Module
     public lazy internal(set) var context: LLGenContext<TargetType> = LLGenContext(module: self.dlModule)
-    public internal(set) var environment: LLGenEnvironment = LLGenEnvironment()
+    var environment: LLGenEnvironment = LLGenEnvironment()
 
     public init(module: DLVM.Module) {
         self.dlModule = module
@@ -32,8 +41,9 @@ public class LLGen<TargetType : LLTarget> {
     }
 }
 
+/// Error thrown during LLGen
 public enum LLGenError : Error {
-    case fileError
+    case fileError(path: String)
 }
 
 public extension Type {
@@ -251,28 +261,5 @@ extension DLVM.InstructionKind : LLEmittable {
     public func emit<T>(to context: inout LLGenContext<T>,
                         in env: inout LLGenEnvironment) -> LLVMValueRef {
         DLUnimplemented()
-    }
-}
-
-public protocol CodeGenerator {
-    func emitIR()
-    func writeBitcode(toFile file: String) throws
-    var textualIR: String { get }
-}
-
-extension LLGen : CodeGenerator {
-    public func emitIR() {
-        dlModule.emit(to: &context, in: &environment)
-    }
-    
-    public func writeBitcode(toFile file: String) throws {
-        guard LLVMWriteBitcodeToFile(context.module, file) == 0 else {
-            throw LLGenError.fileError
-        }
-    }
-
-    public var textualIR: String {
-        let cStr = LLVMPrintModuleToString(context.module)!
-        return String(cString: cStr)
     }
 }

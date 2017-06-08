@@ -21,7 +21,7 @@ import LLVM_C
 import DLVM
 
 /// HPVM Target
-public final class HPVM : LLTarget, LLFunctionPrototypeCacheable {
+public final class HPVM : ComputeTarget, LLFunctionPrototypeCacheable {
 
     public enum ReplicationMode : LLConstantConvertible {
         case allToAll

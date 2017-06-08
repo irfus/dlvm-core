@@ -59,7 +59,7 @@ public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue ==
 
 import DLVM
 
-public protocol LLTarget {
+public protocol ComputeTarget {
     var module: LLVMModuleRef { get }
     init(module: LLVMModuleRef)
 }
@@ -75,7 +75,7 @@ extension StaticString : Equatable {
     }
 }
 
-extension LLTarget where Self : LLFunctionPrototypeCacheable {
+extension ComputeTarget where Self : LLFunctionPrototypeCacheable {
     func emit<T : LLFunctionPrototype>(_ prototype: T,
                                        using builder: LLVMBuilderRef,
                                        name: String = "") -> LLVMValueRef {
@@ -85,7 +85,7 @@ extension LLTarget where Self : LLFunctionPrototypeCacheable {
     }
 }
 
-extension LLFunctionPrototypeCacheable where Self : LLTarget {
+extension LLFunctionPrototypeCacheable where Self : ComputeTarget {
     func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef {
         if let fun = functions[prototype] {
             return fun
