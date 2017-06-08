@@ -19,6 +19,6 @@
 
 import LLVM_C
 
-public class KernelGenerator<T : LLTarget> {
+public class KernelGenerator<T : ComputeTarget> {
 
 }

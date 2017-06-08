@@ -21,7 +21,7 @@ import LLVM_C
 import DLVM
 
 /// NVVM Target
-public final class NVVM : LLTarget, LLFunctionPrototypeCacheable {
+public final class NVVM : ComputeTarget, LLFunctionPrototypeCacheable {
 
     public enum Intrinsic : StaticString {
         case threadIndexX    = "llvm.nvvm.read.ptx.sreg.tid.x"    // () -> i32

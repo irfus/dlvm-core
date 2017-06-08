@@ -20,7 +20,7 @@
 import LLVM_C
 
 /// Address space
-public enum LLAddressSpace: UInt32 {
+enum LLAddressSpace: UInt32 {
     case generic = 0
     case global = 1
     case `internal` = 2
