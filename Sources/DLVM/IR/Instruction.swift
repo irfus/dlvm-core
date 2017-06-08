@@ -108,12 +108,6 @@ extension Instruction : Value {
     }
 }
 
-extension InstructionKind : Value {
-    public func makeUse() -> Use {
-        return .constant(type, self)
-    }
-}
-
 // MARK: - Predicates
 public extension InstructionKind {
     var isTerminator: Bool {

@@ -356,15 +356,6 @@ extension Instruction : Verifiable {
 }
 
 extension InstructionKind {
-    /// Verifies constant expression
-    public func performVerification() throws {
-        switch self {
-        case _ where accessesMemory || isTrap, .load, .store, .apply:
-            throw VerificationError.notConstantExpression(self)
-        default: return
-        }
-    }
-
     /// Verifies instruction
     public func performVerification(in instruction: Instruction) throws {
         switch self {
@@ -586,7 +577,7 @@ extension Use : Verifiable {
             try verify(ty, def.type)
         case let .variable(ty, gv):
             try verify(ty, gv.type.pointer)
-        case .constant, .literal, .function:
+        case .literal, .function:
             break
         }
     }

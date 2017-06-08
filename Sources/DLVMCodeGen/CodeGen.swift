@@ -76,8 +76,6 @@ extension DLVM.Use : LLEmittable {
             return env.value(for: inst)
         case let .literal(ty, lit):
             return emitLiteral(lit, ofType: ty, to: &context, in: &env)
-        case .constant(_, _):
-            DLUnimplemented()
         }
     }
 

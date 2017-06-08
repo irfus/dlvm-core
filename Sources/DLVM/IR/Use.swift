@@ -23,7 +23,6 @@ public indirect enum Use {
     case variable(Type, Variable)
     case literal(Type, Literal)
     case function(Type, Function)
-    case constant(Type, InstructionKind)
 }
 
 // MARK: - Equatable
@@ -56,8 +55,7 @@ public extension Use {
                  .instruction(let t, _),
                  .variable(let t, _),
                  .literal(let t, _),
-                 .function(let t, _),
-                 .constant(let t, _):
+                 .function(let t, _):
                 return t
             }
         }
@@ -73,8 +71,6 @@ public extension Use {
                 self = .literal(newType, x)
             case let .function(_, x):
                 self = .function(newType, x)
-            case let .constant(_, x):
-                self = .constant(newType, x)
             }
         }
     }
@@ -86,7 +82,6 @@ public extension Use {
         case let .instruction(_, val): return val
         case let .function(_, val): return val
         case let .literal(ty, lit): return LiteralValue(type: ty, literal: lit)
-        case let .constant(_, instKind): return instKind
         }
     }
 
@@ -96,7 +91,7 @@ public extension Use {
         case let .instruction(_, def): return def.name
         case let .argument(_, def): return def.name
         case let .function(_, def): return def.name
-        case .literal, .constant: return nil
+        case .literal: return nil
         }
     }
 

@@ -274,8 +274,6 @@ extension Use : TextOutputStreamable {
             return lit.description
         case let .function(_, ref):
             return "@\(ref.name)"
-        case let .constant(_, instKind):
-            return "(\(instKind))"
         }
     }
 }
