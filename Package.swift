@@ -25,7 +25,7 @@ let package = Package(
         Target(name: "DLVM"),
         Target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
         Target(name: "DLParse", dependencies: ["DLVM"]),
-        Target(name: "dlopt", dependencies: ["DLVM"]),
+        Target(name: "dlopt", dependencies: ["DLVM", "DLParse"]),
         Target(name: "dlc", dependencies: ["DLVM", "DLVMCodeGen", "DLParse"])
     ],
     dependencies: [
