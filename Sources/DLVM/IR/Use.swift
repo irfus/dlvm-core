@@ -20,7 +20,7 @@
 public indirect enum Use {
     case argument(Type, Argument)
     case instruction(Type, Instruction)
-    case global(Type, GlobalValue)
+    case variable(Type, Variable)
     case literal(Type, Literal)
     case function(Type, Function)
     case constant(Type, InstructionKind)
@@ -34,7 +34,7 @@ extension Use : Equatable {
             return t1 == t2 && v1 === v2
         case let (.instruction(t1, v1), .instruction(t2, v2)):
             return t1 == t2 && v1 === v2
-        case let (.global(t1, v1), .global(t2, v2)):
+        case let (.variable(t1, v1), .variable(t2, v2)):
             return t1 == t2 && v1 === v2
         case let (.literal(t1, l1), .literal(t2, l2)):
             return t1 == t2 && l1 == l2
@@ -54,7 +54,7 @@ public extension Use {
             switch self {
             case .argument(let t, _),
                  .instruction(let t, _),
-                 .global(let t, _),
+                 .variable(let t, _),
                  .literal(let t, _),
                  .function(let t, _),
                  .constant(let t, _):
@@ -67,8 +67,8 @@ public extension Use {
                 self = .argument(newType, x)
             case let .instruction(_, x):
                 self = .instruction(newType, x)
-            case let .global(_, x):
-                self = .global(newType, x)
+            case let .variable(_, x):
+                self = .variable(newType, x)
             case let .literal(_, x):
                 self = .literal(newType, x)
             case let .function(_, x):
@@ -82,7 +82,7 @@ public extension Use {
     var value: Value {
         switch self {
         case let .argument(_, val): return val
-        case let .global(_, val): return val
+        case let .variable(_, val): return val
         case let .instruction(_, val): return val
         case let .function(_, val): return val
         case let .literal(ty, lit): return LiteralValue(type: ty, literal: lit)
@@ -92,7 +92,7 @@ public extension Use {
 
     var name: String? {
         switch self {
-        case let .global(_, def): return def.name
+        case let .variable(_, def): return def.name
         case let .instruction(_, def): return def.name
         case let .argument(_, def): return def.name
         case let .function(_, def): return def.name

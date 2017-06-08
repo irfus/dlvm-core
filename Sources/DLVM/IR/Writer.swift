@@ -230,13 +230,9 @@ extension Instruction : TextOutputStreamable {
     }
 }
 
-extension GlobalValue : TextOutputStreamable {
+extension Variable: TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch kind {
-        case .variable: target.write("var ")
-        case .constant: target.write("let ")
-        }
-        target.write("@\(name): \(type) = \(initializer)")
+        target.write("var @\(name): \(type)")
     }
 }
 
@@ -268,7 +264,7 @@ extension Use : TextOutputStreamable {
 
     public var identifier: String {
         switch self {
-        case let .global(_, ref):
+        case let .variable(_, ref):
             return "@\(ref.name)"
         case let .instruction(_, ref):
             return ref.printedName.flatMap{"%\($0)"} ?? "%_"
@@ -393,7 +389,7 @@ extension Module : TextOutputStreamable {
         target.write("stage \(stage)\n")
         write(structs, to: &target)
         write(typeAliases, to: &target)
-        write(globalValues, to: &target)
+        write(variables, to: &target)
         write(elements, to: &target)
     }
 }

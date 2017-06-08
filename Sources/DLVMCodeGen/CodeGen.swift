@@ -66,7 +66,7 @@ extension DLVM.Use : LLEmittable {
     public func emit<T>(to context: inout LLGenContext<T>,
                         in env: inout LLGenEnvironment) -> LLVMValueRef {
         switch self {
-        case let .global(_, val):
+        case let .variable(_, val):
             return env.value(for: val)
         case let .function(_, fun):
             return env.value(for: fun)
@@ -192,7 +192,7 @@ extension DLVM.`Type` : LLEmittable {
     }
 }
 
-extension DLVM.GlobalValue : LLEmittable {
+extension DLVM.Variable: LLEmittable {
     public typealias LLUnit = LLVMValueRef
     @discardableResult
     public func emit<T>(to context: inout LLGenContext<T>,
@@ -206,7 +206,7 @@ extension DLVM.Module : LLEmittable {
     @discardableResult
     public func emit<T>(to context: inout LLGenContext<T>,
                         in env: inout LLGenEnvironment) -> LLUnit {
-        for global in globalValues {
+        for global in variables {
             global.emit(to: &context, in: &env)
         }
         for alias in typeAliases {

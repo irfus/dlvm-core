@@ -28,7 +28,7 @@ public enum InstructionKind {
     /// Return
     case `return`(Use?)
 
-    /** Tensor operations **/
+    /** Operators **/
     /// Monomorphic unary operation (map)
     case map(UnaryOp, Use)
     /// Monomorphic binary operation (zipWith)
@@ -58,11 +58,9 @@ public enum InstructionKind {
     /// Insert an element to tensor, tuple, or array
     case insert(Use, to: Use, at: [ElementKey])
 
-    /** Function invocation **/
-    /// Function application
+    /** Function application **/
     case apply(Use, [Use])
 
-    /** Heap memory of host and device **/
     /** Memory **/
     /// Allocate host stack memory, returning a pointer
     case allocateStack(Type, Int) /// => *T

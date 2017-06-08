@@ -38,7 +38,7 @@ public extension Function {
             /// If recursion, change function to the new function
             case .function(_, self):
                 return %newFunc
-            case .function, .global:
+            case .function, .variable:
                 return old
             case let .literal(ty, lit):
                 return .literal(ty, lit.substituting(newUse(from: old), for: old))
