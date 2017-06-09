@@ -143,35 +143,77 @@ public extension Token {
 }
 
 public class Lexer {
-    public fileprivate(set) var characters: String.UnicodeScalarView
+    public fileprivate(set) var characters: ArraySlice<UTF8.CodeUnit>
     public fileprivate(set) var location = SourceLocation()
 
     public init(text: String) {
-        characters = text.unicodeScalars
+        characters = ArraySlice(text.utf8)
     }
 }
 
 import class Foundation.NSRegularExpression
 import struct Foundation.NSRange
+import class Foundation.NSString
 
-private extension String.UnicodeScalarView {
-    static func ~= (pattern: String, value: String.UnicodeScalarView) -> Bool {
-        return pattern.unicodeScalars.elementsEqual(value)
+private extension ArraySlice where Iterator.Element == UTF8.CodeUnit {
+    static func ~= (pattern: String, value: ArraySlice<Iterator.Element>) -> Bool {
+        return pattern.utf8.elementsEqual(value)
     }
 
     func starts(with possiblePrefix: String) -> Bool {
-        return starts(with: possiblePrefix.unicodeScalars)
+        return starts(with: possiblePrefix.utf8)
+    }
+
+    var string: String {
+        return withUnsafeBufferPointer { buffer in
+            var scalars = String.UnicodeScalarView()
+            for char in buffer {
+                scalars.append(UnicodeScalar(char))
+            }
+            return String(scalars)
+        }
     }
 
     func matchesRegex(_ regex: NSRegularExpression) -> Bool {
-        let matches = regex.matches(in: String(self),
+        let matches = regex.matches(in: string,
                                     options: [ .anchored ],
                                     range: NSRange(location: 0, length: count))
         return matches.count == 1 && matches[0].range.length == count
     }
 }
 
-private extension UnicodeScalar {
+private extension RangeReplaceableCollection where Iterator.Element == UTF8.CodeUnit {
+    mutating func append(_ string: StaticString) {
+        string.withUTF8Buffer { buf in
+            self.append(contentsOf: buf)
+        }
+    }
+}
+
+extension StaticString {
+    static func ~= (pattern: StaticString, value: UTF8.CodeUnit) -> Bool {
+        guard pattern.utf8CodeUnitCount == 1 else { return false }
+        return pattern.utf8Start.pointee == value
+    }
+
+    static func ~= (pattern: StaticString, value: ArraySlice<UTF8.CodeUnit>) -> Bool {
+        return pattern.withUTF8Buffer { ptr in
+            ptr.elementsEqual(value)
+        }
+    }
+
+    static func == (lhs: UTF8.CodeUnit?, rhs: StaticString) -> Bool {
+        guard let lhs = lhs else { return false }
+        return rhs.utf8CodeUnitCount == 1 && rhs.utf8Start.pointee == lhs
+    }
+
+    static func != (lhs: UTF8.CodeUnit?, rhs: StaticString) -> Bool {
+        guard let lhs = lhs else { return true }
+        return rhs.utf8CodeUnitCount != 1 || rhs.utf8Start.pointee != lhs
+    }
+}
+
+private extension UTF8.CodeUnit {
     var isNewLine: Bool {
         switch self {
         case "\n", "\r": return true
@@ -187,19 +229,24 @@ private extension UnicodeScalar {
     }
 
     var isPunctuation: Bool {
-        return (33...45).contains(value)
-            || (58...64).contains(value)
-            || (91...93).contains(value)
-            || (123...126).contains(value)
+        switch self {
+        case 33...45, 58...64, 91...93, 123...126: return true
+        default: return false
+        }
     }
 
     var isDigit: Bool {
-        return (48...57).contains(value)
+        switch self {
+        case 48...57: return true
+        default: return false
+        }
     }
 
     var isAlphabet: Bool {
-        return (65...90).contains(value)
-            || (97...122).contains(value)
+        switch self {
+        case 65...90, 97...122: return true
+        default: return false
+        }
     }
 }
 
@@ -227,7 +274,7 @@ private extension Lexer {
         guard prefix.matchesRegex(identifierPattern) else {
             throw LexicalError.illegalIdentifier(startLoc..<location)
         }
-        return Token(kind: .identifier(kind, String(prefix)), range: startLoc..<location)
+        return Token(kind: .identifier(kind, prefix.string), range: startLoc..<location)
     }
 
     func scanPunctuation() throws -> Token {
@@ -274,7 +321,7 @@ private extension Lexer {
             if nameStart.isDigit {
                 let fst = characters.prefix(while: {$0.isDigit})
                 advance(by: fst.count)
-                guard let bbIndex = Int(String(fst)) else {
+                guard let bbIndex = Int(fst.string) else {
                     throw LexicalError.invalidBasicBlockIndex(startLoc)
                 }
                 guard characters.first == "." else {
@@ -283,7 +330,7 @@ private extension Lexer {
                 advance(by: 1)
                 let snd = characters.prefix(while: {$0.isDigit})
                 advance(by: snd.count)
-                guard let instIndex = Int(String(snd)) else {
+                guard let instIndex = Int(snd.string) else {
                     throw LexicalError.invalidInstructionIndex(startLoc)
                 }
                 return Token(kind: .anonymousIdentifier(bbIndex, instIndex),
@@ -299,7 +346,7 @@ private extension Lexer {
                 throw LexicalError.unclosedStringLiteral(startLoc..<location)
             }
             /// Character accumulator
-            var chars = String.UnicodeScalarView()
+            var chars: [UTF8.CodeUnit] = []
             /// Loop until we reach EOF or '"'
             while let current = characters.first, current != "\"" {
                 switch current {
@@ -332,7 +379,9 @@ private extension Lexer {
             }
             /// Advance through '"'
             advance(by: 1)
-            kind = .stringLiteral(String(chars))
+            kind = chars.withUnsafeBufferPointer { buffer in
+                .stringLiteral(String(cString: buffer.baseAddress!))
+            }
         case "-":
             guard characters.first == ">" else {
                 throw LexicalError.unexpectedToken(location)
@@ -363,13 +412,13 @@ private extension Lexer {
             let decimal = characters.prefix(while: { $0.isDigit })
             advance(by: decimal.count)
             number.append(contentsOf: decimal)
-            guard let float = FloatLiteralType(String(number)) else {
+            guard let float = FloatLiteralType(number.string) else {
                 throw LexicalError.illegalNumber(startLoc..<location)
             }
             return Token(kind: .float(float), range: startLoc..<location)
         }
         /// Integer literal
-        guard let integer = Int(String(number)) else {
+        guard let integer = Int(number.string) else {
             throw LexicalError.illegalNumber(startLoc..<location)
         }
         return Token(kind: .integer(integer), range: location..<location+characters.count)
@@ -491,7 +540,7 @@ private extension Lexer {
         case "bool": kind = .dataType(.bool)
         case _ where prefix.first == "i":
             let rest = prefix.dropFirst()
-            guard rest.forAll({$0.isDigit}), let size = Int(String(rest)) else {
+            guard rest.forAll({$0.isDigit}), let size = Int(rest.string) else {
                 throw LexicalError.illegalNumber(startLoc+1..<location)
             }
             kind = .dataType(.int(UInt(size)))

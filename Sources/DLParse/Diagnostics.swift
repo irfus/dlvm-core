@@ -23,7 +23,7 @@ public enum LexicalError : Error {
     case unexpectedToken(SourceLocation)
     case illegalNumber(SourceRange)
     case illegalIdentifier(SourceRange)
-    case invalidEscapeCharacter(UnicodeScalar, SourceLocation)
+    case invalidEscapeCharacter(UTF8.CodeUnit, SourceLocation)
     case unclosedStringLiteral(SourceRange)
     case expectingIdentifierName(SourceLocation)
     case invalidAnonymousLocalIdentifier(SourceLocation)
@@ -164,7 +164,7 @@ extension LexicalError : CustomStringConvertible {
         case .unexpectedToken(_):
             desc += "unexpected token"
         case let .invalidEscapeCharacter(char, _):
-            desc += "invalid escape character '\(char)'"
+            desc += "invalid escape character '\(Character(UnicodeScalar(char)))'"
         case let .unclosedStringLiteral(range):
             desc += "string literal at \(range) is not terminated"
         case .expectingIdentifierName(_):
