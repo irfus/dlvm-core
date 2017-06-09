@@ -21,6 +21,8 @@ import enum DLVM.InstructionKind
 import enum DLVM.DataType
 import class DLVM.Function
 
+// MARK: - Token definition
+
 public enum Keyword {
     case module
     case stage, raw, canonical
@@ -142,14 +144,30 @@ public extension Token {
     }
 }
 
+// MARK: - Lexer interface
+
 public class Lexer {
-    public fileprivate(set) var characters: ArraySlice<UTF8.CodeUnit>
-    public fileprivate(set) var location = SourceLocation()
+    fileprivate var characters: ArraySlice<UTF8.CodeUnit>
+    fileprivate var location = SourceLocation()
 
     public init(text: String) {
         characters = ArraySlice(text.utf8)
     }
 }
+
+private extension Lexer {
+    func advance(by n: Int) {
+        characters.removeFirst(n)
+        location.advance(by: n)
+    }
+
+    func advanceToNewLine() {
+        characters.removeFirst()
+        location.advanceToNewLine()
+    }
+}
+
+// MARK: - UTF8 matching helpers
 
 import class Foundation.NSRegularExpression
 import struct Foundation.NSRange
@@ -250,20 +268,12 @@ private extension UTF8.CodeUnit {
     }
 }
 
+// MARK: - Internal lexing routines
+
 private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z_][a-zA-Z0-9_.]*",
                                                          options: [ .dotMatchesLineSeparators ])
 
 private extension Lexer {
-    
-    func advance(by n: Int) {
-        characters.removeFirst(n)
-        location.advance(by: n)
-    }
-
-    func advanceToNewLine() {
-        characters.removeFirst()
-        location.advanceToNewLine()
-    }
 
     func lexIdentifier(ofKind kind: IdentifierKind) throws -> Token {
         let prefix = characters.prefix(while: {
@@ -552,7 +562,12 @@ private extension Lexer {
 
 }
 
+// MARK: - Lexing entry
+
 public extension Lexer {
+    /// Perform lexing on the input text
+    /// - Returns: An array of tokens
+    /// - Throws: `LexicalError` if lexing fails at any point
     func performLexing() throws -> [Token] {
         var tokens: [Token] = []
         while let first = characters.first {
