@@ -23,29 +23,35 @@
 import CoreTensor
 import DLVM
 
-/// Table storing definitions for parsing
-private struct SymbolTable {
+// MARK: - Semantic environment
+
+private struct Environment {
     var locals: [String : Value] = [:]
     var globals: [String : Value] = [:]
     var nominalTypes: [String : Type] = [:]
     var basicBlocks: [String : BasicBlock] = [:]
+    var processedBasicBlocks: Set<BasicBlock> = []
+    var processedFunctions: Set<Function> = []
 }
 
-/// Main parser of textual DLVM IR
+// MARK: - Parser interface
+
 public class Parser {
     public let tokens: [Token]
     fileprivate lazy var restTokens: ArraySlice<Token> = ArraySlice(self.tokens)
-    fileprivate var symbolTable = SymbolTable()
+    fileprivate var environment = Environment()
 
     public init(tokens: [Token]) {
         self.tokens = tokens
     }
 
-    public init(text: String) throws {
+    public convenience init(text: String) throws {
         let lexer = Lexer(text: text)
-        tokens = try lexer.performLexing()
+        self.init(tokens: try lexer.performLexing())
     }
 }
+
+// MARK: - Common routines and combinators
 
 private extension Parser {
 
@@ -156,10 +162,10 @@ private extension Parser {
         /// If we are parsing a name definition, check for its uniqueness
         let contains: (String) -> Bool
         switch kind {
-        case .basicBlock: contains = symbolTable.basicBlocks.keys.contains
-        case .global: contains = symbolTable.globals.keys.contains
-        case .temporary: contains = symbolTable.locals.keys.contains
-        case .type: contains = symbolTable.nominalTypes.keys.contains
+        case .basicBlock: contains = environment.basicBlocks.keys.contains
+        case .global: contains = environment.globals.keys.contains
+        case .temporary: contains = environment.locals.keys.contains
+        case .type: contains = environment.nominalTypes.keys.contains
         default: return (name, tok)
         }
         if isDefinition && contains(name) {
@@ -234,6 +240,8 @@ private extension Parser {
         return [first] + elements
     }
 }
+
+// MARK: - Recursive descent cases
 
 extension Parser {
     /// Parse uses separated by ','
@@ -375,7 +383,7 @@ extension Parser {
             return (.tuple(elementTypes), tok.startLocation..<rightBkt.endLocation)
         /// Nominal type
         case .identifier(.type, let typeName):
-            guard let type = symbolTable.nominalTypes[typeName] else {
+            guard let type = environment.nominalTypes[typeName] else {
                 throw ParseError.undefinedNominalType(tok)
             }
             return (type, tok.range)
@@ -405,8 +413,8 @@ extension Parser {
             /// Either a global or a local
             let maybeVal: Value?
             switch kind {
-            case .global: maybeVal = symbolTable.globals[id]
-            case .temporary: maybeVal = symbolTable.locals[id]
+            case .global: maybeVal = environment.globals[id]
+            case .temporary: maybeVal = environment.locals[id]
             default: throw ParseError.unexpectedIdentifierKind(kind, tok)
             }
             guard let val = maybeVal else {
@@ -476,7 +484,7 @@ extension Parser {
         /// 'branch' <bb> '(' (<val> (',' <val>)*)? ')'
         case .branch:
             let (bbName, bbTok) = try parseIdentifier(ofKind: .basicBlock)
-            guard let bb = symbolTable.basicBlocks[bbName] else {
+            guard let bb = environment.basicBlocks[bbName] else {
                 throw ParseError.undefinedIdentifier(bbTok)
             }
             try consume(.punctuation(.leftParenthesis))
@@ -492,7 +500,7 @@ extension Parser {
             /// Then
             try consume(.keyword(.then))
             let (thenBBName, thenBBTok) = try parseIdentifier(ofKind: .basicBlock)
-            guard let thenBB = symbolTable.basicBlocks[thenBBName] else {
+            guard let thenBB = environment.basicBlocks[thenBBName] else {
                 throw ParseError.undefinedIdentifier(thenBBTok)
             }
             try consume(.punctuation(.leftParenthesis))
@@ -502,7 +510,7 @@ extension Parser {
             /// Else
             try consume(.keyword(.else))
             let (elseBBName, elseBBTok) = try parseIdentifier(ofKind: .basicBlock)
-            guard let elseBB = symbolTable.basicBlocks[elseBBName] else {
+            guard let elseBB = environment.basicBlocks[elseBBName] else {
                 throw ParseError.undefinedIdentifier(elseBBTok)
             }
             try consume(.punctuation(.leftParenthesis))
@@ -645,10 +653,10 @@ extension Parser {
                 let fn: Value
                 switch kind {
                 case .global:
-                    guard let val = symbolTable.globals[name] else { return nil }
+                    guard let val = environment.globals[name] else { return nil }
                     fn = val
                 case .temporary:
-                    guard let val = symbolTable.locals[name] else { return nil }
+                    guard let val = environment.locals[name] else { return nil }
                     fn = val
                 default:
                     return nil
@@ -770,11 +778,11 @@ extension Parser {
             consumeToken()
             try consumeWrappablePunctuation(.equal)
             let kind = try parseKind(isNamed: true)
-            guard !symbolTable.locals.keys.contains(name) else {
+            guard !environment.locals.keys.contains(name) else {
                 throw ParseError.redefinedIdentifier(tok)
             }
             let inst = Instruction(name: name, kind: kind, parent: basicBlock)
-            symbolTable.locals[name] = inst
+            environment.locals[name] = inst
             return inst
         case let .anonymousIdentifier(bbIndex, instIndex):
             /// Check BB index and instruction index
@@ -809,7 +817,8 @@ extension Parser {
 
     func parseBasicBlock(in function: Function) throws -> BasicBlock? {
         /// Parse basic block header
-        guard case .identifier(.basicBlock, let name)? = currentToken?.kind else {
+        guard let nameTok = currentToken,
+            case .identifier(.basicBlock, let name) = nameTok.kind else {
             return nil
         }
         consumeToken()
@@ -819,14 +828,22 @@ extension Parser {
         try consume(.punctuation(.colon))
         try consumeOneOrMore(.newLine)
         /// Retrieve previously added BB during scanning
-        guard let bb = symbolTable.basicBlocks[name] else {
+        guard let bb = environment.basicBlocks[name] else {
             preconditionFailure("Should've been added during the symbol scanning stage")
         }
+        /// Check if this prototype is already processed. If so, it's a redefinition
+        /// of this BB
+        guard !environment.processedBasicBlocks.contains(bb) else {
+            throw ParseError.redefinedIdentifier(nameTok)
+        }
+        /// Add to the set of processed basic blocks
+        environment.processedBasicBlocks.insert(bb)
+        /// Parse BB's formal arguments
         for (name, type) in args {
             let arg = Argument(name: name, type: type, parent: bb)
             bb.arguments.append(arg)
             /// Insert args into symbol table
-            symbolTable.locals[arg.name] = arg
+            environment.locals[arg.name] = arg
         }
         /// Parse instructions
         while let inst = try parseInstruction(in: bb) {
@@ -850,7 +867,7 @@ extension Parser {
             case .keyword(.gradient):
                 consumeToken()
                 let (fnName, tok) = try parseIdentifier(ofKind: .global)
-                guard let fn = symbolTable.globals[fnName] as? Function else {
+                guard let fn = environment.globals[fnName] as? Function else {
                     throw ParseError.undefinedIdentifier(tok)
                 }
                 /// from
@@ -911,16 +928,23 @@ extension Parser {
         }
         /// Parse main function declaration/definition
         let funcTok = try consume(.keyword(.func))
-        let (name, _) = try parseIdentifier(ofKind: .global)
+        let (name, nameTok) = try parseIdentifier(ofKind: .global)
         let (type, typeSigRange) = try parseTypeSignature()
         /// Ensure it's a function type
         guard case let .function(args, ret) = type.canonical else {
             throw ParseError.notFunctionType(typeSigRange)
         }
         /// Retrieve previous added function during scanning
-        guard let function = symbolTable.globals[name] as? Function else {
+        guard let function = environment.globals[name] as? Function else {
             preconditionFailure("Should've been added during the symbol scanning stage")
         }
+        /// Check if this prototype is already processed. If so, it's a redefinition
+        /// of this function
+        guard !environment.processedFunctions.contains(function) else {
+            throw ParseError.redefinedIdentifier(nameTok)
+        }
+        /// Insert this function to the set of processed functions
+        environment.processedFunctions.insert(function)
         /// Complete function's properties
         function.declarationKind = declKind
         function.argumentTypes = args
@@ -935,7 +959,7 @@ extension Parser {
                 if tok0.kind == .punctuation(.rightCurlyBracket) { break }
                 if case (.newLine, .identifier(.basicBlock, let name)) = (tok0.kind, tok1.kind) {
                     let proto = BasicBlock(name: name, arguments: [], parent: function)
-                    symbolTable.basicBlocks[name] = proto
+                    environment.basicBlocks[name] = proto
                     restTokens.removeFirst(2)
                     continue
                 }
@@ -960,8 +984,9 @@ extension Parser {
             )
         }
         /// Clear function-local mappings from the symbol table
-        symbolTable.basicBlocks.removeAll()
-        symbolTable.locals.removeAll()
+        environment.basicBlocks.removeAll()
+        environment.locals.removeAll()
+        environment.processedBasicBlocks.removeAll()
         return function
     }
 
@@ -970,7 +995,7 @@ extension Parser {
         let (name, _) = try parseIdentifier(ofKind: .global, isDefinition: true)
         let (type, _) = try parseTypeSignature()
         let variable = Variable(name: name, type: type)
-        symbolTable.globals[name] = variable
+        environment.globals[name] = variable
         return variable
     }
 
@@ -988,7 +1013,7 @@ extension Parser {
             }
         }
         let alias = TypeAlias(name: name, type: type)
-        symbolTable.nominalTypes[name] = .alias(alias)
+        environment.nominalTypes[name] = .alias(alias)
         return alias
     }
 
@@ -1010,10 +1035,12 @@ extension Parser {
         consumeAnyNewLines()
         try consume(.punctuation(.rightCurlyBracket))
         let structTy = StructType(name: name, fields: fields)
-        symbolTable.nominalTypes[name] = .struct(structTy)
+        environment.nominalTypes[name] = .struct(structTy)
         return structTy
     }
 }
+
+// MARK: - Parser entry
 
 public extension Parser {
     /// Parser entry
@@ -1044,7 +1071,7 @@ public extension Parser {
                 let (tok0, tok1, tok2) = (restTokens[start], restTokens[start+1], restTokens[start+2])
                 if case (.newLine, .keyword(.func), .identifier(.global, let name)) = (tok0.kind, tok1.kind, tok2.kind) {
                     let proto = Function(name: name, argumentTypes: [], returnType: .invalid, parent: module)
-                    symbolTable.globals[name] = proto
+                    environment.globals[name] = proto
                     restTokens.removeFirst(3)
                     continue
                 }
