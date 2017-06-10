@@ -62,7 +62,6 @@ public final class Function : Named, IRCollection, IRUnit {
     }
 }
 
-// MARK: - Value
 extension Function : Value {
     public var type: Type {
         return .function(argumentTypes, returnType)
@@ -73,7 +72,6 @@ extension Function : Value {
     }
 }
 
-// MARK: - Arguments
 public extension Function {
     func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type, C.IndexDistance == Int {
         guard types.count == argumentTypes.count else { return false }
@@ -81,10 +79,7 @@ public extension Function {
             actual.conforms(to: formal)
         }
     }
-}
 
-// MARK: - Predicates
-public extension Function {
     var isDeclaration: Bool {
         return declarationKind != nil
     }
@@ -92,16 +87,28 @@ public extension Function {
     var isDefinition: Bool {
         return declarationKind == nil
     }
-}
 
-// MARK: - Control flow
-public extension Function {
     var instructions: LazyCollection<FlattenBidirectionalCollection<Function>> {
         return lazy.joined()
     }
 }
 
-// MARK: - Gradient information
+public extension Function {
+    /// Remove all uses of this value in the function
+    func replaceAllUses(of instruction: Instruction, with newUse: Use) {
+        let bbIndex = instruction.parent.indexInParent
+        let instIndex = instruction.indexInParent
+        for bb in suffix(from: bbIndex) {
+            for inst in bb {
+                if bb == inst.parent, inst.indexInParent < instIndex {
+                    continue
+                }
+                inst.substitute(newUse, for: %instruction)
+            }
+        }
+    }
+}
+
 public extension Function {
     func gradientType(fromOutput diffIndex: Int?,
                       withRespectTo varIndices: [Int],
