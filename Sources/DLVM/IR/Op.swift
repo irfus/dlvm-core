@@ -19,6 +19,8 @@
 
 import CoreTensor
 
+// MARK: - Operator definition
+
 public enum ComparisonOp {
     case lessThan, lessThanOrEqual
     case greaterThan, greaterThanOrEqual
@@ -49,9 +51,11 @@ public enum ReductionCombinator {
     case op(AssociativeOp)
 }
 
+// MARK: - Operator kinds and properties
+
 public enum OpKind {
-    case unary(UnaryOp)        /// Unary elementwise
-    case binary(BinaryOp)      /// Binary elementwise
+    case map(UnaryOp)        /// Unary elementwise
+    case zipWith(BinaryOp)      /// Binary elementwise
     case scan(AssociativeOp)   /// Scan
     case reduce(AssociativeOp) /// Reduce
     case matrixMultiply        /// Matrix multiplication
@@ -80,8 +84,8 @@ extension BinaryOp : Equatable {
 public extension OpKind {
     var argumentCount: Int {
         switch self {
-        case .unary: return 1
-        case .binary: return 2
+        case .map: return 1
+        case .zipWith: return 2
         case .matrixMultiply: return 2
         case .reduce: return 1
         case .scan: return 1
@@ -94,9 +98,9 @@ public extension OpKind {
         switch self {
         case .concatenate:
             return args.dropFirst().reduce(args[0], { acc, x in acc?.concatenating(with: x) })
-        case .unary where args.count == 1:
+        case .map where args.count == 1:
             return args[0]
-        case .binary(_) where args.count == 2:
+        case .zipWith(_) where args.count == 2:
             return args[0].broadcast(with: args[1])
         case .scan, .reduce:
             return args[0]
