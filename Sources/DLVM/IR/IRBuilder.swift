@@ -23,13 +23,22 @@ open class IRBuilder {
 
     open let module: Module
 
-    open fileprivate(set) weak var currentBlock: BasicBlock? {
+    /// Current basic block to insert instructions into
+    open weak var currentBlock: BasicBlock? {
         didSet {
-            currentFunction = currentBlock?.parent
+            insertionIndex = nil
         }
     }
 
-    open weak var currentFunction: Function?
+    /// Index of the insertion destination in the current basic block.
+    /// When non-nil, this index will be incremented by 1 every time
+    /// a 'build' function is invoked.
+    open var insertionIndex: Int?
+
+    /// Current function, always the parent of `currentBlock`
+    open weak var currentFunction: Function? {
+        return currentBlock?.parent
+    }
 
     public init(module: Module) {
         self.module = module
@@ -121,7 +130,13 @@ extension IRBuilder {
             preconditionFailure("Builder isn't positioned at a basic block")
         }
         let inst = Instruction(name: name, kind: kind, parent: block)
-        block.append(inst)
+        if let index = insertionIndex {
+            block.insert(inst, at: index)
+            /// Advance the index
+            insertionIndex = index + 1
+        } else {
+            block.append(inst)
+        }
         return inst
     }
 
@@ -129,8 +144,22 @@ extension IRBuilder {
 
 // MARK: - Positioning
 public extension IRBuilder {
-    func move(to basicBlock: BasicBlock?) {
+    /// Move the builder's insertion point
+    func move(to basicBlock: BasicBlock, index: Int? = nil) {
         currentBlock = basicBlock
+        insertionIndex = index
+    }
+
+    /// Move the builder's insertion point before the specified instruction
+    /// - Precondition: The instruction must exist in its parent basic block
+    func move(after instruction: Instruction) {
+        move(to: instruction.parent, index: instruction.indexInParent + 1)
+    }
+
+    /// Move the builder's insertion point
+    /// - Precondition: The instruction must exist in its parent basic block
+    func move(before instruction: Instruction) {
+        move(to: instruction.parent, index: instruction.indexInParent)
     }
 }
 
