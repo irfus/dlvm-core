@@ -39,6 +39,10 @@ public extension Value {
     prefix static func % (value: Self) -> Use {
         return value.makeUse()
     }
+
+    prefix static func % (value: Value) -> Use {
+        return value.makeUse()
+    }
 }
 
 public protocol SimpleValue : Value {

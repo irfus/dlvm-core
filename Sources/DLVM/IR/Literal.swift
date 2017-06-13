@@ -96,7 +96,6 @@ extension Literal : Equatable {
     }
 }
 
-// MARK: - Scalar literal type base
 public extension Literal.Scalar {
     var typeBase: DataType.Base {
         switch self {
@@ -107,7 +106,6 @@ public extension Literal.Scalar {
     }
 }
 
-// MARK: - Equatable
 extension Literal.Scalar : Equatable {
     public static func == (lhs: Literal.Scalar, rhs: Literal.Scalar) -> Bool {
         switch (lhs, rhs) {
@@ -209,8 +207,8 @@ public extension Literal {
         }
     }
 
-    static func ~= (pattern: IntegerLiteralType, value: Literal) -> Bool {
-        switch value {
+    static func ~= (pattern: IntegerLiteralType, literal: Literal) -> Bool {
+        switch literal {
         case .scalar(.int(pattern)):
             return true
         case let .scalar(.float(v)) where v == FloatLiteralType(pattern):
@@ -222,11 +220,35 @@ public extension Literal {
         }
     }
 
-    static func ~= (pattern: FloatLiteralType, value: Literal) -> Bool {
-        switch (pattern, value) {
+    static func ~= (pattern: FloatLiteralType, literal: Literal) -> Bool {
+        switch (pattern, literal) {
         case (0.0, .zero): return true
         case (let v1, .scalar(.float(let v2))): return v1 == v2
         default: return false
         }
+    }
+}
+
+public extension Use {
+    static func ~= (pattern: IntegerLiteralType, use: Use) -> Bool {
+        guard case let .literal(_, lit) = use else { return false }
+        return pattern ~= lit
+    }
+
+    static func ~= (pattern: FloatLiteralType, use: Use) -> Bool {
+        guard case let .literal(_, lit) = use else { return false }
+        return pattern ~= lit
+    }
+}
+
+public extension Value {
+    func makeLiteral(_ literal: Literal) -> LiteralValue {
+        return LiteralValue(type: type, literal: literal)
+    }
+}
+
+public extension Use {
+    func makeLiteral(_ literal: Literal) -> Use {
+        return %value.makeLiteral(literal)
     }
 }
