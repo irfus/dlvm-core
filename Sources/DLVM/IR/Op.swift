@@ -28,7 +28,7 @@ public enum ComparisonOp {
 }
 
 public enum UnaryOp {
-    case tanh, log, exp, negate, sign, square, sqrt
+    case sinh, cosh, tanh, log, exp, negate, sign, square, sqrt
     case round, rsqrt, ceil, floor
     case tan, cos, sin, acos, asin, atan
     case lgamma, digamma, erf, erfc, rint
