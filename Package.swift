@@ -25,8 +25,9 @@ let package = Package(
         Target(name: "DLVM"),
         Target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
         Target(name: "DLParse", dependencies: ["DLVM"]),
-        Target(name: "dlopt", dependencies: ["DLVM", "DLParse"]),
-        Target(name: "dlc", dependencies: ["DLVM", "DLVMCodeGen", "DLParse"])
+        Target(name: "DLCommandLineTools", dependencies: ["DLVM", "DLVMCodeGen", "DLParse"]),
+        Target(name: "dlopt", dependencies: ["DLVM", "DLParse", "DLCommandLineTools"]),
+        Target(name: "dlc", dependencies: ["DLVM", "DLVMCodeGen", "DLParse", "DLCommandLineTools"]),
     ],
     dependencies: [
       	.Package(url: "https://github.com/rxwei/LLVM_C", majorVersion: 2, minor: 1),
@@ -35,8 +36,6 @@ let package = Package(
     ],
     exclude: [
         "Sources/TEL",
-        "Sources/telc",
-        "Sources/dli",
         "Compute",
         "Runtime",
     ]
