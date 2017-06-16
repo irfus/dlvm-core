@@ -17,8 +17,8 @@
 //  limitations under the License.
 //
 
-/// AlgebraicExpression is designed to simplify pattern matching for math
-/// expressions in domain-specific optimizations such as Algebra Simplification,
+/// AlgebraicExpression is designed to simplify pattern matching for *independent*
+/// math expressions in domain-specific optimizations such as Algebra Simplification,
 /// Linear Algebra Fusion and Matrix Chain Ordering
 
 public indirect enum AlgebraicExpression {
@@ -61,19 +61,6 @@ extension AlgebraicExpression {
         }
     }
 
-    func replaceExpression(with newInstruction: Instruction) {
-        /// DFS-remove intermediate instructions
-        guard let inst = topInstruction else { return }
-        let bb = inst.parent
-        let instIndex = inst.indexInParent
-        /// Insert new instruction at the location of the top instruction
-        bb.insert(newInstruction, at: instIndex)
-        /// Remove all uses with the new instruction
-        bb.parent.replaceAllUses(of: inst, with: %newInstruction)
-        /// Remove all intermediate nodes
-        removeIntermediates()
-    }
-
     static prefix func % (expr: AlgebraicExpression) -> Use {
         switch expr {
         case .atom(let v): return v
@@ -89,7 +76,6 @@ extension AlgebraicExpression {
         return (%self).value
     }
 
-
     static func ~= (pattern: IntegerLiteralType, expression: AlgebraicExpression) -> Bool {
         guard case let .atom(x) = expression else { return false }
         return pattern ~= x
@@ -102,6 +88,28 @@ extension AlgebraicExpression {
 
     func makeLiteral(_ literal: Literal) -> LiteralValue {
         return value.makeLiteral(literal)
+    }
+
+    var isAtom: Bool {
+        switch self {
+        case .atom(_): return true
+        default: return false
+        }
+    }
+}
+
+extension AlgebraicExpression : BackwardGraphNode {
+    public var predecessors: [AlgebraicExpression] {
+        switch self {
+        case .atom(_):
+            return []
+        case .map(_, let x, _),
+             .transpose(let x, _):
+            return [x]
+        case .matrixMultiply(let x, let y, _),
+             .zipWith(_, let x, let y, _):
+            return [x, y]
+        }
     }
 }
 
@@ -121,9 +129,8 @@ extension AlgebraicExpression : Equatable {
 open class AlgebraicExpressionAnalysis : AnalysisPass {
     public typealias Body = BasicBlock
 
-    /// Extract an independent algebraic subexpression from instruction
-    private static func subexpression(from inst: Instruction,
-                                      visited: inout Set<Instruction>) throws -> AlgebraicExpression {
+    private static func independentSubexpression(from inst: Instruction,
+                                                 visited: inout Set<Instruction>) throws -> AlgebraicExpression {
         /// Get user analysis
         let bb = inst.parent
         let function = bb.parent
@@ -166,7 +173,8 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
         var visited: Set<Instruction> = []
         /// Perform DFS for every unvisited instruction
         for inst in body.reversed() where !visited.contains(inst) {
-            exprs.append(try subexpression(from: inst, visited: &visited))
+            let subExpr = try independentSubexpression(from: inst, visited: &visited)
+            exprs.append(subExpr)
         }
         return exprs
     }
