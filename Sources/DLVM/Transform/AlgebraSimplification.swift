@@ -15,90 +15,101 @@ import Foundation
 /// - (e^x - e^(-x)) / 2 => sinh(x)
 /// - (e^x + e^(-x)) / 2 => cosh(x)
 /// - (e^x - e^(-x)) / (e^x + e^(-x)) => tanh(x)
-/// - sin(0) => 0
-/// - cos(0) => 1
-/// - tanh(0) => 0
+/// - sin(0) | sinh(0) => 0
+/// - cos(0) | cosh(0) => 1
+/// - tan(0) | tanh(0) => 0
 open class AlgebraSimplification : TransformPass {
-    public typealias Body = BasicBlock
+    public typealias Body = Function
 
-    public typealias Substitution = (old: Use, new: Use)
+    @discardableResult
+    private static func performSimplification(on expr: AlgebraicExpression,
+                                              in function: Function,
+                                              using builder: IRBuilder,
+                                              workList: inout [AlgebraicExpression]) -> Bool {
+        /// Pattern-match expressions
+        switch expr {
+        /// - x^0 => 1
+        case let .zipWith(.associative(.power), x, 0, inst):
+            let newVal = expr.makeLiteral(1)
+            function.replaceAllUses(of: inst, with: %newVal)
+            expr.removeIntermediates(upTo: x)
+            workList.append(x)
+        /// - x^1 => x
+        case let .zipWith(.associative(.power), x, 1, inst):
+            function.replaceAllUses(of: inst, with: x.value.makeUse())
+            expr.removeIntermediates(upTo: x)
+            workList.append(x)
+        /// - x^2 => x * x
+        case let .zipWith(.associative(.power), x, 2, inst):
+            builder.move(after: inst)
+            let product = builder.multiply(%x, %x)
+            function.replaceAllUses(of: inst, with: %product)
+            expr.removeIntermediates(upTo: x)
+            workList.append(.zipWith(.associative(.multiply), x, x, product))
+        /// - (e^x - e^(-x)) / 2 => sinh(x)
+        case let .zipWith(.associative(.divide),
+                          .zipWith(.associative(.subtract),
+                                   .map(.exp, x1, _),
+                                   .map(.exp, .map(.negate, x2, _), _),
+                                   _), 2, inst) where x1 == x2:
+            builder.move(after: inst)
+            let sinh = builder.buildInstruction(.map(.sinh, %x1))
+            function.replaceAllUses(of: inst, with: %sinh)
+            expr.removeIntermediates(upTo: x1)
+            workList.append(.map(.sinh, x1, sinh))
+        /// - (e^x - e^(-x)) / 2 => cosh(x)
+        case let .zipWith(.associative(.divide),
+                          .zipWith(.associative(.add),
+                                   .map(.exp, x1, _),
+                                   .map(.exp, .map(.negate, x2, _), _),
+                                   _), 2, inst) where x1 == x2:
+            builder.move(after: inst)
+            let cosh = builder.buildInstruction(.map(.cosh, %x1))
+            function.replaceAllUses(of: inst, with: %cosh)
+            expr.removeIntermediates(upTo: x1)
+            workList.append(.map(.cosh, x1, cosh))
+        /// sin(0), sinh(0), tan(0), tanh(0)
+        case let .map(.sin, 0, inst),
+             let .map(.sinh, 0, inst),
+             let .map(.tan, 0, inst),
+             let .map(.tanh, 0, inst):
+            builder.move(after: inst)
+            expr.removeIntermediates()
+            function.replaceAllUses(of: inst, with: %expr.makeLiteral(0))
+        /// cos(0), cosh(0)
+        case let .map(.cos, 0, inst),
+             let .map(.cosh, 0, inst):
+            builder.move(after: inst)
+            expr.removeIntermediates()
+            function.replaceAllUses(of: inst, with: %expr.makeLiteral(1))
+        default:
+            return false
+        }
+        return true
+    }
 
-    open class func run(on body: BasicBlock) throws -> Bool {
+    open class func run(on body: Function) throws -> Bool {
         var changed = false
-        var newlyChanged: Bool
-        var substWorkList: [Substitution] = []
-        /// Repeat until no more changes
-        repeat {
-            let users = try body.parent.analysis(from: UserAnalysis.self)
-            newlyChanged = false
-            for inst in body {
-                /// Do use-substitutions in the work list for this instruction
-                for (old: old, new: new) in substWorkList {
-                    inst.substitute(old, for: new)
-                    /// - TODO: Handle broadcasting
-                }
-                /// Match patterns
-                switch inst.kind {
-                /// x^k
-                case let .zipWith(.associative(.power), x, .literal(_,  lit)):
-                    switch lit {
-                    case 0: /// x^0 => 1
-                        substWorkList.append((old: %inst, new: .scalar(.int(1)) ~ x.type))
-                    case 1: /// x^1 => x
-                        substWorkList.append((old: %inst, new: x))
-                    case 2: /// x^1 => x
-                        /// Replace with `multiply`
-                        let mult = Instruction(kind: .matrixMultiply(x, x), parent: body)
-                        body.insert(mult, before: inst)
-                        substWorkList.append((old: %inst, new: %mult))
-                    default:
-                        continue
-                    }
-                /// sin(0) => 0
-                case let .map(.sin, .literal(ty, 0)):
-                    substWorkList.append((old: %inst, new: .scalar(.int(0)) ~ ty))
-                /// cos(0) => 1
-                case let .map(.cos, .literal(ty, 0)):
-                    substWorkList.append((old: %inst, new: .scalar(.int(1)) ~ ty))
-                /// tan(0) => 0
-                case let .map(.tan, .literal(ty, 0)):
-                    substWorkList.append((old: %inst, new: .scalar(.int(0)) ~ ty))
-                /// (e^x - e^(-x)) / 2 => sinh(x)
-                /// (e^x + e^(-x)) / 2 => cosh(x)
-                case let .zipWith(.associative(.divide),
-                                  .instruction(_, lhs), .literal(_, 2)) where users[lhs].isEmpty:
-                    switch lhs.kind {
-                    case let .zipWith(.associative(lhsOp),
-                                      .instruction(_, llhs), .instruction(_, lrhs))
-                        where (lhsOp == .add || lhsOp == .subtract) &&  users[llhs].isEmpty && users[lrhs].isEmpty:
-                        switch (llhs.kind, lrhs.kind) {
-                        case (.map(.exp, let x),
-                              .map(.exp, .instruction(_, let lrrhs)))
-                            where users[lrrhs].isEmpty:
-                            switch lrrhs.kind {
-                            case .zipWith(.associative(.subtract), .literal(_, 0), x),
-                                 .map(.negate, x):
-                                /// Insert sinh or cosh
-                                let newOp: UnaryOp = lhsOp == .add ? .cos : .sin
-                                let simplified = Instruction(kind: .map(newOp, x), parent: body)
-                                body.insert(simplified, before: inst)
-                                /// Remove intermediate nodes
-                                [lhs, llhs, lrhs, lrrhs].forEach { $0.removeFromParent() }
-                            default: continue
-                            }
-                        default: continue
-                        }
-                    default: continue
-                    }
-                /// - TODO: More patterns
-                default:
-                    continue
-                }
-                inst.removeFromParent()
-                newlyChanged = true
+        var workList: [AlgebraicExpression] = []
+        let builder = IRBuilder(function: body)
+        /// First iteration
+        for bb in body {
+            let algExprs = try bb.analysis(from: AlgebraicExpressionAnalysis.self)
+            for expr in algExprs {
+                print(expr)
+                workList.append(expr)
             }
-            changed = changed || newlyChanged
-        } while newlyChanged
+        }
+        /// Iterate through the worklist and optimize them
+        while let expr = workList.popLast() {
+
+            for expr in expr.transposeTraversed(in: .breadthFirst) where !expr.isAtom {
+
+                let newlyChanged = performSimplification(on: expr, in: body, using: builder, workList: &workList)
+                changed = changed || newlyChanged
+                if newlyChanged { break }
+            }
+        }
         return changed
     }
 }

@@ -17,14 +17,14 @@
 //  limitations under the License.
 //
 
-/// AlgebraicExpression is designed to simplify pattern matching for math
-/// expressions in domain-specific optimizations such as Algebra Simplification,
+/// AlgebraicExpression is designed to simplify pattern matching for *independent*
+/// math expressions in domain-specific optimizations such as Algebra Simplification,
 /// Linear Algebra Fusion and Matrix Chain Ordering
 
 public indirect enum AlgebraicExpression {
     case atom(Use)
-    case unary(UnaryOp, AlgebraicExpression, Instruction)
-    case binary(BinaryOp, AlgebraicExpression, AlgebraicExpression, Instruction)
+    case map(UnaryOp, AlgebraicExpression, Instruction)
+    case zipWith(BinaryOp, AlgebraicExpression, AlgebraicExpression, Instruction)
     case matrixMultiply(AlgebraicExpression, AlgebraicExpression, Instruction)
     case transpose(AlgebraicExpression, Instruction)
 }
@@ -35,51 +35,102 @@ extension AlgebraicExpression {
         switch self {
         case .atom(_):
             return nil
-        case .binary(_, _, _, let inst),
+        case .zipWith(_, _, _, let inst),
              .matrixMultiply(_, _, let inst),
              .transpose(_, let inst),
-             .unary(_, _, let inst):
+             .map(_, _, let inst):
             return inst
         }
     }
 
     /// Remove intermediate instructions from the basic block
-    func removeIntermediates() {
+    func removeIntermediates(upTo destination: AlgebraicExpression? = nil) {
+        guard self != destination else { return }
         switch self {
         case .atom(_):
             return
-        case let .binary(_, lhs, rhs, inst),
+        case let .zipWith(_, lhs, rhs, inst),
              let .matrixMultiply(lhs, rhs, inst):
-            lhs.removeIntermediates()
-            rhs.removeIntermediates()
+            lhs.removeIntermediates(upTo: destination)
+            rhs.removeIntermediates(upTo: destination)
             inst.removeFromParent()
         case let .transpose(x, inst),
-             let .unary(_, x, inst):
-            x.removeIntermediates()
+             let .map(_, x, inst):
+            x.removeIntermediates(upTo: destination)
             inst.removeFromParent()
         }
     }
 
-    func replaceExpression(with newInstruction: Instruction) {
-        /// DFS-remove intermediate instructions
-        guard let inst = topInstruction else { return }
-        let bb = inst.parent
-        let instIndex = inst.indexInParent
-        /// Insert new instruction at the location of the top instruction
-        bb.insert(newInstruction, at: instIndex)
-        /// Remove all uses with the new instruction
-        bb.parent.replaceAllUses(of: inst, with: %newInstruction)
-        /// Remove all intermediate nodes
-        removeIntermediates()
+    static prefix func % (expr: AlgebraicExpression) -> Use {
+        switch expr {
+        case .atom(let v): return v
+        case .map(_, _, let inst),
+             .matrixMultiply(_, _, let inst),
+             .transpose(_, let inst),
+             .zipWith(_, _, _, let inst):
+            return %inst
+        }
+    }
+
+    var value: Value {
+        return (%self).value
+    }
+
+    static func ~= (pattern: IntegerLiteralType, expression: AlgebraicExpression) -> Bool {
+        guard case let .atom(x) = expression else { return false }
+        return pattern ~= x
+    }
+
+    static func ~= (pattern: FloatLiteralType, expression: AlgebraicExpression) -> Bool {
+        guard case let .atom(x) = expression else { return false }
+        return pattern ~= x
+    }
+
+    func makeLiteral(_ literal: Literal) -> LiteralValue {
+        return value.makeLiteral(literal)
+    }
+
+    var isAtom: Bool {
+        switch self {
+        case .atom(_): return true
+        default: return false
+        }
+    }
+}
+
+extension AlgebraicExpression : BackwardGraphNode {
+    public var predecessors: [AlgebraicExpression] {
+        switch self {
+        case .atom(_):
+            return []
+        case .map(_, let x, _),
+             .transpose(let x, _):
+            return [x]
+        case .matrixMultiply(let x, let y, _),
+             .zipWith(_, let x, let y, _):
+            return [x, y]
+        }
+    }
+}
+
+extension AlgebraicExpression : Equatable {
+    public static func == (lhs: AlgebraicExpression, rhs: AlgebraicExpression) -> Bool {
+        switch (lhs, rhs) {
+        case _ where lhs.topInstruction == rhs.topInstruction:
+            return true
+        case let (.atom(x), .atom(y)) where x == y:
+            return true
+        default:
+            return false
+        }
     }
 }
 
 open class AlgebraicExpressionAnalysis : AnalysisPass {
     public typealias Body = BasicBlock
 
-    /// Extract an independent algebraic subexpression from instruction
-    private static func subexpression(from inst: Instruction,
-                                      visited: inout Set<Instruction>) throws -> AlgebraicExpression {
+    private static func independentSubexpression(from inst: Instruction,
+                                                 visited: inout Set<Instruction>) throws -> AlgebraicExpression {
         /// Get user analysis
         let bb = inst.parent
         let function = bb.parent
@@ -100,10 +151,10 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
             /// DFS from math instructions
             switch inst.kind {
             case let .map(op, v):
-                return .unary(op, try subexpression(from: v), inst)
+                return .map(op, try subexpression(from: v), inst)
             case let .zipWith(op, lhs, rhs):
-                return .binary(op, try subexpression(from: lhs),
-                                   try subexpression(from: rhs), inst)
+                return .zipWith(op, try subexpression(from: lhs),
+                                try subexpression(from: rhs), inst)
             case let .matrixMultiply(lhs, rhs):
                 return .matrixMultiply(try subexpression(from: lhs),
                                        try subexpression(from: rhs), inst)
@@ -122,7 +173,8 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
         var visited: Set<Instruction> = []
         /// Perform DFS for every unvisited instruction
         for inst in body.reversed() where !visited.contains(inst) {
-            exprs.append(try subexpression(from: inst, visited: &visited))
+            let subExpr = try independentSubexpression(from: inst, visited: &visited)
+            exprs.append(subExpr)
         }
         return exprs
     }

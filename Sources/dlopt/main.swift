@@ -54,7 +54,7 @@ func runPass(named name: String, on module: Module) throws {
     case "CSE", "CommonSubexpressionElimination":
         try module.mapTransform(CommonSubexpressionElimination.self)
     case "AS", "AlgebraSimplification":
-        try module.forEach { fn in try fn.mapTransform(AlgebraSimplification.self) }
+        try module.forEach { fn in try fn.applyTransform(AlgebraSimplification.self) }
     case "LAF", "LinearAlgebraFusion":
         try module.forEach { fn in try fn.mapTransform(LinearAlgebraFusion.self) }
     case "SP", "StackPromotion":

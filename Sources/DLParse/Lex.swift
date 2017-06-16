@@ -518,6 +518,8 @@ private extension Lexer {
         case "modulo": kind = .opcode(.binaryOp(.associative(.modulo)))
         case "power": kind = .opcode(.binaryOp(.associative(.power)))
         case "mean": kind = .opcode(.binaryOp(.associative(.mean)))
+        case "sinh": kind = .opcode(.unaryOp(.sinh))
+        case "cosh": kind = .opcode(.unaryOp(.cosh))
         case "tanh": kind = .opcode(.unaryOp(.tanh))
         case "log": kind = .opcode(.unaryOp(.log))
         case "exp": kind = .opcode(.unaryOp(.exp))
