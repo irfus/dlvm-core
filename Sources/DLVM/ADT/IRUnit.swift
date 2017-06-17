@@ -50,6 +50,10 @@ public extension IRUnit
         return index
     }
 
+    var existsInParent: Bool {
+        return parent.contains(self)
+    }
+
     func removeFromParent() {
         parent.remove(self)
     }
