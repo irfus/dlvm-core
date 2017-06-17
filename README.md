@@ -14,12 +14,14 @@ Welcome to DLVM! DLVM is:
 
 ### [DLVM Core](Sources)
 
-| Module      | Description                                             |
-|-------------|---------------------------------------------------------|
-| DLVM        | Compiler infrastructure (ADT, IR, Analyses, Transforms) |
-| DLParse     | Textual IR parser                                       |
-| DLVMCodeGen | LLVM Code Generator                                     |
-| dlc         | DLVM command line tool                                  |
+| Module             | Description                                             |
+|--------------------|---------------------------------------------------------|
+| DLVM               | Compiler infrastructure (ADT, IR, Analyses, Transforms) |
+| DLParse            | Textual IR parser                                       |
+| DLVMCodeGen        | LLVM Code Generator                                     |
+| DLCommandLineTools | Tools for building DLVM CLIs                            |
+| dlopt              | CLI for DLVM optimizer                                  |
+| dlc                | CLI for DLVM IR compiler                                |
 
 ### [DLVM Compute Primitives](Compute)
 
