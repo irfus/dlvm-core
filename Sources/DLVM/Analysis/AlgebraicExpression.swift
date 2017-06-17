@@ -143,9 +143,9 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
             }
             /// Mark as visited
             visited.insert(inst)
-            /// Treat nodes with users as atoms when and only when they are not the entry
-            /// to this analysis
-            if !isEntry && !users[inst].isEmpty {
+            /// Treat nodes with more than one users as atoms when and only when
+            /// they are not the entry to this analysis
+            if !isEntry && users[inst].count > 1 {
                 return .atom(%inst)
             }
             /// DFS from math instructions
