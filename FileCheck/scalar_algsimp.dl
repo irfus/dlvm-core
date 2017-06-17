@@ -1,4 +1,4 @@
-module "mnist"
+module "mnist"
 stage raw
 
 func @inference: (f32, f32, f32) -> f32 {
@@ -8,4 +8,19 @@ func @inference: (f32, f32, f32) -> f32 {
     %0.2 = power %0.1: f32, 2: f32
     %0.3 = cos %0.2: f32
     return %0.3: f32
+}
+
+func @bar: (f32, f32, f32) -> f32 {
+'entry(%x: f32, %w: f32, %b: f32):
+    %0.0 = power %w: f32, 0: f32
+    %0.1 = power %0.0: f32, 1: f32
+    %0.2 = power %0.1: f32, 2: f32
+    %0.3 = cos %0.2: f32
+    branch 'bb0()
+'bb0():
+    %1.0 = power <%0.2: f32, %0.2: f32>: <2 x f32>, 0: f32
+    %1.1 = extract 0 from %1.0: <2 x f32>
+    %sin = sin 0: f32
+    %1.3 = add %1.1: f32, %sin: f32
+    return %1.3: f32
 }
