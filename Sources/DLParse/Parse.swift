@@ -245,8 +245,9 @@ private extension Parser {
 
 extension Parser {
     /// Parse uses separated by ','
-    func parseUseList(in basicBlock: BasicBlock?, unless: (Token) -> Bool) throws -> [Use] {
+    func parseUseList(in basicBlock: BasicBlock?, unless: @escaping (Token) -> Bool) throws -> [Use] {
         return try parseMany({ try parseUse(in: basicBlock).0 },
+                             unless: unless,
                              separatedBy: { try self.consumeWrappablePunctuation(.comma) })
     }
 
