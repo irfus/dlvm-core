@@ -25,7 +25,6 @@ public extension Module {
     static func parsed(fromFile filePath: String) throws -> Module {
         /// Read IR and verify
         let irSource = try String(contentsOfFile: filePath, encoding: .utf8)
-        print("Source file:", filePath)
         /// Lex and parse
         let parser = try Parser(text: irSource)
         let module = try parser.parseModule()
