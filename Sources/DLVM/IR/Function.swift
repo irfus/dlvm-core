@@ -95,15 +95,25 @@ public extension Function {
 
 public extension Function {
     /// Remove all uses of this value in the function
-    func replaceAllUses(of instruction: Instruction, with newUse: Use) {
-        let bbIndex = instruction.parent.indexInParent
-        let instIndex = instruction.indexInParent
-        for bb in suffix(from: bbIndex) {
-            for inst in bb {
-                if bb == inst.parent, inst.indexInParent < instIndex {
-                    continue
+    func replaceAllUses(of oldInstruction: Instruction, with newUse: Use) {
+        /// If `instruction` exists in its parent BB in this function,
+        /// we only search the area after `instruction`'s definition
+        if oldInstruction.existsInParent, oldInstruction.parent.parent == self {
+            let bbIndex = oldInstruction.parent.indexInParent
+            let instIndex = oldInstruction.indexInParent
+            for bb in suffix(from: bbIndex) {
+                for inst in bb {
+                    if bb == inst.parent, inst.indexInParent < instIndex {
+                        continue
+                    }
+                    inst.substitute(newUse, for: %oldInstruction)
                 }
-                inst.substitute(newUse, for: %instruction)
+            }
+        }
+        /// Otherwise, we search every use for `instruction`
+        else {
+            for inst in instructions {
+                inst.substitute(newUse, for: %oldInstruction)
             }
         }
     }
