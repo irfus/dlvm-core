@@ -85,14 +85,14 @@ open class AlgebraSimplification : TransformPass {
              let .map(.tan, 0, inst),
              let .map(.tanh, 0, inst):
             builder.move(after: inst)
-            expr.removeIntermediates()
             function.replaceAllUses(of: inst, with: %expr.makeLiteral(0))
+            expr.removeIntermediates()
         /// cos(0), cosh(0)
         case let .map(.cos, 0, inst),
              let .map(.cosh, 0, inst):
             builder.move(after: inst)
-            expr.removeIntermediates()
             function.replaceAllUses(of: inst, with: %expr.makeLiteral(1))
+            expr.removeIntermediates()
         default:
             return false
         }
