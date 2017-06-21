@@ -34,7 +34,7 @@ public func runPass(named name: String, on module: Module) throws {
     case "AS", "AlgebraSimplification":
         try module.forEach { fn in try fn.applyTransform(AlgebraSimplification.self) }
     case "LAF", "LinearAlgebraFusion":
-        try module.forEach { fn in try fn.mapTransform(LinearAlgebraFusion.self) }
+        try module.forEach { fn in try fn.applyTransform(LinearAlgebraFusion.self) }
     case "SP", "StackPromotion":
         try module.mapTransform(StackPromotion.self)
     case "VP", "ValuePromotion":
