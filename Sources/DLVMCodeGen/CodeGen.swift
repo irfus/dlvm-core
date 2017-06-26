@@ -63,6 +63,7 @@ extension LLGen : CodeGenerator {
     }
 }
 
+// MARK: - Use lowering
 
 extension DLVM.Use : LLEmittable {
     typealias LLUnit = LLVMValueRef
@@ -142,6 +143,8 @@ extension DLVM.Use : LLEmittable {
     }
 }
 
+// MARK: - IR unit lowering
+
 extension DLVM.Variable: LLEmittable {
     typealias LLUnit = LLVMValueRef
     @discardableResult
@@ -187,45 +190,55 @@ extension DLVM.BasicBlock : LLEmittable {
     }
 }
 
+// MARK: - Instruction Lowering
+
 extension DLVM.Instruction : LLEmittable {
     typealias LLUnit = LLVMValueRef
     @discardableResult
     func emit<T>(to context: inout LLGenContext<T>,
               in env: inout LLGenEnvironment) -> LLVMValueRef {
-        let inst = kind.emit(to: &context, in: &env)
+        let inst = kind.emit(to: &context, in: &env, basicBlock: parent)
         LLVMSetValueName(inst, name)
         return inst
     }
 }
 
-extension DLVM.InstructionKind : LLEmittable {
+extension DLVM.InstructionKind {
     typealias LLUnit = LLVMValueRef
     @discardableResult
     func emit<T>(to context: inout LLGenContext<T>,
-              in env: inout LLGenEnvironment) -> LLVMValueRef {
+              in env: inout LLGenEnvironment, basicBlock: BasicBlock) -> LLVMValueRef {
         let builder = context.builder
+        let function = basicBlock.parent
         switch self {
         case .allocateBox(_):
             DLUnimplemented()
+
         case .allocateHeap(let ty, count: let n):
             return LLVMBuildArrayMalloc(
                 builder, ty.emit(to: &context, in: &env),
                 n.emit(to: &context, in: &env), nil)
+
         case .allocateStack(let ty, let n):
             return LLVMBuildArrayAlloca(
                 builder, ty.emit(to: &context, in: &env), %n, nil)
+
         case .apply(_, _):
             DLUnimplemented()
+
         case .bitCast(let v, let targetTy):
             return LLVMBuildBitCast(
                 builder, v.emit(to: &context, in: &env),
                 targetTy.emit(to: &context, in: &env), nil)
+
         case .branch(let bb, _):
             return LLVMBuildBr(builder, env.basicBlock(for: bb))
+
         case let .conditional(cond, thenBB, _, elseBB, _):
             return LLVMBuildCondBr(
                 builder, cond.emit(to: &context, in: &env),
                 env.basicBlock(for: thenBB), env.basicBlock(for: elseBB))
+
         case let .copy(from: src, to: dst, count: n):
             let srcVal = src.emit(to: &context, in: &env)
             let dstVal = dst.emit(to: &context, in: &env)
@@ -233,6 +246,84 @@ extension DLVM.InstructionKind : LLEmittable {
             let prototype = Builtin.Memory.memcpy(to: dstVal, from: srcVal, count: count,
                                                   align: 4 ~ i32, isVolatile: %false)
             return context.builtin.emit(prototype, using: builder)
+
+        case .dataTypeCast(_, _):
+            /// Emit dtype-cast kernel or LLVM conversion intrinsic
+            DLUnimplemented()
+
+        case let .deallocate(v):
+            let val = v.emit(to: &context, in: &env)
+            let prototype = Builtin.Memory.free(val)
+            return context.builtin.emit(prototype, using: builder)
+
+        case let .elementPointer(v, kk):
+            let val = v.emit(to: &context, in: &env)
+            var gepPath = v.type.emitIndexPath(for: kk, to: &context, in: &env) as [LLVMValueRef?]
+            return LLVMBuildGEP(builder, val, &gepPath, UInt32(gepPath.count), nil)
+
+        case let .extract(from: v, at: kk):
+            let val = v.emit(to: &context, in: &env)
+            /// Since we need to handle indirect passing, we have two cases
+            /// If indirectly passed, use GEP to get the pointer to the element
+            if v.type.shouldBePassedIndirectly {
+                var path = v.type.emitIndexPath(for: kk, to: &context, in: &env) as [LLVMValueRef?]
+                return LLVMBuildGEP(builder, val, &path, UInt32(path.count), nil)
+            }
+            /// Otherwise (directly passed), emit `extractvalue` for aggregate values
+            /// or `extractelement` for vectors
+            switch v.type {
+            /// If a tensor were passed directly, it's definitely passed as an LLVM vector,
+            /// and thus we should cast it to restore the aggregate structure and emit an
+            /// `extractvalue` for each index, and finally cast that to an LLVM vector if needed
+            case let .tensor(shape, dtype):
+                let indices = v.type.staticIndexPath(for: kk) ?? DLImpossibleResult()
+                /// Assert that the number of indices is legal
+                DLAssert(indices.count == shape.rank)
+                /// If it's a rank-1 tensor (literally a vector), omit bitcast and
+                /// emit `extractelement` directly
+                if shape.isVector {
+                    return LLVMBuildExtractElement(builder, val, %indices[0], nil)
+                }
+                /// Otherwise, bitcast is required so that we can reuse LLVM's indexing arithmetics
+                let array = LLVMBuildBitCast(builder, val, shape.loweredArrayType(of: dtype), nil) ?? DLImpossibleResult()
+                let element = indices.reduce(array) { newVal, idx in
+                    LLVMBuildExtractValue(builder, newVal, idx, nil)!
+                }
+                /// Cast it back to vector if needed
+                let elementShape = shape.dropFirst(indices.count)
+                if elementShape.rank > 0 {
+                    return LLVMBuildBitCast(builder, element,
+                                            elementShape.loweredVectorType(of: dtype), nil)!
+                }
+                return element
+
+            /// Otherwise it's a non-vector aggregate value in LLVM, for which we emit `extractvalue`
+            default:
+                /// Get static indices and build an `extractvalue` instruction for each index
+                let indices = v.type.staticIndexPath(for: kk) ?? DLImpossibleResult()
+                var currentVal = val
+                for index in indices {
+                    currentVal = LLVMBuildExtractValue(builder, currentVal, index, nil)
+                }
+                return currentVal
+            }
+
+        case let .insert(src, to: dest, at: kk):
+            let srcVal = src.emit(to: &context, in: &env)
+            var destVal = dest.emit(to: &context, in: &env)
+            if dest.type.shouldBePassedIndirectly {
+                let users = try! function.analysis(from: UserAnalysis.self)
+                /// If `dest` has users other than the current instruction, emit a copy
+                /// TODO: check for other users' data locality requirements to avoid
+                /// copying as much as possible
+                if let destDef = dest.value as? Definition, users[destDef].count > 1 {
+                    /// TODO: work with memory tracker
+                }
+
+            }
+            DLUnimplemented()
+
+
         default:
             DLUnimplemented()
         }
