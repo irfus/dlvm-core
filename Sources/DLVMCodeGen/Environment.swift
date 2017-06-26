@@ -30,7 +30,7 @@ protocol LLEmittable {
 struct LLGenEnvironment {
     fileprivate var globals: [AnyHashable : LLVMValueRef] = [:]
     fileprivate var locals: [AnyHashable : LLVMValueRef] = [:]
-    fileprivate var types: [TypeAlias : LLVMTypeRef] = [:]
+    fileprivate var types: [AnyHashable : LLVMTypeRef] = [:]
     fileprivate var basicBlocks: [AnyHashable : LLVMBasicBlockRef] = [:]
 }
 
@@ -49,8 +49,9 @@ extension LLGenEnvironment {
         locals[dlValue] = value
     }
 
-    mutating func insertType(_ type: LLVMTypeRef, for typeAlias: TypeAlias) {
-        types[typeAlias] = type
+    mutating func insertType(_ loweredType: LLVMTypeRef,
+                             for type: AnyHashable) {
+        types[type] = loweredType
     }
 
     mutating func insertBasicBlock(_ basicBlock: LLVMBasicBlockRef,
@@ -62,7 +63,7 @@ extension LLGenEnvironment {
         return locals[value] ?? globals[value] ?? DLImpossibleResult()
     }
 
-    func type(for alias: DLVM.TypeAlias) -> LLVMTypeRef {
+    func type(for alias: AnyHashable) -> LLVMTypeRef {
         return types[alias] ?? DLImpossibleResult()
     }
 
