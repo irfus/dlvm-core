@@ -17,7 +17,10 @@
 //  limitations under the License.
 //
 
+import DLVM
 import LLVM_C
+
+// MARK: - Function and type prototyping
 
 public protocol LLFunctionPrototype: Hashable {
     var name: StaticString { get }
@@ -56,8 +59,6 @@ public extension LLTypePrototype where Self : RawRepresentable, Self.RawValue ==
         return ^name.description
     }
 }
-
-import DLVM
 
 public protocol PrototypeEmitter {
     var module: LLVMModuleRef { get }
@@ -101,3 +102,7 @@ extension LLFunctionPrototypeCacheable {
         return function
     }
 }
+
+// MARK: - Kernel emission
+
+
