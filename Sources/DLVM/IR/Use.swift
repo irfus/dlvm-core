@@ -85,6 +85,10 @@ public extension Use {
         }
     }
 
+    var definition: Definition? {
+        return value as? Definition
+    }
+
     var name: String? {
         switch self {
         case let .variable(_, def): return def.name

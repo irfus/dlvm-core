@@ -36,6 +36,21 @@ func DLImpossible(function: String = #function,
     fatalError()
 }
 
+func DLAssert(condition: @autoclosure () -> Bool,
+              description: String? = nil,
+              function: String = #function,
+              file: StaticString = #file,
+              line: UInt = #line) {
+    guard condition() else {
+        if let desc = description {
+            fatalError(desc)
+        } else {
+            let _: () = DLImpossibleResult(function: function, file: file, line: line)
+            fatalError()
+        }
+    }
+}
+
 func DLAssert(_ condition: @autoclosure () -> Bool,
               function: String = #function,
               file: StaticString = #file,
