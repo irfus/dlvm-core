@@ -26,20 +26,20 @@ import struct CoreTensor.TensorShape
 extension DLVM.TypeAlias : LLEmittable {
     typealias LLUnit = LLVMTypeRef
     @discardableResult
-    func emit<T>(to context: inout LLGenContext<T>,
-              in env: inout LLGenEnvironment) -> LLVMTypeRef {
+    func emit<T>(to context: LLGenContext<T>,
+              in env: LLGenEnvironment) -> LLVMTypeRef {
         guard let type = type else {
             return ^name // opaque
         }
-        return type.emit(to: &context, in: &env)
+        return type.emit(to: context, in: env)
     }
 }
 
 extension DLVM.StructType : LLEmittable {
     typealias LLUnit = LLVMTypeRef
-    func emit<T>(to context: inout LLGenContext<T>,
-              in env: inout LLGenEnvironment) -> LLVMTypeRef {
-        var elements: [LLVMTypeRef?] = elementTypes.map { $0.emit(to: &context, in: &env) }
+    func emit<T>(to context: LLGenContext<T>,
+              in env: LLGenEnvironment) -> LLVMTypeRef {
+        var elements: [LLVMTypeRef?] = elementTypes.map { $0.emit(to: context, in: env) }
         return LLVMStructType(&elements, UInt32(elements.count), .false)
     }
 }
@@ -57,8 +57,8 @@ extension TensorShape {
 extension DLVM.`Type` : LLEmittable {
     typealias LLUnit = LLVMTypeRef
 
-    private func directlyEmit<T>(to context: inout LLGenContext<T>,
-                              in env: inout LLGenEnvironment) -> LLVMTypeRef {
+    private func directlyEmit<T>(to context: LLGenContext<T>,
+                              in env: LLGenEnvironment) -> LLVMTypeRef {
         switch self {
         case .invalid:
             DLImpossible()
@@ -67,33 +67,33 @@ extension DLVM.`Type` : LLEmittable {
         case .void:
             return LLVMVoidType()
         case let .tuple(elemTypes):
-            return ^elemTypes.map{$0.emit(to: &context, in: &env)}
+            return ^elemTypes.map{$0.emit(to: context, in: env)}
         case let .struct(structTy):
             return env.type(for: structTy)
         case let .array(n, elemType):
-            return n * elemType.emit(to: &context, in: &env)
+            return n * elemType.emit(to: context, in: env)
         case let .function(args, ret):
-            return args.map{$0.emit(to: &context, in: &env)}
-                => ret.emit(to: &context, in: &env)
+            return args.map{$0.emit(to: context, in: env)}
+                => ret.emit(to: context, in: env)
         case let .alias(alias):
             return env.type(for: alias)
         case let .box(boxeeType):
-            return ^[referenceCounterType, boxeeType.emit(to: &context, in: &env)]
+            return ^[referenceCounterType, boxeeType.emit(to: context, in: env)]
         case let .pointer(subt):
-            return subt.emit(to: &context, in: &env)*
+            return subt.emit(to: context, in: env)*
         }
     }
 
     @discardableResult
-    func emit<T>(to context: inout LLGenContext<T>,
-              in env: inout LLGenEnvironment) -> LLVMTypeRef {
+    func emit<T>(to context: LLGenContext<T>,
+              in env: LLGenEnvironment) -> LLVMTypeRef {
         switch self {
         /// Function type with indirectly passed return value
         case let .function(args, ret) where ret.shouldBePassedIndirectly:
             /// If result should be passed indirectly, make it a pointer
             /// at the end of the parameter list
-            var argTypes = args.map{$0.emit(to: &context, in: &env)}
-            let retType = ret.directlyEmit(to: &context, in: &env)
+            var argTypes = args.map{$0.emit(to: context, in: env)}
+            let retType = ret.directlyEmit(to: context, in: env)
             argTypes.append(retType*)
             return argTypes => LLVMVoidType()
         /// Directly passed tensors should be converted to LLVM vectors
@@ -101,11 +101,11 @@ extension DLVM.`Type` : LLEmittable {
             return LLVMVectorType(dtype.llType, UInt32(shape.contiguousSize))
         /// For all indirectly passed types, emit a pointer to their bare type
         case _ where shouldBePassedIndirectly:
-            let bareType = directlyEmit(to: &context, in: &env)
+            let bareType = directlyEmit(to: context, in: env)
             return bareType*
         /// For all other types, directly emit them
         default:
-            return directlyEmit(to: &context, in: &env)
+            return directlyEmit(to: context, in: env)
         }
     }
 
@@ -139,8 +139,8 @@ extension DLVM.`Type` : LLEmittable {
 
     /// Emit an index path (a list of element keys) for LLVM GEP
     func emitIndexPath<T>(for keyPath: [ElementKey],
-                       to context: inout LLGenContext<T>,
-                       in env: inout LLGenEnvironment) -> [LLVMValueRef] {
+                       to context: LLGenContext<T>,
+                       in env: LLGenEnvironment) -> [LLVMValueRef] {
         var current: Type = self
         var indices: [LLVMValueRef] = []
         for key in keyPath {
@@ -151,7 +151,7 @@ extension DLVM.`Type` : LLEmittable {
                 let index = structTy.indexOfField(named: n) ?? DLImpossibleResult()
                 indices.append(%index)
             case let (.value(v), _):
-                indices.append(v.emit(to: &context, in: &env))
+                indices.append(v.emit(to: context, in: env))
             default:
                 DLImpossible()
             }
