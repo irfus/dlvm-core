@@ -22,12 +22,12 @@ import LLVM_C
 
 protocol LLEmittable {
     associatedtype LLUnit
-    @discardableResult func emit<T>(to context: inout LLGenContext<T>,
-                                    in env: inout LLGenEnvironment) -> LLUnit
+    @discardableResult func emit<T>(to context: LLGenContext<T>,
+                                    in env: LLGenEnvironment) -> LLUnit
 }
 
 /// Environment contains mappings from DLVM definitions to LLVM definitions
-struct LLGenEnvironment {
+class LLGenEnvironment {
     fileprivate var globals: [AnyHashable : LLVMValueRef] = [:]
     fileprivate var locals: [AnyHashable : LLVMValueRef] = [:]
     fileprivate var types: [AnyHashable : LLVMTypeRef] = [:]
@@ -35,27 +35,27 @@ struct LLGenEnvironment {
 }
 
 extension LLGenEnvironment {
-    mutating func clearLocals() {
+    func clearLocals() {
         locals.removeAll()
     }
 
-    mutating func insertGlobal<T : Definition & Hashable>
+    func insertGlobal<T : Definition & Hashable>
         (_ value: LLVMValueRef, for dlValue: T) {
         globals[dlValue] = value
     }
 
-    mutating func insertLocal<T : Definition & Hashable>
+    func insertLocal<T : Definition & Hashable>
         (_ value: LLVMValueRef, for dlValue: T) {
         locals[dlValue] = value
     }
 
-    mutating func insertType(_ loweredType: LLVMTypeRef,
-                             for type: AnyHashable) {
+    func insertType(_ loweredType: LLVMTypeRef,
+                    for type: AnyHashable) {
         types[type] = loweredType
     }
 
-    mutating func insertBasicBlock(_ basicBlock: LLVMBasicBlockRef,
-                                   for dlvmBasicBlock: BasicBlock) {
+    func insertBasicBlock(_ basicBlock: LLVMBasicBlockRef,
+                          for dlvmBasicBlock: BasicBlock) {
         basicBlocks[dlvmBasicBlock] = basicBlock
     }
 
