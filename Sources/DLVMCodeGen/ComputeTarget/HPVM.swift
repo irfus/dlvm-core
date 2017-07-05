@@ -23,6 +23,8 @@ import DLVM
 /// HPVM Target
 public final class HPVM : ComputeTarget, LLFunctionPrototypeCacheable {
 
+    public typealias SubroutineFusionNode = ()
+
     public enum ReplicationMode : LLConstantConvertible {
         case allToAll
         case oneToOne
@@ -238,4 +240,13 @@ extension HPVM.RuntimeFunction : LLFunctionPrototype {
         }
     }
 
+}
+
+// MARK: - Subgraph emission
+
+public extension HPVM {
+    func emitSubgraph<T>(_ subgraph: FusionDataFlowNode<HPVM>,
+                      to context: LLGenContext<T>, in env: LLGenEnvironment) {
+        DLUnimplemented()
+    }
 }

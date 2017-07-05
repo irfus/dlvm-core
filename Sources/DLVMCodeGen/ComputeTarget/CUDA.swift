@@ -21,7 +21,7 @@ import LLVM_C
 import DLVM
 
 /// NVVM Target
-public final class NVVM : ComputeTarget, LLFunctionPrototypeCacheable {
+public final class CUDA : ComputeTarget, LLFunctionPrototypeCacheable {
 
     public enum Intrinsic : StaticString {
         case threadIndexX    = "llvm.nvvm.read.ptx.sreg.tid.x"    // () -> i32
@@ -50,7 +50,7 @@ public final class NVVM : ComputeTarget, LLFunctionPrototypeCacheable {
         }
     }
 
-    public enum RuntimeFunction {
+    public enum Runtime {
         case malloc(LLVMValueRef) // (i32) -> i8*
         case free(LLVMValueRef) // (i8*) -> void
         case synchronize // () -> i32
@@ -78,7 +78,7 @@ public final class NVVM : ComputeTarget, LLFunctionPrototypeCacheable {
     }
 }
 
-extension NVVM.Intrinsic : LLFunctionPrototype {
+extension CUDA.Intrinsic : LLFunctionPrototype {
     public var type: LLVMValueRef {
         switch self {
         case .barrier: return [] => void
@@ -91,7 +91,7 @@ extension NVVM.Intrinsic : LLFunctionPrototype {
     }
 }
 
-extension NVVM.RuntimeType : LLTypePrototype {
+extension CUDA.RuntimeType : LLTypePrototype {
     public var name: StaticString {
         switch self {
         case .dimension: return "dim3"
@@ -109,7 +109,7 @@ extension NVVM.RuntimeType : LLTypePrototype {
     }
 }
 
-extension NVVM.RuntimeFunction : LLFunctionPrototype {
+extension CUDA.Runtime : LLFunctionPrototype {
     public var name: StaticString {
         switch self {
         case .malloc: return "cudaMalloc"
@@ -127,8 +127,8 @@ extension NVVM.RuntimeFunction : LLFunctionPrototype {
         case .memcpy: return [i8*, i8*, i32, i32] => i8*
         case .synchronize: return [] => void
         case .launchKernel:
-            let dim3 = NVVM.RuntimeType.dimension.type
-            let cudaStream_t = NVVM.RuntimeType.stream.type
+            let dim3 = CUDA.RuntimeType.dimension.type
+            let cudaStream_t = CUDA.RuntimeType.stream.type
             return [i8*, dim3, dim3, i8**, i32, cudaStream_t] => i32
         }
     }
@@ -143,5 +143,14 @@ extension NVVM.RuntimeFunction : LLFunctionPrototype {
         case let .launchKernel(v1, v2, v3, v4, v5, v6):
             return [v1, v2, v3, v4, v5, v6]
         }
+    }
+}
+
+// MARK: - Subgraph emission
+
+public extension CUDA {
+    func emitSubgraph<T>(_ subgraph: FusionDataFlowNode<CUDA>,
+                      to context: LLGenContext<T>, in env: LLGenEnvironment) {
+        DLUnimplemented()
     }
 }

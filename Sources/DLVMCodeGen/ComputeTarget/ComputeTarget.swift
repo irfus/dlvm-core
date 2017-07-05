@@ -20,6 +20,7 @@
 import DLVM
 import LLVM_C
 
+
 // MARK: - Function and type prototyping
 
 public protocol LLFunctionPrototype: Hashable {
@@ -70,7 +71,10 @@ protocol LLFunctionPrototypeCacheable : class, PrototypeEmitter {
     func function<T : LLFunctionPrototype>(from prototype: T) -> LLVMValueRef
 }
 
-public protocol ComputeTarget : PrototypeEmitter {}
+public protocol ComputeTarget : PrototypeEmitter {
+    func emitSubgraph<T>(_ subgraph: FusionDataFlowNode<Self>,
+                         to context: LLGenContext<T>, in env: LLGenEnvironment)
+}
 
 extension StaticString : Equatable {
     public static func == (lhs: StaticString, rhs: StaticString) -> Bool {
@@ -79,6 +83,7 @@ extension StaticString : Equatable {
 }
 
 extension PrototypeEmitter where Self : LLFunctionPrototypeCacheable {
+    @discardableResult
     func emit<T : LLFunctionPrototype>(_ prototype: T,
                                        using builder: LLVMBuilderRef,
                                        name: String = "") -> LLVMValueRef {
@@ -102,7 +107,3 @@ extension LLFunctionPrototypeCacheable {
         return function
     }
 }
-
-// MARK: - Kernel emission
-
-

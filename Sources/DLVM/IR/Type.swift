@@ -168,29 +168,6 @@ public extension Type {
     }
 }
 
-// MARK: - Properties
-public extension Type {
-    enum BitSize {
-        case number(Int)
-        case pointer
-    }
-
-    var isPassedAsPointer: Bool {
-        switch canonical {
-        case .pointer, .function: return true
-        default: return false
-        }
-    }
-
-    var isNotSized: Bool {
-        switch canonical {
-        case .invalid, .void: return true
-        default: return false
-        }
-    }
-}
-
-// MARK: - Predicates
 public extension Type {
     var isFirstClass: Bool {
         switch canonical {
@@ -213,6 +190,20 @@ public extension Type {
         }
     }
 
+    var isPointer: Bool {
+        switch canonical {
+        case .pointer(_): return true
+        default: return false
+        }
+    }
+
+    func isPointer(to pointeeType: Type) -> Bool {
+        switch canonical {
+        case .pointer(pointeeType): return true
+        default: return false
+        }
+    }
+
     var isVoid: Bool {
         switch canonical {
         case .void: return true
@@ -223,6 +214,14 @@ public extension Type {
     func conforms(to other: Type) -> Bool {
         return canonical == other.canonical
     }
+
+    var isNotSized: Bool {
+        switch canonical {
+        case .invalid, .void, .alias: return true
+        default: return false
+        }
+    }
+
 }
 
 // MARK: - Element type extraction

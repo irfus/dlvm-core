@@ -24,10 +24,10 @@ import struct CoreTensor.TensorShape
 // MARK: - Type lowering
 
 extension DLVM.TypeAlias : LLEmittable {
-    typealias LLUnit = LLVMTypeRef
+    public typealias LLUnit = LLVMTypeRef
     @discardableResult
-    func emit<T>(to context: LLGenContext<T>,
-              in env: LLGenEnvironment) -> LLVMTypeRef {
+    public func emit<T>(to context: LLGenContext<T>,
+                     in env: LLGenEnvironment) -> LLVMTypeRef {
         guard let type = type else {
             return ^name // opaque
         }
@@ -36,9 +36,9 @@ extension DLVM.TypeAlias : LLEmittable {
 }
 
 extension DLVM.StructType : LLEmittable {
-    typealias LLUnit = LLVMTypeRef
-    func emit<T>(to context: LLGenContext<T>,
-              in env: LLGenEnvironment) -> LLVMTypeRef {
+    public typealias LLUnit = LLVMTypeRef
+    public func emit<T>(to context: LLGenContext<T>,
+                     in env: LLGenEnvironment) -> LLVMTypeRef {
         var elements: [LLVMTypeRef?] = elementTypes.map { $0.emit(to: context, in: env) }
         return LLVMStructType(&elements, UInt32(elements.count), .false)
     }
@@ -55,7 +55,7 @@ extension TensorShape {
 }
 
 extension DLVM.`Type` : LLEmittable {
-    typealias LLUnit = LLVMTypeRef
+    public typealias LLUnit = LLVMTypeRef
 
     private func directlyEmit<T>(to context: LLGenContext<T>,
                               in env: LLGenEnvironment) -> LLVMTypeRef {
@@ -85,8 +85,8 @@ extension DLVM.`Type` : LLEmittable {
     }
 
     @discardableResult
-    func emit<T>(to context: LLGenContext<T>,
-              in env: LLGenEnvironment) -> LLVMTypeRef {
+    public func emit<T>(to context: LLGenContext<T>,
+                     in env: LLGenEnvironment) -> LLVMTypeRef {
         switch self {
         /// Function type with indirectly passed return value
         case let .function(args, ret) where ret.shouldBePassedIndirectly:
@@ -179,5 +179,65 @@ extension DLVM.`Type` : LLEmittable {
             current = current.elementType(at: key) ?? DLImpossibleResult()
         }
         return indices
+    }
+}
+
+extension StructType {
+    private func nextOffset<Target : NativeTarget>(from offset: Int, for _: Target.Type) -> Int {
+        let align = Target.pointerSize
+        return (offset + align - 1) & ~(align - 1)
+    }
+
+    func size<Target : NativeTarget>(for target: Target.Type) -> Int? {
+        var size = 0
+        guard let last = fields.last else {
+            return 1
+        }
+        for (_, type) in fields.dropLast() {
+            guard let fieldSize = type.size(for: target) else {
+                return nil
+            }
+            size = nextOffset(from: size + fieldSize, for: Target.self)
+        }
+        return last.type.size(for: target).flatMap { $0 + size }
+    }
+}
+
+extension DataType {
+    var size: Int {
+        switch self {
+        case .bool: return 1
+        case let .float(size): return Int(size.rawValue)
+        case let .int(size): return Int(size)
+        }
+    }
+}
+
+extension Type {
+    func size<Target : NativeTarget>(for target: Target.Type) -> Int? {
+        switch canonical {
+        case .alias(_), .invalid, .void: return nil
+        case let .array(n, ty):
+            return ty.size(for: target).flatMap { $0 * n }
+        case .box(_):
+            return 2 * Target.pointerSize
+        case .pointer(_):
+            return Target.pointerSize
+        case .function(_, _):
+            return Target.pointerSize
+        case let .struct(structTy):
+            return structTy.size(for: target)
+        case let .tensor(shape, dtype):
+            return shape.contiguousSize * dtype.size
+        case let .tuple(elemTypes):
+            var size = 0
+            for ty in elemTypes {
+                guard let elemSize = ty.size(for: target) else {
+                    return nil
+                }
+                size += elemSize
+            }
+            return size
+        }
     }
 }

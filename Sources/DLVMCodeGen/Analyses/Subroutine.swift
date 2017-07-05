@@ -1,6 +1,6 @@
 //
-//  Math.swift
-//  DLVM
+//  Subroutine.swift
+//  DLVMCodeGen
 //
 //  Copyright 2016-2017 Richard Wei.
 //
@@ -18,4 +18,20 @@
 //
 
 import DLVM
-import LLVM_C
+
+public enum BLAS {
+    public struct SelfIncrementTerm {
+        public let beta: Use
+        public let value: Use
+    }
+    /// c <- a * x + b
+    case axpy(a: Use, x: Use, b: Use)
+    /// C <- alpha * Ax + beta * C
+    case gemv(alpha: Use, A: Use, trans: Bool, x: Use, increment: SelfIncrementTerm?)
+    /// C <- alpha * AB + beta * C   
+    case gemm(alpha: Use, A: Use, trans: Bool, B: Use, increment: SelfIncrementTerm?)
+}
+
+protocol BLASCapable {
+    static func blasFusion(from instruction: Instruction) -> (BLAS, [Instruction])?
+}
