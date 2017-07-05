@@ -37,6 +37,14 @@ public extension UserInfo {
     subscript(value: Definition) -> Set<Instruction> {
         return users[ObjectIdentifier(value)] ?? []
     }
+
+    subscript(value: Definition, basicBlock: BasicBlock) -> Set<Instruction> {
+        var users = self[value]
+        for user in users where user.parent != basicBlock {
+            users.remove(user)
+        }
+        return users
+    }
 }
 
 /// Analyzes function and produces a graph from definitions to users

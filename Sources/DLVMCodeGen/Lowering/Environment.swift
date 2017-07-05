@@ -20,14 +20,14 @@
 import DLVM
 import LLVM_C
 
-protocol LLEmittable {
+public protocol LLEmittable {
     associatedtype LLUnit
     @discardableResult func emit<T>(to context: LLGenContext<T>,
                                     in env: LLGenEnvironment) -> LLUnit
 }
 
 /// Environment contains mappings from DLVM definitions to LLVM definitions
-class LLGenEnvironment {
+public class LLGenEnvironment {
     fileprivate var globals: [AnyHashable : LLVMValueRef] = [:]
     fileprivate var locals: [AnyHashable : LLVMValueRef] = [:]
     fileprivate var types: [AnyHashable : LLVMTypeRef] = [:]

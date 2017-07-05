@@ -28,6 +28,12 @@ public class Builtin : LLFunctionPrototypeCacheable {
     }
 }
 
+extension Builtin : NativeTarget {
+    public static var pointerSize: Int {
+        return 8
+    }
+}
+
 /// Runtime reference counter type
 var referenceCounterType: LLVMTypeRef {
     DLUnimplemented()
@@ -38,6 +44,8 @@ public extension Builtin {
         case memcpy(to: LLVMValueRef, from: LLVMValueRef, count: LLVMValueRef, align: LLVMValueRef, isVolatile: LLVMValueRef)
         case malloc(size: LLVMValueRef)
         case free(LLVMValueRef)
+        case lifetimeStart(size: LLVMValueRef, pointer: LLVMValueRef)
+        case lifetimeEnd(size: LLVMValueRef, pointer: LLVMValueRef)
     }
 
     enum AccessOwner : Int32, LLConstantConvertible {
@@ -56,6 +64,10 @@ public extension Builtin {
         case accessOwner(LLVMValueRef)
         case setAccessOwner(LLVMValueRef, AccessOwner)
     }
+
+    enum Control {
+        case trap
+    }
 }
 
 extension Builtin.Memory : LLFunctionPrototype {
@@ -64,6 +76,8 @@ extension Builtin.Memory : LLFunctionPrototype {
         case .memcpy: return "llvm.memcpy.p0i8.p0i8.i64"
         case .malloc: return "malloc"
         case .free: return "free"
+        case .lifetimeStart: return "llvm.lifetime.start"
+        case .lifetimeEnd: return "llvm.lifetime.end"
         }
     }
 
@@ -75,6 +89,10 @@ extension Builtin.Memory : LLFunctionPrototype {
             return [val]
         case let .memcpy(to: v1, from: v2, count: v3, align: v4, isVolatile: v5):
             return [v1, v2, v3, v4, v5]
+        case let .lifetimeStart(size: size, pointer: ptr):
+            return [size, ptr]
+        case let .lifetimeEnd(size: size, pointer: ptr):
+            return [size, ptr]
         }
     }
     
@@ -83,6 +101,8 @@ extension Builtin.Memory : LLFunctionPrototype {
         case .free: return [i8*] => void
         case .malloc: return [i64*] => i8*
         case .memcpy: return [i8*, i8*, i64, i32, i1] => void
+        case .lifetimeStart: return [i64, i8*] => void
+        case .lifetimeEnd: return [i64, i8*] => void
         }
     }
 }
@@ -127,6 +147,26 @@ extension Builtin.Reference : LLFunctionPrototype {
             return [referenceCounterType*] => i32
         case .setAccessOwner:
             return [referenceCounterType*, i32] => void
+        }
+    }
+}
+
+extension Builtin.Control : LLFunctionPrototype {
+    public var name: StaticString {
+        switch self {
+        case .trap: return "llvm.trap"
+        }
+    }
+
+    public var arguments: [LLVMValueRef] {
+        switch self {
+        case .trap: return []
+        }
+    }
+
+    public var type: LLVMTypeRef {
+        switch self {
+        case .trap: return [] => void
         }
     }
 }

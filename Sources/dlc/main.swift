@@ -87,7 +87,7 @@ catch { cli.printUsage(error); exit(EXIT_FAILURE) }
 func codeGenerator(for target: Target, from module: Module) -> CodeGenerator {
     switch target {
     case .nvptx:
-        return LLGen<NVVM>(module: module)
+        return LLGen<CUDA>(module: module)
     case .hpvm:
         return LLGen<HPVM>(module: module)
     case .amdgpu:

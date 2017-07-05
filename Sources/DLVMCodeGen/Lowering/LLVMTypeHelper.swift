@@ -238,20 +238,20 @@ extension FixedWidthInteger where Self : LLConstantConvertible {
 }
 #else
 extension SignedInteger where Self : LLConstantConvertible {
-    static func ~ (value: Self, type: LLVMTypeRef) -> LLVMValueRef {
-        return LLVMConstInt(type, UInt64(bitPattern: Int64(value.toIntMax())), .true)
+    func llValue(ofType type: LLVMTypeRef) -> LLVMValueRef {
+        return LLVMConstInt(type, UInt64(bitPattern: Int64(toIntMax())), .true)
     }
 }
 extension UnsignedInteger where Self : LLConstantConvertible {
-    static func ~ (value: Self, type: LLVMTypeRef) -> LLVMValueRef {
-        return LLVMConstInt(type, UInt64(value.toUIntMax()), .false)
+    func llValue(ofType type: LLVMTypeRef) -> LLVMValueRef {
+        return LLVMConstInt(type, UInt64(toUIntMax()), .false)
     }
 }
 #endif
 
 extension Double {
-    static func ~ (value: Double, type: LLVMTypeRef) -> LLVMValueRef {
-        return LLVMConstReal(type, value)
+    func llValue(ofType type: LLVMTypeRef) -> LLVMValueRef {
+        return LLVMConstReal(type, self)
     }
 }
 
