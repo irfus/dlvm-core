@@ -19,8 +19,8 @@
 
 #import "reference.h"
 
-DLReference DLReferenceInit(const void (* _Nonnull deallocator)(const DLReference *const _Nonnull), const DLAccessOwner owner) {
-    return (DLReference) { deallocator, 1, owner };
+DLReference DLReferenceInit(const void (* _Nonnull deallocator)(const DLReference *const _Nonnull)) {
+    return (DLReference) { deallocator, 1 };
 }
 
 void DLReferenceRetain(DLReference *const _Nonnull ref)
@@ -43,14 +43,4 @@ void DLReferenceDeallocate(DLReference *const _Nonnull ref)
 long DLReferenceCount(const DLReference *const _Nonnull ref)
 {
     return ref->count;
-}
-
-DLAccessOwner DLReferenceGetAccessOwner(DLReference *const _Nonnull ref)
-{
-    return ref->accessOwner;
-}
-
-void DLReferenceSetAccessOwner(DLReference *const _Nonnull ref, const DLAccessOwner target)
-{
-    ref->accessOwner = target;
 }
