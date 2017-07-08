@@ -24,15 +24,18 @@ extern "C" {
 
 struct DLDatumProperties {
     size_t size;
-    DLAccessOwner owner;
+    void * _Nonnull deviceAddress = nullptr;
+    bool outOfSync = false;
+
+    DLAccessOwner getAccessOwner() {
+        return deviceAddress == nullptr ? ::host : ::device;
+    }
 };
 
 class DLMemoryTracker {
 private:
     typedef std::unordered_map<const void *, DLDatumProperties> Registry;
-    typedef std::unordered_map<const void *, void *> MemoryMap;
     Registry _registry = {};
-    MemoryMap _memoryMap = {};
     DLDeviceRuntimeRoutines _runtimeRoutines;
 
 public:
@@ -46,11 +49,12 @@ public:
     }
 
     DLDatumProperties getProperties(void * _Nonnull ptr);
-    void * _Nonnull getDeviceAddress(void * _Nonnull ptr);
 
     void requestMemory(void * _Nonnull ptr, DLAccessOwner requester);
     void registerMemory(const void * _Nonnull ptr, size_t size);
     void unregisterMemory(const void * _Nonnull ptr);
+    void setOutOfSync(const void * _Nonnull ptr);
+    void switchToHost(const void * _Nonnull ptr);
     void clear();
 };
 
