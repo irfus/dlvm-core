@@ -1,5 +1,5 @@
 //
-//  dlrt.h
+//  access_owner.h
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -17,8 +17,26 @@
 //  limitations under the License.
 //
 
-#import "reference.h"
-#import "access_owner.h"
+#import "swiftdecl.h"
+#import <cstdint>
+
 #ifdef __cplusplus
-#import "memory_tracker.h"
+extern "C" {
+#endif
+
+typedef SWIFT_ENUM(int, DLAccessOwner) {
+    host = 1,
+    device = 2
+};
+
+// Runtime routines for device memory management
+typedef struct DLDeviceRuntimeRoutines {
+    int64_t (* const _Nonnull allocate)(void *_Nonnull *_Nullable ptr, size_t size);
+    int64_t (* const _Nonnull deallocate)(void *_Nonnull);
+    int64_t (* const _Nonnull copyToDevice)(void *_Nonnull, const void *_Nonnull);
+    int64_t (* const _Nonnull copyToHost)(void *_Nonnull, const void *_Nonnull);
+} DLDeviceRuntimeRoutines;
+
+#ifdef __cplusplus
+}
 #endif

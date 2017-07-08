@@ -4,10 +4,10 @@ project(DLVM)
 # Get LLVM paths
 execute_process(COMMAND llvm-config --includedir
   OUTPUT_VARIABLE LLVM_INC_DIR)
-string(STRIP ${LLVM_INC_DIR} LLVM_INC_DIR)
+string(STRIP "${LLVM_INC_DIR}" LLVM_INC_DIR)
 execute_process(COMMAND llvm-config --libdir
   OUTPUT_VARIABLE LLVM_LIB_DIR)
-string(STRIP ${LLVM_LIB_DIR} LLVM_LIB_DIR)
+string(STRIP "${LLVM_LIB_DIR}" LLVM_LIB_DIR)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
