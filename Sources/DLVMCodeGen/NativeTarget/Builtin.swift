@@ -49,7 +49,6 @@ public extension Builtin {
     }
 
     enum AccessOwner : Int32, LLConstantConvertible {
-        case none = 0
         case host = 1
         case device = 2
         
@@ -61,8 +60,78 @@ public extension Builtin {
         case retain(LLVMValueRef)
         case release(LLVMValueRef)
         case deallocate(LLVMValueRef)
-        case accessOwner(LLVMValueRef)
-        case setAccessOwner(LLVMValueRef, AccessOwner)
+    }
+
+    enum RuntimeType : StaticString, LLTypePrototype {
+        case memoryTracker = "class.DLMemoryTracker"
+        case reference = "struct.DLReference"
+        case runtimeRoutines = "struct.DLDeviceRuntimeRoutines"
+    }
+
+    enum MemoryTracker : LLFunctionPrototype {
+        case create(LLVMValueRef)
+        case destroy(LLVMValueRef)
+        case requestMemory(LLVMValueRef, LLVMValueRef, AccessOwner)
+        case registerMemory(LLVMValueRef, LLVMValueRef)
+        case unregisterMemory(LLVMValueRef, LLVMValueRef)
+        case setOutOfSync(LLVMValueRef, LLVMValueRef)
+        case switchToHost(LLVMValueRef, LLVMValueRef)
+        case clear(LLVMValueRef)
+
+        public var name: StaticString {
+            switch self {
+            case .clear: return "DLMemoryTrackerClear"
+            case .create: return "DLMemoryTrackerCreate"
+            case .destroy: return "DLMemoryTrackerDestroy"
+            case .registerMemory: return "DLMemoryTrackerRegisterMemory"
+            case .setOutOfSync: return "DLMemoryTrackerSetOutOfSync"
+            case .switchToHost: return "DLMemoryTrackerSwitchToHost"
+            case .requestMemory: return "DLMemoryTrackerRequestMemory"
+            case .unregisterMemory: return "DLMemoryTrackerRegisterMemory"
+            }
+        }
+
+        public var type: LLVMTypeRef {
+            switch self {
+            case .clear:
+                return [RuntimeType.memoryTracker.type*] => void
+            case .create:
+                return [] => RuntimeType.memoryTracker.type
+            case .destroy:
+                return [RuntimeType.memoryTracker.type*] => void
+            case .registerMemory:
+                return [RuntimeType.memoryTracker.type*, i8*, i64] => void
+            case .setOutOfSync:
+                return [RuntimeType.memoryTracker.type*, i8*] => void
+            case .switchToHost:
+                return [RuntimeType.memoryTracker.type*, i8*] => void
+            case .requestMemory:
+                return [RuntimeType.memoryTracker.type*, i8*, i32] => void
+            case .unregisterMemory:
+                return [RuntimeType.memoryTracker.type*, i8*] => void
+            }
+        }
+
+        public var arguments: [LLVMValueRef] {
+            switch self {
+            case let .clear(obj):
+                return [obj]
+            case let .create(routines):
+                return [routines]
+            case let .destroy(obj):
+                return [obj]
+            case let .registerMemory(obj, ptr):
+                return [obj, ptr]
+            case let .setOutOfSync(obj, ptr):
+                return [obj, ptr]
+            case let .switchToHost(obj, ptr):
+                return [obj, ptr]
+            case let .requestMemory(obj, ptr, owner):
+                return [obj, ptr, %owner]
+            case let .unregisterMemory(obj, ptr):
+                return [obj, ptr]
+            }
+        }
     }
 
     enum Control {
@@ -114,9 +183,7 @@ extension Builtin.Reference : LLFunctionPrototype {
         case .initialize: return "DLReferenceInit"
         case .retain: return "DLReferenceRetain"
         case .release: return "DLReferenceRelease"
-        case .deallocate: return "DLVMReferenceDeallocate"
-        case .accessOwner: return "DLReferenceGetAccessOwner"
-        case .setAccessOwner: return "DLReferenceSetAccessOwner"
+        case .deallocate: return "DLReferenceDeallocate"
         }
     }
 
@@ -130,10 +197,6 @@ extension Builtin.Reference : LLFunctionPrototype {
             return [v]
         case let .deallocate(v):
             return [v]
-        case let .accessOwner(v):
-            return [v]
-        case let .setAccessOwner(v1, v2):
-            return [v1, %v2]
         }
     }
 
@@ -143,10 +206,6 @@ extension Builtin.Reference : LLFunctionPrototype {
             return [^[], i32] => referenceCounterType
         case .retain, .release, .deallocate:
             return [referenceCounterType*] => void
-        case .accessOwner:
-            return [referenceCounterType*] => i32
-        case .setAccessOwner:
-            return [referenceCounterType*, i32] => void
         }
     }
 }
