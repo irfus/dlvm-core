@@ -122,6 +122,11 @@ void DLMemoryTrackerSetOutOfSync(DLMemoryTracker * _Nonnull tracker,
     tracker->setOutOfSync(ptr);
 }
 
+void DLMemoryTrackerSwitchToHost(DLMemoryTracker * _Nonnull tracker,
+                                 const void * _Nonnull ptr) {
+    tracker->switchToHost(ptr);
+}
+
 void DLMemoryTrackerClear(DLMemoryTracker * _Nonnull tracker) {
     tracker->clear();
 }
