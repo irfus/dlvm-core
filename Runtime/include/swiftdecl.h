@@ -17,6 +17,9 @@
 //  limitations under the License.
 //
 
+#ifndef _SWIFTDECL_H_
+#define _SWIFTDECL_H_
+
 /// Swift name attribute with quoted expansion
 #ifndef SWIFT_NAME
     #ifdef __swift__
@@ -51,3 +54,5 @@
 #endif
 
 #endif // __OBJC__
+
+#endif /* _SWIFTDECL_H_ */

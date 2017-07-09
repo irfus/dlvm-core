@@ -17,8 +17,15 @@
 //  limitations under the License.
 //
 
-#import "reference.h"
-#import "access_owner.h"
+
+#ifndef _DLRT_H_
+#define _DLRT_H_
+
+#include "reference.h"
+#include "access_owner.h"
 #ifdef __cplusplus
-#import "memory_tracker.h"
+#include "memory_manager.h"
+#include "memory_tracker.h"
 #endif
+
+#endif /* _DLRT_H_ */

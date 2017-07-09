@@ -17,8 +17,11 @@
 //  limitations under the License.
 //
 
-#import "swiftdecl.h"
-#import <stdatomic.h>
+#ifndef _REFERENCE_H_
+#define _REFERENCE_H_
+
+#include "swiftdecl.h"
+#include <stdatomic.h>
 
 /**
    Reference counter for DLVM IR type `@box`
@@ -39,3 +42,6 @@ void DLReferenceRelease(DLReference *const _Nonnull ref)
 
 void DLReferenceDeallocate(DLReference *const _Nonnull ref)
     SWIFT_NAME(DLReference.deallocate(self:));
+
+#endif /* _REFERENCE_H_ */
+

@@ -17,8 +17,11 @@
 //  limitations under the License.
 //
 
-#import "access_owner.h"
-#import <unordered_map>
+#ifndef _MEMORY_TRACKER_H_
+#define _MEMORY_TRACKER_H_
+
+#include "access_owner.h"
+#include <unordered_map>
 
 extern "C" {
 
@@ -68,3 +71,5 @@ void DLMemoryTrackerUnregisterMemory(DLMemoryTracker * _Nonnull tracker,
                                      const void * _Nonnull ptr);
 
 }
+
+#endif /* _MEMORY_TRACKER_H_ */

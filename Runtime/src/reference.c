@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-#import "reference.h"
+#include "reference.h"
 
 DLReference DLReferenceInit(const void (* _Nonnull deallocator)(const DLReference *const _Nonnull)) {
     return (DLReference) { deallocator, 1 };

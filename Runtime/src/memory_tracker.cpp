@@ -17,9 +17,9 @@
 //  limitations under the License.
 //
 
-#import <cassert>
-#import "access_owner.h"
-#import "memory_tracker.h"
+#include <cassert>
+#include "access_owner.h"
+#include "memory_tracker.h"
 
 DLMemoryTracker::DLMemoryTracker(DLDeviceRuntimeRoutines runtimeRoutines)
     : _runtimeRoutines(runtimeRoutines) {
