@@ -17,8 +17,11 @@
 //  limitations under the License.
 //
 
-#import "swiftdecl.h"
-#import <cstdint>
+#ifndef _ACCESS_OWNER_H_
+#define _ACCESS_OWNER_H_
+
+#include "swiftdecl.h"
+#include <cstdint>
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,3 +43,5 @@ typedef struct DLDeviceRuntimeRoutines {
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _ACCESS_OWNER_H_ */
