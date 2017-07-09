@@ -69,6 +69,11 @@ void DLMemoryTrackerRegisterMemory(DLMemoryTracker * _Nonnull tracker,
                                    const void * _Nonnull ptr, size_t size);
 void DLMemoryTrackerUnregisterMemory(DLMemoryTracker * _Nonnull tracker,
                                      const void * _Nonnull ptr);
+void DLMemoryTrackerSetOutOfSync(DLMemoryTracker * _Nonnull tracker,
+                                 const void * _Nonnull ptr);
+void DLMemoryTrackerSwitchToHost(DLMemoryTracker * _Nonnull tracker,
+                                 const void * _Nonnull ptr);
+void DLMemoryTrackerClear(DLMemoryTracker * _Nonnull tracker);
 
 }
 
