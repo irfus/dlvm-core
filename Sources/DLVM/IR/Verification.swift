@@ -41,6 +41,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case useShapeMismatch(Node)
     case useTypeMismatch(Node)
     case noDimensions(Use, Node)
+    case invalidSlicingRange(CountableClosedRange<Int>, Node)
     case noSpecifiedDimension(Use, Int, Node)
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
     case functionArgumentMismatch([Use], Type, Node)
@@ -383,6 +384,17 @@ extension InstructionKind {
         case let .map(_, v1), let .transpose(v1):
             guard case .tensor(_, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
+            }
+
+        case let .slice(v, at: range):
+            guard case var .tensor(shape, _) = v.type.unaliased else {
+                throw VerificationError.notTensor(v, instruction)
+            }
+            guard let dim0 = shape.first else {
+                throw VerificationError.noDimensions(v, instruction)
+            }
+            guard range.contains(dim0) else {
+                throw VerificationError.invalidSlicingRange(range, instruction)
             }
 
         case let .zipWith(_, lhs, rhs):

@@ -177,6 +177,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("concatenate \(ops.joinedDescription) along \(axis)")
         case let .transpose(op):
             target.write("transpose \(op)")
+        case let .slice(v, at: range):
+            target.write("slice \(v) from \(range.lowerBound) upto \(range.upperBound)")
         case let .dataTypeCast(op, t):
             target.write("dataTypeCast \(op) to \(t)")
         case let .shapeCast(op, s):

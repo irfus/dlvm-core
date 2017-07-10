@@ -45,6 +45,8 @@ public enum InstructionKind {
     case concatenate([Use], axis: Int)
     /// Transpose
     case transpose(Use)
+    /// Slice
+    case slice(Use, at: CountableClosedRange<Int>)
 
     /** Cost-free casts **/
     /// Shape cast operation
@@ -281,6 +283,13 @@ public extension InstructionKind {
             guard case let .box(t) = v.type.unaliased else { return .invalid }
             return .pointer(t)
 
+        case let .slice(v, at: range):
+            guard case .tensor(var shape, let dtype) = v.type.unaliased,
+                let dim0 = shape.first, range.contains(dim0)
+                else { return .invalid }
+            shape[0] = range.count
+            return .tensor(shape, dtype)
+
         case .store, .copy, .deallocate,
              .branch, .conditional, .return, .retain, .release, .trap:
             return .void
@@ -304,8 +313,9 @@ extension InstructionKind {
              let .matrixMultiply(op1, op2),
              let .insert(op1, to: op2, at: _):
             return [op1, op2]
-        case let .map(_, op), let .reduce(_, op, _), let .scan(_, op, _), let .transpose(op),
-             let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
+        case let .map(_, op), let .reduce(_, op, _), let .scan(_, op, _),
+             let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
+             let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
              let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateHeap(_, count: op),
@@ -360,6 +370,8 @@ public extension InstructionKind {
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
             return .transpose(new)
+        case .slice(old, at: let range):
+            return .slice(new, at: range)
         case .reduce(.function(old), old, let dims):
             return .reduce(.function(new), new, dims)
         case .reduce(.function(old), let v1, let dims):
@@ -436,6 +448,7 @@ public extension InstructionKind {
         case matrixMultiply
         case concatenate
         case transpose
+        case slice
         case shapeCast
         case bitCast
         case extract
@@ -470,6 +483,7 @@ public extension InstructionKind {
         case .matrixMultiply: return .matrixMultiply
         case .concatenate: return .concatenate
         case .transpose: return .transpose
+        case .slice: return .slice
         case .shapeCast: return .shapeCast
         case .bitCast: return .bitCast
         case .extract: return .extract
