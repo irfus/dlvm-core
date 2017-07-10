@@ -28,7 +28,7 @@ public enum Keyword {
     case stage, raw, canonical
     case `struct`, `func`, `var`
     case type, opaque
-    case at, to, from, by
+    case at, to, from, by, upto
     case then, `else`
     case wrt, keeping
     case void
@@ -474,6 +474,7 @@ private extension Lexer {
         case "extern": kind = .keyword(.extern)
         case "gradient": kind = .keyword(.gradient)
         case "along": kind = .keyword(.along)
+        case "upto": kind = .keyword(.upto)
         /// Opcode
         case "branch": kind = .opcode(.branch)
         case "conditional": kind = .opcode(.conditional)
@@ -484,6 +485,7 @@ private extension Lexer {
         case "matrixMultiply": kind = .opcode(.matrixMultiply)
         case "concatenate": kind = .opcode(.concatenate)
         case "transpose": kind = .opcode(.transpose)
+        case "slice": kind = .opcode(.slice)
         case "shapeCast": kind = .opcode(.shapeCast)
         case "bitCast": kind = .opcode(.bitCast)
         case "extract": kind = .opcode(.extract)
