@@ -389,6 +389,8 @@ private extension Lexer {
             }
             /// Advance through '"'
             advance(by: 1)
+            /// Append terminator because we are converting a C string
+            chars.append("\0")
             kind = chars.withUnsafeBufferPointer { buffer in
                 .stringLiteral(String(cString: buffer.baseAddress!))
             }
