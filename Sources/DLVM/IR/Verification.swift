@@ -387,7 +387,7 @@ extension InstructionKind {
             }
 
         case let .slice(v, at: range):
-            guard case var .tensor(shape, _) = v.type.unaliased else {
+            guard case let .tensor(shape, _) = v.type.unaliased else {
                 throw VerificationError.notTensor(v, instruction)
             }
             guard let dim0 = shape.first else {
