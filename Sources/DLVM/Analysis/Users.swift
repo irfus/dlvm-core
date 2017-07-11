@@ -31,13 +31,13 @@ internal extension UserInfo {
     }
 }
 
-// MARK: - Getter
 public extension UserInfo {
     /// Returns a set of users
     subscript(value: Definition) -> Set<Instruction> {
         return users[ObjectIdentifier(value)] ?? []
     }
 
+    /// Returns a set of users within the basic block
     subscript(value: Definition, basicBlock: BasicBlock) -> Set<Instruction> {
         var users = self[value]
         for user in users where user.parent != basicBlock {
