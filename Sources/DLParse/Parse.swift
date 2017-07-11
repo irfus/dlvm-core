@@ -600,12 +600,12 @@ extension Parser {
         case .transpose:
             return try .transpose(parseUse(in: basicBlock).0)
 
-        /// 'slice' <val> 'from' <num> 'upto' <num>
+        /// 'slice' <val> 'from' <num> 'to' <num>
         case .slice:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.from))
             let (lowerBound, _) = try parseInteger()
-            try consume(.keyword(.upto))
+            try consume(.keyword(.to))
             let (upperBound, _) = try parseInteger()
             return .slice(val, at: lowerBound...upperBound)
 
