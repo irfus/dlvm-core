@@ -41,6 +41,8 @@ public func runPass(named name: String, on module: Module) throws {
         try module.mapTransform(ValuePromotion.self)
     case "MCO", "MatrixChainOrdering":
         try module.forEach { fn in try fn.mapTransform(MatrixChainOrdering.self) }
+    case "LBP", "LiteralBroadcastingPromotion":
+        try module.forEach { fn in try fn.mapTransform(LiteralBroadcastingPromotion.self) }
     default:
         error("No transform pass named \(name)")
     }
