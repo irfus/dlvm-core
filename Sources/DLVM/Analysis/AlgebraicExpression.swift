@@ -44,21 +44,27 @@ extension AlgebraicExpression {
     }
 
     /// Remove intermediate instructions from the basic block
-    func removeIntermediates(upTo destination: AlgebraicExpression? = nil) {
-        guard self != destination else { return }
-        switch self {
-        case .atom(_):
-            return
-        case let .zipWith(_, lhs, rhs, inst),
-             let .matrixMultiply(lhs, rhs, inst):
-            lhs.removeIntermediates(upTo: destination)
-            rhs.removeIntermediates(upTo: destination)
-            inst.removeFromParent()
-        case let .transpose(x, inst),
-             let .map(_, x, inst):
-            x.removeIntermediates(upTo: destination)
-            inst.removeFromParent()
+    func removeIntermediates(upTo barriers: AlgebraicExpression...) {
+        let barriers = Set(barriers.lazy.flatMap { $0.topInstruction })
+        func remove(_ expr: AlgebraicExpression) {
+            if let inst = expr.topInstruction, barriers.contains(inst) {
+                return
+            }
+            switch self {
+            case .atom(_):
+                return
+            case let .zipWith(_, lhs, rhs, inst),
+                 let .matrixMultiply(lhs, rhs, inst):
+                remove(lhs)
+                remove(rhs)
+                inst.removeFromParent()
+            case let .transpose(x, inst),
+                 let .map(_, x, inst):
+                remove(x)
+                inst.removeFromParent()
+            }
         }
+        remove(self)
     }
 
     static prefix func % (expr: AlgebraicExpression) -> Use {

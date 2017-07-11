@@ -20,6 +20,7 @@
 import Foundation
 
 /// Algebra Simplification simplifies the following expressions
+/// - x^(-1) => 1 / x
 /// - x^0 => 1
 /// - x^1 => x
 /// - x^2 => x * x
@@ -29,6 +30,7 @@ import Foundation
 /// - sin(0) | sinh(0) => 0
 /// - cos(0) | cosh(0) => 1
 /// - tan(0) | tanh(0) => 0
+/// - (e^x)^y => e^(x*y)
 open class AlgebraSimplification : TransformPass {
     public typealias Body = Function
 
@@ -39,6 +41,14 @@ open class AlgebraSimplification : TransformPass {
                                               workList: inout [AlgebraicExpression]) -> Bool {
         /// Pattern-match expressions
         switch expr {
+        /// - x^(-1) => 1 / x
+        case let .zipWith(.associative(.power), x, -1, inst):
+            builder.move(after: inst)
+            let one = x.makeLiteral(1)
+            let div = builder.divide(%one, %x)
+            function.replaceAllUses(of: inst, with: %div)
+            expr.removeIntermediates(upTo: x)
+            workList.append(.zipWith(.associative(.multiply), .atom(%one), x, div))
         /// - x^0 => 1
         case let .zipWith(.associative(.power), x, 0, inst):
             let newVal = expr.makeLiteral(1)
@@ -84,15 +94,33 @@ open class AlgebraSimplification : TransformPass {
              let .map(.sinh, 0, inst),
              let .map(.tan, 0, inst),
              let .map(.tanh, 0, inst):
-            builder.move(after: inst)
             function.replaceAllUses(of: inst, with: %expr.makeLiteral(0))
             expr.removeIntermediates()
         /// cos(0), cosh(0)
         case let .map(.cos, 0, inst),
              let .map(.cosh, 0, inst):
-            builder.move(after: inst)
             function.replaceAllUses(of: inst, with: %expr.makeLiteral(1))
             expr.removeIntermediates()
+        /// - (e^x)^y => e^(x*y)
+        case let .zipWith(.associative(.power), .map(.exp, x, _), y, inst):
+            builder.move(after: inst)
+            let mul = builder.multiply(%x, %y)
+            let exp = builder.exp(%mul)
+            function.replaceAllUses(of: inst, with: %exp)
+            expr.removeIntermediates(upTo: x, y)
+            workList.append(.map(.exp, .zipWith(.associative(.multiply), x, y, mul), exp))
+        /// (x / y) / z => x / (y * z)
+        case let .zipWith(.associative(.divide),
+                          .zipWith(.associative(.divide), x, y, _),
+                          z, inst):
+            builder.move(after: inst)
+            let mul = builder.multiply(%y, %z)
+            let div = builder.divide(%x, %mul)
+            function.replaceAllUses(of: inst, with: %div)
+            expr.removeIntermediates(upTo: x, y, z)
+            workList.append(.zipWith(.associative(.divide), x,
+                                     .zipWith(.associative(.multiply), y, z, mul),
+                                     div))
         default:
             return false
         }

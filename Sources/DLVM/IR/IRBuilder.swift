@@ -204,6 +204,10 @@ public extension IRBuilder {
         return buildInstruction(.transpose(use))
     }
 
+    func exp(_ use: Use) -> Instruction {
+        return buildInstruction(.map(.exp, use))
+    }
+
     func map(_ operation: UnaryOp, _ use: Use) -> Instruction {
         return buildInstruction(.map(operation, use))
     }
