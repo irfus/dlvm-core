@@ -19,13 +19,6 @@
 
 import CoreTensor
 
-/// Scope of value
-public enum Scope {
-    case global
-    case local
-    case none
-}
-
 /// Value base
 public protocol Value : Verifiable {
     var type: Type { get }

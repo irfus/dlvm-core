@@ -19,6 +19,7 @@
 
 import CoreTensor
 
+// MARK: - Core Instruction Set
 public enum InstructionKind {
     /** Control flow **/
     /// Unconditionally branch to basic block
@@ -112,6 +113,8 @@ extension Instruction : Value {
 
 // MARK: - Predicates
 public extension InstructionKind {
+    /// Returns true iff the instruction is a terminator:
+    /// `branch`, `conditional` or `return`
     var isTerminator: Bool {
         switch self {
         case .branch, .conditional, .`return`:
@@ -121,6 +124,7 @@ public extension InstructionKind {
         }
     }
 
+    /// Returns true iff the instruction is a `return`
     var isReturn: Bool {
         switch self {
         case .`return`: return true
@@ -128,6 +132,7 @@ public extension InstructionKind {
         }
     }
 
+    /// Returns true iff the instruction is a `trap`
     var isTrap: Bool {
         switch self {
         case .trap: return true
@@ -135,6 +140,7 @@ public extension InstructionKind {
         }
     }
 
+    /// Returns true iff the instruction reads from or writes to memory
     var accessesMemory: Bool {
         switch self {
         case .allocateStack, .allocateHeap, .allocateBox,
@@ -145,16 +151,50 @@ public extension InstructionKind {
         }
     }
 
+    /// Returns true iff the instruction writes to memory
     var mustWriteToMemory: Bool {
         switch self {
-        case .store, .copy: return true
+        case .store, .copy, .deallocate: return true
+        default: return false
+        }
+    }
+
+    /// Returns true iff the instruction is a zipWith operation broadcasting
+    /// two tensors of different but compatible shapes
+    var isBroadcasting: Bool {
+        switch self {
+        case let .zipWith(_, x, y):
+            guard case let .tensor(s1, _) = x.type.canonical,
+                  case let .tensor(s2, _) = y.type.canonical else {
+                return false
+            }
+            return s1 != s2 && s1.isCompatible(with: s2)
+        default:
+            return false
+        }
+    }
+
+    /// Returns true iff the instruction performs element-wise arithmetics
+    /// with its operands (which are tensors)
+    var isElementwiseArithmetic: Bool {
+        switch self {
+        case .map, .zipWith: return true
+        default: return false
+        }
+    }
+
+    /// Returns true iff the instruction represets a linear transformation
+    var isLinearTransformation: Bool {
+        switch self {
+        case .transpose, .matrixMultiply: return true
         default: return false
         }
     }
 }
 
+// MARK: - Type inference
 public extension InstructionKind {
-
+    /// Infers and returns the type of the result of the instruction
     var type: Type {
         switch self {
         case let .zipWith(.associative(assoc), v1, v2):
@@ -295,10 +335,9 @@ public extension InstructionKind {
             return .void
         }
     }
-
-    static var scope: Scope = .local
-
 }
+
+// MARK: - Operands
 
 extension Instruction : User {
     public var operands: [Use] {
@@ -335,6 +374,8 @@ extension InstructionKind {
         }
     }
 }
+
+// MARK: - Substitution utilities
 
 public extension Instruction {
     func substitute(_ newUse: Use, for use: Use) {
@@ -434,6 +475,8 @@ public extension InstructionKind {
     }
 }
 
+// MARK: - Opcode decomposition
+
 /// Instruction ADT decomposition (opcodes, keywords, operands)
 /// - Note: When adding a new instruction, you should insert its
 /// corresponding opcode here
@@ -517,6 +560,7 @@ extension InstructionKind.Opcode : Equatable {
         case (.matrixMultiply, .matrixMultiply): return true
         case (.concatenate, .concatenate): return true
         case (.transpose, .transpose): return true
+        case (.slice, .slice): return true
         case (.shapeCast, .shapeCast): return true
         case (.bitCast, .bitCast): return true
         case (.extract, .extract): return true
