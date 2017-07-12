@@ -60,6 +60,10 @@ public final class Function : Named, IRCollection, IRUnit {
         self.declarationKind = declarationKind
         self.parent = parent
     }
+
+    public var canApplyTransforms: Bool {
+        return !isDeclaration
+    }
 }
 
 extension Function : Value {

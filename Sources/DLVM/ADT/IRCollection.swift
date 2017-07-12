@@ -27,6 +27,7 @@ public protocol IRCollection : class, RandomAccessCollection, Verifiable, Analys
     associatedtype Indices = Base.Indices
     associatedtype SubSequence : Collection = Base.SubSequence
     var elements: Base { get set }
+    var canApplyTransforms: Bool { get }
 }
 
 public extension IRCollection

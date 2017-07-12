@@ -66,6 +66,10 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
         }
     }
 
+    public var canApplyTransforms: Bool {
+        return true
+    }
+
 }
 
 // MARK: - Predicates and accessors
