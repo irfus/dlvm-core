@@ -64,7 +64,7 @@ open class AlgebraSimplification : TransformPass {
         /// - x * 0 | 0 * x => 0
         case let .zipWith(.associative(.multiply), x, 0, inst),
              let .zipWith(.associative(.multiply), 0, x, inst):
-            function.replaceAllUses(of: inst, with: %x.makeScalar(0))
+            function.replaceAllUses(of: inst, with: %x.makeLiteral(0))
             expr.removeIntermediates(upTo: x)
         /// - x^(-1) => 1 / x
         case let .zipWith(.associative(.power), x, -1, inst):
@@ -76,7 +76,7 @@ open class AlgebraSimplification : TransformPass {
             workList.append(.zipWith(.associative(.multiply), .atom(%one), x, div))
         /// - x^0 => 1
         case let .zipWith(.associative(.power), x, 0, inst):
-            let newVal = expr.makeScalar(1)
+            let newVal = expr.makeLiteral(1)
             function.replaceAllUses(of: inst, with: %newVal)
             expr.removeIntermediates(upTo: x)
         /// - x^1 => x

@@ -1,4 +1,4 @@
-module "mnist"
+module "mnist"
 stage raw
 
 func @inference: (f32, f32, f32) -> f32 {
@@ -23,4 +23,21 @@ func @bar: (f32, f32, f32) -> f32 {
     %sin = sin 0: f32
     %1.3 = add %1.1: f32, %sin: f32
     return %1.3: f32
+}
+
+func @assoc1: (<2 x 3 x f32>, <2 x 3 x f32>, <2 x 3 x f32>, <2 x 3 x f32>) -> <2 x 3 x f32> {
+'entry(%x: <2 x 3 x f32>, %y: <2 x 3 x f32>, %z: <2 x 3 x f32>, %a: <2 x 3 x f32>):
+    %lhs = divide %x: <2 x 3 x f32>, %y: <2 x 3 x f32>
+    %rhs = divide %z: <2 x 3 x f32>, %a: <2 x 3 x f32>
+    %div = divide %lhs: <2 x 3 x f32>, %rhs: <2 x 3 x f32>
+    return %div: <2 x 3 x f32>
+}
+
+
+func @assoc2: (<2 x 3 x f32>, <2 x 3 x f32>, <2 x f32>) -> <2 x 3 x f32> {
+'entry(%x: <2 x 3 x f32>, %y: <2 x 3 x f32>, %z: <2 x f32>):
+    %z_ = shapeCast %z: <2 x f32> to 2 x 1
+    %rhs = divide %y: <2 x 3 x f32>, %z_: <2 x 1 x f32>
+    %div = divide %x: <2 x 3 x f32>, %rhs: <2 x 3 x f32>
+    return %div: <2 x 3 x f32>
 }
