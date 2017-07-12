@@ -38,21 +38,41 @@ public indirect enum Literal {
     case `struct`([(String, Use)])
 }
 
+// MARK: - Literal conversion
+
+extension Literal.Scalar : ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: IntegerLiteralType) {
+        self = .int(value)
+    }
+}
+
+extension Literal.Scalar : ExpressibleByBooleanLiteral {
+    public init(booleanLiteral value: BooleanLiteralType) {
+        self = .bool(value)
+    }
+}
+
+extension Literal.Scalar : ExpressibleByFloatLiteral {
+    public init(floatLiteral value: FloatLiteralType) {
+        self = .float(value)
+    }
+}
+
 extension Literal : ExpressibleByIntegerLiteral {
     public init(integerLiteral value: IntegerLiteralType) {
-        self = .scalar(.int(value))
+        self = .scalar(Scalar(integerLiteral: value))
     }
 }
 
 extension Literal : ExpressibleByBooleanLiteral {
     public init(booleanLiteral value: BooleanLiteralType) {
-        self = .scalar(.bool(value))
+        self = .scalar(Scalar(booleanLiteral: value))
     }
 }
 
 extension Literal : ExpressibleByFloatLiteral {
     public init(floatLiteral value: FloatLiteralType) {
-        self = .scalar(.float(value))
+        self = .scalar(Scalar(floatLiteral: value))
     }
 }
 
@@ -116,6 +136,8 @@ extension Literal.Scalar : Equatable {
         }
     }
 }
+
+// MARK: - Literal as value
 
 /// Literal value. It wraps `Literal` into a value
 public struct LiteralValue : Value {
@@ -242,13 +264,27 @@ public extension Use {
 }
 
 public extension Value {
+    /// Make a literal of the same type
     func makeLiteral(_ literal: Literal) -> LiteralValue {
         return LiteralValue(type: type, literal: literal)
+    }
+
+    /// Make a scalar literal of the same type, unless
+    /// - Precondition: value type is tensor
+    func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {
+        guard case let .tensor(_, dtype) = type.canonical else {
+            preconditionFailure("The type of \(self) is not tensor")
+        }
+        return LiteralValue(type: .scalar(dtype), literal: .scalar(scalar))
     }
 }
 
 public extension Use {
-    func makeLiteral(_ literal: Literal) -> Use {
-        return %value.makeLiteral(literal)
+    func makeLiteral(_ literal: Literal) -> LiteralValue {
+        return value.makeLiteral(literal)
+    }
+
+    func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {
+        return value.makeScalar(scalar)
     }
 }

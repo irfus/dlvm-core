@@ -96,6 +96,10 @@ extension AlgebraicExpression {
         return value.makeLiteral(literal)
     }
 
+    func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {
+        return value.makeScalar(scalar)
+    }
+
     var isAtom: Bool {
         switch self {
         case .atom(_): return true

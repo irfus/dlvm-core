@@ -64,19 +64,19 @@ open class AlgebraSimplification : TransformPass {
         /// - x * 0 | 0 * x => 0
         case let .zipWith(.associative(.multiply), x, 0, inst),
              let .zipWith(.associative(.multiply), 0, x, inst):
-            function.replaceAllUses(of: inst, with: %x.makeLiteral(0))
+            function.replaceAllUses(of: inst, with: %x.makeScalar(0))
             expr.removeIntermediates(upTo: x)
         /// - x^(-1) => 1 / x
         case let .zipWith(.associative(.power), x, -1, inst):
             builder.move(after: inst)
-            let one = x.makeLiteral(1)
+            let one = x.makeScalar(1)
             let div = builder.divide(%one, %x)
             function.replaceAllUses(of: inst, with: %div)
             expr.removeIntermediates(upTo: x)
             workList.append(.zipWith(.associative(.multiply), .atom(%one), x, div))
         /// - x^0 => 1
         case let .zipWith(.associative(.power), x, 0, inst):
-            let newVal = expr.makeLiteral(1)
+            let newVal = expr.makeScalar(1)
             function.replaceAllUses(of: inst, with: %newVal)
             expr.removeIntermediates(upTo: x)
         /// - x^1 => x
@@ -120,12 +120,12 @@ open class AlgebraSimplification : TransformPass {
              let .map(.sinh, 0, inst),
              let .map(.tan, 0, inst),
              let .map(.tanh, 0, inst):
-            function.replaceAllUses(of: inst, with: %expr.makeLiteral(0))
+            function.replaceAllUses(of: inst, with: %expr.makeScalar(0))
             expr.removeIntermediates()
         /// cos(0), cosh(0)
         case let .map(.cos, 0, inst),
              let .map(.cosh, 0, inst):
-            function.replaceAllUses(of: inst, with: %expr.makeLiteral(1))
+            function.replaceAllUses(of: inst, with: %expr.makeScalar(1))
             expr.removeIntermediates()
 
         // MARK: - 3. Reassociation
