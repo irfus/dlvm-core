@@ -50,7 +50,7 @@ extension AlgebraicExpression {
             if let inst = expr.topInstruction, barriers.contains(inst) {
                 return
             }
-            switch self {
+            switch expr {
             case .atom(_):
                 return
             case let .zipWith(_, lhs, rhs, inst),
@@ -132,6 +132,23 @@ extension AlgebraicExpression : Equatable {
             return true
         default:
             return false
+        }
+    }
+}
+
+extension AlgebraicExpression : CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case let .atom(x):
+            return "[\(x)]"
+        case let .map(op, exp, _):
+            return "(\(op) \(exp))"
+        case let .matrixMultiply(lhs, rhs, _):
+            return "(matrixMultiply \(lhs) \(rhs))"
+        case let .transpose(exp, _):
+            return "(transpose \(exp))"
+        case let .zipWith(op, lhs, rhs, _):
+            return "(\(op) \(lhs) \(rhs))"
         }
     }
 }
