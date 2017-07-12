@@ -318,10 +318,14 @@ extension Parser {
         let (first, firstRange) = try parseInteger()
         var dims = [first]
         var lastLoc = firstRange.upperBound
-        while let dim: Int = try withBacktracking({
-            try consumeWrappablePunctuation(.times)
-            /// If following 'x' isn't an integer, backtrack
-            guard let (num, range) = try? parseInteger() else { return nil }
+        while let dim: Int = withBacktracking({
+            let num: Int, range: SourceRange
+            do {
+                try consumeWrappablePunctuation(.times)
+                (num, range) = try parseInteger()
+            } catch {
+                return nil
+            }
             lastLoc = range.upperBound
             return num
         }) { dims.append(dim) }
