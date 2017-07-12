@@ -38,6 +38,10 @@ public final class Module : IRCollection {
         self.name = name
         self.stage = stage
     }
+
+    public var canApplyTransforms: Bool {
+        return true
+    }
 }
 
 // MARK: - Output

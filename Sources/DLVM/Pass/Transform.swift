@@ -25,6 +25,7 @@ public extension IRCollection {
     func applyTransform<Transform : TransformPass>(_ transform: Transform.Type) throws -> Bool
         where Transform.Body == Self
     {
+        guard canApplyTransforms else { return false }
         let changed = try transform.run(on: self)
         if transform.shouldInvalidateAnalyses, changed {
             invalidateAnalyses()
