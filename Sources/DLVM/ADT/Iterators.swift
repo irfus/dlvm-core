@@ -26,8 +26,8 @@ public enum TraversalOrder {
 public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol
     where Node.SuccessorCollection.Iterator.Element == Node {
 
-    private var pre: [Node] = []
-    private var post: [Node] = []
+    private var pre: ArraySlice<Node> = []
+    private lazy var post: [Node] = []
     private var visited = NSMutableSet()
     public let order: TraversalOrder
 
@@ -41,8 +41,7 @@ public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol
     public mutating func next() -> Node? {
         switch order {
         case .breadthFirst:
-            if pre.isEmpty { return nil }
-            let node = pre.removeFirst()
+            guard let node = pre.popFirst() else { return nil }
             for child in node.successors where !visited.contains(child) {
                 pre.append(child)
             }
@@ -50,8 +49,7 @@ public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol
             return node
 
         case .preorder:
-            if pre.isEmpty { return nil }
-            let node = pre.removeLast()
+            guard let node = pre.popLast() else { return nil }
             for child in node.successors.reversed() where !visited.contains(child) {
                 pre.append(child)
             }
@@ -59,8 +57,7 @@ public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol
             return node
 
         case .postorder:
-            if pre.isEmpty { return post.popLast() }
-            let node = pre.removeLast()
+            guard let node = pre.popLast() else { return post.popLast() }
             for child in node.successors where !visited.contains(child) {
                 pre.append(child)
             }
@@ -74,8 +71,8 @@ public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol
 public struct TransposeGraphNodeIterator<Node : BackwardGraphNode> : IteratorProtocol
     where Node.PredecessorCollection.Iterator.Element == Node {
 
-    private var pre: [Node] = []
-    private var post: [Node] = []
+    private var pre: ArraySlice<Node> = []
+    private lazy var post: [Node] = []
     private var visited = NSMutableSet()
     public let order: TraversalOrder
 
@@ -89,8 +86,7 @@ public struct TransposeGraphNodeIterator<Node : BackwardGraphNode> : IteratorPro
     public mutating func next() -> Node? {
         switch order {
         case .breadthFirst:
-            if pre.isEmpty { return nil }
-            let node = pre.removeFirst()
+            guard let node = pre.popFirst() else { return nil }
             for child in node.predecessors where !visited.contains(child) {
                 pre.append(child)
             }
@@ -98,8 +94,7 @@ public struct TransposeGraphNodeIterator<Node : BackwardGraphNode> : IteratorPro
             return node
 
         case .preorder:
-            if pre.isEmpty { return nil }
-            let node = pre.removeLast()
+            guard let node = pre.popLast() else { return nil }
             for child in node.predecessors.reversed() where !visited.contains(child) {
                 pre.append(child)
             }
@@ -107,8 +102,7 @@ public struct TransposeGraphNodeIterator<Node : BackwardGraphNode> : IteratorPro
             return node
 
         case .postorder:
-            if pre.isEmpty { return post.popLast() }
-            let node = pre.removeLast()
+            guard let node = pre.popLast() else { return post.popLast() }
             for child in node.predecessors where !visited.contains(child) {
                 pre.append(child)
             }
@@ -149,8 +143,8 @@ public extension BackwardGraphNode where PredecessorCollection.Iterator.Element 
 public struct DirectedGraphIterator<Base : BidirectionalEdgeSet> : IteratorProtocol {
     public typealias Element = Base.Node
 
-    private var pre: [Base.Node] = []
-    private var post: [Base.Node] = []
+    private var pre: ArraySlice<Base.Node> = []
+    private lazy var post: [Base.Node] = []
     private var visited: ObjectSet<Base.Node> = []
     public let order: TraversalOrder
     public let base: Base
@@ -166,8 +160,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet> : IteratorProto
     public mutating func next() -> Base.Node? {
         switch order {
         case .breadthFirst:
-            if pre.isEmpty { return nil }
-            let node = pre.removeFirst()
+            guard let node = pre.popFirst() else { return nil }
             for child in base.successors(of: node) where !visited.contains(child) {
                 pre.append(child)
             }
@@ -175,8 +168,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet> : IteratorProto
             return node
             
         case .preorder:
-            if pre.isEmpty { return nil }
-            let node = pre.removeLast()
+            guard let node = pre.popLast() else { return nil }
             for child in base.successors(of: node).reversed() where !visited.contains(child) {
                 pre.append(child)
             }
@@ -184,8 +176,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet> : IteratorProto
             return node
             
         case .postorder:
-            if pre.isEmpty { return post.popLast() }
-            let node = pre.removeLast()
+            guard let node = pre.popLast() else { return post.popLast() }
             for child in base.successors(of: node) where !visited.contains(child) {
                 pre.append(child)
             }
