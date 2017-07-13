@@ -29,6 +29,24 @@ public indirect enum AlgebraicExpression {
     case transpose(AlgebraicExpression, Instruction)
 }
 
+public struct AlgebraicRepresentation {
+    public fileprivate(set) var expressions: [AlgebraicExpression] = []
+    fileprivate var table: [Instruction : AlgebraicExpression] = [:]
+}
+
+public extension AlgebraicRepresentation {
+    func expression(for instruction: Instruction) -> AlgebraicExpression {
+        guard let expr = table[instruction] else {
+            preconditionFailure("Instruction \(instruction) does not belong to the basic block where the analysis is performed on")
+        }
+        return expr
+    }
+
+    func contains(_ instruction: Instruction) -> Bool {
+        return table.keys.contains(instruction)
+    }
+}
+
 extension AlgebraicExpression {
     /// Top instruction (post-dominator) in the expression
     var topInstruction: Instruction? {
@@ -156,53 +174,55 @@ extension AlgebraicExpression : CustomStringConvertible {
 open class AlgebraicExpressionAnalysis : AnalysisPass {
     public typealias Body = BasicBlock
 
-    private static func independentSubexpression(from inst: Instruction,
-                                                 visited: inout Set<Instruction>) throws -> AlgebraicExpression {
+    private static func collect(
+        from inst: Instruction,
+        to repr: inout AlgebraicRepresentation) throws {
         /// Get user analysis
         let bb = inst.parent
         let function = bb.parent
         let users = try function.analysis(from: UserAnalysis.self)
         /// DFS expression builder
-        func subexpression(from use: Use, isEntry: Bool = false) throws -> AlgebraicExpression {
+        func subexpression(
+            from use: Use,
+            isEntry: Bool = false) throws -> AlgebraicExpression {
             /// If it's not an instruction in the current basic block, it's an atom
             guard case let .instruction(_, inst) = use, inst.parent == bb else {
                 return .atom(use)
             }
-            /// Mark as visited
-            visited.insert(inst)
             /// Treat nodes with more than one users as atoms when and only when
             /// they are not the entry to this analysis
             if !isEntry && users[inst].count > 1 {
                 return .atom(%inst)
             }
             /// DFS from math instructions
+            let expr: AlgebraicExpression
             switch inst.kind {
             case let .map(op, v):
-                return .map(op, try subexpression(from: v), inst)
+                expr = .map(op, try subexpression(from: v), inst)
             case let .zipWith(op, lhs, rhs):
-                return .zipWith(op, try subexpression(from: lhs),
+                expr = .zipWith(op, try subexpression(from: lhs),
                                 try subexpression(from: rhs), inst)
             case let .matrixMultiply(lhs, rhs):
-                return .matrixMultiply(try subexpression(from: lhs),
+                expr = .matrixMultiply(try subexpression(from: lhs),
                                        try subexpression(from: rhs), inst)
             case let .transpose(v):
-                return .transpose(try subexpression(from: v), inst)
+                expr = .transpose(try subexpression(from: v), inst)
             default:
-                return .atom(use)
+                expr = .atom(use)
             }
+            repr.table[inst] = expr
+            return expr
         }
-        return try subexpression(from: %inst, isEntry: true)
+        repr.expressions.append(try subexpression(from: %inst, isEntry: true))
     }
 
     /// Run pass on the basic block
-    open static func run(on body: BasicBlock) throws -> [AlgebraicExpression] {
-        var exprs: [AlgebraicExpression] = []
-        var visited: Set<Instruction> = []
+    open static func run(on body: BasicBlock) throws -> AlgebraicRepresentation {
+        var repr = AlgebraicRepresentation()
         /// Perform DFS for every unvisited instruction
-        for inst in body.reversed() where !visited.contains(inst) {
-            let subExpr = try independentSubexpression(from: inst, visited: &visited)
-            exprs.append(subExpr)
+        for inst in body.reversed() where !repr.contains(inst) {
+            try collect(from: inst, to: &repr)
         }
-        return exprs
+        return repr
     }
 }

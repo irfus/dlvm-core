@@ -225,7 +225,7 @@ open class AlgebraSimplification : TransformPass {
         /// First iteration
         for bb in body {
             let algExprs = try bb.analysis(from: AlgebraicExpressionAnalysis.self)
-            for expr in algExprs {
+            for expr in algExprs.expressions {
                 workList.append(expr)
             }
         }
