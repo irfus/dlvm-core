@@ -17,28 +17,86 @@
 //  limitations under the License.
 //
 
-extension Instruction : BackwardGraphNode {
-    public var predecessors: ObjectSet<Instruction> {
-        var preds: ObjectSet<Instruction> = []
-        for case .instruction(_, let inst) in operands {
-            preds.insert(inst)
+public struct DataFlowGraph {
+    fileprivate var users: [ObjectIdentifier : Set<Instruction>] = [:]
+}
+
+fileprivate extension DataFlowGraph {
+    mutating func insert(_ user: Instruction, for def: Definition) {
+        let key = ObjectIdentifier(def)
+        if !users.keys.contains(key) {
+            users[key] = []
         }
-        return preds
+        users[key]!.insert(user)
     }
 }
 
-open class DataFlowGraphAnalysis : AnalysisPass {
+public extension DataFlowGraph {
+    /// Returns a set of users
+    subscript(value: Definition) -> Set<Instruction> {
+        return users[ObjectIdentifier(value)] ?? []
+    }
+
+    /// Returns a set of users within the basic block
+    subscript(value: Definition, basicBlock: BasicBlock) -> Set<Instruction> {
+        var users = self[value]
+        for user in users where user.parent != basicBlock {
+            users.remove(user)
+        }
+        return users
+    }
+}
+
+public extension DataFlowGraph {
+    func breadthFirst<C>(from definitions: C)
+        -> AnyIterator<(depth: Int, user: Instruction)>
+        where C : Collection, C.Iterator.Element == Definition
+    {
+        var depth = 1
+        var queue: ArraySlice<Instruction?> = []
+        var entryHasUsers = false
+        for def in definitions {
+            for user in self[def] {
+                entryHasUsers = true
+                queue.append(user)
+            }
+        }
+        if entryHasUsers {
+            queue.append(nil)
+        }
+        return AnyIterator {
+            while let first = queue.popFirst() {
+                guard let this = first else {
+                    depth += 1
+                    continue
+                }
+                let users = self[this]
+                for user in users {
+                    queue.append(user)
+                }
+                if !users.isEmpty {
+                    queue.append(nil)
+                }
+                return (depth: depth, user: this)
+            }
+            return nil
+        }
+    }
+}
+
+/// Analyzes function and produces a graph from definitions to users
+open class UserAnalysis : AnalysisPass {
     public typealias Body = Function
 
-    open class func run(on body: Function) throws -> DirectedGraph<Instruction> {
-        var graph = DirectedGraph<Instruction>()
-        for bb: BasicBlock in body {
-            for inst: Instruction in bb {
-                for case .instruction(_, let usedInst) in inst.operands {
-                    graph.insertEdge(from: usedInst, to: inst)
+    open class func run(on body: Function) throws -> DataFlowGraph {
+        var userGraph = DataFlowGraph()
+        for inst in body.instructions {
+            for use in inst.operands {
+                if let def = use.value as? Definition {
+                    userGraph.insert(inst, for: def)
                 }
             }
         }
-        return graph
+        return userGraph
     }
 }
