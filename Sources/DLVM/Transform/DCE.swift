@@ -27,9 +27,10 @@ open class DeadCodeElimination : TransformPass {
         var changed: Bool = false
         let workList: NSMutableOrderedSet = []
         var count = 0
-        // Iterate over the original function, only adding instructions to the worklist
-        // if they actually need to be revisited. This avoids having to pre-init
-        // the worklist with the entire function's worth of instructions.
+        /// Iterate over the original function, only adding instructions to the
+        /// worklist if they actually need to be revisited. This avoids having
+        /// to pre-init the worklist with the entire function's worth of
+        /// instructions.
         for inst in body.instructions where !workList.contains(inst) {
             changed = try performDCE(on: inst, workList: workList, count: &count) || changed
         }
@@ -46,11 +47,11 @@ open class DeadCodeElimination : TransformPass {
                                    count: inout Int) throws -> Bool {
         let function = inst.parent.parent
         let module = function.parent
-        var userInfo = try function.analysis(from: UserAnalysis.self)
+        var dfg = try function.analysis(from: DafaFlowGraphAnalysis.self)
         let sideEffectInfo = try module.analysis(from: SideEffectAnalysis.self)
 
         /// If instruction is not trivially dead, change nothing
-        guard userInfo[inst].isEmpty,
+        guard dfg.successors(of: inst).isEmpty,
             sideEffectInfo[inst] == .none,
             !inst.kind.isTerminator else { return false }
         /// Eliminate
@@ -58,10 +59,10 @@ open class DeadCodeElimination : TransformPass {
         count += 1
         /// Remove instruction and check users
         /// Get new user analysis
-        userInfo = try function.analysis(from: UserAnalysis.self)
+        dfg = try function.analysis(from: DafaFlowGraphAnalysis.self)
         /// For original uses, check if they need to be revisited
         for case let .instruction(_, usee) in inst.operands
-            where userInfo[usee].isEmpty
+            where dfg.successors(of: usee).isEmpty
                 && sideEffectInfo[usee] == .none
                 && !inst.kind.isTerminator {
             workList.add(usee)

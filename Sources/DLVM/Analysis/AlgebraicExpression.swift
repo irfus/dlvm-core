@@ -180,18 +180,18 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
         /// Get user analysis
         let bb = inst.parent
         let function = bb.parent
-        let users = try function.analysis(from: UserAnalysis.self)
+        let dfg = try function.analysis(from: DafaFlowGraphAnalysis.self)
         /// DFS expression builder
         func subexpression(
             from use: Use,
             isEntry: Bool = false) throws -> AlgebraicExpression {
-            /// If it's not an instruction in the current basic block, it's an atom
+            /// If not an instruction in the current basic block, it's an atom
             guard case let .instruction(_, inst) = use, inst.parent == bb else {
                 return .atom(use)
             }
             /// Treat nodes with more than one users as atoms when and only when
             /// they are not the entry to this analysis
-            if !isEntry && users[inst].count > 1 {
+            if !isEntry && dfg.successors(of: inst).count > 1 {
                 return .atom(%inst)
             }
             /// DFS from math instructions

@@ -162,11 +162,12 @@ extension DLVM.InstructionKind {
             let destVal = dest.emit(to: context, in: env)
             /// Deal with memory if indirect
             if dest.type.shouldBePassedIndirectly {
-                let users = try! function.analysis(from: UserAnalysis.self)
+                let dfg = try! function.analysis(from: DafaFlowGraphAnalysis.self)
                 /// If `dest` has users other than the current instruction, emit a copy
                 /// TODO: check for other users' data locality requirements to avoid
                 /// copying as much as possible
-                if let destDef = dest.value as? Definition, users[destDef].count > 1 {
+                if let destDef = dest.value as? Definition,
+                    dfg.successors(of: destDef).count > 1 {
                     /// TODO: work with memory tracker
                     DLUnimplemented()
                 }
