@@ -33,17 +33,22 @@ fileprivate extension DataFlowGraph {
 
 public extension DataFlowGraph {
     /// Returns a set of users
-    subscript(value: Definition) -> Set<Instruction> {
-        return users[ObjectIdentifier(value)] ?? []
+    func successors(of def: Definition) -> Set<Instruction> {
+        return users[ObjectIdentifier(def)] ?? []
     }
 
     /// Returns a set of users within the basic block
-    subscript(value: Definition, basicBlock: BasicBlock) -> Set<Instruction> {
-        var users = self[value]
+    func successors(of def: Definition, in basicBlock: BasicBlock) -> Set<Instruction> {
+        var users = successors(of: def)
         for user in users where user.parent != basicBlock {
             users.remove(user)
         }
         return users
+    }
+
+    /// Predecessors
+    func predecessors(of inst: Instruction) -> [Definition] {
+        return inst.operands.flatMap {$0.definition}
     }
 }
 
@@ -56,7 +61,7 @@ public extension DataFlowGraph {
         var queue: ArraySlice<Instruction?> = []
         var entryHasUsers = false
         for def in definitions {
-            for user in self[def] {
+            for user in successors(of: def) {
                 entryHasUsers = true
                 queue.append(user)
             }
@@ -70,7 +75,7 @@ public extension DataFlowGraph {
                     depth += 1
                     continue
                 }
-                let users = self[this]
+                let users = self.successors(of: this)
                 for user in users {
                     queue.append(user)
                 }
@@ -85,7 +90,7 @@ public extension DataFlowGraph {
 }
 
 /// Analyzes function and produces a graph from definitions to users
-open class UserAnalysis : AnalysisPass {
+open class DafaFlowGraphAnalysis: AnalysisPass {
     public typealias Body = Function
 
     open class func run(on body: Function) throws -> DataFlowGraph {
