@@ -59,6 +59,7 @@ public extension DataFlowGraph {
     {
         var depth = 1
         var queue: ArraySlice<Instruction?> = []
+        var visited: Set<Instruction> = []
         var entryHasUsers = false
         for def in definitions {
             for user in successors(of: def) {
@@ -75,13 +76,21 @@ public extension DataFlowGraph {
                     depth += 1
                     continue
                 }
-                let users = self.successors(of: this)
-                for user in users {
+                /// Skip visited
+                guard !visited.contains(this) else {
+                    continue
+                }
+                /// Push successors
+                let successors = self.successors(of: this)
+                for user in successors {
                     queue.append(user)
                 }
-                if !users.isEmpty {
+                /// If successors were pushed, increment level
+                if !successors.isEmpty {
                     queue.append(nil)
                 }
+                /// Mark visited
+                visited.insert(this)
                 return (depth: depth, user: this)
             }
             return nil
