@@ -33,7 +33,10 @@ public extension PremiseHolder
 
 extension BasicBlock : PremiseHolder {
 
-    public struct Premise { let terminator: Instruction }
+    public struct Premise {
+        public let first: Instruction
+        public let terminator: Instruction
+    }
 
     public enum PremiseVerifier : AnalysisPass {
         public typealias Body = BasicBlock
@@ -42,7 +45,7 @@ extension BasicBlock : PremiseHolder {
             guard let last = body.last, last.kind.isTerminator else {
                 throw VerificationError.missingTerminator(body)
             }
-            return Premise(terminator: last)
+            return Premise(first: body[0], terminator: last)
         }
     }
 
@@ -51,8 +54,8 @@ extension BasicBlock : PremiseHolder {
 extension Function : PremiseHolder {
 
     public struct Premise {
-        let entry: BasicBlock
-        let exits: [(BasicBlock, Instruction)]
+        public let entry: BasicBlock
+        public let exits: [(BasicBlock, Instruction)]
     }
 
     public enum PremiseVerifier : AnalysisPass {
