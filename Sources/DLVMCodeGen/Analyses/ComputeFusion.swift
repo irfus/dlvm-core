@@ -25,16 +25,46 @@ import DLVM
 /// 1. Parallel element-wise expressions
 /// 2. Sequential element-wise expressions
 
-/// A subgraph of DFG (basic block)
-public class FusionDataFlowNode<Target : ComputeTarget> : BackwardGraphNode, HashableByReference {
-    public enum Kind {
-        case host
-        case hostIndirect
-        case kernel
-        case deviceBLAS(BLAS)
+public enum ComputationKind {
+    /// Data transfer not needed
+    case hostNoTransfer
+    /// Data transfer needed
+    case hostSequential
+    case hostParallel
+    case hostBLAS(BLAS)
+    case kernel
+    case deviceBLAS(BLAS)
+}
+
+extension ComputationKind {
+    var isHost: Bool {
+        switch self {
+        case .hostBLAS(_), .hostParallel, .hostSequential:
+            return true
+        default:
+            return false
+        }
     }
+
+    var isDevice: Bool {
+        return !isHost
+    }
+    
+    var fusable: Bool {
+        switch self {
+        case .deviceBLAS(_), .hostBLAS(_):
+            return false
+        default:
+            return true
+        }
+    }
+}
+
+/// A subgraph of DFG (basic block)
+public class FusionDataFlowNode<Target : ComputeTarget>
+    : BackwardGraphNode, HashableByReference {
     /// Node kind
-    public let kind: Kind
+    public let computationKind: ComputationKind
     /// Parent basic block
     public unowned let parent: BasicBlock
     /// Topo-sorted instructions
@@ -42,9 +72,55 @@ public class FusionDataFlowNode<Target : ComputeTarget> : BackwardGraphNode, Has
     /// Predecessors preserving information about execution order
     public fileprivate(set) var predecessors: ObjectSet<FusionDataFlowNode> = []
 
-    fileprivate init(kind: Kind, parent: BasicBlock) {
-        self.kind = kind
+    fileprivate init(computationKind: ComputationKind, parent: BasicBlock) {
+        self.computationKind = computationKind
         self.parent = parent
+    }
+}
+
+extension Instruction {
+
+    enum DefaultExecutionLocation {
+        case host
+        case device
+    }
+    
+    var defaultExecutionLocation: DefaultExecutionLocation {
+        switch kind.opcode {
+        case .unaryOp, .binaryOp, .dataTypeCast, .transpose:
+            guard case let .tensor(shape, _) = type else {
+                DLImpossible()
+            }
+            let size = shape.contiguousSize
+            return size == 1 ? .host : .device
+        case .bitCast, .shapeCast, .extract, .elementPointer, .branch,
+             .apply, .return, .trap, .allocateBox, .allocateHeap,
+             .allocateStack, .concatenate, .copy, .conditional, .deallocate,
+             .insert, .load, .projectBox, .release, .retain, .scan, .reduce,
+             .slice, .store:
+            return .host
+        case .matrixMultiply:
+            return .device
+        }
+    }
+
+    var needsToRequestMemory: Bool {
+        switch kind.opcode {
+        case .unaryOp, .binaryOp, .dataTypeCast:
+            guard case let .tensor(shape, _) = type else {
+                DLImpossible()
+            }
+            let size = shape.contiguousSize
+            return size != 1
+        case .bitCast, .shapeCast, .extract,
+             .elementPointer, .branch, .apply, .return, .trap:
+            return false
+        case .allocateBox, .allocateHeap, .allocateStack, .concatenate, .copy,
+             .conditional, .deallocate, .insert, .load, .projectBox, .release,
+             .retain, .scan, .reduce, .slice, .store, .matrixMultiply,
+             .transpose:
+            return true
+        }
     }
 }
 
@@ -52,58 +128,33 @@ class ComputeFusionAnalysis<Target : ComputeTarget> : AnalysisPass {
     typealias Body = BasicBlock
     typealias Node = FusionDataFlowNode<Target>
 
-    private static func visit(from instruction: Instruction,
-                              parentSubgraphs: inout [Instruction : Node]) throws -> Node {
-        let bb = instruction.parent
-        let fn = bb.parent
-        let users = try fn.analysis(from: UserAnalysis.self)
-        var queue: ArraySlice<Instruction?> = [instruction]
-        var level = 0
-        /// Check for subroutine pattern
-        if let blasCapableTarget = Target.self as? BLASCapable.Type,
-            let (blas, insts) = blasCapableTarget.blasFusion(from: instruction) {
-            let subgraph = Node(kind: .deviceBLAS(blas), parent: bb)
-            return subgraph
-        }
-        /// If `instruction` is a non-elementwise barrier, it's a single node
-        switch instruction.kind {
-        case .matrixMultiply, .transpose:
-            DLUnimplemented()
-        default:
-            DLUnimplemented()
-        }
+    private static func visit(from instructions: [Instruction],
+                              basicBlock bb: BasicBlock,
+                              parentSubgraphs: inout [Instruction : Node],
+                              dataFlow dfg: DataFlowGraph,
+                              visited: inout Set<Instruction>) -> Node {
+//        let bfs = dfg.breadthFirst(from: instructions as [Definition])
+//        for (depth, inst) in bfs {
+//
+//        }
         DLUnimplemented()
-        /// BFS from `instruction` to collect nodes into the subgraph
-        repeat {
-            switch queue.removeFirst() {
-            case nil:
-                level += 1
-            case let inst?:
-                /// - TODO: Visit instruction
-                /// Fusion conditions:
-                /// - Whatever host-only subgraph
-                /// - Device data flow of level <= 5 such that
-                ///   - Only leaf nodes have external users
-                ///   - Non-elementwise instructions are barriers
-                /// Push users
-                for user in users[inst, bb] {
-                    queue.append(user)
-                }
-                /// Level up
-                queue.append(nil)
-            }
-        } while !queue.isEmpty
     }
 
     class func run(on body: BasicBlock) throws -> [Node] {
+        let fn = body.parent
         var visited: Set<Instruction> = []
         var parentSubgraphs: [Instruction : Node] = [:]
         var nodes: [Node] = []
-        for inst in body where !visited.contains(inst) {
-            let node = try visit(from: inst, parentSubgraphs: &parentSubgraphs)
-            node.instructions.forEach { visited.insert($0) }
-            nodes.append(node)
-        }
+        /// - TODO:
+        /// BFS from unvisited instructions and collect subgraphs
+        let dfg = try fn.analysis(from: DafaFlowGraphAnalysis.self)
+        /// Visit device functions
+        let entry = try body.premise().first
+        let node = visit(from: [entry], basicBlock: body,
+                         parentSubgraphs: &parentSubgraphs,
+                         dataFlow: dfg, visited: &visited)
+        nodes.append(node)
+        /// Night!
         return nodes
     }
 }
