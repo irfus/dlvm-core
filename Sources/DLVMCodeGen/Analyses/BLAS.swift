@@ -1,5 +1,5 @@
 //
-//  Subroutine.swift
+//  BLAS.swift
 //  DLVMCodeGen
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -24,14 +24,16 @@ public enum BLAS {
         public let beta: Use
         public let value: Use
     }
-    /// c <- a * x + b
+    /// Level 1: c <- a * x + b
     case axpy(a: Use, x: Use, b: Use)
-    /// C <- alpha * Ax + beta * C
+    /// Level 2: C <- alpha * Ax + beta * C
     case gemv(alpha: Use, A: Use, trans: Bool, x: Use, increment: SelfIncrementTerm?)
-    /// C <- alpha * AB + beta * C   
+    /// Level 3: C <- alpha * AB + beta * C
     case gemm(alpha: Use, A: Use, trans: Bool, B: Use, increment: SelfIncrementTerm?)
 }
 
-protocol BLASCapable {
-    static func blasFusion(from instruction: Instruction) -> (BLAS, [Instruction])?
+public extension BLAS {
+    init?(instruction: Instruction) {
+        DLUnimplemented()
+    }
 }
