@@ -19,7 +19,6 @@
 
 import LLVM_C
 
-// MARK: - Impossible case crasher
 /// - Note: This is called when LLGen encounters ill-formed DLVM IR.
 /// All well-formedness should be checked by the module verifier, not by LLGen
 @discardableResult
@@ -60,12 +59,12 @@ func DLAssert(_ condition: @autoclosure () -> Bool,
     }
 }
 
+func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
+    fatalError("\(function) is not fully implemented. \(file):\(line)")
+}
+
 import Foundation
 
 func environmentVariable(named name: String) -> String? {
     return ProcessInfo.processInfo.environment[name]
-}
-
-func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
-    fatalError("\(function) is not fully implemented. \(file):\(line)")
 }

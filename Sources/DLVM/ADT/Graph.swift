@@ -17,45 +17,27 @@
 //  limitations under the License.
 //
 
-#if swift(>=4.0)
-
 /// Graph node that defines its successors
 public protocol ForwardGraphNode {
-    associatedtype SuccessorCollection: Collection where SuccessorCollection.Element == Self
+    associatedtype SuccessorCollection : Collection
+        where SuccessorCollection.Element == Self
     var successors: SuccessorCollection { get }
 }
 
 /// Graph node that defines its predecessors
 public protocol BackwardGraphNode {
-    associatedtype PredecessorCollection: Collection where PredecessorCollection.Element == Self
+    associatedtype PredecessorCollection : Collection
+        where PredecessorCollection.Element == Self
     var predecessors: PredecessorCollection { get }
 }
 
-#else
-
-/// Graph node that defines its successors
-public protocol ForwardGraphNode {
-    associatedtype SuccessorCollection: Collection
-    var successors: SuccessorCollection { get }
-}
-
-/// Graph node that defines its predecessors
-public protocol BackwardGraphNode {
-    associatedtype PredecessorCollection: Collection
-    var predecessors: PredecessorCollection { get }
-}
-
-#endif
-
-// MARK: - Property predicates
-public extension ForwardGraphNode where SuccessorCollection.Iterator.Element == Self {
+public extension ForwardGraphNode {
     var isLeaf: Bool {
         return successors.isEmpty
     }
 }
 
-// MARK: - Property predicates
-public extension BackwardGraphNode where PredecessorCollection.Iterator.Element == Self {
+public extension BackwardGraphNode {
     var isSource: Bool {
         return predecessors.isEmpty
     }
@@ -65,9 +47,7 @@ public extension BackwardGraphNode where PredecessorCollection.Iterator.Element 
 public typealias BidirectionalGraphNode = ForwardGraphNode & BackwardGraphNode
 
 /// Transpose of a bidirectional graph node
-public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalGraphNode
-    where Base.SuccessorCollection.Iterator.Element == Base, Base.PredecessorCollection.Iterator.Element == Base
-{
+public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalGraphNode {
     public let base: Base
 
     public init(base: Base) {
@@ -83,8 +63,7 @@ public struct TransposeGraphNode<Base : BidirectionalGraphNode> : BidirectionalG
     }
 }
 
-// MARK: - Transpose
-public extension ForwardGraphNode where Self : BackwardGraphNode, Self.SuccessorCollection.Iterator.Element == Self, Self.PredecessorCollection.Iterator.Element == Self {
+public extension ForwardGraphNode where Self : BackwardGraphNode {
     var transpose: TransposeGraphNode<Self> {
         return TransposeGraphNode(base: self)
     }
@@ -97,7 +76,6 @@ public protocol BidirectionalEdgeSet {
     func successors(of node: Node) -> ObjectSet<Node>
 }
 
-// MARK: - Transpose
 extension BidirectionalEdgeSet {
     public var transpose: TransposeEdgeSet<Self> {
         return TransposeEdgeSet(base: self)
@@ -132,7 +110,6 @@ public struct DirectedGraph<Node : HashableByReference> : BidirectionalEdgeSet {
     public init() {}
 }
 
-// MARK: - Mutation
 public extension DirectedGraph {
     /// Insert node to the graph
     mutating func insertNode(_ node: Node) {
@@ -220,9 +197,8 @@ public extension DirectedGraph {
 }
 
 
-// MARK: - Initializer from source nodes that store successors
-public extension DirectedGraph
-    where Node : ForwardGraphNode, Node.SuccessorCollection.Iterator.Element == Node {
+/// Initializer from source nodes that store successors
+public extension DirectedGraph where Node : ForwardGraphNode {
 
     init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
         for node in nodes {
@@ -255,9 +231,8 @@ public extension DirectedGraph
     }
 }
 
-// MARK: - Initializer from leaves that store predecessors
-public extension DirectedGraph
-    where Node : BackwardGraphNode, Node.PredecessorCollection.Iterator.Element == Node {
+/// Initializer from leaves that store predecessors
+public extension DirectedGraph where Node : BackwardGraphNode {
 
     init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
         for node in nodes {

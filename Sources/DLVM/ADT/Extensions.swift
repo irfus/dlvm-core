@@ -74,21 +74,19 @@ public extension Sequence where Iterator.Element : Hashable {
     }
 }
 
-// MARK: - Equatable
 public extension Sequence where Iterator.Element : Equatable {
     func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {
         return lazy.filter { $0 != exception }
     }
 }
 
-// MARK: - Optional description
 public extension Optional {
     var optionalDescription: String {
         return map{"\($0)"} ?? ""
     }
 }
 
-// MARK: - Description for TextOutputStreamable
+/// Description for TextOutputStreamable
 internal extension TextOutputStreamable {
     var description: String {
         var desc = ""

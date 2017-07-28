@@ -595,7 +595,7 @@ extension Use : Verifiable {
     }
 }
 
-// MARK: - Lazy verification
+/// Lazy verification
 public extension IRCollection {
     public func verify() throws {
         _ = try analysis(from: Verifier<Self>.self)

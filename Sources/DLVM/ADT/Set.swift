@@ -60,8 +60,6 @@ public struct ObjectSet<Element : HashableByReference> : ExpressibleByArrayLiter
 
 }
 
-
-// MARK: - Collection
 extension ObjectSet : Collection {
 
     public typealias Index = Set<Element>.Index
@@ -88,14 +86,12 @@ extension ObjectSet : Collection {
 
 }
 
-// MARK: - Equatable
 extension ObjectSet : Equatable {
     public static func == (lhs: ObjectSet<Element>, rhs: ObjectSet<Element>) -> Bool {
         return lhs.elements == rhs.elements
     }
 }
 
-// MARK: - SetAlgebra
 extension ObjectSet : SetAlgebra {
 
     public func union(_ other: ObjectSet<Element>) -> ObjectSet<Element> {

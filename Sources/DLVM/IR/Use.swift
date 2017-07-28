@@ -25,7 +25,6 @@ public indirect enum Use {
     case function(Type, Function)
 }
 
-// MARK: - Equatable
 extension Use : Equatable {
     public static func ==(lhs: Use, rhs: Use) -> Bool {
         switch (lhs, rhs) {
@@ -45,9 +44,7 @@ extension Use : Equatable {
     }
 }
 
-// MARK: - Value properties
 public extension Use {
-
     var type: Type {
         get {
             switch self {
@@ -98,7 +95,6 @@ public extension Use {
         case .literal: return nil
         }
     }
-
 }
 
 infix operator ~
