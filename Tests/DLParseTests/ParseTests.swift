@@ -32,7 +32,10 @@ class ParseTests: XCTestCase {
         let uses = [
             "2 : f32",
             "1 : [1 x f32]",
-            "(3 : <4 x 3 x 10 x i64>, <1.0: f32, 2.0: f32, 3.0: f32> : <3 x f32>): (<4 x 3 x 10 x i64>, <3 x f32>)",
+            """
+            (3 : <4 x 3 x 10 x i64>, <1.0: f32, 2.0: f32, 3.0: f32> : <3 x f32>)\
+            : (<4 x 3 x 10 x i64>, <3 x f32>)
+            """,
             "100.0 : [1 x <4 x 3 x i8>]",
             "100.0 : (i8, <4 x 3 x bool>)",
             "false :///comments\n\n <4 x 3 x bool>",

@@ -24,14 +24,16 @@ class IRTests: XCTestCase {
 
     let builder = IRBuilder(moduleName: "IRTest")
 
-    lazy var struct1: StructType = self.builder.buildStruct(named: "TestStruct1", fields: [
-        "foo" : .int(32),
-        "bar" : .tensor([1, 3, 4], .float(.double)),
-        "baz" : .array(4, .array(3, .tensor([3], .int(32))))
-    ])
+    lazy var struct1: StructType = self.builder.buildStruct(
+        named: "TestStruct1", fields: [
+            "foo" : .int(32),
+            "bar" : .tensor([1, 3, 4], .float(.double)),
+            "baz" : .array(4, .array(3, .tensor([3], .int(32))))
+        ])
 
-    lazy var struct1Global: Variable = self.builder.buildGlobalValue(named: "struct1",
-                                                                     type: self.struct1.type)
+    lazy var struct1Global: Variable =
+        self.builder.buildGlobalValue(named: "struct1",
+                                      type: self.struct1.type)
 
     func testWriteGlobal() {
         let val1 = builder.buildGlobalValue(named: "one", type: .int(32))
@@ -41,8 +43,13 @@ class IRTests: XCTestCase {
     }
 
     func testWriteStruct() {
-        XCTAssertEqual(struct1.description,
-                       "struct $TestStruct1 {\n    #foo: i32,\n    #bar: <1 x 3 x 4 x f64>,\n    #baz: [4 x [3 x <3 x i32>]],\n}")
+        XCTAssertEqual(struct1.description, """
+            struct $TestStruct1 {
+                #foo: i32,
+                #bar: <1 x 3 x 4 x f64>,
+                #baz: [4 x [3 x <3 x i32>]],
+            }
+            """)
         XCTAssertEqual("\(struct1Global)", "var @struct1: $TestStruct1")
     }
 
@@ -54,7 +61,13 @@ class IRTests: XCTestCase {
         _ = builder.multiply(.literal(.int(32), 5),
                              .literal(.int(32), .tensor([.literal(.int(32), 1), .literal(.int(32), 2)])))
         builder.return(.null ~ .tensor([3], .bool))
-        XCTAssertEqual(fun.description, "func @foo: (f32, f32) -> <3 x bool> {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32\n    return null: <3 x bool>\n}")
+        XCTAssertEqual(fun.description, """
+            func @foo: (f32, f32) -> <3 x bool> {
+            'entry(%x: f32, %y: f32):
+                %0.0 = multiply 5: i32, <1: i32, 2: i32>: i32
+                return null: <3 x bool>
+            }
+            """)
     }
 
     func testInitializeGlobal() {
@@ -69,8 +82,16 @@ class IRTests: XCTestCase {
         builder.move(to: builder.buildEntry(argumentNames: [], in: fun))
         builder.store(structLit ~ .struct(struct1), to: %struct1Global)
         builder.return()
-        XCTAssertEqual(fun.description,
-            "func @initialize_struct1: () -> void {\n'entry():\n    store {#foo = 100000: i32, #bar = undefined: <1 x 3 x 4 x f64>, #baz = undefined: [4 x [3 x <3 x i32>]]}: $TestStruct1 to @struct1: *$TestStruct1\n    return\n}")
+        XCTAssertEqual(fun.description, """
+            func @initialize_struct1: () -> void {
+            'entry():
+                store {#foo = 100000: i32, \
+            #bar = undefined: <1 x 3 x 4 x f64>, \
+            #baz = undefined: [4 x [3 x <3 x i32>]]}: $TestStruct1 \
+            to @struct1: *$TestStruct1
+                return
+            }
+            """)
     }
 
     func testWriteMultiBBFunction() {
@@ -91,20 +112,20 @@ class IRTests: XCTestCase {
         builder.branch(contBB, [ %elseBB.arguments[0] ])
         builder.move(to: contBB)
         builder.return(%contBB.arguments[0])
-
-        /// func @bar : (f32, f32) -> i32 {
-        /// 'entry(%x : f32, %y : f32):
-        ///     %0.0 = multiply 5 : i32, 8 : i32
-        ///     %0.1 = equal %v0 : i32, 1 : i32
-        ///     conditional %v1 : bool then 'then(0 : i32) else 'else(1 : i32)
-        /// 'then(%x : i32):
-        ///     branch 'cont(%x : i32)
-        /// 'else(%x : i32):
-        ///     branch 'cont(%x : i32)
-        /// 'cont(%x : i32):
-        ///     return %x : i32
-        /// }
-        XCTAssertEqual(fun.description, "func @bar: (f32, f32) -> i32 {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, 8: i32\n    %0.1 = equal %0.0: i32, 1: i32\n    conditional %0.1: bool then 'then(0: i32) else 'else(1: i32)\n'then(%x: i32):\n    branch 'cont(%x: i32)\n'else(%x: i32):\n    branch 'cont(%x: i32)\n'cont(%x: i32):\n    return %x: i32\n}")
+        XCTAssertEqual(fun.description, """
+            func @bar: (f32, f32) -> i32 {
+            'entry(%x: f32, %y: f32):
+                %0.0 = multiply 5: i32, 8: i32
+                %0.1 = equal %0.0: i32, 1: i32
+                conditional %0.1: bool then 'then(0: i32) else 'else(1: i32)
+            'then(%x: i32):
+                branch 'cont(%x: i32)
+            'else(%x: i32):
+                branch 'cont(%x: i32)
+            'cont(%x: i32):
+                return %x: i32
+            }
+            """)
     }
 
     static var allTests : [(String, (IRTests) -> () throws -> Void)] {
