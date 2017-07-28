@@ -129,7 +129,6 @@ extension LLConstantConvertible {
     }
 }
 
-#if swift(>=4.0)
 extension LLConstantConvertible where Self : FixedWidthInteger {
     var llType: LLVMTypeRef {
         return LLVMIntType(UInt32(bitWidth))
@@ -140,25 +139,6 @@ extension LLConstantConvertible where Self : FixedWidthInteger {
                             Self.isSigned ? .true : .false)
     }
 }
-#else
-extension LLConstantConvertible where Self : Integer {
-    var llType: LLVMTypeRef {
-        return LLVMIntType(UInt32(MemoryLayout<Self>.size * 8))
-    }
-}
-    
-extension LLConstantConvertible where Self : UnsignedInteger {
-    var constant: LLVMValueRef {
-        return LLVMConstInt(llType, UInt64(toUIntMax()), .false)
-    }
-}
-    
-extension LLConstantConvertible where Self : SignedInteger {
-    var constant: LLVMValueRef {
-        return LLVMConstInt(llType, UInt64(bitPattern: toIntMax()), .true)
-    }
-}
-#endif
 
 extension LLConstantConvertible where Self : RawRepresentable, Self.RawValue : LLConstantConvertible {
     var llType: LLVMTypeRef {
@@ -230,24 +210,12 @@ extension DataType {
     }
 }
 
-#if swift(>=4.0)
-extension FixedWidthInteger where Self : LLConstantConvertible {
-    static func ~ (value: Self, type: LLVMTypeRef) -> LLVMValueRef {
-        return LLVMConstInt(type, UInt64(value), Self.isSigned ? .true : .false)
-    }
-}
-#else
-extension SignedInteger where Self : LLConstantConvertible {
+extension FixedWidthInteger where Self : SignedInteger {
     func llValue(ofType type: LLVMTypeRef) -> LLVMValueRef {
-        return LLVMConstInt(type, UInt64(bitPattern: Int64(toIntMax())), .true)
+        return LLVMConstInt(LLVMIntType(UInt32(bitWidth)), UInt64(self),
+                            self >= 0 ? .true : .false)
     }
 }
-extension UnsignedInteger where Self : LLConstantConvertible {
-    func llValue(ofType type: LLVMTypeRef) -> LLVMValueRef {
-        return LLVMConstInt(type, UInt64(toUIntMax()), .false)
-    }
-}
-#endif
 
 extension Double {
     func llValue(ofType type: LLVMTypeRef) -> LLVMValueRef {
