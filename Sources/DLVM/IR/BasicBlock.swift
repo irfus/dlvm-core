@@ -108,7 +108,6 @@ public extension BasicBlock {
     }
 }
 
-// MARK: - Predicates and accessors
 public extension BasicBlock {
 
     /// Whether there exists a terminator instruction
@@ -148,9 +147,10 @@ public extension BasicBlock {
 
 }
 
-// MARK: - Arguments
 public extension BasicBlock {
-    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type {
+    func acceptsArguments<C : Collection>(_ types: C) -> Bool
+        where C.Element == Type
+    {
         return types.elementsEqual(arguments.map{$0.type})
     }
 }

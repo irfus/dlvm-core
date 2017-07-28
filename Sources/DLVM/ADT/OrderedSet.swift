@@ -48,7 +48,6 @@ extension OrderedSet : ExpressibleByArrayLiteral {
     }
 }
 
-// MARK: - Mutation
 public extension OrderedSet {
 
     mutating func append(_ element: Element) {
@@ -89,7 +88,7 @@ public extension OrderedSet {
 
 }
 
-// MARK: - Predicates
+/// Predicates
 public extension OrderedSet {
 
     func contains(_ element: Element) -> Bool {
@@ -106,14 +105,12 @@ public extension OrderedSet {
 
 }
 
-// MARK: - Sequence
 extension OrderedSet : Sequence {
     public func makeIterator() -> IndexingIterator<[Element]> {
         return array.makeIterator()
     }
 }
 
-// MARK: - RandomAccessCollection
 extension OrderedSet : RandomAccessCollection {
 
     public typealias SubSequence = RangeReplaceableRandomAccessSlice<OrderedSet<Element>>
@@ -140,7 +137,6 @@ extension OrderedSet : RandomAccessCollection {
 
 }
 
-// MARK: - RangeReplaceableCollection
 extension OrderedSet : RangeReplaceableCollection {
     public mutating func replaceSubrange<C>(_ subrange: Range<Int>, with newElements: C) where C : Collection, C.Iterator.Element == Element {
         #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)

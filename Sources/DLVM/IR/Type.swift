@@ -26,7 +26,6 @@ public enum ElementKey {
     case value(Use)
 }
 
-// MARK: - Equatable
 extension ElementKey : Equatable {
     public static func == (lhs: ElementKey, rhs: ElementKey) -> Bool {
         switch (lhs, rhs) {
@@ -54,7 +53,6 @@ public class StructType : Named, HashableByReference {
 
 prefix operator ^
 
-// MARK: - Accessors
 public extension StructType {
     var type: Type {
         return .struct(self)
@@ -137,7 +135,6 @@ public indirect enum Type {
 
 prefix operator *
 
-// MARK: - Factories
 public extension Type {
     static func int(_ size: UInt) -> Type {
         return .scalar(.int(size))
@@ -224,7 +221,6 @@ public extension Type {
 
 }
 
-// MARK: - Element type extraction
 public extension Type {
     func elementType(at key: ElementKey) -> Type? {
         switch (unaliased, key) {
@@ -252,7 +248,6 @@ public extension Type {
     }
 }
 
-// MARK: - Alias resolution and canonicalization
 public extension Type {
     var canonical: Type {
         switch self {
@@ -283,7 +278,6 @@ public extension Type {
     }
 }
 
-// MARK: - Equatable
 extension Type : Equatable {
     public static func ==(lhs: Type, rhs: Type) -> Bool {
         switch (lhs.canonical, rhs.canonical) {
@@ -311,14 +305,12 @@ extension Type : Equatable {
     }
 }
 
-// MARK: - Validation
 public extension StructType {
     var isValid: Bool {
         return elementTypes.forAll { $0.isValid }
     }
 }
 
-// MARK: - Validation
 public extension Type {
     public var isValid: Bool {
         switch self {
@@ -342,14 +334,12 @@ public extension Type {
     }
 }
 
-// MARK: - Validation
 public extension TypeAlias {
     public var isValid: Bool {
         return type?.isValid ?? true
     }
 }
 
-// MARK: - Literal helpers
 public extension Type {
     public func makeZero() -> LiteralValue {
         return LiteralValue(type: self, literal: .zero)

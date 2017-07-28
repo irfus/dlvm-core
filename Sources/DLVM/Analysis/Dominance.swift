@@ -125,7 +125,6 @@ public extension IRUnit {
     }
 }
 
-// MARK: - IRSubUnit dominance
 public extension Instruction {
     public func properlyDominates(_ other: Instruction,
                                   in domTree: DominatorTree<BasicBlock>) -> Bool {
@@ -133,7 +132,6 @@ public extension Instruction {
     }
 }
 
-/// Dominance analysis on a function
 open class DominanceAnalysis : AnalysisPass {
     public typealias Body = Function
 

@@ -38,6 +38,49 @@ public indirect enum Literal {
     case `struct`([(String, Use)])
 }
 
+extension Literal : Equatable {
+    public static func == (lhs: Literal, rhs: Literal) -> Bool {
+        switch (lhs, rhs) {
+        case (.zero, .zero),
+             (.undefined, .undefined),
+             (.null, .null):
+            return true
+        case let (.scalar(s1), .scalar(s2)):
+            return s1 == s2
+        case let (.tensor(t1), .tensor(t2)):
+            return t1 == t2
+        case let (.tuple(tt1), .tuple(tt2)):
+            return tt1 == tt2
+        case let (.array(tt1), .array(tt2)):
+            return tt1 == tt2
+        case let (.struct(ss1), .struct(ss2)):
+            return ss1.elementsEqual(ss2, by: { $0 == $1 })
+        default: return false
+        }
+    }
+}
+
+public extension Literal.Scalar {
+    var typeBase: DataType.Base {
+        switch self {
+        case .bool: return .bool
+        case .int: return .int
+        case .float: return .float
+        }
+    }
+}
+
+extension Literal.Scalar : Equatable {
+    public static func == (lhs: Literal.Scalar, rhs: Literal.Scalar) -> Bool {
+        switch (lhs, rhs) {
+        case let (.int(i1), .int(i2)): return i1 == i2
+        case let (.float(f1), .float(f2)): return f1 == f2
+        case let (.bool(b1), .bool(b2)): return b1 == b2
+        default: return false
+        }
+    }
+}
+
 // MARK: - Literal conversion
 
 extension Literal.Scalar : ExpressibleByIntegerLiteral {
@@ -94,49 +137,6 @@ extension Literal : ExpressibleByNilLiteral {
     }
 }
 
-extension Literal : Equatable {
-    public static func == (lhs: Literal, rhs: Literal) -> Bool {
-        switch (lhs, rhs) {
-        case (.zero, .zero),
-             (.undefined, .undefined),
-             (.null, .null):
-            return true
-        case let (.scalar(s1), .scalar(s2)):
-            return s1 == s2
-        case let (.tensor(t1), .tensor(t2)):
-            return t1 == t2
-        case let (.tuple(tt1), .tuple(tt2)):
-            return tt1 == tt2
-        case let (.array(tt1), .array(tt2)):
-            return tt1 == tt2
-        case let (.struct(ss1), .struct(ss2)):
-            return ss1.elementsEqual(ss2, by: { $0 == $1 })
-        default: return false
-        }
-    }
-}
-
-public extension Literal.Scalar {
-    var typeBase: DataType.Base {
-        switch self {
-        case .bool: return .bool
-        case .int: return .int
-        case .float: return .float
-        }
-    }
-}
-
-extension Literal.Scalar : Equatable {
-    public static func == (lhs: Literal.Scalar, rhs: Literal.Scalar) -> Bool {
-        switch (lhs, rhs) {
-        case let (.int(i1), .int(i2)): return i1 == i2
-        case let (.float(f1), .float(f2)): return f1 == f2
-        case let (.bool(b1), .bool(b2)): return b1 == b2
-        default: return false
-        }
-    }
-}
-
 // MARK: - Literal as value
 
 /// Literal value. It wraps `Literal` into a value
@@ -162,7 +162,8 @@ extension LiteralValue : Equatable {
 }
 
 public extension Use {
-    static func tensor(_ shape: TensorShape, _ dataType: DataType, repeating item: Int) -> Use {
+    static func tensor(_ shape: TensorShape, _ dataType: DataType,
+                       repeating item: Int) -> Use {
         let scalLit: Literal.Scalar
         switch dataType.base {
         case .int: scalLit = .int(item)

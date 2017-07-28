@@ -109,7 +109,6 @@ public struct SourceLocation : TextLocation {
     }
 }
 
-// MARK: - CustomStringConvertible
 extension SourceLocation : CustomStringConvertible {
     public var description: String {
         return "\(line):\(column)"

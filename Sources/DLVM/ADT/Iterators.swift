@@ -188,7 +188,6 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet> : IteratorProto
     }
 }
 
-// MARK: - Iterators
 public extension BidirectionalEdgeSet {
     public func traversed(from source: Node, in order: TraversalOrder) -> IteratorSequence<DirectedGraphIterator<Self>> {
         return IteratorSequence(DirectedGraphIterator(base: self, source: source, order: order))

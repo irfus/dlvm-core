@@ -163,7 +163,7 @@ public extension IRBuilder {
     }
 }
 
-// MARK: - Op sugar
+// MARK: - Convenient builders
 /// - Note: This extension is only providing limited sugar functions 
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`

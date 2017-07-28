@@ -17,14 +17,12 @@
 //  limitations under the License.
 //
 
-// MARK: - Basic block graph traits
 extension BasicBlock : ForwardGraphNode {
     public var successors: ObjectSet<BasicBlock> {
         return terminator?.controlFlowSuccessors ?? []
     }
 }
 
-// MARK: - Instruction successors
 public extension Instruction {
 
     var controlFlowSuccessors: ObjectSet<BasicBlock> {
@@ -45,13 +43,16 @@ public extension Instruction {
         }
     }
 
+
     /// Return true if the specified edge is a critical edge.
     /// Critical edges are edges from a block with multiple successors to a block
     /// with multiple predecessors.
     func isCriticalEdge(to destination: BasicBlock) throws -> Bool {
         let function = destination.parent
-        precondition(function === parent.parent,
-                     "Destination basic block is not in the same function as the instruction")
+        precondition(function === parent.parent, """
+                     Destination basic block is not in the same function as
+                     the instruction
+                     """)
         let cfg = try function.analysis(from: ControlFlowGraphAnalysis.self)
         if controlFlowSuccessorCount <= 1 { return false }
         return cfg[destination].predecessors.count > 1
@@ -59,7 +60,6 @@ public extension Instruction {
 
 }
 
-// MARK: - Control flow property computation
 public extension Function {
 
     /// Compute and returns back edges in function
