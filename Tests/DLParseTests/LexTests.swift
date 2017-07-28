@@ -24,7 +24,10 @@ class LexTests : XCTestCase {
 
     func testBasicLexing() throws {
         do {
-            let code = "func @mnist.inference.impl.gradient: (<1 x 784 x f32>) // comments\n\n"
+            let code = """
+               func @mnist.inference.impl.gradient: (<1 x 784 x f32>)\
+               // comments\n\n
+               """
             let lexer = Lexer(text: code)
             let tokens = try lexer.performLexing().map{$0.kind}
             let expectedTokens: [TokenKind] = [
@@ -61,7 +64,13 @@ class LexTests : XCTestCase {
 
     func testStructLexing() throws {
         do {
-            let code = "struct $TestStruct1 {\n    #foo: i32\n    #bar: <1 x 3 x 4 x f64>\n    #baz: [4 x [3 x <3 x i32>]]\n}"
+            let code = """
+                struct $TestStruct1 {
+                    #foo: i32,
+                    #bar: <1 x 3 x 4 x f64>,
+                    #baz: [4 x [3 x <3 x i32>]]
+                }
+                """
             let lexer = Lexer(text: code)
             _ = try lexer.performLexing()
         } catch {
@@ -71,7 +80,19 @@ class LexTests : XCTestCase {
 
     func testFunctionLexing() throws {
         do {
-            let code = "func @bar: (f32, f32) -> i32 {\n'entry(%x: f32, %y: f32):\n    %0.0 = multiply 5: i32, 8: i32\n    %0.1 = equal %0.0: i32, 1: i32\n    conditional %0.1: bool then 'then(0: i32) else 'else(1: i32)\n'then(%x: i32):\n    branch 'cont(%x: i32)\n'else(%x: i32):\n    branch 'cont(%x: i32)\n'cont(%x: i32):\n    return %x: i32\n"
+            let code = """
+                func @bar: (f32, f32) -> i32 {
+                'entry(%x: f32, %y: f32):
+                    %0.0 = multiply 5: i32, 8: i32
+                    %0.1 = equal %0.0: i32, 1: i32
+                    conditional %0.1: bool then 'then(0: i32) else 'else(1: i32)
+                'then(%x: i32):
+                    branch 'cont(%x: i32)
+                'else(%x: i32):
+                    branch 'cont(%x: i32)
+                'cont(%x: i32):
+                    return %x: i32\n
+                """
             let lexer = Lexer(text: code)
             _ = try lexer.performLexing()
         } catch {
