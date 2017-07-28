@@ -42,10 +42,14 @@ public enum Keyword {
 }
 
 public enum Punctuation {
-    case leftParenthesis, rightParenthesis
-    case leftSquareBracket, rightSquareBracket
-    case leftAngleBracket, rightAngleBracket
-    case leftCurlyBracket, rightCurlyBracket
+    case leftParenthesis
+    case rightParenthesis
+    case leftSquareBracket
+    case rightSquareBracket
+    case leftAngleBracket
+    case rightAngleBracket
+    case leftCurlyBracket
+    case rightCurlyBracket
     case colon
     case equal
     case rightArrow
@@ -124,8 +128,8 @@ extension TokenKind : Equatable {
 }
 
 public struct Token {
-    public let kind: TokenKind
-    public let range: SourceRange
+    public var kind: TokenKind
+    public var range: SourceRange
 }
 
 extension TokenKind {
@@ -395,19 +399,30 @@ private extension Lexer {
                 .stringLiteral(String(cString: buffer.baseAddress!))
             }
         case "-":
-            guard characters.first == ">" else {
+            guard let next = characters.first else {
                 throw LexicalError.unexpectedToken(location)
             }
-            advance(by: 1)
-            count += 1
-            kind = .punctuation(.rightArrow)
+            /// If followed by ">", it's an arrow
+            if next == ">" {
+                count += 1
+                advance(by: 1)
+                kind = .punctuation(.rightArrow)
+            }
+            else if next.isDigit {
+                var num = try scanNumber(isNegative: true)
+                num.range = startLoc..<num.endLocation
+                return num
+            }
+            else {
+                throw LexicalError.unexpectedToken(location)
+            }
         default:
             throw LexicalError.unexpectedToken(startLoc)
         }
         return Token(kind: kind, range: startLoc..<startLoc.advanced(by: count))
     }
 
-    func scanNumber() throws -> Token {
+    func scanNumber(isNegative: Bool = false) throws -> Token {
         let endOfWhole = characters.index(where: { !$0.isDigit }) ?? characters.endIndex
         var number = characters.prefix(upTo: endOfWhole)
         let startLoc = location
@@ -427,13 +442,15 @@ private extension Lexer {
             guard let float = FloatLiteralType(number.string) else {
                 throw LexicalError.illegalNumber(startLoc..<location)
             }
-            return Token(kind: .float(float), range: startLoc..<location)
+            return Token(kind: .float(isNegative ? -float : float),
+                         range: startLoc..<location)
         }
         /// Integer literal
         guard let integer = Int(number.string) else {
             throw LexicalError.illegalNumber(startLoc..<location)
         }
-        return Token(kind: .integer(integer), range: location..<location+characters.count)
+        return Token(kind: .integer(isNegative ? -integer : integer),
+                     range: location..<location+characters.count)
     }
 
     func scanLetter() throws -> Token {
