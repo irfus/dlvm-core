@@ -54,6 +54,10 @@ let package = Package(
         .target(name: "dlc", dependencies: [
             "DLVM", "DLVMCodeGen", "DLParse", "DLCommandLineTools"
         ]),
+        .testTarget(name: "DLVMTests", dependencies: [ "DLVM" ]),
+        .testTarget(name: "DLParseTests", dependencies: [
+            "DLVM", "DLParse"
+        ]),
     ],
     swiftLanguageVersions: [ 4 ]
 )
