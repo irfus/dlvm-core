@@ -33,16 +33,11 @@ public extension HashableByReference {
 }
 
 public protocol IRUnit : class, HashableByReference, Verifiable {
-    associatedtype Parent : IRCollection
+    associatedtype Parent : IRCollection where Parent.Element == Self
     unowned var parent: Parent { get set }
 }
 
-public extension IRUnit
-    where Parent.Iterator.Element == Self, Parent.Index == Int, Parent.IndexDistance == Int,
-          Parent.Indices == Parent.Base.Indices, Parent.SubSequence == Parent.Base.SubSequence,
-          Parent.Element == Parent.Base.Iterator.Element, Parent.Element == Parent.Base.Element,
-          Parent.Element == Self, Parent.Index == Parent.Base.Index,
-          Parent.IndexDistance == Parent.Base.IndexDistance {
+public extension IRUnit {
     var indexInParent: Int {
         guard let index = parent.index(of: self) else {
             preconditionFailure("Self does not exist in parent basic block")

@@ -38,6 +38,7 @@ public final class Function : Named, IRCollection, IRUnit {
         case gradient(of: Function, from: Int?, wrt: [Int], keeping: [Int], seedable: Bool)
     }
 
+    public typealias Base = OrderedSet<BasicBlock>
     public typealias Element = BasicBlock
 
     public var name: String
@@ -63,6 +64,42 @@ public final class Function : Named, IRCollection, IRUnit {
 
     public var canApplyTransforms: Bool {
         return !isDeclaration
+    }
+}
+
+/// - Note: This is a workaround for a type checker bug in Swift 4
+public extension Function {
+    func remove(_ element: Element) {
+        elements.remove(element)
+        invalidateAnalyses()
+    }
+
+    func contains(_ element: Element) -> Bool {
+        return elements.contains(element)
+    }
+
+    func append(_ newElement: Element) {
+        elements.append(newElement)
+        newElement.parent = self
+        invalidateAnalyses()
+    }
+
+    func insert(_ newElement: Element, at index: Base.Index) {
+        elements.insert(newElement, at: index)
+        newElement.parent = self
+        invalidateAnalyses()
+    }
+
+    func insert(_ newElement: Element, after other: Element) {
+        elements.insert(newElement, after: other)
+        newElement.parent = self
+        invalidateAnalyses()
+    }
+
+    func insert(_ newElement: Element, before other: Element) {
+        elements.insert(newElement, before: other)
+        newElement.parent = self
+        invalidateAnalyses()
     }
 }
 

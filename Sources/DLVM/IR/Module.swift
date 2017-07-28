@@ -23,6 +23,7 @@ public final class Module : IRCollection {
         case raw, canonical
     }
 
+    public typealias Base = OrderedSet<Function>
     public typealias Element = Function
     public typealias Index = Int
 
@@ -44,7 +45,42 @@ public final class Module : IRCollection {
     }
 }
 
-// MARK: - Output
+/// - Note: This is a workaround for a type checker bug in Swift 4
+public extension Module {
+    func remove(_ element: Element) {
+        elements.remove(element)
+        invalidateAnalyses()
+    }
+
+    func contains(_ element: Element) -> Bool {
+        return elements.contains(element)
+    }
+
+    func append(_ newElement: Element) {
+        elements.append(newElement)
+        newElement.parent = self
+        invalidateAnalyses()
+    }
+
+    func insert(_ newElement: Element, at index: Base.Index) {
+        elements.insert(newElement, at: index)
+        newElement.parent = self
+        invalidateAnalyses()
+    }
+
+    func insert(_ newElement: Element, after other: Element) {
+        elements.insert(newElement, after: other)
+        newElement.parent = self
+        invalidateAnalyses()
+    }
+
+    func insert(_ newElement: Element, before other: Element) {
+        elements.insert(newElement, before: other)
+        newElement.parent = self
+        invalidateAnalyses()
+    }
+}
+
 extension Module {
     open func write(toFile path: String) throws {
         var contents = ""
@@ -53,7 +89,6 @@ extension Module {
     }
 }
 
-// MARK: - Name lookup
 /// - Note: Name lookup for IR units is implemented as a cached analysis
 /// pass, but we don't yet have caching infrastructure for non-IRUnits.
 /// Thus name lookup for types and global variables is temporarily implemented
