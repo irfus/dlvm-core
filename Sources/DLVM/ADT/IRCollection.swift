@@ -18,24 +18,22 @@
 //
 
 /// IRCollection
-public protocol IRCollection : class, RandomAccessCollection, Verifiable, AnalysisCacheable {
-    associatedtype Base : OrderedSetCollection
-    associatedtype Element : Hashable = Base.Element
-    associatedtype Index = Base.Index
-    associatedtype IndexDistance = Base.IndexDistance
-    associatedtype Iterator = Base.Iterator
-    associatedtype Indices = Base.Indices
-    associatedtype SubSequence : Collection = Base.SubSequence
+public protocol IRCollection : class, RandomAccessCollection, Verifiable, AnalysisCacheable
+    where Index == Int
+{
+    associatedtype Base : OrderedSetCollection where Base.Element == Element
     var elements: Base { get set }
     var canApplyTransforms: Bool { get }
+    /// - Note: This is a workaround for a type checker bug in Swift 4
+    func remove(_ element: Element)
+    func contains(_ element: Element) -> Bool
+    func insert(_ newElement: Element, after other: Element)
+    func insert(_ newElement: Element, before other: Element)
 }
 
-public extension IRCollection
-    where Base.Index == Index, Base.Iterator == Iterator, Base.Iterator.Element == Element,
-          Base.Element == Element, Base.SubSequence == SubSequence, Base.Indices == Indices,
-          Base.IndexDistance == IndexDistance {
+public extension IRCollection {
 
-    func makeIterator() -> Iterator {
+    func makeIterator() -> Base.Iterator {
         return elements.makeIterator()
     }
 
@@ -68,10 +66,9 @@ public extension IRCollection
     }
 }
 
-public extension IRCollection
-    where Base.Index == Index, Base.Element == Base.Iterator.Element, Base.Element == Element,
-          Base.SubSequence == SubSequence, Base.Indices == Indices, Base.IndexDistance == IndexDistance,
-          Element : IRUnit, Element.Parent == Self {
+/// - Note: This is a workaround for a type checker bug in Swift 4
+/*
+public extension IRCollection where Element : IRUnit {
 
     func remove(_ element: Element) {
         elements.remove(element)
@@ -81,6 +78,9 @@ public extension IRCollection
     func contains(_ element: Element) -> Bool {
         return elements.contains(element)
     }
+}
+
+public extension IRCollection where Element : IRUnit, Element.Parent == Self {
 
     func append(_ newElement: Element) {
         elements.append(newElement)
@@ -107,3 +107,4 @@ public extension IRCollection
     }
 
 }
+*/
