@@ -36,7 +36,7 @@ reference counting, etc.
 ## Dependencies
 
 - LLVM 4.0
-- Swift 3.1
+- Swift 4.0 (Development Snapshot 2017-07-27 or above)
 
 ## Build Instructions
 
