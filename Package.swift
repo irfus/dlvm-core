@@ -1,3 +1,4 @@
+// swift-tools-version:4.0
 //
 //  Package.swift
 //  DLVM
@@ -21,22 +22,17 @@ import PackageDescription
 
 let package = Package(
     name: "DLVM",
-    targets: [
-        Target(name: "DLVM"),
-        Target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
-        Target(name: "DLParse", dependencies: ["DLVM"]),
-        Target(name: "DLCommandLineTools", dependencies: ["DLVM", "DLVMCodeGen", "DLParse"]),
-        Target(name: "dlopt", dependencies: ["DLVM", "DLParse", "DLCommandLineTools"]),
-        Target(name: "dlc", dependencies: ["DLVM", "DLVMCodeGen", "DLParse", "DLCommandLineTools"]),
-    ],
     dependencies: [
-      	.Package(url: "https://github.com/rxwei/LLVM_C", majorVersion: 2, minor: 1),
-      	.Package(url: "https://github.com/rxwei/CommandLine", majorVersion: 3, minor: 0),
-      	.Package(url: "https://github.com/rxwei/CoreTensor", majorVersion: 0, minor: 5)
+        .package(url: "https://github.com/rxwei/LLVM_C", from: "2.1.0"),
+        .package(url: "https://github.com/rxwei/CommandLine", from: "3.0.0"),
+        .package(url: "https://github.com/rxwei/CoreTensor", from: "0.5.0")
     ],
-    exclude: [
-        "Sources/TEL",
-        "Compute",
-        "Runtime",
+    targets: [
+        .target(name: "DLVM"),
+        .target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
+        .target(name: "DLParse", dependencies: ["DLVM"]),
+        .target(name: "DLCommandLineTools", dependencies: ["DLVM", "DLVMCodeGen", "DLParse"]),
+        .target(name: "dlopt", dependencies: ["DLVM", "DLParse", "DLCommandLineTools"]),
+        .target(name: "dlc", dependencies: ["DLVM", "DLVMCodeGen", "DLParse", "DLCommandLineTools"]),
     ]
 )
