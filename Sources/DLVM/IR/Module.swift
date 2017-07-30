@@ -33,7 +33,7 @@ public final class Module : IRCollection {
     public var variables: OrderedSet<Variable> = []
     public var structs: OrderedSet<StructType> = []
     public var typeAliases: OrderedSet<TypeAlias> = []
-    public let analysisManager: AnalysisManager<Module> = AnalysisManager()
+    public let passManager: PassManager<Module> = PassManager()
 
     public init(name: String, stage: Stage = .raw) {
         self.name = name
@@ -49,7 +49,7 @@ public final class Module : IRCollection {
 public extension Module {
     func remove(_ element: Element) {
         elements.remove(element)
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func contains(_ element: Element) -> Bool {
@@ -59,25 +59,25 @@ public extension Module {
     func append(_ newElement: Element) {
         elements.append(newElement)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func insert(_ newElement: Element, at index: Base.Index) {
         elements.insert(newElement, at: index)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func insert(_ newElement: Element, after other: Element) {
         elements.insert(newElement, after: other)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func insert(_ newElement: Element, before other: Element) {
         elements.insert(newElement, before: other)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 }
 

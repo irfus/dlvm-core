@@ -20,7 +20,7 @@
 open class LiteralBroadcastingPromotion : TransformPass {
     public typealias Body = BasicBlock
 
-    open class func run(on body: BasicBlock) throws -> Bool {
+    open class func run(on body: BasicBlock) -> Bool {
         var changed = false
         for inst in body {
             /// `zipWith` is the only instruction kind supporting broadcasting

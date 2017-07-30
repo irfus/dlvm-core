@@ -54,7 +54,7 @@ class TransformTests: XCTestCase {
         /// 'cont(%x: i32):
         ///     return %x: i32
         /// }
-        try builder.module.mapTransform(DeadCodeElimination.self)
+        builder.module.mapTransform(DeadCodeElimination.self)
         let after = """
             func @bar: (f32, f32) -> i32 {
             'entry(%x: f32, %y: f32):
@@ -73,8 +73,8 @@ class TransformTests: XCTestCase {
         /// Reapplying shouldn't mutate the function
 
         let module = builder.module
-        try module.mapTransform(DeadCodeElimination.self)
-        try module.mapTransform(DeadCodeElimination.self)
+        module.mapTransform(DeadCodeElimination.self)
+        module.mapTransform(DeadCodeElimination.self)
 
         XCTAssertEqual(fun.description, after)
     }

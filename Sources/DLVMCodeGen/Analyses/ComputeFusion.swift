@@ -127,6 +127,7 @@ extension Instruction {
 class ComputeFusionAnalysis<Target : ComputeTarget> : AnalysisPass {
     typealias Body = BasicBlock
     typealias Node = FusionDataFlowNode<Target>
+    typealias Result = [Node]
 
     private static func visit(from instructions: [Instruction],
                               basicBlock bb: BasicBlock,
@@ -140,16 +141,16 @@ class ComputeFusionAnalysis<Target : ComputeTarget> : AnalysisPass {
         DLUnimplemented()
     }
 
-    class func run(on body: BasicBlock) throws -> [Node] {
+    class func run(on body: BasicBlock) -> [Node] {
         let fn = body.parent
         var visited: Set<Instruction> = []
         var parentSubgraphs: [Instruction : Node] = [:]
         var nodes: [Node] = []
         /// - TODO:
         /// BFS from unvisited instructions and collect subgraphs
-        let dfg = try fn.analysis(from: DafaFlowGraphAnalysis.self)
+        let dfg = fn.analysis(from: DataFlowGraphAnalysis.self)
         /// Visit device functions
-        let entry = try body.premise().first
+        let entry = body.premise.first
         let node = visit(from: [entry], basicBlock: body,
                          parentSubgraphs: &parentSubgraphs,
                          dataFlow: dfg, visited: &visited)

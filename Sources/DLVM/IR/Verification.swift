@@ -52,7 +52,6 @@ public enum VerificationError<Node : Verifiable> : Error {
     case multipleExits([BasicBlock], Node)
     case noEntry(Node)
     case noExit(Node)
-    case noForwardPass(Node)
     case noReturn(Node)
     case useBeforeDef(user: Instruction, usee: Value, Node)
     case basicBlockArgumentMismatch([Use], BasicBlock, Node)
@@ -250,7 +249,7 @@ extension Function : Verifiable {
             return
         }
 
-        let domTree = try analysis(from: DominanceAnalysis.self)
+        let domTree = analysis(from: DominanceAnalysis.self)
 
         var bbNames: Set<String> = []
         /// Verify basic blocks
@@ -268,7 +267,7 @@ extension Function : Verifiable {
             try bb.performVerification()
 
             /// Check return type
-            let bbPremise = try bb.premise()
+            let bbPremise = try bb.verifyPremise()
             if case let .return(retVal) = bbPremise.terminator.kind {
                 switch retVal {
                 case let use? where use.type != returnType:
@@ -595,18 +594,19 @@ extension Use : Verifiable {
     }
 }
 
-/// Lazy verification
-public extension IRCollection {
-    public func verify() throws {
-        _ = try analysis(from: Verifier<Self>.self)
-    }
-}
-
 /// Verifier pass
-public enum Verifier<Unit : IRCollection> : AnalysisPass {
+public enum Verifier<Unit : IRCollection> : VerificationPass {
     public typealias Body = Unit
+    public typealias Result = Void
     
     public static func run(on body: Body) throws {
         try body.performVerification()
+    }
+}
+
+/// Cached verification
+public extension IRCollection {
+    func verify() throws {
+        try runVerification(Verifier<Self>.self)
     }
 }

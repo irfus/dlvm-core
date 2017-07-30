@@ -22,15 +22,24 @@ public extension IRCollection {
     ///
     /// - Returns: whether changes are made
     @discardableResult
-    func applyTransform<P : TransformPass>(_: P.Type) throws -> Bool
-        where P.Body == Self {
+    func applyTransform<P : TransformPass>(_: P.Type) -> Bool
+        where P.Body == Self
+    {
         guard canApplyTransforms else { return false }
-        let changed = try P.run(on: self)
+        let changed = P.run(on: self)
         if P.shouldInvalidateAnalyses, changed {
-            invalidateAnalyses()
+            invalidatePassResults()
         }
         /// Run verifier
-        try verify()
+        do {
+            try verify()
+        }
+        catch {
+            fatalError("""
+                Malformed IR after transform \(P.name). This could be caused\
+                 by not running verification beforehand, or a bug in \(P.name).
+                """)
+        }
         return changed
     }
 }
@@ -38,12 +47,12 @@ public extension IRCollection {
 public extension IRCollection {
     @discardableResult
     func mapTransform<Transform : TransformPass>(
-        _ transform: Transform.Type) throws -> Bool
+        _ transform: Transform.Type) -> Bool
         where Transform.Body == Element
     {
         var changed = false
         for element in self {
-            changed = try element.applyTransform(transform) || changed
+            changed = element.applyTransform(transform) || changed
         }
         return changed
     }

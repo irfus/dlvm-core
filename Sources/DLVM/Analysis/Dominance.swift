@@ -134,11 +134,12 @@ public extension Instruction {
 
 open class DominanceAnalysis : AnalysisPass {
     public typealias Body = Function
+    public typealias Result = DominatorTree<BasicBlock>
 
-    open class func run(on body: Function) throws -> DominatorTree<BasicBlock> {
-        let entry = try body.premise().entry
+    open class func run(on body: Function) -> DominatorTree<BasicBlock> {
+        let entry = body.premise.entry
         var domTree = DominatorTree(root: entry)
-        let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
+        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
 
         /// Initialization of data flow analysis
         /// (done by the dom tree initializer)
@@ -168,10 +169,11 @@ open class DominanceAnalysis : AnalysisPass {
 /// Post-dominance analysis on a function
 open class PostdominanceAnalysis : AnalysisPass {
     public typealias Body = Function
+    public typealias Result = [DominatorTree<BasicBlock>]
 
-    open class func run(on body: Function) throws -> [DominatorTree<BasicBlock>] {
-        let exits = try body.premise().exits
-        let cfg = try body.analysis(from: ControlFlowGraphAnalysis.self)
+    open class func run(on body: Function) -> [DominatorTree<BasicBlock>] {
+        let exits = body.premise.exits
+        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         let transposeCFG = cfg.transpose
         var domTrees: [DominatorTree<BasicBlock>] = []
         for (exit, _) in exits {

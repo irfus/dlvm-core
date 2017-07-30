@@ -23,8 +23,7 @@ public enum TraversalOrder {
     case preorder, postorder, breadthFirst
 }
 
-public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol
-    where Node.SuccessorCollection.Iterator.Element == Node {
+public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol {
 
     private var pre: ArraySlice<Node> = []
     private lazy var post: [Node] = []
@@ -68,8 +67,7 @@ public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol
     }
 }
 
-public struct TransposeGraphNodeIterator<Node : BackwardGraphNode> : IteratorProtocol
-    where Node.PredecessorCollection.Iterator.Element == Node {
+public struct TransposeGraphNodeIterator<Node : BackwardGraphNode> : IteratorProtocol {
 
     private var pre: ArraySlice<Node> = []
     private lazy var post: [Node] = []
@@ -114,7 +112,7 @@ public struct TransposeGraphNodeIterator<Node : BackwardGraphNode> : IteratorPro
     
 }
 
-public extension ForwardGraphNode where SuccessorCollection.Iterator.Element == Self {
+public extension ForwardGraphNode  {
 
     func traversed(in order: TraversalOrder) -> IteratorSequence<GraphNodeIterator<Self>> {
         return IteratorSequence(GraphNodeIterator(root: self, order: order))
@@ -134,7 +132,7 @@ public extension ForwardGraphNode where SuccessorCollection.Iterator.Element == 
     
 }
 
-public extension BackwardGraphNode where PredecessorCollection.Iterator.Element == Self {
+public extension BackwardGraphNode {
     func transposeTraversed(in order: TraversalOrder) -> IteratorSequence<TransposeGraphNodeIterator<Self>> {
         return IteratorSequence(TransposeGraphNodeIterator(root: self, order: order))
     }

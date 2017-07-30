@@ -99,10 +99,11 @@ public extension DataFlowGraph {
 }
 
 /// Analyzes function and produces a graph from definitions to users
-open class DafaFlowGraphAnalysis: AnalysisPass {
+open class DataFlowGraphAnalysis: AnalysisPass {
     public typealias Body = Function
+    public typealias Result = DataFlowGraph
 
-    open class func run(on body: Function) throws -> DataFlowGraph {
+    open class func run(on body: Function) -> DataFlowGraph {
         var userGraph = DataFlowGraph()
         for inst in body.instructions {
             for use in inst.operands {

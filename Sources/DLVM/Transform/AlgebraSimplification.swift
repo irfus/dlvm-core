@@ -218,13 +218,13 @@ open class AlgebraSimplification : TransformPass {
 
     // MARK: - Pass entry
 
-    open class func run(on body: Function) throws -> Bool {
+    open class func run(on body: Function) -> Bool {
         var changed = false
         var workList: [AlgebraicExpression] = []
         let builder = IRBuilder(function: body)
         /// First iteration
         for bb in body {
-            let algExprs = try bb.analysis(from: AlgebraicExpressionAnalysis.self)
+            let algExprs = bb.analysis(from: AlgebraicExpressionAnalysis.self)
             for expr in algExprs.expressions {
                 workList.append(expr)
             }
