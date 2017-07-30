@@ -477,7 +477,7 @@ extension Parser {
     }
 
     func parseInstructionKind(in basicBlock: BasicBlock?) throws -> InstructionKind {
-        let opcode: InstructionKind.Opcode = try withPeekedToken("an opcode") { tok in
+        let opcode: Opcode = try withPeekedToken("an opcode") { tok in
             guard case let .opcode(opcode) = tok.kind else {
                 return nil
             }

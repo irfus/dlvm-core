@@ -18,6 +18,7 @@
 //
 
 import enum DLVM.InstructionKind
+import enum DLVM.Opcode
 import enum DLVM.DataType
 import class DLVM.Function
 
@@ -69,7 +70,7 @@ public enum IdentifierKind {
 public enum TokenKind {
     case punctuation(Punctuation)
     case keyword(Keyword)
-    case opcode(InstructionKind.Opcode)
+    case opcode(Opcode)
     case integer(IntegerLiteralType)
     case float(FloatLiteralType)
     case identifier(IdentifierKind, String)
