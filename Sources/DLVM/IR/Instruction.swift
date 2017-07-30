@@ -106,6 +106,10 @@ extension Instruction : Value {
         return kind.type
     }
 
+    public var opcode: Opcode {
+        return kind.opcode
+    }
+
     public func makeUse() -> Use {
         return .instruction(type, self)
     }
@@ -477,42 +481,42 @@ public extension InstructionKind {
 
 // MARK: - Opcode decomposition
 
+public enum Opcode {
+    case branch
+    case conditional
+    case `return`
+    case dataTypeCast
+    case scan
+    case reduce
+    case matrixMultiply
+    case concatenate
+    case transpose
+    case slice
+    case shapeCast
+    case bitCast
+    case extract
+    case insert
+    case apply
+    case allocateStack
+    case allocateHeap
+    case allocateBox
+    case projectBox
+    case retain
+    case release
+    case deallocate
+    case load
+    case store
+    case elementPointer
+    case copy
+    case trap
+    case binaryOp(BinaryOp)
+    case unaryOp(UnaryOp)
+}
+
 /// Instruction ADT decomposition (opcodes, keywords, operands)
 /// - Note: When adding a new instruction, you should insert its
 /// corresponding opcode here
 public extension InstructionKind {
-    enum Opcode {
-        case branch
-        case conditional
-        case `return`
-        case dataTypeCast
-        case scan
-        case reduce
-        case matrixMultiply
-        case concatenate
-        case transpose
-        case slice
-        case shapeCast
-        case bitCast
-        case extract
-        case insert
-        case apply
-        case allocateStack
-        case allocateHeap
-        case allocateBox
-        case projectBox
-        case retain
-        case release
-        case deallocate
-        case load
-        case store
-        case elementPointer
-        case copy
-        case trap
-        case binaryOp(BinaryOp)
-        case unaryOp(UnaryOp)
-    }
-
     var opcode: Opcode {
         switch self {
         case .branch: return .branch
@@ -548,8 +552,8 @@ public extension InstructionKind {
     }
 }
 
-extension InstructionKind.Opcode : Equatable {
-    public static func == (lhs: InstructionKind.Opcode, rhs: InstructionKind.Opcode) -> Bool {
+extension Opcode : Equatable {
+    public static func == (lhs: Opcode, rhs: Opcode) -> Bool {
         switch (lhs, rhs) {
         case (.branch, .branch): return true
         case (.conditional, .conditional): return true

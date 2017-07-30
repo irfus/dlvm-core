@@ -47,7 +47,7 @@ public enum ParseError : Error {
     case invalidAttributeArguments(SourceLocation)
     case declarationCannotHaveBody(declaration: SourceRange, body: Token)
     case cannotNameVoidValue(Token)
-    case invalidOperands(Token, InstructionKind.Opcode)
+    case invalidOperands(Token, Opcode)
 }
 
 public extension LexicalError {
@@ -203,7 +203,7 @@ extension Punctuation : CustomStringConvertible {
     }
 }
 
-extension InstructionKind.Opcode : CustomStringConvertible {
+extension Opcode : CustomStringConvertible {
     public var description: String {
         switch self {
         case .branch: return "branch"
