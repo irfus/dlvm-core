@@ -53,7 +53,7 @@ public extension Instruction {
                      Destination basic block is not in the same function as
                      the instruction
                      """)
-        let cfg = try function.analysis(from: ControlFlowGraphAnalysis.self)
+        let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
         if controlFlowSuccessorCount <= 1 { return false }
         return cfg[destination].predecessors.count > 1
     }
@@ -105,6 +105,7 @@ public extension Function {
 
 open class ControlFlowGraphAnalysis : AnalysisPass {
     public typealias Body = Function
+    public typealias Result = DirectedGraph<BasicBlock>
 
     open class func run(on body: Function) -> DirectedGraph<BasicBlock> {
         return DirectedGraph<BasicBlock>(nodes: body)

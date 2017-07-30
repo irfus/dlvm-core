@@ -22,7 +22,7 @@ open class SymbolTableAnalysis<Unit : IRCollection> : AnalysisPass
 public extension IRCollection where Iterator.Element : Named {
     func element(named name: String) -> Iterator.Element? {
         /// Guaranteed not to throw
-        let table = try! analysis(from: SymbolTableAnalysis<Self>.self)
+        let table = analysis(from: SymbolTableAnalysis<Self>.self)
         return table[name]
     }
 }

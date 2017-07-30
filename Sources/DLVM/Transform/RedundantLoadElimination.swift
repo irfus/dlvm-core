@@ -21,7 +21,7 @@
 open class RedundantLoadElimination : TransformPass {
     public typealias Body = Function
 
-    open class func run(on body: Function) throws -> Bool {
+    open class func run(on body: Function) -> Bool {
         DLUnimplemented()
     }
 }

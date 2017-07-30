@@ -22,14 +22,21 @@ public protocol Pass {
     static var name: String { get }
 }
 
-public protocol AnalysisPass : Pass {
+public protocol CacheablePass : Pass {
     associatedtype Result
-    static func run(on body: Body) throws -> Result
+}
+
+public protocol AnalysisPass : CacheablePass {
+    static func run(on body: Body) -> Result
 }
 
 public protocol TransformPass : Pass {
     static var shouldInvalidateAnalyses: Bool { get }
-    static func run(on body: Body) throws -> Bool
+    static func run(on body: Body) -> Bool
+}
+
+public protocol VerificationPass : CacheablePass {
+    static func run(on body: Body) throws -> Result
 }
 
 public extension TransformPass {

@@ -25,7 +25,7 @@
 open class Differentiation: TransformPass {
     public typealias Body = Module
     
-    open class func run(on module: Module) throws -> Bool {
+    open class func run(on module: Module) -> Bool {
         var changed = false
 
         var expanded: [Function : Function] = [:]
@@ -115,10 +115,10 @@ fileprivate class ADContext {
 
 fileprivate extension Differentiation {
 
-    static func expand(_ function: Function) throws {
+    static func expand(_ function: Function) {
         let builder = IRBuilder(module: function.parent)
         /// Seed on return instructions
-        let exits = try function.premise().exits
+        let exits = function.premise.exits
         for (block, returnInst) in exits {
             let retVal = returnInst.operands[0]
             let seed = retVal.type.makeLiteral(1)

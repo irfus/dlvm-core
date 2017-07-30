@@ -22,27 +22,27 @@ import DLVM
 public func runPass(named name: String, on module: Module) throws {
     switch name {
     case "AD", "Differentiation":
-        try module.applyTransform(Differentiation.self)
+        module.applyTransform(Differentiation.self)
     case "Can", "Canonicalization":
-        try module.applyTransform(Canonicalization.self)
+        module.applyTransform(Canonicalization.self)
     case "CP", "Checkpointing":
-        try module.mapTransform(Checkpointing.self)
+        module.mapTransform(Checkpointing.self)
     case "DCE", "DeadCodeElimination":
-        try module.mapTransform(DeadCodeElimination.self)
+        module.mapTransform(DeadCodeElimination.self)
     case "CSE", "CommonSubexpressionElimination":
-        try module.mapTransform(CommonSubexpressionElimination.self)
+        module.mapTransform(CommonSubexpressionElimination.self)
     case "AS", "AlgebraSimplification":
-        try module.forEach { fn in try fn.applyTransform(AlgebraSimplification.self) }
+        module.forEach { fn in fn.applyTransform(AlgebraSimplification.self) }
     case "LAF", "LinearAlgebraFusion":
-        try module.forEach { fn in try fn.applyTransform(LinearAlgebraFusion.self) }
+        module.forEach { fn in fn.applyTransform(LinearAlgebraFusion.self) }
     case "SP", "StackPromotion":
-        try module.mapTransform(StackPromotion.self)
+        module.mapTransform(StackPromotion.self)
     case "VP", "ValuePromotion":
-        try module.mapTransform(ValuePromotion.self)
+        module.mapTransform(ValuePromotion.self)
     case "MCO", "MatrixChainOrdering":
-        try module.forEach { fn in try fn.mapTransform(MatrixChainOrdering.self) }
+        module.forEach { fn in fn.mapTransform(MatrixChainOrdering.self) }
     case "LBP", "LiteralBroadcastingPromotion":
-        try module.forEach { fn in try fn.mapTransform(LiteralBroadcastingPromotion.self) }
+        module.forEach { fn in fn.mapTransform(LiteralBroadcastingPromotion.self) }
     default:
         error("No transform pass named \(name)")
     }

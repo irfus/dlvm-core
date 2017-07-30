@@ -173,24 +173,25 @@ extension AlgebraicExpression : CustomStringConvertible {
 
 open class AlgebraicExpressionAnalysis : AnalysisPass {
     public typealias Body = BasicBlock
+    public typealias Result = AlgebraicRepresentation
 
     private static func collect(
         from inst: Instruction,
-        to repr: inout AlgebraicRepresentation) throws {
+        to repr: inout AlgebraicRepresentation) {
         /// Get user analysis
         let bb = inst.parent
         let function = bb.parent
-        let dfg = try function.analysis(from: DafaFlowGraphAnalysis.self)
+        let dfg = function.analysis(from: DataFlowGraphAnalysis.self)
         /// DFS expression builder
         func subexpression(
             from use: Use,
-            isEntry: Bool = false) throws -> AlgebraicExpression {
+            isEntry: Bool = false) -> AlgebraicExpression {
             /// If not an instruction in the current basic block, it's an atom
             guard case let .instruction(_, inst) = use, inst.parent == bb else {
                 return .atom(use)
             }
             /// Treat nodes with more than one users as atoms when and only when
-            /// they are not the entry to this analysis
+            /// they are not the ento this analysis
             if !isEntry && dfg.successors(of: inst).count > 1 {
                 return .atom(%inst)
             }
@@ -198,30 +199,30 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
             let expr: AlgebraicExpression
             switch inst.kind {
             case let .map(op, v):
-                expr = .map(op, try subexpression(from: v), inst)
+                expr = .map(op, subexpression(from: v), inst)
             case let .zipWith(op, lhs, rhs):
-                expr = .zipWith(op, try subexpression(from: lhs),
-                                try subexpression(from: rhs), inst)
+                expr = .zipWith(op, subexpression(from: lhs),
+                                subexpression(from: rhs), inst)
             case let .matrixMultiply(lhs, rhs):
-                expr = .matrixMultiply(try subexpression(from: lhs),
-                                       try subexpression(from: rhs), inst)
+                expr = .matrixMultiply(subexpression(from: lhs),
+                                       subexpression(from: rhs), inst)
             case let .transpose(v):
-                expr = .transpose(try subexpression(from: v), inst)
+                expr = .transpose(subexpression(from: v), inst)
             default:
                 expr = .atom(use)
             }
             repr.table[inst] = expr
             return expr
         }
-        repr.expressions.append(try subexpression(from: %inst, isEntry: true))
+        repr.expressions.append(subexpression(from: %inst, isEntry: true))
     }
 
     /// Run pass on the basic block
-    open static func run(on body: BasicBlock) throws -> AlgebraicRepresentation {
+    open static func run(on body: BasicBlock) -> AlgebraicRepresentation {
         var repr = AlgebraicRepresentation()
         /// Perform DFS for every unvisited instruction
         for inst in body.reversed() where !repr.contains(inst) {
-            try collect(from: inst, to: &repr)
+            collect(from: inst, to: &repr)
         }
         return repr
     }

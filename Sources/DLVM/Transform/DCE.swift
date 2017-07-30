@@ -23,7 +23,7 @@ import class Foundation.NSMutableOrderedSet
 open class DeadCodeElimination : TransformPass {
     public typealias Body = Function
 
-    open class func run(on body: Function) throws -> Bool {
+    open class func run(on body: Function) -> Bool {
         var changed: Bool = false
         let workList: NSMutableOrderedSet = []
         var count = 0
@@ -32,11 +32,11 @@ open class DeadCodeElimination : TransformPass {
         /// to pre-init the worklist with the entire function's worth of
         /// instructions.
         for inst in body.instructions where !workList.contains(inst) {
-            changed = try performDCE(on: inst, workList: workList, count: &count) || changed
+            changed = performDCE(on: inst, workList: workList, count: &count) || changed
         }
         while let inst = workList.lastObject as? Instruction {
             workList.remove(inst)
-            changed = try performDCE(on: inst, workList: workList, count: &count) || changed
+            changed = performDCE(on: inst, workList: workList, count: &count) || changed
         }
         /// TODO: Print count when DEBUG
         return changed
@@ -44,11 +44,11 @@ open class DeadCodeElimination : TransformPass {
 
     private static func performDCE(on inst: Instruction,
                                    workList: NSMutableOrderedSet,
-                                   count: inout Int) throws -> Bool {
+                                   count: inout Int) -> Bool {
         let function = inst.parent.parent
         let module = function.parent
-        var dfg = try function.analysis(from: DafaFlowGraphAnalysis.self)
-        let sideEffectInfo = try module.analysis(from: SideEffectAnalysis.self)
+        var dfg = function.analysis(from: DataFlowGraphAnalysis.self)
+        let sideEffectInfo = module.analysis(from: SideEffectAnalysis.self)
 
         /// If instruction is not trivially dead, change nothing
         guard dfg.successors(of: inst).isEmpty,
@@ -60,7 +60,7 @@ open class DeadCodeElimination : TransformPass {
         count += 1
         /// Remove instruction and check users
         /// Get new user analysis
-        dfg = try function.analysis(from: DafaFlowGraphAnalysis.self)
+        dfg = function.analysis(from: DataFlowGraphAnalysis.self)
         /// For original uses, check if they need to be revisited
         for case let .instruction(_, usee) in inst.operands
             where dfg.successors(of: usee).isEmpty

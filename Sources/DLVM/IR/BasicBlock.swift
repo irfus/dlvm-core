@@ -42,7 +42,7 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
     open var arguments: OrderedSet<Argument> = []
     open var elements: OrderedSet<Instruction> = []
     open unowned var parent: Function
-    public internal(set) var analysisManager: AnalysisManager<BasicBlock> = AnalysisManager()
+    public internal(set) var passManager: PassManager<BasicBlock> = PassManager()
 
     internal init<C: Collection>(name: String, arguments: C, parent: Function)
         where C.Iterator.Element == Argument
@@ -76,7 +76,7 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
 public extension BasicBlock {
     func remove(_ element: Element) {
         elements.remove(element)
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func contains(_ element: Element) -> Bool {
@@ -86,25 +86,25 @@ public extension BasicBlock {
     func append(_ newElement: Element) {
         elements.append(newElement)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func insert(_ newElement: Element, at index: Base.Index) {
         elements.insert(newElement, at: index)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func insert(_ newElement: Element, after other: Element) {
         elements.insert(newElement, after: other)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 
     func insert(_ newElement: Element, before other: Element) {
         elements.insert(newElement, before: other)
         newElement.parent = self
-        invalidateAnalyses()
+        invalidatePassResults()
     }
 }
 

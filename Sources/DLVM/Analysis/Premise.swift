@@ -20,14 +20,27 @@
 public protocol PremiseHolder : IRUnit {
     associatedtype Premise
     /// - TODO: Add constraints here (currently causing compiler crash)
-    associatedtype PremiseVerifier : AnalysisPass
-    func premise() throws -> Premise
+    associatedtype PremiseVerifier : VerificationPass
+    var premise: Premise { get }
 }
 
 public extension PremiseHolder
-    where PremiseVerifier.Result == Premise, PremiseVerifier.Body == Self {
-    func premise() throws -> Premise {
-        return try analysis(from: PremiseVerifier.self)
+    where PremiseVerifier.Result == Premise, PremiseVerifier.Body == Self
+{
+    func verifyPremise() throws -> Premise {
+        return try runVerification(PremiseVerifier.self)
+    }
+
+    var premise: Premise {
+        do {
+            return try verifyPremise()
+        }
+        catch {
+            fatalError("""
+                Found malformed IR while verifying properties:
+                \(error)
+                """)
+        }
     }
 }
 
@@ -38,8 +51,9 @@ extension BasicBlock : PremiseHolder {
         public let terminator: Instruction
     }
 
-    public enum PremiseVerifier : AnalysisPass {
+    public enum PremiseVerifier : VerificationPass {
         public typealias Body = BasicBlock
+        public typealias Result = Premise
 
         public static func run(on body: BasicBlock) throws -> Premise {
             guard let last = body.last, last.kind.isTerminator else {
@@ -58,8 +72,9 @@ extension Function : PremiseHolder {
         public let exits: [(BasicBlock, Instruction)]
     }
 
-    public enum PremiseVerifier : AnalysisPass {
+    public enum PremiseVerifier : VerificationPass {
         public typealias Body = Function
+        public typealias Result = Premise
 
         public static func run(on body: Function) throws -> Premise {
             var exits: [(BasicBlock, Instruction)] = []
@@ -69,7 +84,7 @@ extension Function : PremiseHolder {
                     maybeEntry = bb
                     continue
                 }
-                let terminator = try bb.premise().terminator
+                let terminator = try bb.verifyPremise().terminator
                 if case .return = terminator.kind {
                     exits.append((bb, terminator))
                 }
