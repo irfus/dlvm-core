@@ -47,7 +47,7 @@ public extension AlgebraicRepresentation {
     }
 }
 
-extension AlgebraicExpression {
+public extension AlgebraicExpression {
     /// Top instruction (post-dominator) in the expression
     var topInstruction: Instruction? {
         switch self {
@@ -100,6 +100,10 @@ extension AlgebraicExpression {
         return (%self).value
     }
 
+    var type: Type {
+        return (%self).type
+    }
+
     static func ~= (pattern: IntegerLiteralType, expression: AlgebraicExpression) -> Bool {
         guard case let .atom(x) = expression else { return false }
         return pattern ~= x
@@ -123,6 +127,13 @@ extension AlgebraicExpression {
         case .atom(_): return true
         default: return false
         }
+    }
+
+    var instructions: AnySequence<Instruction> {
+        return AnySequence(
+            transposeTraversed(in: .breadthFirst).lazy.flatMap { expr in
+                expr.topInstruction
+            })
     }
 }
 

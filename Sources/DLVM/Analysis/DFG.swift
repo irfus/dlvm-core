@@ -115,3 +115,24 @@ open class DataFlowGraphAnalysis: AnalysisPass {
         return userGraph
     }
 }
+
+/// Convenience getter of users in Instruction
+extension Instruction : ForwardGraphNode {
+    public var users: Set<Instruction> {
+        let fn = parent.parent
+        let dfg = fn.analysis(from: DataFlowGraphAnalysis.self)
+        return dfg.successors(of: self)
+    }
+
+    public var successors: Set<Instruction> {
+        return users
+    }
+}
+
+extension Instruction : BackwardGraphNode {
+    public var predecessors: AnyCollection<Instruction> {
+        return AnyCollection(operands.lazy.flatMap {
+            $0.instruction
+        })
+    }
+}
