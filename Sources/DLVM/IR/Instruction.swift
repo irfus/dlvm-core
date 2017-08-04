@@ -29,6 +29,9 @@ public enum InstructionKind {
     /// Return
     case `return`(Use?)
 
+    /** Literal constructor **/
+    case literal(Literal, Type)
+
     /** Operators **/
     /// Monomorphic unary operation (map)
     case map(UnaryOp, Use)
@@ -201,6 +204,9 @@ public extension InstructionKind {
     /// Infers and returns the type of the result of the instruction
     var type: Type {
         switch self {
+        case let .literal(_, ty):
+            return ty
+
         case let .zipWith(.associative(assoc), v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
@@ -373,7 +379,30 @@ extension InstructionKind {
             return [f] + args
         case let .copy(from: op1, to: op2, count: op3):
             return [op1, op2, op3]
+        case let .literal(lit, _):
+            return lit.operands
         case .return(nil), .allocateBox, .trap, .allocateStack:
+            return []
+        }
+    }
+}
+
+public extension Literal {
+    var operands: [Use] {
+        func literalOperands(in use: Use) -> [Use] {
+            switch use {
+            case let .literal(_, lit):
+                return lit.operands
+            default:
+                return []
+            }
+        }
+        switch self {
+        case let .array(ops), let .tensor(ops), let .tuple(ops):
+            return ops.flatMap(literalOperands(in:))
+        case let .struct(tups):
+            return tups.map{$1}.flatMap(literalOperands(in:))
+        default:
             return []
         }
     }
@@ -403,6 +432,8 @@ public extension InstructionKind {
                                 elseBB, elseArgs.map(condSubst))
         case .return(old?):
             return .return(new)
+        case .literal(let lit, let ty):
+            return .literal(lit.substituting(new, for: old), ty)
         case .map(let fun, old):
             return .map(fun, new)
         case .zipWith(let fun, old, old):
@@ -485,6 +516,7 @@ public enum Opcode {
     case branch
     case conditional
     case `return`
+    case literal
     case dataTypeCast
     case scan
     case reduce
@@ -522,6 +554,7 @@ public extension InstructionKind {
         case .branch: return .branch
         case .conditional: return .conditional
         case .return: return .return
+        case .literal: return .literal
         case .map(let op, _): return .unaryOp(op)
         case .zipWith(let op, _, _): return .binaryOp(op)
         case .dataTypeCast: return .dataTypeCast

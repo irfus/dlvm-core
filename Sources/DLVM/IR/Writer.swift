@@ -163,6 +163,8 @@ extension InstructionKind : TextOutputStreamable {
             if let op = op {
                 target.write(" \(op)")
             }
+        case let .literal(lit, ty):
+            target.write("literal \(lit): \(ty)")
         case let .zipWith(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
         case let .matrixMultiply(op1, op2):

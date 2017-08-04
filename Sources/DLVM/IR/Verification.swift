@@ -380,6 +380,9 @@ extension InstructionKind {
 
         case .return: break /// Verified at Function
 
+        case let .literal(lit, ty):
+            try LiteralValue(type: ty, literal: lit).performVerification()
+
         case let .map(_, v1), let .transpose(v1):
             guard case .tensor(_, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
