@@ -95,6 +95,13 @@ public extension Use {
         case .literal: return nil
         }
     }
+
+    var instruction: Instruction? {
+        guard case let .instruction(_, inst) = self else {
+            return nil
+        }
+        return inst
+    }
 }
 
 infix operator ~
