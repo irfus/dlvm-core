@@ -46,6 +46,7 @@ For all targets (DLVM Core, Runtime, Compute), please use CMake.
 
 ```bash
 mkdir build
+cd build
 cmake ..
 make
 ```
