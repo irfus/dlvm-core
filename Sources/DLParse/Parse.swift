@@ -486,6 +486,12 @@ extension Parser {
         }
         /// - todo: parse instruction kind
         switch opcode {
+        /// 'literal' <literal> ':' <type>
+        case .literal:
+            let (lit, _) = try parseLiteral(in: basicBlock)
+            let (type, _) = try parseTypeSignature()
+            return .literal(lit, type)
+
         /// 'branch' <bb> '(' (<val> (',' <val>)*)? ')'
         case .branch:
             let (bbName, bbTok) = try parseIdentifier(ofKind: .basicBlock)
