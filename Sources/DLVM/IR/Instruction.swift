@@ -95,7 +95,7 @@ public final class Instruction : IRUnit, MaybeNamed {
     public typealias Parent = BasicBlock
     public var name: String?
     public var kind: InstructionKind
-    public unowned var parent: BasicBlock
+    public var parent: BasicBlock
 
     public init(name: String? = nil, kind: InstructionKind, parent: BasicBlock) {
         self.name = name
