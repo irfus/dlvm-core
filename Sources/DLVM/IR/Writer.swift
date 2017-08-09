@@ -93,8 +93,6 @@ extension Type : TextOutputStreamable {
             target.write("<\(s) x \(t)>")
         case let .tuple(elementTypes):
             target.write("(\(elementTypes.joinedDescription))")
-        case .void:
-            target.write("void")
         case let .array(n, elementType):
             target.write("[\(n) x \(elementType)]")
         case let .pointer(elementType):
@@ -355,7 +353,7 @@ extension Function : TextOutputStreamable {
 extension String {
     var literal: String {
         var out = ""
-        for char in characters {
+        for char in self {
             switch char {
             case "\"", "\\":
                 out.append("\\")

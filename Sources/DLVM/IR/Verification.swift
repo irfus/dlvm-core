@@ -94,7 +94,7 @@ private let identifierPattern = try! NSRegularExpression(pattern: "[a-zA-Z_][a-z
 
 private func verifyIdentifier<Unit : Verifiable>(_ id: String, in unit: Unit) throws {
     guard let _ = identifierPattern.firstMatch(in: id, options: [ .anchored ],
-                                               range: NSRange(0..<id.characters.count)) else {
+                                               range: NSRange(0..<id.count)) else {
         throw VerificationError.illegalName(id, unit)
     }
 }
