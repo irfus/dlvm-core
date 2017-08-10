@@ -436,8 +436,7 @@ extension InstructionKind {
                 accShape = newShape
             }
 
-        case let .reduce(.op(op), v1, dims),
-             let .scan(.op(op), v1, dims):
+        case let .scan(.op(op), v1, dims):
             let shape: TensorShape
             if op.isBoolean {
                 guard case let .tensor(s1, .bool) = v1.type.unaliased else {
@@ -453,9 +452,32 @@ extension InstructionKind {
             guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
+            
+        case let .reduce(.op(op), v1, initial, dims):
+            let shape: TensorShape
+            let dtype: DataType
+            if op.isBoolean {
+                guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                    throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+                }
+                shape = s1
+                dtype = .bool
+            } else {
+                guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                    throw VerificationError.dataTypeNotNumeric(v1, instruction)
+                }
+                shape = s1
+                dtype = t1
+            }
+            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            /// Initial must be a scalar
+            guard case .tensor([], dtype) = initial.type.canonical else {
+                throw VerificationError.unexpectedShape(initial, .scalar, instruction)
+            }
 
-        case let .reduce(.function(f), v1, dims),
-             let .scan(.function(f), v1, dims):
+        case let .scan(.function(f), v1, dims):
             guard case let .tensor(s1, t1) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
@@ -465,6 +487,22 @@ extension InstructionKind {
             }
             guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            
+        case let .reduce(.function(f), v1, initial, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+            let expectedFuncType: Type = .function([.tensor([], t1)], .tensor([], t1))
+            guard expectedFuncType == f.type.unaliased else {
+                throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
+            }
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            /// Initial must be a scalar
+            guard case .tensor([], t1) = initial.type.canonical else {
+                throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
         case let .shapeCast(v1, target):

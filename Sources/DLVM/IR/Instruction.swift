@@ -42,7 +42,7 @@ public enum InstructionKind {
     /// Scan operation
     case scan(ReductionCombinator, Use, [Int])
     /// Reduction operation
-    case reduce(ReductionCombinator, Use, [Int])
+    case reduce(ReductionCombinator, Use, initial: Use, [Int])
     /// Matrix multiplication operation
     case matrixMultiply(Use, Use)
     /// Concatenation operation
@@ -234,20 +234,29 @@ public extension InstructionKind {
             guard case .tensor(_, _) = v1.type.unaliased else { return .invalid }
             return v1.type
 
-        case let .reduce(op, v1, dims):
+        case let .reduce(op, v1, initial, dims):
+            let dtype: DataType
+            let resultType: Type
             switch (op, v1.type.unaliased) {
             case let (.op(op), .tensor(s1, .bool))
                 where op.isBoolean && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
-                return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), .bool)
+                dtype = .bool
+                resultType = .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), .bool)
             case let (.op(op), .tensor(s1, t1))
                 where !op.isBoolean && t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
-                return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
+                dtype = t1
+                resultType = .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
             case let (.function(f), .tensor(s1, t1))
                 where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):
-                return .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
+                dtype = t1
+                resultType = .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
             default:
                 return .invalid
             }
+            guard case .tensor([], dtype) = initial.type.canonical else {
+                return .invalid
+            }
+            return resultType
 
         case let .scan(_, v1, _):
             guard case .tensor = v1.type.unaliased else { return .invalid }
@@ -360,9 +369,10 @@ extension InstructionKind {
         switch self {
         case let .zipWith(_, op1, op2),
              let .matrixMultiply(op1, op2),
-             let .insert(op1, to: op2, at: _):
+             let .insert(op1, to: op2, at: _),
+             let .reduce(_, op1, initial: op2, _):
             return [op1, op2]
-        case let .map(_, op), let .reduce(_, op, _), let .scan(_, op, _),
+        case let .map(_, op), let .scan(_, op, _),
              let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
              let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
              let .extract(from: op, at: _),
@@ -448,14 +458,20 @@ public extension InstructionKind {
             return .transpose(new)
         case .slice(old, at: let range):
             return .slice(new, at: range)
-        case .reduce(.function(old), old, let dims):
-            return .reduce(.function(new), new, dims)
-        case .reduce(.function(old), let v1, let dims):
-            return .reduce(.function(new), v1, dims)
-        case .reduce(.function(let v1), old, let dims):
-            return .reduce(.function(v1), new, dims)
-        case .reduce(let fun, old, let dims):
-            return .reduce(fun, new, dims)
+        case .reduce(.function(old), old, initial: old, let dims):
+            return .reduce(.function(new), new, initial: new, dims)
+        case .reduce(.function(old), old, initial: let v1, let dims):
+            return .reduce(.function(new), new, initial: v1, dims)
+        case .reduce(.function(old), let v1, initial: old, let dims):
+            return .reduce(.function(new), v1, initial: new, dims)
+        case .reduce(.function(let v1), old, initial: old, let dims):
+            return .reduce(.function(v1), new, initial: new, dims)
+        case .reduce(.function(let v1), let v2, initial: old, let dims):
+            return .reduce(.function(v1), v2, initial: new, dims)
+        case .reduce(.function(let v1), old, initial: let v2, let dims):
+            return .reduce(.function(v1), new, initial: v2, dims)
+        case .reduce(.function(old), let v1, initial: let v2, let dims):
+            return .reduce(.function(new), v1, initial: v2, dims)
         case .matrixMultiply(old, let use2):
             return .matrixMultiply(new, use2)
         case .matrixMultiply(let use1, old):
