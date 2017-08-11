@@ -51,6 +51,27 @@ public enum InstructionKind {
     case transpose(Use)
     /// Slice
     case slice(Use, at: CountableClosedRange<Int>)
+    /// Convolution
+    /// A convolution can be thought of as a n-dimensional window moving across a n-dimensional
+    /// base area and a computation is performed for each possible position of the window.
+    /// (https://www.tensorflow.org/performance/xla/operation_semantics#conv)
+//    case convolve(
+//        Use, // Input of rank n+2
+//        kernel: Use, // Kernel weights of rank n+2
+//        strides: [Int], // Kernel strides of rank n
+//        padding: [(low: Int, high: Int)], // Padding of rank n
+//        leftDilation: [Int], // Dilation factor of rank n
+//        rightDilation: [Int] // Dilation factor of rank n
+//    )
+//    /// Reduce window
+//    case reduceWindow(
+//        ReductionCombinator, // Function or op
+//        Use, // Usage
+//        initial: Use, // Initial value
+//        dimensions: [Int], // Window dimensions
+//        strides: [Int], // Window strides
+//        padding: Bool // Whether padding should be preserved
+//    )
 
     /** Cost-free casts **/
     /// Shape cast operation
