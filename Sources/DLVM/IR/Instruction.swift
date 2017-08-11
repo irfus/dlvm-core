@@ -43,8 +43,8 @@ public enum InstructionKind {
     case scan(ReductionCombinator, Use, [Int])
     /// Reduction operation
     case reduce(ReductionCombinator, Use, initial: Use, [Int])
-    /// Matrix multiplication operation
-    case matrixMultiply(Use, Use)
+    /// vector dot, matrix-vector multiplication and matrix-matrix multiplication
+    case dot(Use, Use)
     /// Concatenation operation
     case concatenate([Use], axis: Int)
     /// Transpose
@@ -193,7 +193,7 @@ public extension InstructionKind {
     /// Returns true iff the instruction represets a linear transformation
     var isLinearTransformation: Bool {
         switch self {
-        case .transpose, .matrixMultiply: return true
+        case .transpose, .dot: return true
         default: return false
         }
     }
@@ -223,7 +223,7 @@ public extension InstructionKind {
             }
             return .tensor(s1, .bool)
 
-        case let .matrixMultiply(v1, v2):
+        case let .dot(v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
                   let newShape = s1.matrixMultiplied(by: s2),
@@ -368,7 +368,7 @@ extension InstructionKind {
     public var operands: [Use] {
         switch self {
         case let .zipWith(_, op1, op2),
-             let .matrixMultiply(op1, op2),
+             let .dot(op1, op2),
              let .insert(op1, to: op2, at: _),
              let .reduce(_, op1, initial: op2, _):
             return [op1, op2]
@@ -472,12 +472,12 @@ public extension InstructionKind {
             return .reduce(.function(v1), new, initial: v2, dims)
         case .reduce(.function(old), let v1, initial: let v2, let dims):
             return .reduce(.function(new), v1, initial: v2, dims)
-        case .matrixMultiply(old, let use2):
-            return .matrixMultiply(new, use2)
-        case .matrixMultiply(let use1, old):
-            return .matrixMultiply(use1, new)
-        case .matrixMultiply(old, old):
-            return .matrixMultiply(new, new)
+        case .dot(old, let use2):
+            return .dot(new, use2)
+        case .dot(let use1, old):
+            return .dot(use1, new)
+        case .dot(old, old):
+            return .dot(new, new)
         case .shapeCast(old, let shape):
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
@@ -536,7 +536,7 @@ public enum Opcode {
     case dataTypeCast
     case scan
     case reduce
-    case matrixMultiply
+    case dot
     case concatenate
     case transpose
     case slice
@@ -576,7 +576,7 @@ public extension InstructionKind {
         case .dataTypeCast: return .dataTypeCast
         case .scan: return .scan
         case .reduce: return .reduce
-        case .matrixMultiply: return .matrixMultiply
+        case .dot: return .dot
         case .concatenate: return .concatenate
         case .transpose: return .transpose
         case .slice: return .slice
@@ -610,7 +610,7 @@ extension Opcode : Equatable {
         case (.dataTypeCast, .dataTypeCast): return true
         case (.scan, .scan): return true
         case (.reduce, .reduce): return true
-        case (.matrixMultiply, .matrixMultiply): return true
+        case (.dot, .dot): return true
         case (.concatenate, .concatenate): return true
         case (.transpose, .transpose): return true
         case (.slice, .slice): return true

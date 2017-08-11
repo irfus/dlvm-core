@@ -169,15 +169,15 @@ fileprivate extension Differentiation {
                                    %bd.divide(lhsClone, %bd.multiply(rhsClone, rhsClone))))
             ]
 
-        /* Matrix multiplication */
-        case let .matrixMultiply(lhs, rhs):
+        /* Dot */
+        case let .dot(lhs, rhs):
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
                 /// ∂f/∂x = D • y^T
-                (lhs, %bd.matrixMultiply(%bd.transpose(lhsClone), adjoint)),
+                (lhs, %bd.dot(%bd.transpose(lhsClone), adjoint)),
                 /// ∂f/∂y = x^T • D
-                (rhs, %bd.matrixMultiply(adjoint, %bd.transpose(rhsClone))),
+                (rhs, %bd.dot(adjoint, %bd.transpose(rhsClone))),
             ]
 
 

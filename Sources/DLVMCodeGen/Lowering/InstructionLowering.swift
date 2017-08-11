@@ -230,8 +230,8 @@ extension DLVM.InstructionKind {
         case let .zipWith(op, lhs, rhs):
             return emitZipWith(op, lhs, rhs, to: context, in: env)
 
-        case let .matrixMultiply(lhs, rhs):
-            return emitMatrixMultiply(lhs, rhs, to: context, in: env)
+        case let .dot(lhs, rhs):
+            return emitDot(lhs, rhs, to: context, in: env)
 
             // case let .concatenate(args, axis: axis):
 
@@ -282,8 +282,8 @@ extension DLVM.InstructionKind {
         DLUnimplemented()
     }
 
-    func emitMatrixMultiply<T>(_ lhs: Use, _ rhs: Use,
-                            to context: LLGenContext<T>, in env: LLGenEnvironment) -> LLVMValueRef {
+    func emitDot<T>(_ lhs: Use, _ rhs: Use,
+                    to context: LLGenContext<T>, in env: LLGenEnvironment) -> LLVMValueRef {
         DLUnimplemented()
     }
 

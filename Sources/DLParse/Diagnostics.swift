@@ -213,7 +213,7 @@ extension Opcode : CustomStringConvertible {
         case .dataTypeCast: return "dataTypeCast"
         case .scan: return "scan"
         case .reduce: return "reduce"
-        case .matrixMultiply: return "matrixMultiply"
+        case .dot: return "dot"
         case .concatenate: return "concatenate"
         case .transpose: return "transpose"
         case .slice: return "slice"

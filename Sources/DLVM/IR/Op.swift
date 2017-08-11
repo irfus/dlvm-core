@@ -54,11 +54,11 @@ public enum ReductionCombinator {
 // MARK: - Operator kinds and properties
 
 public enum OpKind {
-    case map(UnaryOp)        /// Unary elementwise
-    case zipWith(BinaryOp)      /// Binary elementwise
+    case map(UnaryOp)          /// Unary elementwise
+    case zipWith(BinaryOp)     /// Binary elementwise
     case scan(AssociativeOp)   /// Scan
     case reduce(AssociativeOp) /// Reduce
-    case matrixMultiply        /// Matrix multiplication
+    case dot                   /// vector dot, matrix-vector mult & matrix-matrix mult
     case concatenate           /// Concatenation
 }
 
@@ -86,7 +86,7 @@ public extension OpKind {
         switch self {
         case .map: return 1
         case .zipWith: return 2
-        case .matrixMultiply: return 2
+        case .dot: return 2
         case .reduce: return 1
         case .scan: return 1
         case .concatenate: return Int.max
@@ -104,7 +104,7 @@ public extension OpKind {
             return args[0].broadcast(with: args[1])
         case .scan, .reduce:
             return args[0]
-        case .matrixMultiply:
+        case .dot:
             return args[0].matrixMultiplied(by: args[1])
         default:
             return nil
