@@ -83,7 +83,7 @@ class IRTests: XCTestCase {
         builder.store(structLit ~ .struct(struct1), to: %struct1Global)
         builder.return()
         XCTAssertEqual(fun.description, """
-            func @initialize_struct1: () -> void {
+            func @initialize_struct1: () -> () {
             'entry():
                 store {#foo = 100000: i32, \
             #bar = undefined: <1 x 3 x 4 x f64>, \
