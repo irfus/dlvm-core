@@ -47,6 +47,6 @@ public extension TransformPass {
 
 public extension Pass {
     static var name: String {
-        return String(describing: type(of: self))
+        return String(describing: self)
     }
 }
