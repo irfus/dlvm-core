@@ -144,7 +144,7 @@ public extension Function {
             let instIndex = oldInstruction.indexInParent
             for bb in suffix(from: bbIndex) {
                 for inst in bb {
-                    if bb == inst.parent, inst.indexInParent < instIndex {
+                    if bb == oldInstruction.parent, inst.indexInParent < instIndex {
                         continue
                     }
                     inst.substitute(newUse, for: %oldInstruction)
