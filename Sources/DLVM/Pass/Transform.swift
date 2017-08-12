@@ -38,8 +38,10 @@ public extension IRCollection {
             }
             catch {
                 fatalError("""
-                    Malformed IR after transform \(P.name). This could be caused\
+                    Malformed IR after transform \(P.name). This could be caused
                     by not running verification beforehand, or a bug in \(P.name).
+                    Verification error:
+                    \(error)
                     """)
             }
         }
