@@ -38,17 +38,6 @@ public extension Value {
     }
 }
 
-public protocol SimpleValue : Value {
-    var shape: TensorShape { get }
-    var dataType: DataType { get }
-}
-
-public extension SimpleValue {
-    var type: Type {
-        return .tensor(shape, dataType)
-    }
-}
-
 /// Anything that has a name
 public protocol Named {
     var name: String { get }
