@@ -88,6 +88,31 @@ func @foo8: () -> <1 x 10 x f32> {
     return %0.0: <1 x 10 x f32>
 }
 
+func @foo9: () -> <2 x 2 x f32> {
+'entry():
+    %a = random scalar from 0.0: f32 upto 1.0: f32
+    %b = random 4 from 0.0: f32 upto 1.0: f32
+    %c = literal <<true: bool, false: bool>: <2 x bool>, <true: bool, false: bool>: <2 x bool>>: <2 x 2 x bool>
+    %d = shapeCast %c: <2 x 2 x bool> to 4
+    %e = select %a: f32, %b: <4 x f32> by %d: <4 x bool>
+    %f = shapeCast %e: <4 x f32> to 2 x 2
+    %g = literal <<1: f32>: <1 x f32>>: <1 x 1 x f32>
+    %h = shapeCast %g: <1 x 1 x f32> to scalar
+    %i = greaterThan %f: <2 x 2 x f32>, %h: f32
+    %all = reduce %i: <2 x 2 x bool> by and init true: bool along 0, 1
+    conditional %all: bool then 'b1(%h: f32) else 'b2(%h: f32)
+'b1(%k: f32):
+    %k1 = shapeCast %k: f32 to 1
+    %kv1 = concatenate %k1: <1 x f32>, %k1: <1 x f32>, %k1: <1 x f32>, %k1: <1 x f32> along 0
+    %kr1 = shapeCast %kv1: <4 x f32> to 2 x 2
+    return %kr1: <2 x 2 x f32>
+'b2(%n: f32):
+    %k2 = shapeCast %n: f32 to 1
+    %kv2 = concatenate %k2: <1 x f32>, %k2: <1 x f32>, %k2: <1 x f32>, %k2: <1 x f32> along 0
+    %kr2 = shapeCast %kv2: <4 x f32> to 2 x 2
+    return %kr2: <2 x 2 x f32>
+}
+
 var @x: $MNIST
 var @test_tensor: <10000 x 20000 x f16>
 

@@ -313,7 +313,7 @@ extension Parser {
         }
     }
 
-    /// Parse a shape
+    /// Parse a non-scalar shape
     func parseNonScalarShape() throws -> (TensorShape, SourceRange) {
         let (first, firstRange) = try parseInteger()
         var dims = [first]
@@ -330,6 +330,23 @@ extension Parser {
             return num
         }) { dims.append(dim) }
         return (TensorShape(dims), firstRange.lowerBound..<lastLoc)
+    }
+    
+    /// Parse a shape
+    func parseShape() throws -> TensorShape {
+        return try withPeekedToken("""
+            dimensions separated by 'x', or 'scalar'
+            """, { tok in
+            switch tok.kind {
+            case .keyword(.scalar):
+                consumeToken()
+                return .scalar
+            case .integer(_):
+                return try parseNonScalarShape().0
+            default:
+                return nil
+            }
+        })
     }
 
     func parseElementKey(in basicBlock: BasicBlock?) throws -> (ElementKey, SourceRange) {
@@ -777,6 +794,24 @@ extension Parser {
         /// <unary_op> <val>
         case let .unaryOp(op):
             return try .map(op, parseUse(in: basicBlock).0)
+        
+        /// 'random' <shape> 'from' <val> 'upto' <val>
+        case .random:
+            let shape = try parseShape()
+            try consume(.keyword(.from))
+            let (lo, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.upto))
+            let (hi, _) = try parseUse(in: basicBlock)
+            return .random(shape, from: lo, upTo: hi)
+            
+        /// 'select' <val>, <val> 'by' <val>
+        case .select:
+            let (left, _) = try parseUse(in: basicBlock)
+            try consumeWrappablePunctuation(.comma)
+            let (right, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.by))
+            let (flags, _) = try parseUse(in: basicBlock)
+            return .select(left, right, by: flags)
         }
     }
 

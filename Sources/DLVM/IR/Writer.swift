@@ -215,6 +215,10 @@ extension InstructionKind : TextOutputStreamable {
             target.write("copy from \(src) to \(dest) count \(count)")
         case .trap:
             target.write("trap")
+        case let .random(shape, from: lo, upTo: hi):
+            target.write("random \(shape) from \(lo) upto \(hi)")
+        case let .select(left, right, by: flags):
+            target.write("select \(left), \(right) by \(flags)")
         }
     }
 }

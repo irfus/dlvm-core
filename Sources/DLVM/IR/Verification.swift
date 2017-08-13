@@ -26,7 +26,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case noParent(Node)
     case blockFunctionMismatch(BasicBlock, Node)
     case missingTerminator(Node)
-    case unbroadcastableMismatch(Use, Use, Node)
+    case unbroadcastableMismatch([Use], Node)
     case typeMismatch(Use, Use, Node)
     case unexpectedShape(Use, TensorShape, Node)
     case unexpectedDataType(Use, DataType, Node)
@@ -81,6 +81,8 @@ public enum VerificationError<Node : Verifiable> : Error {
     case invalidAllocationSize(Node)
     case declarationCannotHaveBody(Node)
     case nestedLiteralNotInLiteralInstruction(Literal, Node)
+    case randomBoundNotScalar(Use, Node)
+    case dataTypeMismatch(Use, Use, Node)
 }
 
 public protocol Verifiable {
@@ -409,10 +411,17 @@ extension InstructionKind {
             }
 
         case let .zipWith(_, lhs, rhs):
-            guard case let .tensor(s1, t1) = lhs.type.unaliased,
-                  case let .tensor(s2, t2) = rhs.type.unaliased,
-                  s1.isCompatible(with: s2), t1 == t2 else {
-                throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
+            guard case let .tensor(s1, dt1) = lhs.type.unaliased else {
+                throw VerificationError.notTensor(lhs, instruction)
+            }
+            guard case let .tensor(s2, dt2) = rhs.type.unaliased else {
+                throw VerificationError.notTensor(rhs, instruction)
+            }
+            guard dt1 == dt2 else {
+                throw VerificationError.dataTypeMismatch(lhs, rhs, instruction)
+            }
+            guard s1.isCompatible(with: s2) else {
+                throw VerificationError.unbroadcastableMismatch([lhs, rhs], instruction)
             }
 
         case let .dot(lhs, rhs):
@@ -612,6 +621,43 @@ extension InstructionKind {
         case let .allocateStack(_, n):
             guard n > 0 else {
                 throw VerificationError.invalidAllocationSize(instruction)
+            }
+            
+        case let .random(_, from: lo, upTo: hi):
+            /// Bounds must be scalar
+            guard case let .tensor([], dt1) = lo.type.unaliased else {
+                throw VerificationError.randomBoundNotScalar(lo, instruction)
+            }
+            guard case let .tensor([], dt2) = hi.type.unaliased else {
+                throw VerificationError.randomBoundNotScalar(hi, instruction)
+            }
+            /// Same data type
+            guard dt1 == dt2 else {
+                throw VerificationError.dataTypeMismatch(lo, hi, instruction)
+            }
+            /// Numeric
+            guard dt1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(lo, instruction)
+            }
+        
+        case let .select(left, right, by: flags):
+            guard case let .tensor(s1, dt1) = left.type.unaliased else {
+                throw VerificationError.notTensor(left, instruction)
+            }
+            guard case let .tensor(s2, dt2) = right.type.unaliased else {
+                throw VerificationError.notTensor(right, instruction)
+            }
+            guard case let .tensor(s3, dt3) = flags.type.unaliased else {
+                throw VerificationError.notTensor(flags, instruction)
+            }
+            guard dt1 == dt2 else {
+                throw VerificationError.dataTypeMismatch(left, right, instruction)
+            }
+            guard let _ = broadcast(s1, s2, s3) else {
+                throw VerificationError.unbroadcastableMismatch([left, right, flags], instruction)
+            }
+            guard dt3.isBool else {
+                throw VerificationError.unexpectedDataType(flags, .bool, instruction)
             }
             
         case .trap, .allocateBox: break
