@@ -262,19 +262,20 @@ public extension InstructionKind {
         case let .reduce(op, v1, initial, dims):
             let dtype: DataType
             let resultType: Type
+            let dimSet = Set(dims)
             switch (op, v1.type.unaliased) {
             case let (.op(op), .tensor(s1, .bool))
                 where op.isBoolean && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 dtype = .bool
-                resultType = .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), .bool)
+                resultType = .tensor(s1.droppingDimensions(dimSet), .bool)
             case let (.op(op), .tensor(s1, t1))
                 where !op.isBoolean && t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 dtype = t1
-                resultType = .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
+                resultType = .tensor(s1.droppingDimensions(dimSet), t1)
             case let (.function(f), .tensor(s1, t1))
                 where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):
                 dtype = t1
-                resultType = .tensor(dims.reduce(s1, { $0.droppingDimension($1) }), t1)
+                resultType = .tensor(s1.droppingDimensions(dimSet), t1)
             default:
                 return .invalid
             }
@@ -289,7 +290,8 @@ public extension InstructionKind {
 
         case let .concatenate(vv, axis):
             guard let first = vv.first,
-                  case let .tensor(s1, t1) = first.type.unaliased
+                  case let .tensor(s1, t1) = first.type.unaliased,
+                  axis < s1.rank
                 else { return .invalid }
             var accShape: TensorShape = s1
             for v in vv.dropFirst() {

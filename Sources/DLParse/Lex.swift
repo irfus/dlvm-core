@@ -528,7 +528,7 @@ private extension Lexer {
         case "select": kind = .opcode(.select)
         case "lessThan": kind = .opcode(.binaryOp(.comparison(.lessThan)))
         case "lessThanOrEqual": kind = .opcode(.binaryOp(.comparison(.lessThanOrEqual)))
-        case "greaterThan": kind = .opcode(.binaryOp(.comparison(.lessThanOrEqual)))
+        case "greaterThan": kind = .opcode(.binaryOp(.comparison(.greaterThan)))
         case "greaterThanOrEqual": kind = .opcode(.binaryOp(.comparison(.greaterThanOrEqual)))
         case "equal": kind = .opcode(.binaryOp(.comparison(.equal)))
         case "notEqual": kind = .opcode(.binaryOp(.comparison(.notEqual)))
