@@ -1,6 +1,6 @@
 Name: LLVM
-Description: Low-level Virtual Machine compiler framework
-Version: 3.9.1
+Description: LLVM
+Version: 5.0.0
 Libs: -L/usr/local/lib/ -lcurses -lz -lm -lc++ -lLLVM
 Requires.private:
 Cflags: -I/usr/local/include
