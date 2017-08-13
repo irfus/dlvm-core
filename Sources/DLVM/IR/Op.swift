@@ -51,17 +51,6 @@ public enum ReductionCombinator {
     case op(AssociativeOp)
 }
 
-// MARK: - Operator kinds and properties
-
-public enum OpKind {
-    case map(UnaryOp)          /// Unary elementwise
-    case zipWith(BinaryOp)     /// Binary elementwise
-    case scan(AssociativeOp)   /// Scan
-    case reduce(AssociativeOp) /// Reduce
-    case dot                   /// vector dot, matrix-vector mult & matrix-matrix mult
-    case concatenate           /// Concatenation
-}
-
 public extension AssociativeOp {
     var isBoolean: Bool {
         switch self {
@@ -77,37 +66,6 @@ extension BinaryOp : Equatable {
         case let (.associative(o1), .associative(o2)): return o1 == o2
         case let (.comparison(o1), .comparison(o2)): return o1 == o2
         default: return false
-        }
-    }
-}
-
-public extension OpKind {
-    var argumentCount: Int {
-        switch self {
-        case .map: return 1
-        case .zipWith: return 2
-        case .dot: return 2
-        case .reduce: return 1
-        case .scan: return 1
-        case .concatenate: return Int.max
-        }
-    }
-
-    func resultShape(forArguments args: [TensorShape]) -> TensorShape? {
-        guard !args.isEmpty else { return nil }
-        switch self {
-        case .concatenate:
-            return args.dropFirst().reduce(args[0], { acc, x in acc?.concatenating(with: x) })
-        case .map where args.count == 1:
-            return args[0]
-        case .zipWith(_) where args.count == 2:
-            return args[0].broadcast(with: args[1])
-        case .scan, .reduce:
-            return args[0]
-        case .dot:
-            return args[0].matrixMultiplied(by: args[1])
-        default:
-            return nil
         }
     }
 }
