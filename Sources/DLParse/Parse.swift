@@ -780,7 +780,14 @@ extension Parser {
             try consumeWrappablePunctuation(.comma)
             let (rhs, _) = try parseUse(in: basicBlock)
             return .zipWith(op, lhs, rhs)
-
+            
+        /// <comparison_op> <val>, <val>
+        case let .compare(op):
+            let (lhs, _) = try parseUse(in: basicBlock)
+            try consumeWrappablePunctuation(.comma)
+            let (rhs, _) = try parseUse(in: basicBlock)
+            return .compare(op, lhs, rhs)
+            
         /// <unary_op> <val>
         case let .unaryOp(op):
             return try .map(op, parseUse(in: basicBlock).0)

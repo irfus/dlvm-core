@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+import CoreOp
+
 public indirect enum Use {
     case argument(Type, Argument)
     case instruction(Type, Instruction)
@@ -70,6 +72,10 @@ public extension Use {
                 self = .function(newType, x)
             }
         }
+    }
+    
+    var tensorType: TensorType? {
+        return type.tensorType
     }
 
     var value: Value {

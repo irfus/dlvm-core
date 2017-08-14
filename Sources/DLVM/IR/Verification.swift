@@ -18,6 +18,7 @@
 //
 
 import CoreTensor
+import CoreOp
 
 public enum VerificationError<Node : Verifiable> : Error {
     case illegalName(String, Node)
@@ -78,6 +79,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case structFieldNameMismatch(StructType, Use, Node)
     case invalidReductionDimensions([Int], Use, Node)
     case dataTypeNotNumeric(Use, Node)
+    case dataTypeNotBoolean(Use, Node)
     case invalidAllocationSize(Node)
     case declarationCannotHaveBody(Node)
     case nestedLiteralNotInLiteralInstruction(Literal, Node)
@@ -394,7 +396,7 @@ extension InstructionKind {
         case let .literal(lit, ty):
             try LiteralValue(type: ty, literal: lit).performVerification()
 
-        case let .map(_, v1), let .transpose(v1):
+        case let .numericUnary(_, v1), let .transpose(v1):
             guard case .tensor(_, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
@@ -410,7 +412,47 @@ extension InstructionKind {
                 throw VerificationError.invalidSlicingRange(range, instruction)
             }
 
-        case let .zipWith(_, lhs, rhs):
+        case let .numericBinary(_, lhs, rhs):
+            guard case let .tensor(s1, dt1) = lhs.type.unaliased else {
+                throw VerificationError.notTensor(lhs, instruction)
+            }
+            guard case let .tensor(s2, dt2) = rhs.type.unaliased else {
+                throw VerificationError.notTensor(rhs, instruction)
+            }
+            guard dt1 == dt2 else {
+                throw VerificationError.dataTypeMismatch(lhs, rhs, instruction)
+            }
+            guard dt1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(lhs, instruction)
+            }
+            guard dt2.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(rhs, instruction)
+            }
+            guard s1.isCompatible(with: s2) else {
+                throw VerificationError.unbroadcastableMismatch([lhs, rhs], instruction)
+            }
+            
+        case let .booleanBinary(_, lhs, rhs):
+            guard case let .tensor(s1, dt1) = lhs.type.unaliased else {
+                throw VerificationError.notTensor(lhs, instruction)
+            }
+            guard case let .tensor(s2, dt2) = rhs.type.unaliased else {
+                throw VerificationError.notTensor(rhs, instruction)
+            }
+            guard dt1 == dt2 else {
+                throw VerificationError.dataTypeMismatch(lhs, rhs, instruction)
+            }
+            guard dt1.isBool else {
+                throw VerificationError.dataTypeNotBoolean(lhs, instruction)
+            }
+            guard dt2.isBool else {
+                throw VerificationError.dataTypeNotBoolean(rhs, instruction)
+            }
+            guard s1.isCompatible(with: s2) else {
+                throw VerificationError.unbroadcastableMismatch([lhs, rhs], instruction)
+            }
+            
+        case let .compare(_, lhs, rhs):
             guard case let .tensor(s1, dt1) = lhs.type.unaliased else {
                 throw VerificationError.notTensor(lhs, instruction)
             }
@@ -422,6 +464,14 @@ extension InstructionKind {
             }
             guard s1.isCompatible(with: s2) else {
                 throw VerificationError.unbroadcastableMismatch([lhs, rhs], instruction)
+            }
+            
+        case let .not(v):
+            guard case let .tensor(_, dt1) = v.type.unaliased else {
+                throw VerificationError.notTensor(v, instruction)
+            }
+            guard dt1.isBool else {
+                throw VerificationError.dataTypeNotNumeric(v, instruction)
             }
 
         case let .dot(lhs, rhs):
@@ -445,39 +495,44 @@ extension InstructionKind {
                 accShape = newShape
             }
 
-        case let .scan(.op(op), v1, dims):
-            let shape: TensorShape
-            if op.isBoolean {
-                guard case let .tensor(s1, .bool) = v1.type.unaliased else {
-                    throw VerificationError.unexpectedDataType(v1, .bool, instruction)
-                }
-                shape = s1
-            } else {
-                guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
-                    throw VerificationError.dataTypeNotNumeric(v1, instruction)
-                }
-                shape = s1
+        case let .scan(.numeric(_), v1, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
+            let shape = s1
             guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             
-        case let .reduce(.op(op), v1, initial, dims):
-            let shape: TensorShape
-            let dtype: DataType
-            if op.isBoolean {
-                guard case let .tensor(s1, .bool) = v1.type.unaliased else {
-                    throw VerificationError.unexpectedDataType(v1, .bool, instruction)
-                }
-                shape = s1
-                dtype = .bool
-            } else {
-                guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
-                    throw VerificationError.dataTypeNotNumeric(v1, instruction)
-                }
-                shape = s1
-                dtype = t1
+        case let .scan(.boolean(_), v1, dims):
+            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
             }
+            let shape = s1
+            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            
+        case let .reduce(.numeric(_), v1, initial, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(v1, instruction)
+            }
+            let shape = s1
+            let dtype = t1
+            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            /// Initial must be a scalar
+            guard case .tensor([], dtype) = initial.type.canonical else {
+                throw VerificationError.unexpectedShape(initial, .scalar, instruction)
+            }
+            
+        case let .reduce(.boolean(_), v1, initial, dims):
+            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+            }
+            let shape = s1
+            let dtype: DataType = .bool
             guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }

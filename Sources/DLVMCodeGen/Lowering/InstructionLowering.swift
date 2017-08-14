@@ -272,7 +272,7 @@ extension DLVM.InstructionKind {
         }
     }
 
-    func emitMap<T>(_ operator: UnaryOp, _ argument: Use,
+    func emitMap<T>(_ operator: NumericUnaryOp, _ argument: Use,
                  to context: LLGenContext<T>, in env: LLGenEnvironment) -> LLVMValueRef {
         DLUnimplemented()
     }

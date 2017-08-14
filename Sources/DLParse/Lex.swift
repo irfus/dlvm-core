@@ -19,7 +19,7 @@
 
 import enum DLVM.InstructionKind
 import enum DLVM.Opcode
-import enum DLVM.DataType
+import enum CoreOp.DataType
 import class DLVM.Function
 
 // MARK: - Token definition
@@ -526,12 +526,12 @@ private extension Lexer {
         case "trap": kind = .opcode(.trap)
         case "random": kind = .opcode(.random)
         case "select": kind = .opcode(.select)
-        case "lessThan": kind = .opcode(.binaryOp(.comparison(.lessThan)))
-        case "lessThanOrEqual": kind = .opcode(.binaryOp(.comparison(.lessThanOrEqual)))
-        case "greaterThan": kind = .opcode(.binaryOp(.comparison(.greaterThan)))
-        case "greaterThanOrEqual": kind = .opcode(.binaryOp(.comparison(.greaterThanOrEqual)))
-        case "equal": kind = .opcode(.binaryOp(.comparison(.equal)))
-        case "notEqual": kind = .opcode(.binaryOp(.comparison(.notEqual)))
+        case "lessThan": kind = .opcode(.compare(.lessThan))
+        case "lessThanOrEqual": kind = .opcode(.compare(.lessThanOrEqual))
+        case "greaterThan": kind = .opcode(.compare(.greaterThan))
+        case "greaterThanOrEqual": kind = .opcode(.compare(.greaterThanOrEqual))
+        case "equal": kind = .opcode(.compare(.equal))
+        case "notEqual": kind = .opcode(.compare(.notEqual))
         case "and": kind = .opcode(.binaryOp(.associative(.and)))
         case "or": kind = .opcode(.binaryOp(.associative(.or)))
         case "add": kind = .opcode(.binaryOp(.associative(.add)))

@@ -18,6 +18,7 @@
 //
 
 import CoreTensor
+import CoreOp
 
 // MARK: - Core Instruction Set
 public enum InstructionKind {
@@ -33,10 +34,16 @@ public enum InstructionKind {
     case literal(Literal, Type)
 
     /** Operators **/
-    /// Monomorphic unary operation (map)
-    case map(UnaryOp, Use)
-    /// Monomorphic binary operation (zipWith)
-    case zipWith(BinaryOp, Use, Use)
+    /// Elementwise numeric unary operation (map)
+    case numericUnary(NumericUnaryOp, Use)
+    /// Elementwise numeric binary operation (zipWith)
+    case numericBinary(NumericBinaryOp, Use, Use)
+    /// Elementwise binary boolean operation
+    case booleanBinary(BooleanBinaryOp, Use, Use)
+    /// Negation
+    case not(Use)
+    /// Comparison
+    case compare(ComparisonOp, Use, Use)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
     /// Scan operation
@@ -191,11 +198,11 @@ public extension InstructionKind {
         }
     }
 
-    /// Returns true iff the instruction is a zipWith operation broadcasting
+    /// Returns true iff the instruction is a binary operation broadcasting
     /// two tensors of different but compatible shapes
     var isBroadcasting: Bool {
         switch self {
-        case let .zipWith(_, x, y):
+        case let .numericBinary(_, x, y), let .compare(_, x, y):
             guard case let .tensor(s1, _) = x.type.canonical,
                   case let .tensor(s2, _) = y.type.canonical else {
                 return false
@@ -210,7 +217,7 @@ public extension InstructionKind {
     /// with its operands (which are tensors)
     var isElementwiseArithmetic: Bool {
         switch self {
-        case .map, .zipWith: return true
+        case .numericUnary, .numericBinary, .compare: return true
         default: return false
         }
     }
@@ -232,21 +239,31 @@ public extension InstructionKind {
         case let .literal(_, ty):
             return ty
 
-        case let .zipWith(.associative(assoc), v1, v2):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1 == t2, s1.isCompatible(with: s2) else {
-                return .invalid
-            }
-            return .tensor(s1, assoc.isBoolean ? .bool : t1)
-
-        case let .zipWith(.comparison(_), v1, v2):
-            guard case let .tensor(s1, t1) = v1.type.unaliased,
-                  case let .tensor(s2, t2) = v2.type.unaliased,
-                  t1.isNumeric, t1 == t2, s1.isCompatible(with: s2) else {
-                return .invalid
-            }
-            return .tensor(s1, .bool)
+        case let .numericBinary(_, v1, v2):
+            return v1.tensorType.flatMap { v1Ty in
+                v2.tensorType.flatMap { v2Ty in
+                    ComparisonOp.resultType(for: (v1Ty, v2Ty))
+                }
+            }.map(Type.tensor) ?? .invalid
+            
+        case let .compare(_, v1, v2):
+            return v1.tensorType.flatMap { v1Ty in
+                v2.tensorType.flatMap { v2Ty in
+                    ComparisonOp.resultType(for: (v1Ty, v2Ty))
+                }
+            }.map(Type.tensor) ?? .invalid
+            
+        case let .booleanBinary(_, v1, v2):
+            return v1.tensorType.flatMap { v1Ty in
+                v2.tensorType.flatMap { v2Ty in
+                    BooleanBinaryOp.resultType(for: (v1Ty, v2Ty))
+                }
+            }.map(Type.tensor) ?? .invalid
+            
+        case let .not(v1):
+            return v1.tensorType.flatMap { v1Ty in
+                NegationOp.resultType(for: (v1Ty))
+            }.map(Type.tensor) ?? .invalid
 
         case let .dot(v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
@@ -255,21 +272,22 @@ public extension InstructionKind {
                   t1 == t2 else { return .invalid }
             return .tensor(newShape, t1)
 
-        case let .map(_, v1):
-            guard case .tensor(_, _) = v1.type.unaliased else { return .invalid }
-            return v1.type
+        case let .numericUnary(_, v1):
+            return v1.tensorType.flatMap { v1Ty in
+                NumericUnaryOp.resultType(for: (v1Ty))
+            }.map(Type.tensor) ?? .invalid
 
         case let .reduce(op, v1, initial, dims):
             let dtype: DataType
             let resultType: Type
             let dimSet = Set(dims)
             switch (op, v1.type.unaliased) {
-            case let (.op(op), .tensor(s1, .bool))
-                where op.isBoolean && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            case let (.boolean(_), .tensor(s1, .bool))
+                where dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 dtype = .bool
                 resultType = .tensor(s1.droppingDimensions(dimSet), .bool)
-            case let (.op(op), .tensor(s1, t1))
-                where !op.isBoolean && t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            case let (.numeric(_), .tensor(s1, t1))
+                where t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
                 dtype = t1
                 resultType = .tensor(s1.droppingDimensions(dimSet), t1)
             case let (.function(f), .tensor(s1, t1))
@@ -307,6 +325,27 @@ public extension InstructionKind {
             guard case let .tensor(s1, t1) = v1.type.unaliased
                 else { return .invalid }
             return .tensor(s1.transpose, t1)
+        
+        case let .slice(v, at: range):
+            return v.type.tensorType.flatMap { tensorTy in
+                SliceOp.resultType(for: (tensorTy, range))
+            }.map(Type.tensor) ?? .invalid
+            
+        case let .random(shape, from: lo, upTo: hi):
+            return lo.type.tensorType.flatMap { loTy in
+                hi.type.tensorType.flatMap { hiTy in
+                    RandomOp.resultType(for: (shape, loTy, hiTy))
+                }
+            }.map(Type.tensor) ?? .invalid
+            
+        case let .select(left, right, by: flags):
+            return left.type.tensorType.flatMap { leftTy in
+                right.type.tensorType.flatMap { rightTy in
+                    flags.type.tensorType.flatMap { flTy in
+                        SelectOp.resultType(for: (leftTy, rightTy, flTy))
+                    }
+                }
+            }.map(Type.tensor) ?? .invalid
             
         case let .dataTypeCast(v1, dt):
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.canCast(to: dt) else {
@@ -369,29 +408,6 @@ public extension InstructionKind {
             guard case let .box(t) = v.type.unaliased else { return .invalid }
             return .pointer(t)
 
-        case let .slice(v, at: range):
-            guard case .tensor(var shape, let dtype) = v.type.unaliased,
-                let dim0 = shape.first, range.contains(dim0)
-                else { return .invalid }
-            shape[0] = range.count
-            return .tensor(shape, dtype)
-            
-        case let .random(shape, from: lo, upTo: hi):
-            /// Lower bound and upper bound must be scalar
-            guard case .tensor([], let dt1) = lo.type.unaliased,
-                case .tensor([], let dt2) = hi.type.unaliased,
-                dt1 == dt2, dt1.isNumeric
-                else { return .invalid }
-            return .tensor(shape, dt1)
-            
-        case let .select(left, right, by: flags):
-            guard case .tensor(let s1, let dt1) = left.type.unaliased,
-                case .tensor(let s2, let dt2) = right.type.unaliased,
-                case .tensor(let s3, let dt3) = flags.type.unaliased,
-                dt1 == dt2, dt3.isBool, let shape = broadcast(s1, s2, s3)
-                else { return .invalid }
-            return .tensor(shape, dt1)
-
         case .store, .copy, .deallocate,
              .branch, .conditional, .return, .retain, .release, .trap:
             return .void
@@ -410,13 +426,15 @@ extension Instruction : User {
 extension InstructionKind {
     public var operands: [Use] {
         switch self {
-        case let .zipWith(_, op1, op2),
+        case let .numericBinary(_, op1, op2),
+             let .booleanBinary(_, op1, op2),
+             let .compare(_, op1, op2),
              let .dot(op1, op2),
              let .insert(op1, to: op2, at: _),
              let .reduce(_, op1, initial: op2, _),
              let .random(_, from: op1, upTo: op2):
             return [op1, op2]
-        case let .map(_, op), let .scan(_, op, _),
+        case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
              let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
              let .extract(from: op, at: _),
@@ -489,14 +507,28 @@ public extension InstructionKind {
             return .return(new)
         case .literal(let lit, let ty):
             return .literal(lit.substituting(new, for: old), ty)
-        case .map(let fun, old):
-            return .map(fun, new)
-        case .zipWith(let fun, old, old):
-            return .zipWith(fun, new, new)
-        case .zipWith(let fun, old, let use2):
-            return .zipWith(fun, new, use2)
-        case .zipWith(let fun, let use1, old):
-            return .zipWith(fun, use1, new)
+        case .numericUnary(let fun, old):
+            return .numericUnary(fun, new)
+        case .numericBinary(let fun, old, old):
+            return .numericBinary(fun, new, new)
+        case .numericBinary(let fun, old, let use2):
+            return .numericBinary(fun, new, use2)
+        case .numericBinary(let fun, let use1, old):
+            return .numericBinary(fun, use1, new)
+        case .booleanBinary(let fun, old, old):
+            return .booleanBinary(fun, new, new)
+        case .booleanBinary(let fun, old, let use2):
+            return .booleanBinary(fun, new, use2)
+        case .booleanBinary(let fun, let use1, old):
+            return .booleanBinary(fun, use1, new)
+        case .compare(let fun, old, old):
+            return .compare(fun, new, new)
+        case .compare(let fun, old, let use2):
+            return .compare(fun, new, use2)
+        case .compare(let fun, let use1, old):
+            return .compare(fun, use1, new)
+        case .not(old):
+            return .not(new)
         case let .concatenate(uses, axis: axis):
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
@@ -622,8 +654,11 @@ public enum Opcode {
     case elementPointer
     case copy
     case trap
-    case binaryOp(BinaryOp)
-    case unaryOp(UnaryOp)
+    case numericBinaryOp(NumericBinaryOp)
+    case compare(ComparisonOp)
+    case numericUnaryOp(NumericUnaryOp)
+    case not
+    case booleanBinaryOp(BooleanBinaryOp)
     case random
     case select
 }
@@ -638,8 +673,11 @@ public extension InstructionKind {
         case .conditional: return .conditional
         case .return: return .return
         case .literal: return .literal
-        case .map(let op, _): return .unaryOp(op)
-        case .zipWith(let op, _, _): return .binaryOp(op)
+        case .numericUnary(let op, _): return .numericUnaryOp(op)
+        case .numericBinary(let op, _, _): return .numericBinaryOp(op)
+        case .booleanBinary(let op, _, _): return .booleanBinaryOp(op)
+        case .not: return .not
+        case .compare(let op, _, _): return .compare(op)
         case .dataTypeCast: return .dataTypeCast
         case .scan: return .scan
         case .reduce: return .reduce
@@ -701,8 +739,11 @@ extension Opcode : Equatable {
         case (.copy, .copy): return true
         case (.trap, .trap): return true
         case (.literal, .literal): return true
-        case let (.binaryOp(o1), .binaryOp(o2)): return o1 == o2
-        case let (.unaryOp(o1), .unaryOp(o2)): return o1 == o2
+        case let (.numericBinaryOp(o1), .numericBinaryOp(o2)): return o1 == o2
+        case let (.compare(o1), .compare(o2)): return o1 == o2
+        case let (.numericUnaryOp(o1), .numericUnaryOp(o2)): return o1 == o2
+        case let (.booleanBinaryOp(o1), .booleanBinaryOp(o2)): return o1 == o2
+        case (.not, .not): return true
         case (.random, .random): return true
         case (.select, .select): return true
         default: return false

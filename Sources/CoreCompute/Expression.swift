@@ -1,5 +1,5 @@
 //
-//  Op.swift
+//  Expression.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -18,9 +18,14 @@
 //
 
 import CoreTensor
+import CoreOp
+//
+//public indirect enum ComputeExpression {
+//    case symbol(String)
+//    case unary(NumericUnaryOp)
+//    case binary(BinaryOp)
+//    case `let`(String, ComputeExpression, ComputeExpression)
+//    case reduce(String, from: Int, to: Int, stride: Int, ComputeExpression)
+//    case `if`(ComputeExpression, then: ComputeExpression, else: ComputeExpression)
+//}
 
-public enum ReductionCombinator {
-    case function(Use)
-    case numeric(NumericBinaryOp)
-    case boolean(BooleanBinaryOp)
-}

@@ -1,5 +1,5 @@
 //
-//  Op.swift
+//  Shaping.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -17,10 +17,19 @@
 //  limitations under the License.
 //
 
-import CoreTensor
+import struct CoreTensor.TensorShape
 
-public enum ReductionCombinator {
-    case function(Use)
-    case numeric(NumericBinaryOp)
-    case boolean(BooleanBinaryOp)
+/// Multi-shape broadcasting
+public func broadcast(_ shapes: TensorShape...) -> TensorShape? {
+    return shapes.dropFirst().reduce(shapes.first) { $0?.broadcast(with: $1) }
+}
+
+public extension TensorShape {
+    func droppingDimensions(_ dims: Set<Int>) -> TensorShape {
+        var newDims: [Int] = []
+        for (i, dim) in enumerated() where !dims.contains(i) {
+            newDims.append(dim)
+        }
+        return TensorShape(newDims)
+    }
 }

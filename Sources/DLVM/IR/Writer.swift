@@ -18,6 +18,7 @@
 //
 
 import CoreTensor
+import CoreOp
 
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
@@ -131,20 +132,12 @@ extension DataType : TextOutputStreamable {
     }
 }
 
-extension BinaryOp: TextOutputStreamable {
-    public func write<Target : TextOutputStream>(to target: inout Target) {
-        switch self {
-        case let .associative(op): String(describing: op).write(to: &target)
-        case let .comparison(op): String(describing: op).write(to: &target)
-        }
-    }
-}
-
 extension ReductionCombinator : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
         case let .function(f): f.write(to: &target)
-        case let .op(op): String(describing: op).write(to: &target)
+        case let .numeric(op): String(describing: op).write(to: &target)
+        case let .boolean(op): String(describing: op).write(to: &target)
         }
     }
 }
@@ -163,11 +156,17 @@ extension InstructionKind : TextOutputStreamable {
             }
         case let .literal(lit, ty):
             target.write("literal \(lit): \(ty)")
-        case let .zipWith(f, op1, op2):
+        case let .numericBinary(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
+        case let .booleanBinary(f, op1, op2):
+            target.write("\(f) \(op1), \(op2)")
+        case let .not(op):
+            target.write("not \(op)")
+        case let .compare(f, op1, op2):
+            target.write("\(f) \(op1) \(op2)")
         case let .dot(op1, op2):
             target.write("dot \(op1), \(op2)")
-        case let .map(f, op):
+        case let .numericUnary(f, op):
             target.write("\(f) \(op)")
         case let .reduce(comb, op, initial, dims):
             target.write("reduce \(op) by \(comb) init \(initial) along \(dims.joinedDescription)")

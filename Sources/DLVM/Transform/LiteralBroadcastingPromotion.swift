@@ -24,7 +24,7 @@ open class LiteralBroadcastingPromotion : TransformPass {
         var changed = false
         for inst in body {
             /// `zipWith` is the only instruction kind supporting broadcasting
-            guard case .zipWith(let op, var lhs, var rhs) = inst.kind else {
+            guard case .numericBinary(let op, var lhs, var rhs) = inst.kind else {
                 continue
             }
             /// Must have tensor type
@@ -40,11 +40,11 @@ open class LiteralBroadcastingPromotion : TransformPass {
             case (.literal(_, .scalar(_)), _):
                 changed = true
                 lhs.type = .scalar(dt1)
-                inst.kind = .zipWith(op, lhs, rhs)
+                inst.kind = .numericBinary(op, lhs, rhs)
             case (_, .literal(_, .scalar(_))):
                 changed = true
                 rhs.type = .scalar(dt2)
-                inst.kind = .zipWith(op, lhs, rhs)
+                inst.kind = .numericBinary(op, lhs, rhs)
             default:
                 break
             }

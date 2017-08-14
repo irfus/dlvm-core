@@ -18,6 +18,7 @@
 //
 
 import CoreTensor
+import CoreOp
 
 open class IRBuilder {
 
@@ -169,27 +170,27 @@ public extension IRBuilder {
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
     func add(_ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.add), lhs, rhs))
+        return buildInstruction(.numericBinary(.add, lhs, rhs))
     }
 
     func subtract(_ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.subtract), lhs, rhs))
+        return buildInstruction(.numericBinary(.subtract, lhs, rhs))
     }
 
     func multiply(_ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.multiply), lhs, rhs))
+        return buildInstruction(.numericBinary(.multiply, lhs, rhs))
     }
 
     func divide(_ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.divide), lhs, rhs))
+        return buildInstruction(.numericBinary(.divide, lhs, rhs))
     }
 
     func power(_ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.zipWith(.associative(.power), lhs, rhs))
+        return buildInstruction(.numericBinary(.power, lhs, rhs))
     }
 
     func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.zipWith(.comparison(`operator`), lhs, rhs))
+        return buildInstruction(.compare(`operator`, lhs, rhs))
     }
 
     func apply(_ function: Use, _ arguments: [Use]) -> Instruction {
@@ -205,11 +206,11 @@ public extension IRBuilder {
     }
 
     func exp(_ use: Use) -> Instruction {
-        return buildInstruction(.map(.exp, use))
+        return buildInstruction(.numericUnary(.exp, use))
     }
 
-    func map(_ operation: UnaryOp, _ use: Use) -> Instruction {
-        return buildInstruction(.map(operation, use))
+    func map(_ operation: NumericUnaryOp, _ use: Use) -> Instruction {
+        return buildInstruction(.numericUnary(operation, use))
     }
 
     func `return`(_ use: Use? = nil) {
