@@ -52,50 +52,50 @@ open class AlgebraSimplification : TransformPass {
         switch expr {
         // MARK: - 1. Arithmetics
         /// - x + 0 | 0 + x | x - 0 | x * 1 | 1 * x => x
-        case let .zipWith(.add, x, 0, inst),
-             let .zipWith(.add, 0, x, inst),
-             let .zipWith(.subtract, x, 0, inst),
-             let .zipWith(.multiply, x, 1, inst),
-             let .zipWith(.multiply, 1, x, inst),
-             let .zipWith(.divide, x, 1, inst):
+        case let .numericBinary(.add, x, 0, inst),
+             let .numericBinary(.add, 0, x, inst),
+             let .numericBinary(.subtract, x, 0, inst),
+             let .numericBinary(.multiply, x, 1, inst),
+             let .numericBinary(.multiply, 1, x, inst),
+             let .numericBinary(.divide, x, 1, inst):
             function.replaceAllUses(of: inst, with: %x)
             expr.removeIntermediates(upTo: x)
             workList.append(x)
         /// - x * 0 | 0 * x => 0
-        case let .zipWith(.multiply, x, 0, inst),
-             let .zipWith(.multiply, 0, x, inst):
+        case let .numericBinary(.multiply, x, 0, inst),
+             let .numericBinary(.multiply, 0, x, inst):
             function.replaceAllUses(of: inst, with: %x.makeLiteral(0))
             expr.removeIntermediates(upTo: x)
         /// - x^(-1) => 1 / x
-        case let .zipWith(.power, x, -1, inst):
+        case let .numericBinary(.power, x, -1, inst):
             builder.move(after: inst)
             let one = x.makeScalar(1)
             let div = builder.divide(%one, %x)
             function.replaceAllUses(of: inst, with: %div)
             expr.removeIntermediates(upTo: x)
-            workList.append(.zipWith(.multiply, .atom(%one), x, div))
+            workList.append(.numericBinary(.multiply, .atom(%one), x, div))
         /// - x^0 => 1
-        case let .zipWith(.power, x, 0, inst):
+        case let .numericBinary(.power, x, 0, inst):
             let newVal = expr.makeLiteral(1)
             function.replaceAllUses(of: inst, with: %newVal)
             expr.removeIntermediates(upTo: x)
         /// - x^1 => x
-        case let .zipWith(.power, x, 1, inst):
+        case let .numericBinary(.power, x, 1, inst):
             function.replaceAllUses(of: inst, with: %x)
             expr.removeIntermediates(upTo: x)
             workList.append(x)
         /// - x^2 => x * x
-        case let .zipWith(.power, x, 2, inst):
+        case let .numericBinary(.power, x, 2, inst):
             builder.move(after: inst)
             let product = builder.multiply(%x, %x)
             function.replaceAllUses(of: inst, with: %product)
             expr.removeIntermediates(upTo: x)
-            workList.append(.zipWith(.multiply, x, x, product))
+            workList.append(.numericBinary(.multiply, x, x, product))
 
         // MARK: - 2. Trignometry
         /// - (e^x - e^(-x)) / 2 => sinh(x)
-        case let .zipWith(.divide,
-                          .zipWith(.subtract,
+        case let .numericBinary(.divide,
+                          .numericBinary(.subtract,
                                    .map(.exp, x1, _),
                                    .map(.exp, .map(.negate, x2, _), _),
                                    _), 2, inst) where x1 == x2:
@@ -105,8 +105,8 @@ open class AlgebraSimplification : TransformPass {
             expr.removeIntermediates(upTo: x1)
             workList.append(.map(.sinh, x1, sinh))
         /// - (e^x - e^(-x)) / 2 => cosh(x)
-        case let .zipWith(.divide,
-                          .zipWith(.add,
+        case let .numericBinary(.divide,
+                          .numericBinary(.add,
                                    .map(.exp, x1, _),
                                    .map(.exp, .map(.negate, x2, _), _),
                                    _), 2, inst) where x1 == x2:
@@ -130,77 +130,77 @@ open class AlgebraSimplification : TransformPass {
 
         // MARK: - 3. Reassociation
         /// - (e^x)^y => e^(x*y)
-        case let .zipWith(.power, .map(.exp, x, _), y, inst):
+        case let .numericBinary(.power, .map(.exp, x, _), y, inst):
             builder.move(after: inst)
             let mul = builder.multiply(%x, %y)
             let exp = builder.exp(%mul)
             function.replaceAllUses(of: inst, with: %exp)
             expr.removeIntermediates(upTo: x, y)
-            workList.append(.map(.exp, .zipWith(.multiply, x, y, mul), exp))
+            workList.append(.map(.exp, .numericBinary(.multiply, x, y, mul), exp))
         /// - e^x / e^y => e^(x-y)
-        case let .zipWith(.divide, .map(.exp, x, _), .map(.exp, y, _), inst):
+        case let .numericBinary(.divide, .map(.exp, x, _), .map(.exp, y, _), inst):
             builder.move(after: inst)
             let sub = builder.subtract(%x, %y)
             let exp = builder.exp(%sub)
             function.replaceAllUses(of: inst, with: %exp)
             expr.removeIntermediates(upTo: x, y)
-            workList.append(.map(.exp, .zipWith(.subtract, x, y, sub), exp))
+            workList.append(.map(.exp, .numericBinary(.subtract, x, y, sub), exp))
         /// - x / e^y => x * e^(-y)
-        case let .zipWith(.divide, x, .map(.exp, y, _), inst):
+        case let .numericBinary(.divide, x, .map(.exp, y, _), inst):
             builder.move(after: inst)
-            let neg = builder.map(.negate, %y)
+            let neg = builder.numeric(.negate, %y)
             let exp = builder.exp(%neg)
             let mul = builder.multiply(%x, %exp)
             function.replaceAllUses(of: inst, with: %mul)
             expr.removeIntermediates(upTo: x, y)
-            workList.append(.zipWith(.multiply, x,
+            workList.append(.numericBinary(.multiply, x,
                                      .map(.exp, .map(.negate, y, neg), exp), mul))
         /// - x / y^z => x * y^(-z)
-        case let .zipWith(.divide, x, .zipWith(.power, y, z, _), inst):
+        case let .numericBinary(.divide, x, .numericBinary(.power, y, z, _), inst):
             builder.move(after: inst)
-            let neg = builder.map(.negate, %z)
+            let neg = builder.numeric(.negate, %z)
             let pwr = builder.power(%y, %neg)
             let mul = builder.multiply(%x, %pwr)
             function.replaceAllUses(of: inst, with: %mul)
             expr.removeIntermediates(upTo: x, y, z)
-            workList.append(.zipWith(.multiply, x,
-                                     .zipWith(.power, y,
+            workList.append(.numericBinary(.multiply, x,
+                                     .numericBinary(.power, y,
                                               .map(.negate, z, neg), pwr), mul))
         /// - (x / y) / (z / a) => (x * a) / (y * z)
-        case let .zipWith(.divide,
-                          .zipWith(.divide, x, y, _),
-                          .zipWith(.divide, z, a, _), inst):
+        case let .numericBinary(.divide,
+                          .numericBinary(.divide, x, y, _),
+                          .numericBinary(.divide, z, a, _), inst):
             builder.move(after: inst)
             let mulL = builder.multiply(%x, %a)
             let mulR = builder.multiply(%y, %z)
             let div = builder.divide(%mulL, %mulR)
             function.replaceAllUses(of: inst, with: %div)
             expr.removeIntermediates(upTo: x, y, z, a)
-            workList.append(.zipWith(.divide,
-                                     .zipWith(.multiply, x, a, mulL),
-                                     .zipWith(.multiply, y, z, mulR),
+            workList.append(.numericBinary(.divide,
+                                     .numericBinary(.multiply, x, a, mulL),
+                                     .numericBinary(.multiply, y, z, mulR),
                                      div))
         /// - (x / y) / z => x / (y * z)
-        case let .zipWith(.divide,
-                          .zipWith(.divide, x, y, _),
+        case let .numericBinary(.divide,
+                          .numericBinary(.divide, x, y, _),
                           z, inst):
             builder.move(after: inst)
             let mul = builder.multiply(%y, %z)
             let div = builder.divide(%x, %mul)
             function.replaceAllUses(of: inst, with: %div)
             expr.removeIntermediates(upTo: x, y, z)
-            workList.append(.zipWith(.divide, x,
-                                     .zipWith(.multiply, y, z, mul),
+            workList.append(.numericBinary(.divide, x,
+                                     .numericBinary(.multiply, y, z, mul),
                                      div))
         /// - x / (y / z) => (x * z) / y
-        case let .zipWith(.divide, x, .zipWith(.divide, y, z, _), inst):
+        case let .numericBinary(.divide, x, .numericBinary(.divide, y, z, _), inst):
             builder.move(after: inst)
             let mul = builder.multiply(%x, %z)
             let div = builder.divide(%mul, %y)
             function.replaceAllUses(of: inst, with: %div)
             expr.removeIntermediates(upTo: x, y, z)
-            workList.append(.zipWith(.divide,
-                                     .zipWith(.multiply, x, z, mul), y, div))
+            workList.append(.numericBinary(.divide,
+                                           .numericBinary(.multiply, x, z, mul), y, div))
 
         // MARK: - 4. Linear Algebra
         /// - (A^T)^T => A

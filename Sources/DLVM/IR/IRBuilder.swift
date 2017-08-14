@@ -192,6 +192,10 @@ public extension IRBuilder {
     func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.compare(`operator`, lhs, rhs))
     }
+    
+    func not(_ operand: Use) -> Instruction {
+        return buildInstruction(.not(operand))
+    }
 
     func apply(_ function: Use, _ arguments: [Use]) -> Instruction {
         return buildInstruction(.apply(function, arguments))
@@ -209,8 +213,16 @@ public extension IRBuilder {
         return buildInstruction(.numericUnary(.exp, use))
     }
 
-    func map(_ operation: NumericUnaryOp, _ use: Use) -> Instruction {
+    func numeric(_ operation: NumericUnaryOp, _ use: Use) -> Instruction {
         return buildInstruction(.numericUnary(operation, use))
+    }
+    
+    func numeric(_ operation: NumericBinaryOp, _ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.numericBinary(operation, lhs, rhs))
+    }
+    
+    func boolean(_ operation: BooleanBinaryOp, _ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.booleanBinary(operation, lhs, rhs))
     }
 
     func `return`(_ use: Use? = nil) {

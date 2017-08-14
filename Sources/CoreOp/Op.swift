@@ -100,7 +100,7 @@ extension NumericBinaryOp : TensorOp {
 
 /// Boolean associative op definition
 public enum BooleanBinaryOp {
-    case add, or
+    case and, or
 }
 
 /// Boolean associative op type inference
