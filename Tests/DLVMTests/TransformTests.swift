@@ -10,9 +10,9 @@ import XCTest
 @testable import DLVM
 
 class TransformTests: XCTestCase {
-
+    
     let builder = IRBuilder(moduleName: "TransformTest")
-
+    
     /// - TODO: Fix bug in dominance analysis that causes crash
     func testDCE() throws {
         let fun = builder.buildFunction(named: "bar",
@@ -22,7 +22,7 @@ class TransformTests: XCTestCase {
         let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
         let dead1 = builder.buildInstruction(.numericBinary(.multiply,
                                                             .literal(.int(32), 10000), .literal(.int(32), 20000)),
-                                 name: "dead1")
+                                             name: "dead1")
         builder.buildInstruction(.numericBinary(.add, %dead1, 20000 ~ Type.int(32)),
                                  name: "dead2")
         let cmp = builder.compare(.equal, %mult, .literal(.int(32), 1))
@@ -37,7 +37,7 @@ class TransformTests: XCTestCase {
         builder.branch(contBB, [ %elseBB.arguments[0] ])
         builder.move(to: contBB)
         builder.return(%contBB.arguments[0])
-
+        
         /// Original:
         /// func @bar: (f32, f32) -> i32 {
         /// 'entry(%x: f32, %y : f32):
@@ -70,18 +70,18 @@ class TransformTests: XCTestCase {
             """
         XCTAssertEqual(fun.description, after)
         /// Reapplying shouldn't mutate the function
-
+        
         let module = builder.module
         module.mapTransform(DeadCodeElimination.self)
         module.mapTransform(DeadCodeElimination.self)
-
+        
         XCTAssertEqual(fun.description, after)
     }
-
+    
     static var allTests : [(String, (TransformTests) -> () throws -> Void)] {
         return [
             ("testDCE", testDCE),
         ]
     }
-
+    
 }
