@@ -466,7 +466,7 @@ private extension Lexer {
         case "module": kind = .keyword(.module)
         case "stage": kind = .keyword(.stage)
         case "raw": kind = .keyword(.raw)
-        case "optimizable": kind = .keyword(optimizable)
+        case "optimizable": kind = .keyword(.optimizable)
         case "compute": kind = .keyword(.compute)
         case "scheduled": kind = .keyword(.scheduled)
         case "canonical": kind = .keyword(.canonical)

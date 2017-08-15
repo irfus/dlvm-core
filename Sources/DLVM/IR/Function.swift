@@ -114,7 +114,7 @@ extension Function : Value {
 }
 
 public extension Function {
-    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type, C.IndexDistance == Int {
+    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type {
         guard types.count == argumentTypes.count else { return false }
         return zip(types, argumentTypes).forAll { actual, formal in
             actual.conforms(to: formal)

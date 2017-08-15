@@ -24,8 +24,6 @@ public func runPass(named name: String, on module: Module,
     switch name {
     case "AD", "Differentiation":
         module.applyTransform(Differentiation.self, bypassingVerification: noVerify)
-    case "Can", "Canonicalization":
-        module.applyTransform(Canonicalization.self, bypassingVerification: noVerify)
     case "CP", "Checkpointing":
         module.mapTransform(Checkpointing.self, bypassingVerification: noVerify)
     case "DCE", "DeadCodeElimination":
