@@ -39,6 +39,8 @@ open class Differentiation: TransformPass {
                 DLUnimplemented()
             }
         }
+        
+        module.stage = .optimizable
 
         return changed
     }
