@@ -1,5 +1,5 @@
 //
-//  Expression.swift
+//  Computation.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -19,17 +19,18 @@
 
 import CoreOp
 
-public indirect enum Expression {
-    case symbol(String)
-    case unary(NumericUnaryOp)
-    case numericBinary(NumericBinaryOp)
-    case booleanBinary(BooleanBinaryOp)
-    case compare(ComparisonOp)
-    case not(Expression)
-    case `let`(String, Expression, Expression)
-    case ramp(base: Expression, stride: Expression, lanes: Int)
-    case broadcast(Expression, lanes: Int)
-    case reduce(String, from: Int, to: Int, stride: Int, Expression)
-    case `if`(Expression, then: Expression, else: Expression)
-    case load(Variable, index: Expression, predicate: Expression)
+public class Computation {
+    public var name: String
+    public var arguments: [Variable]
+    
+    public init(name: String, arguments: [Variable]) {
+        self.name = name
+        self.arguments = arguments
+    }
+}
+
+public extension Computation {
+    public convenience init(name: String, arguments: [(String, Type)]) {
+        self.init(name: name, arguments: arguments.map(Variable.init))
+    }
 }
