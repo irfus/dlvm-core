@@ -206,6 +206,7 @@ extension Punctuation : CustomStringConvertible {
 extension Opcode : CustomStringConvertible {
     public var description: String {
         switch self {
+        case .literal: return "literal"
         case .branch: return "branch"
         case .conditional: return "condition"
         case .return: return "return"

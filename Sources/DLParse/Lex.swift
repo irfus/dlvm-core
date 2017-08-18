@@ -493,6 +493,7 @@ private extension Lexer {
         case "gradient": kind = .keyword(.gradient)
         case "along": kind = .keyword(.along)
         /// Opcode
+        case "literal": kind = .opcode(.literal)
         case "branch": kind = .opcode(.branch)
         case "conditional": kind = .opcode(.conditional)
         case "return": kind = .opcode(.return)
@@ -545,8 +546,6 @@ private extension Lexer {
         case "log": kind = .opcode(.unaryOp(.log))
         case "exp": kind = .opcode(.unaryOp(.exp))
         case "negate": kind = .opcode(.unaryOp(.negate))
-        case "sign": kind = .opcode(.unaryOp(.sign))
-        case "square": kind = .opcode(.unaryOp(.square))
         case "sign": kind = .opcode(.unaryOp(.sign))
         case "square": kind = .opcode(.unaryOp(.square))
         case "sqrt": kind = .opcode(.unaryOp(.sqrt))
