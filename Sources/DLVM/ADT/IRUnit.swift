@@ -34,7 +34,7 @@ public extension HashableByReference {
 
 public protocol IRUnit : class, HashableByReference, Verifiable {
     associatedtype Parent : IRCollection where Parent.Element == Self
-    unowned var parent: Parent { get set }
+    var parent: Parent { get set }
 }
 
 public extension IRUnit {

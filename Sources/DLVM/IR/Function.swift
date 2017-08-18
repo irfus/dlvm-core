@@ -46,7 +46,7 @@ public final class Function : Named, IRCollection, IRUnit {
     public var returnType: Type
     public var attributes: Set<Attribute> = []
     public var declarationKind: DeclarationKind?
-    public unowned var parent: Module
+    public var parent: Module
 
     public var elements: OrderedSet<BasicBlock> = []
     public internal(set) var passManager: PassManager<Function> = PassManager()
