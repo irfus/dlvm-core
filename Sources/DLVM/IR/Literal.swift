@@ -230,6 +230,11 @@ public extension Literal {
         }
     }
 
+    var isScalar: Bool {
+        guard case .scalar = self else { return false }
+        return true
+    }
+
     static func ~= (pattern: IntegerLiteralType, literal: Literal) -> Bool {
         switch literal {
         case .scalar(.int(pattern)):

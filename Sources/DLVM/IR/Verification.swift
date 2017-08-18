@@ -80,6 +80,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case dataTypeNotNumeric(Use, Node)
     case invalidAllocationSize(Node)
     case declarationCannotHaveBody(Node)
+    case nestedLiteralNotInLiteralInstruction(Literal, Node)
 }
 
 public protocol Verifiable {
@@ -336,6 +337,14 @@ extension Instruction : Verifiable {
         /// Use type must match usee type
         for use in operands {
             try use.performVerification()
+            /// Special case: nested literals can only be in a `literal`
+            /// instruction
+            if opcode != .literal, case .literal(_, let lit) = use {
+                guard lit.isScalar else {
+                    throw VerificationError
+                        .nestedLiteralNotInLiteralInstruction(lit, self)
+                }
+            }
         }
 
         /// Visit kind
