@@ -47,6 +47,8 @@ public final class Module : IRCollection {
 
 /// - Note: This is a workaround for a type checker bug in Swift 4
 public extension Module {
+    typealias SubSequence = RandomAccessSlice<Module>
+    
     func remove(_ element: Element) {
         elements.remove(element)
         invalidatePassResults()
