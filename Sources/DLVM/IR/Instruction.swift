@@ -627,7 +627,7 @@ public extension InstructionKind {
 
 // MARK: - Opcode decomposition
 
-public enum Opcode {
+public enum Opcode : Equatable {
     case branch
     case conditional
     case `return`
@@ -710,45 +710,3 @@ public extension InstructionKind {
     }
 }
 
-extension Opcode : Equatable {
-    public static func == (lhs: Opcode, rhs: Opcode) -> Bool {
-        switch (lhs, rhs) {
-        case (.branch, .branch): return true
-        case (.conditional, .conditional): return true
-        case (.return, .return): return true
-        case (.dataTypeCast, .dataTypeCast): return true
-        case (.scan, .scan): return true
-        case (.reduce, .reduce): return true
-        case (.dot, .dot): return true
-        case (.concatenate, .concatenate): return true
-        case (.transpose, .transpose): return true
-        case (.slice, .slice): return true
-        case (.shapeCast, .shapeCast): return true
-        case (.bitCast, .bitCast): return true
-        case (.extract, .extract): return true
-        case (.insert, .insert): return true
-        case (.apply, .apply): return true
-        case (.allocateStack, .allocateStack): return true
-        case (.allocateHeap, .allocateHeap): return true
-        case (.allocateBox, .allocateBox): return true
-        case (.projectBox, .projectBox): return true
-        case (.retain, .retain): return true
-        case (.release, .release): return true
-        case (.deallocate, .deallocate): return true
-        case (.load, .load): return true
-        case (.store, .store): return true
-        case (.elementPointer, .elementPointer): return true
-        case (.copy, .copy): return true
-        case (.trap, .trap): return true
-        case (.literal, .literal): return true
-        case let (.numericBinaryOp(o1), .numericBinaryOp(o2)): return o1 == o2
-        case let (.compare(o1), .compare(o2)): return o1 == o2
-        case let (.numericUnaryOp(o1), .numericUnaryOp(o2)): return o1 == o2
-        case let (.booleanBinaryOp(o1), .booleanBinaryOp(o2)): return o1 == o2
-        case (.not, .not): return true
-        case (.random, .random): return true
-        case (.select, .select): return true
-        default: return false
-        }
-    }
-}

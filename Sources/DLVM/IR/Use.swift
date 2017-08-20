@@ -19,31 +19,12 @@
 
 import CoreOp
 
-public indirect enum Use {
+public indirect enum Use : Equatable {
     case argument(Type, Argument)
     case instruction(Type, Instruction)
     case variable(Type, Variable)
     case literal(Type, Literal)
     case function(Type, Function)
-}
-
-extension Use : Equatable {
-    public static func ==(lhs: Use, rhs: Use) -> Bool {
-        switch (lhs, rhs) {
-        case let (.argument(t1, v1), .argument(t2, v2)):
-            return t1 == t2 && v1 === v2
-        case let (.instruction(t1, v1), .instruction(t2, v2)):
-            return t1 == t2 && v1 === v2
-        case let (.variable(t1, v1), .variable(t2, v2)):
-            return t1 == t2 && v1 === v2
-        case let (.literal(t1, l1), .literal(t2, l2)):
-            return t1 == t2 && l1 == l2
-        case let (.function(t1, f1), .function(t2, f2)):
-            return t1 == t2 && f1 === f2
-        default:
-            return false
-        }
-    }
 }
 
 public extension Use {

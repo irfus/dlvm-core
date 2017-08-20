@@ -21,21 +21,10 @@ import CoreTensor
 import CoreOp
 
 /// Element key to form a key path in GEP and use
-public enum ElementKey {
+public enum ElementKey : Equatable {
     case index(Int)
     case name(String)
     case value(Use)
-}
-
-extension ElementKey : Equatable {
-    public static func == (lhs: ElementKey, rhs: ElementKey) -> Bool {
-        switch (lhs, rhs) {
-        case let (.index(i1), .index(i2)): return i1 == i2
-        case let (.name(n1), .name(n2)): return n1 == n2
-        case let (.value(v1), .value(v2)): return v1 == v2
-        default: return false
-        }
-    }
 }
 
 /// Nominal type

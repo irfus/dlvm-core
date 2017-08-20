@@ -67,7 +67,7 @@ public enum IdentifierKind {
     case key
 }
 
-public enum TokenKind {
+public enum TokenKind : Equatable {
     case punctuation(Punctuation)
     case keyword(Keyword)
     case opcode(Opcode)
@@ -100,31 +100,6 @@ public extension TokenKind {
     var isFloat: Bool {
         guard case .float(_) = self else { return false }
         return true
-    }
-}
-
-extension TokenKind : Equatable {
-    public static func == (lhs: TokenKind, rhs: TokenKind) -> Bool {
-        switch (lhs, rhs) {
-        case let (.punctuation(p1), .punctuation(p2)):
-            return p1 == p2
-        case let (.keyword(k1), .keyword(k2)):
-            return k1 == k2
-        case let (.opcode(o1), .opcode(o2)):
-            return o1 == o2
-        case let (.integer(i1), .integer(i2)):
-            return i1 == i2
-        case let (.float(f1), .float(f2)):
-            return f1 == f2
-        case let (.identifier(k1, i1), .identifier(k2, i2)):
-            return k1 == k2 && i1 == i2
-        case let (.dataType(d1), .dataType(d2)):
-            return d1 == d2
-        case (.newLine, .newLine):
-            return true
-        default:
-            return false
-        }
     }
 }
 
