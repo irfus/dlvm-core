@@ -1,6 +1,3 @@
-- Main repo: [GitHub](https://github.com/rxwei/DLVM)
-- Mirror: [LLVM Group GitLab](https://gitlab-beta.engr.illinois.edu/llvm/dlvm)
-
 # Deep Learning Virtual Machine
 ## Core Compiler Infrastructure
 
@@ -21,13 +18,15 @@ DLVM is:
 | Module             | Description                                             |
 |--------------------|---------------------------------------------------------|
 | DLVM               | Compiler infrastructure (ADT, IR, Analyses, Transforms) |
+| CoreOp             | Semantics of simple tensor ops                          |
+| CoreCompute        | Compute IR (stages `compute` and `schedule` of DLVM IR) |
 | DLParse            | Textual IR parser                                       |
-| DLVMCodeGen        | LLVM Code Generator                                     |
+| DLVMCodeGen        | LLVM code generator                                     |
 | DLCommandLineTools | Tools for building DLVM CLIs                            |
 | dlopt              | CLI for DLVM optimizer                                  |
 | dlc                | CLI for DLVM IR compiler                                |
 
-### [DLVM Compute Primitives](Compute)
+### [DLVM Compute Primitives](Compute) (**deprecated**)
 
 The DLVM compute primitives (dlcompute) are a set of LLVM Bitcode modules
 containing HPVM intrinsic calls. It's built separately via CMake.
