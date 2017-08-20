@@ -40,9 +40,10 @@ reference counting, etc.
 ## Dependencies
 
 - LLVM 5
-- Swift 4.1
-  - DEVELOPMENT-SNAPSHOT-2017-07-27 or above
+- Swift 4.1 dev
+  - DEVELOPMENT-SNAPSHOT-2017-10-12 or above
   - **Not** 4.0-DEVELOPMENT-SNAPSHOT-*!
+- Xcode Command Line Tools 9.0 (for macOS only)
 
 ## Build Instructions
 
