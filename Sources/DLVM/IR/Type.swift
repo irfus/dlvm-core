@@ -126,8 +126,6 @@ public indirect enum Type {
     case function([Type], Type)
     /// Alias type, transparent or opaque
     case alias(TypeAlias)
-    /// Doesn't contain any value. No size
-    case void
     /// Invalid type during type inference, to be eliminated by
     /// the verifier
     case invalid
@@ -136,6 +134,10 @@ public indirect enum Type {
 prefix operator *
 
 public extension Type {
+    static var void: Type {
+        return .tuple([])
+    }
+    
     static func int(_ size: UInt) -> Type {
         return .scalar(.int(size))
     }
