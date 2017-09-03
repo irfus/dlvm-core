@@ -259,7 +259,7 @@ public extension Type {
         case let .box(t): return .box(t.canonical)
         case let .function(tt, t): return.function(tt.map{$0.canonical}, t.canonical)
         case let .alias(alias): return alias.type?.canonical ?? self
-        case .tensor, .void, .invalid, .struct: return self
+        case .tensor, .invalid, .struct: return self
         }
     }
 
@@ -283,6 +283,8 @@ public extension Type {
 extension Type : Equatable {
     public static func ==(lhs: Type, rhs: Type) -> Bool {
         switch (lhs.canonical, rhs.canonical) {
+        case (.invalid, .invalid):
+            return true
         case let (.tensor(s1, t1), .tensor(s2, t2)):
             return s1 == s2 && t1 == t2
         case let (.tuple(ts1), .tuple(ts2)):
@@ -297,8 +299,6 @@ extension Type : Equatable {
             return t1 == t2
         case let (.function(tt1, t1), .function(tt2, t2)):
             return tt1 == tt2 && t1 == t2
-        case (.void, .void), (.invalid, .invalid):
-            return true
         case let (.alias(a1), .alias(a2)) where a1.isOpaque && a2.isOpaque:
             return a1.name == a2.name
         default:
