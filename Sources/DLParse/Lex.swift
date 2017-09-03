@@ -39,7 +39,7 @@ public enum Keyword {
     case count
     case seedable
     case extern, gradient
-    case along
+    case `init`, along
 }
 
 public enum Punctuation {
@@ -491,6 +491,7 @@ private extension Lexer {
         case "seedable": kind = .keyword(.seedable)
         case "extern": kind = .keyword(.extern)
         case "gradient": kind = .keyword(.gradient)
+        case "init": kind = .keyword(.init)
         case "along": kind = .keyword(.along)
         /// Opcode
         case "literal": kind = .opcode(.literal)

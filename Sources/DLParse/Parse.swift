@@ -566,7 +566,7 @@ extension Parser {
             })
             return .scan(combinator, val, [firstDim] + restDims)
 
-        /// 'reduce' <val> 'by' <func|assoc_op> 'along' <num> (',' <num>)*
+        /// 'reduce' <val> 'by' <func|assoc_op> 'init' <val> 'along' <num> (',' <num>)*
         case .reduce:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.by))
@@ -580,13 +580,15 @@ extension Parser {
                     return nil
                 }
             })
+            try consume(.keyword(.init))
+            let (initial, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.along))
             let (firstDim, _) = try parseInteger()
             let restDims: [Int] = try parseMany({
                 try consumeWrappablePunctuation(.comma)
                 return try parseInteger().0
             })
-            return .reduce(combinator, val, [firstDim] + restDims)
+            return .reduce(combinator, val, initial: initial, [firstDim] + restDims)
 
         /// 'matrixMultiply' <val> ',' <val>
         case .matrixMultiply:

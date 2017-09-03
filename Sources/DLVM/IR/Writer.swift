@@ -169,8 +169,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("matrixMultiply \(op1), \(op2)")
         case let .map(f, op):
             target.write("\(f) \(op)")
-        case let .reduce(comb, op, dims):
-            target.write("reduce \(op) by \(comb) along \(dims.joinedDescription)")
+        case let .reduce(comb, op, initial, dims):
+            target.write("reduce \(op) by \(comb) init \(initial) along \(dims.joinedDescription)")
         case let .scan(f, op, dims):
             target.write("scan \(op) by \(f) along \(dims.joinedDescription)")
         case let .concatenate(ops, axis: axis):
