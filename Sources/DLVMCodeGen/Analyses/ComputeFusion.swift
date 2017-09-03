@@ -97,7 +97,7 @@ extension Instruction {
              .apply, .return, .trap, .allocateBox, .allocateHeap,
              .allocateStack, .concatenate, .copy, .conditional, .deallocate,
              .insert, .load, .projectBox, .release, .retain, .scan, .reduce,
-             .slice, .store:
+             .slice, .store, .literal:
             return .host
         case .matrixMultiply:
             return .device
@@ -113,7 +113,7 @@ extension Instruction {
             let size = shape.contiguousSize
             return size != 1
         case .bitCast, .shapeCast, .extract,
-             .elementPointer, .branch, .apply, .return, .trap:
+             .elementPointer, .branch, .apply, .return, .trap, .literal:
             return false
         case .allocateBox, .allocateHeap, .allocateStack, .concatenate, .copy,
              .conditional, .deallocate, .insert, .load, .projectBox, .release,
