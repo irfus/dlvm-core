@@ -40,18 +40,15 @@ reference counting, etc.
 
 ## Build Instructions
 
-### All Targets
-
-For all targets (DLVM Core, Runtime, Compute), please use CMake.
+### Set up LLVM
 
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+brew install llvm
+brew link --overwrite --force llvm
+cp Resources/pkgconfig/llvm.pc /usr/local/lib/pkgconfig
 ```
 
-### DLVM Core
+### Build DLVM Core
 
 #### Swift Package Manger
 
@@ -63,6 +60,17 @@ swift build
 
 ```bash
 swift package generate-xcodeproj
+```
+
+### Build All Targets
+
+For all targets (DLVM Core, Runtime, Compute), please use CMake.
+
+```bash
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 ## License
