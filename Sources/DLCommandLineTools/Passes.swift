@@ -19,30 +19,31 @@
 
 import DLVM
 
-public func runPass(named name: String, on module: Module) throws {
+public func runPass(named name: String, on module: Module,
+                    bypassingVerification noVerify: Bool = false) throws {
     switch name {
     case "AD", "Differentiation":
-        module.applyTransform(Differentiation.self)
+        module.applyTransform(Differentiation.self, bypassingVerification: noVerify)
     case "Can", "Canonicalization":
-        module.applyTransform(Canonicalization.self)
+        module.applyTransform(Canonicalization.self, bypassingVerification: noVerify)
     case "CP", "Checkpointing":
-        module.mapTransform(Checkpointing.self)
+        module.mapTransform(Checkpointing.self, bypassingVerification: noVerify)
     case "DCE", "DeadCodeElimination":
-        module.mapTransform(DeadCodeElimination.self)
+        module.mapTransform(DeadCodeElimination.self, bypassingVerification: noVerify)
     case "CSE", "CommonSubexpressionElimination":
-        module.mapTransform(CommonSubexpressionElimination.self)
+        module.mapTransform(CommonSubexpressionElimination.self, bypassingVerification: noVerify)
     case "AS", "AlgebraSimplification":
-        module.forEach { fn in fn.applyTransform(AlgebraSimplification.self) }
+        module.forEach { fn in fn.applyTransform(AlgebraSimplification.self, bypassingVerification: noVerify) }
     case "LAF", "LinearAlgebraFusion":
-        module.forEach { fn in fn.applyTransform(LinearAlgebraFusion.self) }
+        module.forEach { fn in fn.applyTransform(LinearAlgebraFusion.self, bypassingVerification: noVerify) }
     case "SP", "StackPromotion":
-        module.mapTransform(StackPromotion.self)
+        module.mapTransform(StackPromotion.self, bypassingVerification: noVerify)
     case "VP", "ValuePromotion":
-        module.mapTransform(ValuePromotion.self)
+        module.mapTransform(ValuePromotion.self, bypassingVerification: noVerify)
     case "MCO", "MatrixChainOrdering":
-        module.forEach { fn in fn.mapTransform(MatrixChainOrdering.self) }
+        module.forEach { fn in fn.mapTransform(MatrixChainOrdering.self, bypassingVerification: noVerify) }
     case "LBP", "LiteralBroadcastingPromotion":
-        module.forEach { fn in fn.mapTransform(LiteralBroadcastingPromotion.self) }
+        module.forEach { fn in fn.mapTransform(LiteralBroadcastingPromotion.self, bypassingVerification: noVerify) }
     default:
         error("No transform pass named \(name)")
     }

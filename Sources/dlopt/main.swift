@@ -43,14 +43,17 @@ struct Options {
     /// Help
     static let needsHelp = BoolOption(shortFlag: "h", longFlag: "help",
                                       helpMessage: "Print help message")
-
+    /// Bypass verification
+    static let noVerify = BoolOption(longFlag: "no-verify",
+                                     helpMessage: "Bypass verification after applying transforms")
 }
 
 cli.addOptions(Options.filePaths,
                Options.shouldPrintIR,
                Options.passes,
                Options.outputPaths,
-               Options.needsHelp)
+               Options.needsHelp,
+               Options.noVerify)
 
 /// Parse command line
 do { try cli.parse(strict: true) }
@@ -85,7 +88,8 @@ func main() throws {
         /// Run passes
         if let passes = Options.passes.value {
             for passName in passes {
-                try runPass(named: passName, on: module)
+                try runPass(named: passName, on: module,
+                            bypassingVerification: Options.noVerify.wasSet)
             }
         }
 
