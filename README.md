@@ -35,12 +35,14 @@ reference counting, etc.
 
 ## Dependencies
 
-- LLVM 4.0
-- Swift 4.0 (Development Snapshot 2017-07-27 or above)
+- LLVM 4
+- Swift 4 
+  - DEVELOPMENT-SNAPSHOT-2017-07-27 or above
+  - **Not** 4.0-DEVELOPMENT-SNAPSHOT-*!
 
 ## Build Instructions
 
-### Set up LLVM
+### Set up LLVM (macOS)
 
 ```bash
 brew install llvm
