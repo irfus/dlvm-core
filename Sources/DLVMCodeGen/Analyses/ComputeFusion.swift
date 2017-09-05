@@ -99,7 +99,7 @@ extension Instruction {
              .insert, .load, .projectBox, .release, .retain, .scan, .reduce,
              .slice, .store, .literal:
             return .host
-        case .matrixMultiply:
+        case .dot:
             return .device
         }
     }
@@ -117,7 +117,7 @@ extension Instruction {
             return false
         case .allocateBox, .allocateHeap, .allocateStack, .concatenate, .copy,
              .conditional, .deallocate, .insert, .load, .projectBox, .release,
-             .retain, .scan, .reduce, .slice, .store, .matrixMultiply,
+             .retain, .scan, .reduce, .slice, .store, .dot,
              .transpose:
             return true
         }

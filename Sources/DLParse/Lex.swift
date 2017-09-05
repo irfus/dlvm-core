@@ -501,7 +501,8 @@ private extension Lexer {
         case "dataTypeCast": kind = .opcode(.dataTypeCast)
         case "scan": kind = .opcode(.scan)
         case "reduce": kind = .opcode(.reduce)
-        case "matrixMultiply": kind = .opcode(.matrixMultiply)
+        case "dot": kind = .opcode(.dot)
+        case "matrixMultiply": kind = .opcode(.dot) // TODO: Deprecated. Should emit warning
         case "concatenate": kind = .opcode(.concatenate)
         case "transpose": kind = .opcode(.transpose)
         case "slice": kind = .opcode(.slice)

@@ -590,12 +590,12 @@ extension Parser {
             })
             return .reduce(combinator, val, initial: initial, [firstDim] + restDims)
 
-        /// 'matrixMultiply' <val> ',' <val>
-        case .matrixMultiply:
+        /// 'dot' <val> ',' <val>
+        case .dot:
             let (lhs, _) = try parseUse(in: basicBlock)
             try consumeWrappablePunctuation(.comma)
             let (rhs, _) = try parseUse(in: basicBlock)
-            return .matrixMultiply(lhs, rhs)
+            return .dot(lhs, rhs)
             
         /// 'concatenate' <val> (',' <val>)* along <num>
         case .concatenate:

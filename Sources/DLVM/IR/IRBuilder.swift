@@ -196,8 +196,8 @@ public extension IRBuilder {
         return buildInstruction(.apply(function, arguments))
     }
 
-    func matrixMultiply(_ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.matrixMultiply(lhs, rhs))
+    func dot(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.dot(lhs, rhs))
     }
 
     func transpose(_ use: Use) -> Instruction {

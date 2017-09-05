@@ -35,7 +35,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case notTuple(Use, Node)
     case cannotShapeCast(Use, TensorShape, Node)
     case cannotCastDataType(Use, DataType, Node)
-    case cannotMatrixMultiply(Use, Use, Node)
+    case cannotDot(Use, Use, Node)
     case noOperands(Node)
     case concatenationShapeMismatch([Use], Int, Node)
     case useShapeMismatch(Node)
@@ -415,11 +415,11 @@ extension InstructionKind {
                 throw VerificationError.unbroadcastableMismatch(lhs, rhs, instruction)
             }
 
-        case let .matrixMultiply(lhs, rhs):
+        case let .dot(lhs, rhs):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                   case let .tensor(s2, t2) = rhs.type.unaliased,
                   s1.isMatrixMultiplicable(by: s2), t1 == t2 else {
-                throw VerificationError.cannotMatrixMultiply(lhs, rhs, instruction)
+                throw VerificationError.cannotDot(lhs, rhs, instruction)
             }
 
         case let .concatenate(vv, axis: axis):

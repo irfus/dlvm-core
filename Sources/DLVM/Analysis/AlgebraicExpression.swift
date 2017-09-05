@@ -25,7 +25,7 @@ public indirect enum AlgebraicExpression {
     case atom(Use)
     case map(UnaryOp, AlgebraicExpression, Instruction)
     case zipWith(BinaryOp, AlgebraicExpression, AlgebraicExpression, Instruction)
-    case matrixMultiply(AlgebraicExpression, AlgebraicExpression, Instruction)
+    case dot(AlgebraicExpression, AlgebraicExpression, Instruction)
     case transpose(AlgebraicExpression, Instruction)
 }
 
@@ -54,7 +54,7 @@ public extension AlgebraicExpression {
         case .atom(_):
             return nil
         case .zipWith(_, _, _, let inst),
-             .matrixMultiply(_, _, let inst),
+             .dot(_, _, let inst),
              .transpose(_, let inst),
              .map(_, _, let inst):
             return inst
@@ -72,7 +72,7 @@ public extension AlgebraicExpression {
             case .atom(_):
                 return
             case let .zipWith(_, lhs, rhs, inst),
-                 let .matrixMultiply(lhs, rhs, inst):
+                 let .dot(lhs, rhs, inst):
                 remove(lhs)
                 remove(rhs)
                 inst.removeFromParent()
@@ -89,7 +89,7 @@ public extension AlgebraicExpression {
         switch expr {
         case .atom(let v): return v
         case .map(_, _, let inst),
-             .matrixMultiply(_, _, let inst),
+             .dot(_, _, let inst),
              .transpose(_, let inst),
              .zipWith(_, _, _, let inst):
             return %inst
@@ -145,7 +145,7 @@ extension AlgebraicExpression : BackwardGraphNode {
         case .map(_, let x, _),
              .transpose(let x, _):
             return [x]
-        case .matrixMultiply(let x, let y, _),
+        case .dot(let x, let y, _),
              .zipWith(_, let x, let y, _):
             return [x, y]
         }
@@ -172,8 +172,8 @@ extension AlgebraicExpression : CustomStringConvertible {
             return "[\(x)]"
         case let .map(op, exp, _):
             return "(\(op) \(exp))"
-        case let .matrixMultiply(lhs, rhs, _):
-            return "(matrixMultiply \(lhs) \(rhs))"
+        case let .dot(lhs, rhs, _):
+            return "(dot \(lhs) \(rhs))"
         case let .transpose(exp, _):
             return "(transpose \(exp))"
         case let .zipWith(op, lhs, rhs, _):
@@ -214,8 +214,8 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
             case let .zipWith(op, lhs, rhs):
                 expr = .zipWith(op, subexpression(from: lhs),
                                 subexpression(from: rhs), inst)
-            case let .matrixMultiply(lhs, rhs):
-                expr = .matrixMultiply(subexpression(from: lhs),
+            case let .dot(lhs, rhs):
+                expr = .dot(subexpression(from: lhs),
                                        subexpression(from: rhs), inst)
             case let .transpose(v):
                 expr = .transpose(subexpression(from: v), inst)

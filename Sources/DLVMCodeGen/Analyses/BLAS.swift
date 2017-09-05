@@ -65,7 +65,7 @@ public extension BLAS {
                 }
             /// GEMM with alpha
             case .zipWith(.associative(.multiply), let alpha,
-                          .matrixMultiply(let A, let x, let dot), let times):
+                          .dot(let A, let x, let dot), let times):
                 switch (alpha.type, A.type, x.type) {
                 case let (.tensor([], dt1), .tensor(s2, dt2), .tensor(s3, dt3))
                     where dt1 == dt2 && dt2 == dt3 && s2.isMatrix && s3.isMatrix:
@@ -89,7 +89,7 @@ public extension BLAS {
                     break
                 }
             /// GEMM without alpha
-            case .matrixMultiply(let A, let x, let dot):
+            case .dot(let A, let x, let dot):
                 switch (A.type, x.type) {
                 case let (.tensor(s2, dt2), .tensor(s3, dt3))
                     where dt2 == dt3 && s2.isMatrix && s3.isMatrix:

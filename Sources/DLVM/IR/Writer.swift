@@ -165,8 +165,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("literal \(lit): \(ty)")
         case let .zipWith(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
-        case let .matrixMultiply(op1, op2):
-            target.write("matrixMultiply \(op1), \(op2)")
+        case let .dot(op1, op2):
+            target.write("dot \(op1), \(op2)")
         case let .map(f, op):
             target.write("\(f) \(op)")
         case let .reduce(comb, op, initial, dims):
