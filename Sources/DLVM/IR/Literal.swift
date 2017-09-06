@@ -247,7 +247,7 @@ public extension Literal {
             return false
         }
     }
-
+    
     static func ~= (pattern: FloatLiteralType, literal: Literal) -> Bool {
         switch (pattern, literal) {
         case (0.0, .zero): return true
@@ -258,13 +258,25 @@ public extension Literal {
 }
 
 public extension Use {
+    private static func anyLiteral(from use: Use) -> Literal? {
+        switch use {
+        case let .literal(_, lit):
+            return lit
+        case let .instruction(_, inst):
+            guard case let .literal(lit, _) = inst.kind else { return nil }
+            return lit
+        default:
+            return nil
+        }
+    }
+    
     static func ~= (pattern: IntegerLiteralType, use: Use) -> Bool {
-        guard case let .literal(_, lit) = use else { return false }
+        guard let lit = anyLiteral(from: use) else { return false }
         return pattern ~= lit
     }
 
     static func ~= (pattern: FloatLiteralType, use: Use) -> Bool {
-        guard case let .literal(_, lit) = use else { return false }
+        guard let lit = anyLiteral(from: use) else { return false }
         return pattern ~= lit
     }
 }
