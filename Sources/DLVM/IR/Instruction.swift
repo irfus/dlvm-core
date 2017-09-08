@@ -652,6 +652,7 @@ extension Opcode : Equatable {
         case (.elementPointer, .elementPointer): return true
         case (.copy, .copy): return true
         case (.trap, .trap): return true
+        case (.literal, .literal): return true
         case let (.binaryOp(o1), .binaryOp(o2)): return o1 == o2
         case let (.unaryOp(o1), .unaryOp(o2)): return o1 == o2
         default: return false
