@@ -348,6 +348,22 @@ extension Parser {
             }
         })
     }
+    
+    func parseReductionCombinator(in basicBlock: BasicBlock?) throws -> ReductionCombinator {
+        return try withPeekedToken("""
+            a function or an associative operator
+            """, { tok in
+            switch tok.kind {
+            case .identifier(_):
+                return try .function(parseUse(in: basicBlock).0)
+            case .opcode(.binaryOp(.associative(let op))):
+                consumeToken()
+                return .op(op)
+            default:
+                return nil
+            }
+        })
+    }
 
     func parseElementKey(in basicBlock: BasicBlock?) throws -> (ElementKey, SourceRange) {
         return try withPeekedToken("an element key", { tok in
@@ -565,18 +581,7 @@ extension Parser {
         case .scan:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.by))
-            let combinator: ReductionCombinator = try withPeekedToken("""
-                a function or an associative operator
-                """, { tok in
-                switch tok.kind {
-                case .identifier(_):
-                    return try .function(parseUse(in: basicBlock).0)
-                case .opcode(.binaryOp(.associative(let op))):
-                    return .op(op)
-                default:
-                    return nil
-                }
-            })
+            let combinator = try parseReductionCombinator(in: basicBlock)
             try consume(.keyword(.along))
             let dims = try parseMany({
                 return try parseInteger().0
@@ -589,19 +594,7 @@ extension Parser {
         case .reduce:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.by))
-            let combinator: ReductionCombinator = try withPeekedToken("""
-                a function or an associative operator
-                """, { tok in
-                switch tok.kind {
-                case .identifier(_):
-                    return try .function(parseUse(in: basicBlock).0)
-                case .opcode(.binaryOp(.associative(let op))):
-                    consumeToken()
-                    return .op(op)
-                default:
-                    return nil
-                }
-            })
+            let combinator = try parseReductionCombinator(in: basicBlock)
             try consume(.keyword(.init))
             let (initial, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.along))
