@@ -2,8 +2,12 @@
 - Mirror: [LLVM Group GitLab](https://gitlab-beta.engr.illinois.edu/llvm/dlvm)
 
 # Deep Learning Virtual Machine
+## Core Compiler Infrastructure
 
-Welcome to DLVM! DLVM is:
+Welcome to DLVM! For general information about the DLVM project,
+please visit [dlvm.org](http://dlvm.org).
+
+DLVM is:
 - a framework for building DSLs
 - an IR for linear algebra and neural networks
 - an automatic backpropagator
@@ -35,8 +39,8 @@ reference counting, etc.
 
 ## Dependencies
 
-- LLVM 4
-- Swift 4 
+- LLVM 5
+- Swift 4.1
   - DEVELOPMENT-SNAPSHOT-2017-07-27 or above
   - **Not** 4.0-DEVELOPMENT-SNAPSHOT-*!
 
