@@ -29,7 +29,7 @@ public enum Keyword {
     case stage, raw, canonical
     case `struct`, `func`, `var`
     case type, opaque
-    case at, to, from, by
+    case at, to, from, by, upto
     case then, `else`
     case wrt, keeping
     case void
@@ -474,6 +474,7 @@ private extension Lexer {
         case "opaque": kind = .keyword(.opaque)
         case "at": kind = .keyword(.at)
         case "to": kind = .keyword(.to)
+        case "upto": kind = .keyword(.upto)
         case "from": kind = .keyword(.from)
         case "by": kind = .keyword(.by)
         case "then": kind = .keyword(.then)
@@ -523,6 +524,8 @@ private extension Lexer {
         case "elementPointer": kind = .opcode(.elementPointer)
         case "copy": kind = .opcode(.copy)
         case "trap": kind = .opcode(.trap)
+        case "random": kind = .opcode(.random)
+        case "select": kind = .opcode(.select)
         case "lessThan": kind = .opcode(.binaryOp(.comparison(.lessThan)))
         case "lessThanOrEqual": kind = .opcode(.binaryOp(.comparison(.lessThanOrEqual)))
         case "greaterThan": kind = .opcode(.binaryOp(.comparison(.lessThanOrEqual)))

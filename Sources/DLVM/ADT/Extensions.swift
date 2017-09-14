@@ -112,3 +112,10 @@ public extension String {
         return dlUrl.relativePath
     }
 }
+
+import struct CoreTensor.TensorShape
+
+/// Multi-shape broadcasting
+public func broadcast(_ shapes: TensorShape...) -> TensorShape? {
+    return shapes.dropFirst().reduce(shapes.first) { $0?.broadcast(with: $1) }
+}

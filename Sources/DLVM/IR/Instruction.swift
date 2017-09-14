@@ -51,6 +51,10 @@ public enum InstructionKind {
     case transpose(Use)
     /// Slice
     case slice(Use, at: CountableClosedRange<Int>)
+    /// Shuffle
+    case random(TensorShape, from: Use, upTo: Use)
+    /// Select
+    case select(Use, Use, by: Use)
     /// Convolution
     /// A convolution can be thought of as a n-dimensional window moving across a n-dimensional
     /// base area and a computation is performed for each possible position of the window.
@@ -369,6 +373,22 @@ public extension InstructionKind {
                 else { return .invalid }
             shape[0] = range.count
             return .tensor(shape, dtype)
+            
+        case let .random(shape, from: lo, upTo: hi):
+            /// Lower bound and upper bound must be scalar
+            guard case .tensor([], let dt1) = lo.type.unaliased,
+                case .tensor([], let dt2) = hi.type.unaliased,
+                dt1 == dt2, dt1.isNumeric
+                else { return .invalid }
+            return .tensor(shape, dt1)
+            
+        case let .select(left, right, by: flags):
+            guard case .tensor(let s1, let dt1) = left.type.unaliased,
+                case .tensor(let s2, let dt2) = right.type.unaliased,
+                case .tensor(let s3, let dt3) = flags.type.unaliased,
+                dt1 == dt2, dt3.isBool, let shape = broadcast(s1, s2, s3)
+                else { return .invalid }
+            return .tensor(shape, dt1)
 
         case .store, .copy, .deallocate,
              .branch, .conditional, .return, .retain, .release, .trap:
@@ -391,7 +411,8 @@ extension InstructionKind {
         case let .zipWith(_, op1, op2),
              let .dot(op1, op2),
              let .insert(op1, to: op2, at: _),
-             let .reduce(_, op1, initial: op2, _):
+             let .reduce(_, op1, initial: op2, _),
+             let .random(_, from: op1, upTo: op2):
             return [op1, op2]
         case let .map(_, op), let .scan(_, op, _),
              let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
@@ -408,7 +429,8 @@ extension InstructionKind {
             return [cond] + thenArgs + elseArgs
         case let .apply(f, args):
             return [f] + args
-        case let .copy(from: op1, to: op2, count: op3):
+        case let .copy(from: op1, to: op2, count: op3),
+             let .select(op1, op2, by: op3):
             return [op1, op2, op3]
         case let .literal(lit, _):
             return lit.operands
@@ -541,6 +563,26 @@ public extension InstructionKind {
             return .copy(from: v1, to: new, count: v3)
         case .copy(from: let v1, to: let v2, count: old):
             return .copy(from: v1, to: v2, count: new)
+        case .random(let shape, from: old, upTo: old):
+            return .random(shape, from: new, upTo: new)
+        case .random(let shape, from: old, upTo: let v2):
+            return .random(shape, from: new, upTo: v2)
+        case .random(let shape, from: let v1, upTo: old):
+            return .random(shape, from: v1, upTo: new)
+        case .select(old, old, by: old):
+            return .select(new, new, by: new)
+        case .select(old, old, by: let v3):
+            return .select(new, new, by: v3)
+        case .select(let v1, old, by: old):
+            return .select(v1, new, by: new)
+        case .select(old, let v2, by: old):
+            return .select(new, v2, by: new)
+        case .select(old, let v2, by: let v3):
+            return .select(new, v2, by: v3)
+        case .select(let v1, old, by: let v3):
+            return .select(v1, new, by: v3)
+        case .select(let v1, let v2, by: old):
+            return .select(v1, v2, by: new)
         default:
             return self
         }
@@ -580,6 +622,8 @@ public enum Opcode {
     case trap
     case binaryOp(BinaryOp)
     case unaryOp(UnaryOp)
+    case random
+    case select
 }
 
 /// Instruction ADT decomposition (opcodes, keywords, operands)
@@ -618,6 +662,8 @@ public extension InstructionKind {
         case .elementPointer: return .elementPointer
         case .copy: return .copy
         case .trap: return .trap
+        case .random: return .random
+        case .select: return .select
         }
     }
 }
@@ -655,6 +701,8 @@ extension Opcode : Equatable {
         case (.literal, .literal): return true
         case let (.binaryOp(o1), .binaryOp(o2)): return o1 == o2
         case let (.unaryOp(o1), .unaryOp(o2)): return o1 == o2
+        case (.random, .random): return true
+        case (.select, .select): return true
         default: return false
         }
     }
