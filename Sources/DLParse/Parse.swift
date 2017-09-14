@@ -217,7 +217,7 @@ private extension Parser {
 
     /// Parse one or more with optional backtracking
     /// - Note: In the closure, return `nil` to backtrack
-    func parseMany<T>(_ parseElement: () throws -> T?) rethrows -> [T] {
+    private func parseMany<T>(_ parseElement: () throws -> T?) rethrows -> [T] {
         var elements: [T] = []
         while let result = try withBacktracking(parseElement) {
             elements.append(result)
@@ -565,7 +565,9 @@ extension Parser {
         case .scan:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.by))
-            let combinator: ReductionCombinator = try withPeekedToken("a function or an associative operator", { tok in
+            let combinator: ReductionCombinator = try withPeekedToken("""
+                a function or an associative operator
+                """, { tok in
                 switch tok.kind {
                 case .identifier(_):
                     return try .function(parseUse(in: basicBlock).0)
@@ -576,22 +578,25 @@ extension Parser {
                 }
             })
             try consume(.keyword(.along))
-            let (firstDim, _) = try parseInteger()
-            let restDims: [Int] = try parseMany({
-                try consumeWrappablePunctuation(.comma)
+            let dims = try parseMany({
                 return try parseInteger().0
+            }, separatedBy: {
+                try consumeWrappablePunctuation(.comma)
             })
-            return .scan(combinator, val, [firstDim] + restDims)
+            return .scan(combinator, val, dims)
 
         /// 'reduce' <val> 'by' <func|assoc_op> 'init' <val> 'along' <num> (',' <num>)*
         case .reduce:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.by))
-            let combinator: ReductionCombinator = try withPeekedToken("a function or an associative operator", { tok in
+            let combinator: ReductionCombinator = try withPeekedToken("""
+                a function or an associative operator
+                """, { tok in
                 switch tok.kind {
                 case .identifier(_):
                     return try .function(parseUse(in: basicBlock).0)
                 case .opcode(.binaryOp(.associative(let op))):
+                    consumeToken()
                     return .op(op)
                 default:
                     return nil
@@ -600,12 +605,12 @@ extension Parser {
             try consume(.keyword(.init))
             let (initial, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.along))
-            let (firstDim, _) = try parseInteger()
-            let restDims: [Int] = try parseMany({
+            let dims = try parseMany({
+                try parseInteger().0
+            }, separatedBy: {
                 try consumeWrappablePunctuation(.comma)
-                return try parseInteger().0
             })
-            return .reduce(combinator, val, initial: initial, [firstDim] + restDims)
+            return .reduce(combinator, val, initial: initial, dims)
 
         /// 'dot' <val> ',' <val>
         case .dot:
@@ -616,25 +621,25 @@ extension Parser {
             
         /// 'concatenate' <val> (',' <val>)* along <num>
         case .concatenate:
-            let (firstVal, _) = try parseUse(in: basicBlock)
-            let restVals: [Use] = try parseMany({
+            let vals = try parseMany({
+                try parseUse(in: basicBlock).0
+            }, separatedBy: {
                 try consumeWrappablePunctuation(.comma)
-                return try parseUse(in: basicBlock).0
             })
             try consume(.keyword(.along))
             let (axis, _) = try parseInteger()
-            return .concatenate([firstVal] + restVals, axis: axis)
+            return .concatenate(vals, axis: axis)
 
         /// 'transpose' <val>
         case .transpose:
             return try .transpose(parseUse(in: basicBlock).0)
 
-        /// 'slice' <val> 'from' <num> 'to' <num>
+        /// 'slice' <val> 'from' <num> 'upto' <num>
         case .slice:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.from))
             let (lowerBound, _) = try parseInteger()
-            try consume(.keyword(.to))
+            try consume(.keyword(.upto))
             let (upperBound, _) = try parseInteger()
             return .slice(val, at: lowerBound...upperBound)
 
@@ -642,16 +647,7 @@ extension Parser {
         case .shapeCast:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.to))
-            let shape: TensorShape = try withPeekedToken("dimensions separated by 'x', or 'scalar'", { tok in
-                switch tok.kind {
-                case .keyword(.scalar):
-                    return .scalar
-                case .integer(_):
-                    return try parseNonScalarShape().0
-                default:
-                    return nil
-                }
-            })
+            let shape = try parseShape()
             return .shapeCast(val, shape)
             
         /// 'bitCast' <val> 'to' <type>
@@ -781,6 +777,7 @@ extension Parser {
             let (count, _) = try parseUse(in: basicBlock)
             return .copy(from: src, to: dest, count: count)
             
+        /// 'trap'
         case .trap:
             return .trap
             
