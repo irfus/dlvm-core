@@ -91,14 +91,14 @@ open class AlgebraSimplification : TransformPass {
             function.replaceAllUses(of: inst, with: %product)
             expr.removeIntermediates(upTo: x)
             workList.append(.numericBinary(.multiply, x, x, product))
-
+            
         // MARK: - 2. Trignometry
         /// - (e^x - e^(-x)) / 2 => sinh(x)
         case let .numericBinary(.divide,
-                          .numericBinary(.subtract,
-                                   .map(.exp, x1, _),
-                                   .map(.exp, .map(.negate, x2, _), _),
-                                   _), 2, inst) where x1 == x2:
+                                .numericBinary(.subtract,
+                                               .map(.exp, x1, _),
+                                               .map(.exp, .map(.negate, x2, _), _),
+                                               _), 2, inst) where x1 == x2:
             builder.move(after: inst)
             let sinh = builder.buildInstruction(.numericUnary(.sinh, %x1))
             function.replaceAllUses(of: inst, with: %sinh)
@@ -106,10 +106,10 @@ open class AlgebraSimplification : TransformPass {
             workList.append(.map(.sinh, x1, sinh))
         /// - (e^x - e^(-x)) / 2 => cosh(x)
         case let .numericBinary(.divide,
-                          .numericBinary(.add,
-                                   .map(.exp, x1, _),
-                                   .map(.exp, .map(.negate, x2, _), _),
-                                   _), 2, inst) where x1 == x2:
+                                .numericBinary(.add,
+                                               .map(.exp, x1, _),
+                                               .map(.exp, .map(.negate, x2, _), _),
+                                               _), 2, inst) where x1 == x2:
             builder.move(after: inst)
             let cosh = builder.buildInstruction(.numericUnary(.cosh, %x1))
             function.replaceAllUses(of: inst, with: %cosh)
@@ -127,7 +127,7 @@ open class AlgebraSimplification : TransformPass {
              let .map(.cosh, 0, inst):
             function.replaceAllUses(of: inst, with: %expr.makeScalar(1))
             expr.removeIntermediates()
-
+            
         // MARK: - 3. Reassociation
         /// - (e^x)^y => e^(x*y)
         case let .numericBinary(.power, .map(.exp, x, _), y, inst):
@@ -154,7 +154,7 @@ open class AlgebraSimplification : TransformPass {
             function.replaceAllUses(of: inst, with: %mul)
             expr.removeIntermediates(upTo: x, y)
             workList.append(.numericBinary(.multiply, x,
-                                     .map(.exp, .map(.negate, y, neg), exp), mul))
+                                           .map(.exp, .map(.negate, y, neg), exp), mul))
         /// - x / y^z => x * y^(-z)
         case let .numericBinary(.divide, x, .numericBinary(.power, y, z, _), inst):
             builder.move(after: inst)
@@ -164,12 +164,12 @@ open class AlgebraSimplification : TransformPass {
             function.replaceAllUses(of: inst, with: %mul)
             expr.removeIntermediates(upTo: x, y, z)
             workList.append(.numericBinary(.multiply, x,
-                                     .numericBinary(.power, y,
-                                              .map(.negate, z, neg), pwr), mul))
+                                           .numericBinary(.power, y,
+                                                          .map(.negate, z, neg), pwr), mul))
         /// - (x / y) / (z / a) => (x * a) / (y * z)
         case let .numericBinary(.divide,
-                          .numericBinary(.divide, x, y, _),
-                          .numericBinary(.divide, z, a, _), inst):
+                                .numericBinary(.divide, x, y, _),
+                                .numericBinary(.divide, z, a, _), inst):
             builder.move(after: inst)
             let mulL = builder.multiply(%x, %a)
             let mulR = builder.multiply(%y, %z)
@@ -177,21 +177,21 @@ open class AlgebraSimplification : TransformPass {
             function.replaceAllUses(of: inst, with: %div)
             expr.removeIntermediates(upTo: x, y, z, a)
             workList.append(.numericBinary(.divide,
-                                     .numericBinary(.multiply, x, a, mulL),
-                                     .numericBinary(.multiply, y, z, mulR),
-                                     div))
+                                           .numericBinary(.multiply, x, a, mulL),
+                                           .numericBinary(.multiply, y, z, mulR),
+                                           div))
         /// - (x / y) / z => x / (y * z)
         case let .numericBinary(.divide,
-                          .numericBinary(.divide, x, y, _),
-                          z, inst):
+                                .numericBinary(.divide, x, y, _),
+                                z, inst):
             builder.move(after: inst)
             let mul = builder.multiply(%y, %z)
             let div = builder.divide(%x, %mul)
             function.replaceAllUses(of: inst, with: %div)
             expr.removeIntermediates(upTo: x, y, z)
             workList.append(.numericBinary(.divide, x,
-                                     .numericBinary(.multiply, y, z, mul),
-                                     div))
+                                           .numericBinary(.multiply, y, z, mul),
+                                           div))
         /// - x / (y / z) => (x * z) / y
         case let .numericBinary(.divide, x, .numericBinary(.divide, y, z, _), inst):
             builder.move(after: inst)
@@ -201,7 +201,7 @@ open class AlgebraSimplification : TransformPass {
             expr.removeIntermediates(upTo: x, y, z)
             workList.append(.numericBinary(.divide,
                                            .numericBinary(.multiply, x, z, mul), y, div))
-
+            
         // MARK: - 4. Linear Algebra
         /// - (A^T)^T => A
         case let .transpose(.transpose(A, _), inst):
