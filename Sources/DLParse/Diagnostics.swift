@@ -234,9 +234,11 @@ extension Opcode : CustomStringConvertible {
         case .elementPointer: return "elementPointer"
         case .copy: return "copy"
         case .trap: return "trap"
-        case let .binaryOp(op): return String(describing: op)
-        case let .unaryOp(op): return String(describing: op)
+        case let .numericBinaryOp(op): return String(describing: op)
+        case let .numericUnaryOp(op): return String(describing: op)
+        case let .booleanBinaryOp(op): return String(describing: op)
         case let .compare(op): return String(describing: op)
+        case .not: return "not"
         case .random: return "random"
         case .select: return "select"
         }

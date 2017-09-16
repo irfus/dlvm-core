@@ -356,9 +356,12 @@ extension Parser {
             switch tok.kind {
             case .identifier(_):
                 return try .function(parseUse(in: basicBlock).0)
-            case .opcode(.binaryOp(.associative(let op))):
+            case .opcode(.numericBinaryOp(let op)):
                 consumeToken()
-                return .op(op)
+                return .numeric(op)
+            case .opcode(.booleanBinaryOp(let op)):
+                consumeToken()
+                return .boolean(op)
             default:
                 return nil
             }
@@ -774,12 +777,19 @@ extension Parser {
         case .trap:
             return .trap
             
-        /// <binary_op> <val>, <val>
-        case let .binaryOp(op):
+        /// <numeric_binary_op> <val>, <val>
+        case let .numericBinaryOp(op):
             let (lhs, _) = try parseUse(in: basicBlock)
             try consumeWrappablePunctuation(.comma)
             let (rhs, _) = try parseUse(in: basicBlock)
-            return .zipWith(op, lhs, rhs)
+            return .numericBinary(op, lhs, rhs)
+            
+        /// <boolean_binary_op> <val>, <val>
+        case let .booleanBinaryOp(op):
+            let (lhs, _) = try parseUse(in: basicBlock)
+            try consumeWrappablePunctuation(.comma)
+            let (rhs, _) = try parseUse(in: basicBlock)
+            return .booleanBinary(op, lhs, rhs)
             
         /// <comparison_op> <val>, <val>
         case let .compare(op):
@@ -788,9 +798,12 @@ extension Parser {
             let (rhs, _) = try parseUse(in: basicBlock)
             return .compare(op, lhs, rhs)
             
-        /// <unary_op> <val>
-        case let .unaryOp(op):
-            return try .map(op, parseUse(in: basicBlock).0)
+        /// <numeric_unary_op> <val>
+        case let .numericUnaryOp(op):
+            return try .numericUnary(op, parseUse(in: basicBlock).0)
+        
+        case .not:
+            return try .not(parseUse(in: basicBlock).0)
         
         /// 'random' <shape> 'from' <val> 'upto' <val>
         case .random:

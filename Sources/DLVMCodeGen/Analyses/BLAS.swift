@@ -48,9 +48,9 @@ public extension BLAS {
             let expr = algExpr.expression(for: entry)
             switch expr {
             /// AXPY
-            case .zipWith(.associative(.add),
-                          .zipWith(.associative(.multiply),
-                                   let a, let x, let times),
+            case .numericBinary(.add,
+                                .numericBinary(.multiply,
+                                               let a, let x, let times),
                           let b, let plus):
                 switch (a.type, x.type, b.type) {
                 case let (.tensor([], dt1), .tensor(s2, dt2), .tensor(s3, dt3))
@@ -64,8 +64,8 @@ public extension BLAS {
                     break
                 }
             /// GEMM with alpha
-            case .zipWith(.associative(.multiply), let alpha,
-                          .dot(let A, let x, let dot), let times):
+            case .numericBinary(.multiply, let alpha,
+                                .dot(let A, let x, let dot), let times):
                 switch (alpha.type, A.type, x.type) {
                 case let (.tensor([], dt1), .tensor(s2, dt2), .tensor(s3, dt3))
                     where dt1 == dt2 && dt2 == dt3 && s2.isMatrix && s3.isMatrix:

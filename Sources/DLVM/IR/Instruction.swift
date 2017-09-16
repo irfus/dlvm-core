@@ -202,7 +202,9 @@ public extension InstructionKind {
     /// two tensors of different but compatible shapes
     var isBroadcasting: Bool {
         switch self {
-        case let .numericBinary(_, x, y), let .compare(_, x, y):
+        case let .numericBinary(_, x, y),
+             let .compare(_, x, y),
+             let .booleanBinary(_, x, y):
             guard case let .tensor(s1, _) = x.type.canonical,
                   case let .tensor(s2, _) = y.type.canonical else {
                 return false
@@ -242,7 +244,7 @@ public extension InstructionKind {
         case let .numericBinary(_, v1, v2):
             return v1.tensorType.flatMap { v1Ty in
                 v2.tensorType.flatMap { v2Ty in
-                    ComparisonOp.resultType(for: (v1Ty, v2Ty))
+                    NumericBinaryOp.resultType(for: (v1Ty, v2Ty))
                 }
             }.map(Type.tensor) ?? .invalid
             

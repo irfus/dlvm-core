@@ -163,7 +163,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .not(op):
             target.write("not \(op)")
         case let .compare(f, op1, op2):
-            target.write("\(f) \(op1) \(op2)")
+            target.write("\(f) \(op1), \(op2)")
         case let .dot(op1, op2):
             target.write("dot \(op1), \(op2)")
         case let .numericUnary(f, op):

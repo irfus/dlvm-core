@@ -224,10 +224,10 @@ extension DLVM.InstructionKind {
             }
             return LLVMBuildLoad(builder, val, nil)
 
-        case let .map(op, use):
+        case let .numericUnary(op, use):
             return emitMap(op, use, to: context, in: env)
 
-        case let .zipWith(op, lhs, rhs):
+        case let .numericBinary(op, lhs, rhs):
             return emitZipWith(op, lhs, rhs, to: context, in: env)
 
         case let .dot(lhs, rhs):
@@ -277,7 +277,7 @@ extension DLVM.InstructionKind {
         DLUnimplemented()
     }
 
-    func emitZipWith<T>(_ operator: BinaryOp, _ lhs: Use, _ rhs: Use,
+    func emitZipWith<T>(_ operator: NumericBinaryOp, _ lhs: Use, _ rhs: Use,
                      to context: LLGenContext<T>, in env: LLGenEnvironment) -> LLVMValueRef {
         DLUnimplemented()
     }
