@@ -87,7 +87,7 @@ extension Instruction {
     
     var defaultExecutionLocation: DefaultExecutionLocation {
         switch kind.opcode {
-        case .unaryOp, .binaryOp, .dataTypeCast, .transpose, .random, .select:
+        case .unaryOp, .binaryOp, .compare, .dataTypeCast, .transpose, .random, .select:
             guard case let .tensor(shape, _) = type else {
                 DLImpossible()
             }
@@ -106,7 +106,7 @@ extension Instruction {
 
     var needsToRequestMemory: Bool {
         switch kind.opcode {
-        case .unaryOp, .binaryOp, .dataTypeCast, .random, .select:
+        case .unaryOp, .binaryOp, .compare, .dataTypeCast, .random, .select:
             guard case let .tensor(shape, _) = type else {
                 DLImpossible()
             }

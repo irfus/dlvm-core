@@ -18,6 +18,7 @@
 //
 
 import CoreTensor
+import CoreOp
 
 /// Element key to form a key path in GEP and use
 public enum ElementKey {
@@ -164,6 +165,11 @@ public extension Type {
 
     static func * (count: Int, elementType: Type) -> Type {
         return .array(count, elementType)
+    }
+    
+    var tensorType: TensorType? {
+        guard case let .tensor(s, dt) = canonical else { return nil }
+        return (s, dt)
     }
 }
 

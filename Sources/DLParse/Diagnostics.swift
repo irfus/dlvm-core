@@ -236,6 +236,7 @@ extension Opcode : CustomStringConvertible {
         case .trap: return "trap"
         case let .binaryOp(op): return String(describing: op)
         case let .unaryOp(op): return String(describing: op)
+        case let .compare(op): return String(describing: op)
         case .random: return "random"
         case .select: return "select"
         }

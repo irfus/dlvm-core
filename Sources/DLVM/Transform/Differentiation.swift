@@ -145,22 +145,22 @@ fileprivate extension Differentiation {
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {
         /* Basic arithmetic */
-        case let .zipWith(.associative(.add), lhs, rhs):
+        case let .numericBinary(.add, lhs, rhs):
             grad = [
                 (lhs, adjoint), /// ∂f/∂x = D
                 (rhs, adjoint), /// ∂f/∂y = D
             ]
-        case let .zipWith(.associative(.subtract), lhs, rhs):
+        case let .numericBinary(.subtract, lhs, rhs):
             grad = [
                 (lhs, adjoint),                                     /// ∂f/∂x = D
                 (rhs, %bd.subtract(adjoint.makeScalar(0), adjoint)), /// ∂f/∂y = -D
             ]
-        case let .zipWith(.associative(.multiply), lhs, rhs):
+        case let .numericBinary(.multiply, lhs, rhs):
             grad = [
                 (lhs, rhs), /// ∂f/∂x = y
                 (rhs, lhs), /// ∂f/∂y = x
             ]
-        case let .zipWith(.associative(.divide), lhs, rhs):
+        case let .numericBinary(.divide, lhs, rhs):
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
@@ -182,13 +182,13 @@ fileprivate extension Differentiation {
 
 
         /* Unary elementwise transformations */
-        case let .map(.exp, x):
+        case let .numericUnary(.exp, x):
             let cloned = instruction.makeUse()
             grad = [
                 (x, cloned)
             ]
 
-        case let .map(.tanh, x):
+        case let .numericUnary(.tanh, x):
             let cloned = instruction.makeUse()
             grad = [
                 (x, %bd.subtract(cloned, %bd.subtract(x.makeScalar(1),

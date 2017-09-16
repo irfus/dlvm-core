@@ -23,8 +23,9 @@
 
 public indirect enum AlgebraicExpression {
     case atom(Use)
-    case map(UnaryOp, AlgebraicExpression, Instruction)
-    case zipWith(BinaryOp, AlgebraicExpression, AlgebraicExpression, Instruction)
+    case map(NumericUnaryOp, AlgebraicExpression, Instruction)
+    case zipWith(NumericBinaryOp, AlgebraicExpression, AlgebraicExpression, Instruction)
+    case compare(ComparisonOp, AlgebraicExpression, AlgebraicExpression, Instruction)
     case dot(AlgebraicExpression, AlgebraicExpression, Instruction)
     case transpose(AlgebraicExpression, Instruction)
 }
@@ -54,6 +55,7 @@ public extension AlgebraicExpression {
         case .atom(_):
             return nil
         case .zipWith(_, _, _, let inst),
+             .compare(_, _, _, let inst),
              .dot(_, _, let inst),
              .transpose(_, let inst),
              .map(_, _, let inst):
@@ -72,6 +74,7 @@ public extension AlgebraicExpression {
             case .atom(_):
                 return
             case let .zipWith(_, lhs, rhs, inst),
+                 let .compare(_, lhs, rhs, inst),
                  let .dot(lhs, rhs, inst):
                 remove(lhs)
                 remove(rhs)
@@ -91,7 +94,8 @@ public extension AlgebraicExpression {
         case .map(_, _, let inst),
              .dot(_, _, let inst),
              .transpose(_, let inst),
-             .zipWith(_, _, _, let inst):
+             .zipWith(_, _, _, let inst),
+             .compare(_, _, _, let inst):
             return %inst
         }
     }
@@ -146,7 +150,8 @@ extension AlgebraicExpression : BackwardGraphNode {
              .transpose(let x, _):
             return [x]
         case .dot(let x, let y, _),
-             .zipWith(_, let x, let y, _):
+             .zipWith(_, let x, let y, _),
+             .compare(_, let x, let y, _):
             return [x, y]
         }
     }
@@ -177,6 +182,8 @@ extension AlgebraicExpression : CustomStringConvertible {
         case let .transpose(exp, _):
             return "(transpose \(exp))"
         case let .zipWith(op, lhs, rhs, _):
+            return "(\(op) \(lhs) \(rhs))"
+        case let .compare(op, lhs, rhs, _):
             return "(\(op) \(lhs) \(rhs))"
         }
     }
@@ -209,14 +216,17 @@ open class AlgebraicExpressionAnalysis : AnalysisPass {
             /// DFS from math instructions
             let expr: AlgebraicExpression
             switch inst.kind {
-            case let .map(op, v):
+            case let .numericUnary(op, v):
                 expr = .map(op, subexpression(from: v), inst)
-            case let .zipWith(op, lhs, rhs):
+            case let .numericBinary(op, lhs, rhs):
                 expr = .zipWith(op, subexpression(from: lhs),
+                                subexpression(from: rhs), inst)
+            case let .compare(op, lhs, rhs):
+                expr = .compare(op, subexpression(from: lhs),
                                 subexpression(from: rhs), inst)
             case let .dot(lhs, rhs):
                 expr = .dot(subexpression(from: lhs),
-                                       subexpression(from: rhs), inst)
+                            subexpression(from: rhs), inst)
             case let .transpose(v):
                 expr = .transpose(subexpression(from: v), inst)
             default:
