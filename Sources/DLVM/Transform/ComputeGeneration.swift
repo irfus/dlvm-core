@@ -1,5 +1,5 @@
 //
-//  Canonicalization.swift
+//  ComputeGeneration.swift
 //  DLVM
 //
 //  Copyright 2016-2017 Richard Wei.
@@ -17,16 +17,11 @@
 //  limitations under the License.
 //
 
-/// Applys the following transform passes and switches the IR stage to 'canonical'.
-/// - Transforms:
-///   - Differentiation
-open class Canonicalization : TransformPass {
+open class ComputeGeneration : TransformPass {
     public typealias Body = Module
     
     open class func run(on body: Module) -> Bool {
-        if body.stage == .canonical { return false }
-        let changed = body.applyTransform(Differentiation.self)
-        body.stage = .canonical
-        return changed
+        DLUnimplemented()
+        // body.stage = .compute
     }
 }
