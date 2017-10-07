@@ -51,7 +51,7 @@ public extension Optional {
     }
 }
 
-public extension Collection where Index == Int, IndexDistance == Int {
+public extension Collection where Index == Int {
     func subcollection(atIndices indices: [Int]) -> [Iterator.Element]? {
         guard indices.count <= count else { return nil }
         var result: [Iterator.Element] = []
