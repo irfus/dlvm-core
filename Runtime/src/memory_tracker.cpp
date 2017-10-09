@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-#include <exception>
+#include <cassert>
 #include "access_owner.h"
 #include "memory_tracker.h"
 
@@ -30,8 +30,7 @@ DLMemoryTracker::~DLMemoryTracker() {
 
 DLDatumProperties DLMemoryTracker::getProperties(void * _Nonnull ptr) {
     auto search = _registry.find(ptr);
-    if (search != _registry.end())
-        throw std::runtime_error("Address is not registered");
+    assert(search != _registry.end() && "Address is not registered");
     return search->second;
 }
 
@@ -45,22 +44,18 @@ void DLMemoryTracker::requestMemory(void * _Nonnull ptr, DLAccessOwner requester
     // H2D
     if (props.getAccessOwner() == ::host && requester == ::device) {
         auto mallocStatus = _runtimeRoutines.allocate(&props.deviceAddress, props.size);
-        if (mallocStatus == 0)
-            throw std::runtime_error("Device allocation failed");
+        assert(mallocStatus == 0 && "Device allocation failed");
         auto copyStatus = _runtimeRoutines.copyToDevice(props.deviceAddress, ptr);
-        if (copyStatus == 0)
-            throw std::runtime_error("H2D copy failed");
+        assert(copyStatus == 0 && "H2D copy failed");
         props.outOfSync = false;
     }
     // D2H
     else if (props.getAccessOwner() == ::device && requester == ::host) {
         auto copyStatus = _runtimeRoutines.copyToHost(ptr, props.deviceAddress);
-        if (copyStatus == 0)
-            throw std::runtime_error("D2H copy failed");
+        assert(copyStatus == 0 && "D2H copy failed");
         auto deallocStatus = _runtimeRoutines.deallocate(props.deviceAddress);
         props.deviceAddress = nullptr;
-        if (deallocStatus == 0)
-            throw std::runtime_error("Device deallocation failed");
+        assert(deallocStatus == 0 && "Device deallocation failed");
         props.outOfSync = false;
     }
 }
