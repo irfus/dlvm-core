@@ -24,7 +24,7 @@ import CoreOp
 /// - Note: It has no type or shape, because a `Literal` is not a `Value`.
 /// But `LiteralValue`, that uses `Literal`, is a value.
 public indirect enum Literal {
-    public enum Scalar {
+    public enum Scalar : Equatable {
         case int(IntegerLiteralType)
         case float(FloatLiteralType)
         case bool(BooleanLiteralType)
@@ -67,17 +67,6 @@ public extension Literal.Scalar {
         case .bool: return .bool
         case .int: return .int
         case .float: return .float
-        }
-    }
-}
-
-extension Literal.Scalar : Equatable {
-    public static func == (lhs: Literal.Scalar, rhs: Literal.Scalar) -> Bool {
-        switch (lhs, rhs) {
-        case let (.int(i1), .int(i2)): return i1 == i2
-        case let (.float(f1), .float(f2)): return f1 == f2
-        case let (.bool(b1), .bool(b2)): return b1 == b2
-        default: return false
         }
     }
 }

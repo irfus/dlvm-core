@@ -31,7 +31,7 @@ extension FloatingPointSize : Comparable {
     }
 }
 
-public enum DataType {
+public enum DataType : Equatable {
     public enum Base : Int { case bool, int, float }
     case bool
     case int(UInt)
@@ -65,17 +65,6 @@ public extension DataType {
         return base == .bool
     }
 
-}
-
-extension DataType : Equatable {
-    public static func ==(lhs: DataType, rhs: DataType) -> Bool {
-        switch (lhs, rhs) {
-        case (.bool, .bool): return true
-        case let (.int(w1), .int(w2)): return w1 == w2
-        case let (.float(w1), .float(w2)): return w1 == w2
-        default: return false
-        }
-    }
 }
 
 public extension DataType {
