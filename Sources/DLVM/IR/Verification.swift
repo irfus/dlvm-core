@@ -476,10 +476,11 @@ extension InstructionKind {
 
         case let .dot(lhs, rhs):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
-                  case let .tensor(s2, t2) = rhs.type.unaliased,
-                  s1.isMatrixMultiplicable(by: s2), t1 == t2 else {
-                throw VerificationError.cannotDot(lhs, rhs, instruction)
-            }
+                case let .tensor(s2, t2) = rhs.type.unaliased,
+                /// Either matrix multiplication or vector dot
+                s1.isMatrixMultiplicable(by: s2) || (s1.isVector && s1 == s2),
+                t1 == t2
+                else { throw VerificationError.cannotDot(lhs, rhs, instruction) }
 
         case let .concatenate(vv, axis: axis):
             guard let first = vv.first,
