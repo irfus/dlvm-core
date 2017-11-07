@@ -19,17 +19,17 @@
 
 /// Algebra Simplification simplifies the following expressions
 /// 1. Arithmetics
-/// *  Neutral/absorbing expressions
-///    - x + 0 | 0 + x | x - 0 | x * 1 | 1 * x | x / 1 => x
-///    - x * 0 | 0 * x => 0
-///    - x^0 => 1
-///    - x^1 => x
-/// * Same argument reduction
-///    - x - x => 0
-///    - x / x => 1
-/// * Strength reduction
-///    - x^(-1) => 1 / x
-///    - x^2 => x * x
+///    *  Neutral/absorbing expressions
+///       - x + 0 | 0 + x | x - 0 | x * 1 | 1 * x | x / 1 => x
+///       - x * 0 | 0 * x => 0
+///       - x^0 => 1
+///       - x^1 => x
+///    * Same argument reduction
+///       - x - x => 0
+///       - x / x => 1
+///    * Strength reduction
+///       - x^(-1) => 1 / x
+///       - x^2 => x * x
 /// 2. Trignometry
 ///    - (e^x - e^(-x)) / 2 => sinh(x)
 ///    - (e^x + e^(-x)) / 2 => cosh(x)
@@ -244,10 +244,11 @@ open class AlgebraSimplification : TransformPass {
         var changed = false
         var workList: [AlgebraicExpression] = []
         let builder = IRBuilder(function: body)
-        /// First iteration
         var changedInIter: Bool
+        /// Repeat until no changes occur
         repeat {
             changedInIter = false
+            /// Repeat
             for bb in body {
                 let algExprs = bb.analysis(from: AlgebraicExpressionAnalysis.self)
                 for expr in algExprs.expressions {
