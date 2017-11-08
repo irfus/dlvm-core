@@ -26,4 +26,9 @@ D: Provider of much wisdom, and motivator for DLVM
 N: Richard Wei
 E: rxrwei@gmail.com
 W: http://rxwei.me
-D: Initiator and primary architect
+D: Founder and primary architect
+
+N: Dan Zheng
+E: zheng321@purdue.edu
+W: http://danzheng.me
+D: Contributor to testing infrastructure, transforms and DSLs
