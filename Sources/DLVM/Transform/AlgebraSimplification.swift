@@ -2,7 +2,7 @@
 //  AlgebraSimplification.swift
 //  DLVM
 //
-//  Copyright 2016-2017 Richard Wei.
+//  Copyright 2016-2017 The DLVM Team.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 /// Algebra Simplification simplifies the following expressions
 /// 1. Arithmetics
-///    *  Neutral/absorbing expressions
+///    * Neutral/absorbing expressions
 ///       - x + 0 | 0 + x | x - 0 | x * 1 | 1 * x | x / 1 => x
 ///       - x * 0 | 0 * x => 0
 ///       - x^0 => 1
