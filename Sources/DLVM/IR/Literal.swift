@@ -301,48 +301,48 @@ public extension Use {
 // WIP: rewrite using numeric protocols, may become deprecated
 
 public extension TensorProtocol where UnitType == Int {
-    func toLiteral() -> Literal {
+    var literal: Literal {
         if shape.isScalar {
-            return .scalar(.int(self.unit(at: 0)))
+            return .scalar(.int(unit(at: 0)))
         } else {
             let type: Type = .tensor(shape, .int(UInt(Int.bitWidth)))
-            let elementTensors: [Use] = map { .literal(type, $0.toLiteral()) }
+            let elementTensors: [Use] = map { .literal(type, $0.literal) }
             return .tensor(elementTensors)
         }
     }
 }
 
 public extension TensorProtocol where UnitType == Float {
-    func toLiteral() -> Literal {
+    var literal: Literal {
         if shape.isScalar {
-            return .scalar(.float(Double(self.unit(at: 0))))
+            return .scalar(.float(Double(unit(at: 0))))
         } else {
             let type: Type = .tensor(shape, .float(.single))
-            let elementTensors: [Use] = map { .literal(type, $0.toLiteral()) }
+            let elementTensors: [Use] = map { .literal(type, $0.literal) }
             return .tensor(elementTensors)
         }
     }
 }
 
 public extension TensorProtocol where UnitType == Double {
-    func toLiteral() -> Literal {
+    var literal: Literal {
         if shape.isScalar {
-            return .scalar(.float(Double(self.unit(at: 0))))
+            return .scalar(.float(Double(unit(at: 0))))
         } else {
             let type: Type = .tensor(shape, .float(.double))
-            let elementTensors: [Use] = map { .literal(type, $0.toLiteral()) }
+            let elementTensors: [Use] = map { .literal(type, $0.literal) }
             return .tensor(elementTensors)
         }
     }
 }
 
 public extension TensorProtocol where UnitType == BooleanLiteralType {
-    func toLiteral() -> Literal {
+    var literal: Literal {
         if shape.isScalar {
-            return .scalar(.bool(self.unit(at: 0)))
+            return .scalar(.bool(unit(at: 0)))
         } else {
             let type: Type = .tensor(shape, .bool)
-            let elementTensors: [Use] = map { .literal(type, $0.toLiteral()) }
+            let elementTensors: [Use] = map { .literal(type, $0.literal) }
             return .tensor(elementTensors)
         }
     }
