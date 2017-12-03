@@ -174,6 +174,8 @@ public extension Function {
             guard let diffIndex = diffIndex,
                 /// Diff index must be in bounds
                 elementTypes.indices.contains(diffIndex),
+                /// Element must be differentiable
+                elementTypes[diffIndex].isDifferentiable,
                 /// Indices of the outputs to keep must be in bounds
                 let someOutputs = elementTypes.subcollection(atIndices: outputIndices),
                 /// Indices of the outputs to keep must not contain any duplicate
@@ -193,6 +195,7 @@ public extension Function {
         default:
             return nil
         }
+        /// Check arguments
         guard
             /// Indices of diff variables must be in bounds
             let diffVars = argumentTypes.subcollection(atIndices: varIndices),
