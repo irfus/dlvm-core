@@ -944,12 +944,17 @@ extension Parser {
                     from = try parseInteger().0
                 }
                 /// wrt
-                try consume(.keyword(.wrt))
-                let wrt = try parseMany({
-                    try parseInteger().0
-                }, separatedBy: {
-                    try consume(.punctuation(.comma))
-                })
+                var wrt: [Int] = []
+                if case .keyword(.wrt)? = currentToken?.kind {
+                    consumeToken()
+                    wrt = try parseMany({
+                        try parseInteger().0
+                    }, separatedBy: {
+                        try consume(.punctuation(.comma))
+                    })
+                } else {
+                    wrt = Array(0..<fn.argumentTypes.count)
+                }
                 /// keeping
                 var keeping: [Int] = []
                 if case .keyword(.keeping)? = currentToken?.kind {
