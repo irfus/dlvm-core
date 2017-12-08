@@ -219,34 +219,6 @@ extension Function : Verifiable {
         /// let dfg = try analysis(from: DataFlowGraphAnalysis.self)
         /// All arguments have to be tensors or aggregate types of tensors
 
-        /// Check output index
-        switch returnType {
-        /// Tuple output is treated as multiple-out
-        case let .tuple(elementTypes):
-            guard let diffIndex = diffIndex,
-                /// Diff index must be in bounds
-                elementTypes.indices.contains(diffIndex),
-                /// Element must be differentiable
-                elementTypes[diffIndex].isDifferentiable
-                else { throw VerificationError.notDifferentiable(self) }
-            break
-        /// Other output is treated as single out
-        case _ where diffIndex == nil
-            /// Result must be differentiable
-            && returnType.isDifferentiable:
-                break
-        /// Bad differentiation case
-        default:
-            throw VerificationError.notDifferentiable(self)
-        }
-        /// Check arguments
-        guard
-            /// Indices of diff variables must be in bounds
-            let diffVars = argumentTypes.subcollection(atIndices: varIndices),
-            /// All diff variables must be diff'able arguments
-            diffVars.forAll({$0.isDifferentiable})
-            else { throw VerificationError.notDifferentiable(self) }
-
         /// No explicit pointer semantics are allowed
         for inst in instructions where inst.kind.accessesMemory {
             throw VerificationError.notDifferentiable(self)
