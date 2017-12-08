@@ -47,7 +47,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
     case functionArgumentMismatch([Use], Type, Node)
     case notAFunctionCall(Use, Function, Node)
-    case gradientArgumentMismatch(Function, Int?, [Int], Node)
+    case gradientArgumentMismatch(Function, Int?, [Int]?, Node)
     case invalidTensorIndex(Use, TensorIndex, Node)
     case invalidIndex(Use, Int, Node)
     case multipleExits([BasicBlock], Node)

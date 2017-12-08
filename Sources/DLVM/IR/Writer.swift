@@ -330,7 +330,10 @@ extension Function : TextOutputStreamable {
             diffSrc.ifAny {
                 target.write(" from \($0)")
             }
-            target.write(" wrt \(diffArgs.joinedDescription)")
+            target.write(" wrt")
+            diffArgs.ifAny {
+                target.write(" \($0.joinedDescription)")
+            }
             if !keptRets.isEmpty {
                 target.write(" keeping \(keptRets.joinedDescription)")
             }

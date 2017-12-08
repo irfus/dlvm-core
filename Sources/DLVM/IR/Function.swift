@@ -35,7 +35,7 @@ public final class Function : Named, IRCollection, IRUnit {
         ///   - keeping: indices of return values to kept in the gradient function, when
         ///              the return type is a tuple; otherwise can be [0] or []
         /// - Note: The type of the function must match that given by the configuration
-        case gradient(of: Function, from: Int?, wrt: [Int], keeping: [Int], seedable: Bool)
+        case gradient(of: Function, from: Int?, wrt: [Int]?, keeping: [Int], seedable: Bool)
     }
 
     public typealias Base = OrderedSet<BasicBlock>
@@ -162,7 +162,7 @@ public extension Function {
 
 public extension Function {
     func gradientType(fromOutput diffIndex: Int?,
-                      withRespectTo varIndices: [Int],
+                      withRespectTo varIndices: [Int]?,
                       keepingOutputs outputIndices: [Int],
                       isSeedable: Bool) -> Type? {
         var keptOutputs: [Type]
@@ -196,6 +196,7 @@ public extension Function {
             return nil
         }
         /// Check arguments
+        let varIndices = varIndices ?? Array(argumentTypes.indices)
         guard
             /// Indices of diff variables must be in bounds
             let diffVars = argumentTypes.subcollection(atIndices: varIndices),

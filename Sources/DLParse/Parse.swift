@@ -944,7 +944,7 @@ extension Parser {
                     from = try parseInteger().0
                 }
                 /// wrt
-                var wrt: [Int] = []
+                var wrt: [Int]?
                 if case .keyword(.wrt)? = currentToken?.kind {
                     consumeToken()
                     wrt = try parseMany({
@@ -952,8 +952,6 @@ extension Parser {
                     }, separatedBy: {
                         try consume(.punctuation(.comma))
                     })
-                } else {
-                    wrt = Array(0..<fn.argumentTypes.count)
                 }
                 /// keeping
                 var keeping: [Int] = []

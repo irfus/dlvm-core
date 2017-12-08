@@ -82,7 +82,6 @@ extension Function : PremiseHolder {
             for bb in body {
                 if bb.isEntry {
                     maybeEntry = bb
-                    continue
                 }
                 let terminator = try bb.verifyPremise().terminator
                 if case .return = terminator.kind {
