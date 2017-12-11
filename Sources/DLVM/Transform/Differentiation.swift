@@ -30,13 +30,44 @@ open class Differentiation: TransformPass {
 
         var expanded: [Function : Function] = [:]
 
-        for function in module {
+        for (i, function) in module.enumerated() {
             if case let .gradient(funcToDiff,
                                    from: diffIndex,
                                    wrt: varIndices,
                                    keeping: outputIndices,
                                    seedable: isSeedable)? = function.declarationKind {
-                DLUnimplemented()
+                /// Clone func to diff and set argument types/return type
+                let newFunc = funcToDiff.makeClone(named: function.name)
+                newFunc.returnType = function.returnType
+                if isSeedable {
+                    newFunc.argumentTypes = function.argumentTypes
+                    var seedArgName = "seed", count = 0
+                    while newFunc[0].arguments.contains(where: { $0.name == seedArgName }) {
+                        seedArgName = "seed\(count)"
+                        count += 1
+                    }
+                    newFunc[0].arguments.append(Argument(name: seedArgName,
+                                                         type: funcToDiff.returnType,
+                                                         parent: newFunc[0]))
+                }
+
+                let context = ADContext(forward: funcToDiff, gradient: function)
+                expand(newFunc, in: context,
+                       from: diffIndex, wrt: (varIndices ?? Array(0..<funcToDiff.argumentTypes.count)),
+                       keeping: outputIndices, seedable: isSeedable)
+                print("new func", newFunc)
+
+                newFunc.parent = module
+                module.insert(newFunc, at: i)
+                function.removeFromParent()
+                changed = true
+
+                for bb in newFunc {
+                    assert(bb.existsInParent)
+                    for inst in bb {
+                        assert(inst.existsInParent)
+                    }
+                }
             }
         }
         
@@ -113,37 +144,92 @@ fileprivate class ADContext {
         self.forward = forward
         self.gradient = gradient
     }
+
+    func getAdjoint(for key: Use) -> Use? {
+        guard let definition = key.definition else {
+            fatalError("\(key) has no definition")
+        }
+        return adjoints[ObjectIdentifier(definition)]
+    }
+
+    func getAdjoint(for key: Instruction) -> Use? {
+        return adjoints[ObjectIdentifier(key as Definition)]
+    }
+
+    func insertAdjoint(_ value: Use, for key: Use) {
+        guard let definition = key.definition else {
+            fatalError("\(key) has no definition")
+        }
+        adjoints[ObjectIdentifier(definition)] = value
+    }
+
+    func insertAdjoint(_ value: Use, for key: Instruction) {
+        adjoints[ObjectIdentifier(key as Definition)] = value
+    }
 }
 
 fileprivate extension Differentiation {
 
-    static func expand(_ function: Function) {
+    static func expand(_ function: Function, in context: ADContext,
+                       from diffIndex: Int?, wrt varIndices: [Int],
+                       keeping outputIndices: [Int], seedable isSeedable: Bool) {
         let builder = IRBuilder(module: function.parent)
+
+        /// Initialize adjoints
+        for bb in function {
+            for inst in bb {
+                context.insertAdjoint(%inst.makeLiteral(0), for: inst)
+                for operand in inst.operands {
+                    context.insertAdjoint(%operand.makeLiteral(1), for: operand)
+                }
+            }
+        }
+
         /// Seed on return instructions
         let exits = function.premise.exits
         for (block, returnInst) in exits {
-            let retVal = returnInst.operands[0]
-            let seed = retVal.type.makeLiteral(1)
-//            context.insertAdjoint(seed, for: retVal)
+            let retVal: Use = returnInst.operands[diffIndex ?? 0]
+            let seed: Use
+            if !isSeedable {
+                seed = %retVal.makeLiteral(1)
+            } else {
+                guard let seedArg = function[0].arguments.last else {
+                    fatalError("No seed argument")
+                }
+                seed = %seedArg
+            }
+            context.insertAdjoint(seed, for: retVal)
 
             /// Differentiate
             for inst in block.reversed().dropFirst() {
-//                differentiate(inst, using: builder, in: context)
+                differentiate(inst, using: builder, in: context)
             }
 
-//            let tupleLit = LiteralValue(type: .tuple(function.arguments.map{$0.type}),
-//                                        literal: .tuple(gradients))
-//            builder.return(tupleLit.makeUse())
-        }
+            /// Remove old return
+            returnInst.removeFromParent()
 
+            /// Build new return
+            var newReturn: [Use] = []
+            newReturn += varIndices.map { context.getAdjoint(for: %function[0].arguments[$0])! }
+            newReturn += outputIndices.map { returnInst.operands[$0] }
+
+            let tupleLit = builder.buildInstruction(.literal(.tuple(newReturn), function.returnType))
+            builder.return(%tupleLit)
+        }
     }
 
     static func differentiate(_ instruction: Instruction,
                               using bd: IRBuilder,
                               in context: ADContext) {
-        guard let adjoint = context.adjoints[instruction] else {
-            fatalError("Adjoint seed not found in AD")
+        /// Move builder
+        bd.move(to: instruction.parent)
+
+        /// Get adjoint for instruction
+        guard let adjoint = context.getAdjoint(for: instruction) else {
+            fatalError("Adjoint not found in AD")
         }
+
+        /// Get adjoints for operands
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {
         /* Basic arithmetic */
@@ -177,11 +263,10 @@ fileprivate extension Differentiation {
             let rhsClone = rhs
             grad = [
                 /// ∂f/∂x = D • y^T
-                (lhs, %bd.dot(%bd.transpose(lhsClone), adjoint)),
+                (lhs, %bd.dot(adjoint, %bd.transpose(rhsClone))),
                 /// ∂f/∂y = x^T • D
-                (rhs, %bd.dot(adjoint, %bd.transpose(rhsClone))),
+                (rhs, %bd.dot(%bd.transpose(lhsClone), adjoint)),
             ]
-
 
         /* Unary elementwise transformations */
         case let .numericUnary(.exp, x):
@@ -202,10 +287,29 @@ fileprivate extension Differentiation {
                 (x, x.type.makeLiteral(1))
             ]
 
+
         default:
             /// - TODO: Implement all cases!
             fatalError("Unimplemented \(instruction)")
         }
-    }
 
+        /// Update adjoints
+        for (operand, derivative) in grad {
+            /// Update instruction adjoint
+            let newAdjoint: Use
+            switch (adjoint.type, derivative.type) {
+            case (.tensor(.scalar, _), .tensor(.scalar, _)): newAdjoint = %bd.multiply(adjoint, derivative)
+            // case (.tensor(_, _), .tensor(_, _)): newAdjoint = %bd.dot(adjoint, derivative)
+            case (.tensor(_, _), .tensor(_, _)): newAdjoint = %bd.multiply(adjoint, derivative)
+            default: fatalError("Adjoint is not a tensor")
+            }
+            context.insertAdjoint(newAdjoint, for: instruction)
+
+            /// Update operand adjoint
+            guard let operandAdjoint = context.getAdjoint(for: operand) else {
+                fatalError("Adjoint not found in AD")
+            }
+            context.insertAdjoint(%bd.add(operandAdjoint, newAdjoint), for: operand)
+        }
+    }
 }

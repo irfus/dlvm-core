@@ -202,6 +202,15 @@ public extension Literal {
         }
     }
 
+    var isAggregate: Bool {
+        switch self {
+        case .array, .tensor, .tuple, .struct:
+            return true
+        default:
+            return false
+        }
+    }
+
     var isZero: Bool {
         switch self {
         case .scalar(.int(0)), .scalar(.float(0)), .zero:

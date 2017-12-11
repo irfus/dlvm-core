@@ -208,6 +208,6 @@ public extension Function {
         /// original function to keep, `d1...dn` are derivatives of the output at `diffIndex`
         /// with respect to arguments at indices `varIndices`, respectively.
         return .function(isSeedable ? argumentTypes + [diffSourceType] : argumentTypes,
-                         .tuple(keptOutputs + diffVars))
+                         .tuple(diffVars + keptOutputs))
     }
 }

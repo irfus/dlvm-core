@@ -40,8 +40,10 @@ public extension Function {
                 return %newFunc
             case .function, .variable:
                 return old
-            case let .literal(ty, lit):
+            case let .literal(ty, lit) where lit.isAggregate:
                 return .literal(ty, lit.substituting(newUse(from: old), for: old))
+            case let .literal(ty, lit):
+                return .literal(ty, lit)
             case let .argument(_, arg):
                 return %newArgs[arg]!
             case let .instruction(_, inst):
@@ -66,12 +68,11 @@ public extension Function {
         /// Clone instructions
         for oldBB in self {
             let newBB = newBlocks[oldBB]!
-            /// Clone instructions
             for oldInst in oldBB {
                 let newInst = Instruction(name: oldInst.name, kind: oldInst.kind, parent: newBB)
                 /// - Note: Slow but clean for now
                 for oldUse in newInst.operands {
-                    newInst.substitute(oldUse, for: newUse(from: oldUse))
+                    newInst.substitute(newUse(from: oldUse), for: oldUse)
                 }
                 /// If branching, switch old BBs to new BBs
                 switch newInst.kind {
@@ -82,6 +83,9 @@ public extension Function {
                                                 newBlocks[elseBB]!, elseArgs)
                 default: break
                 }
+                /// Insert instruction into mapping and new BB
+                newInsts[oldInst] = newInst
+                newBB.append(newInst)
             }
         }
 
