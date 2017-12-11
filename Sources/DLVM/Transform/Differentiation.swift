@@ -228,26 +228,34 @@ fileprivate extension Differentiation {
         /* Basic arithmetic */
         case let .numericBinary(.add, lhs, rhs):
             grad = [
-                (lhs, adjoint), /// ∂f/∂x = D
-                (rhs, adjoint), /// ∂f/∂y = D
+                /// ∂f/∂x = D
+                (lhs, adjoint),
+                /// ∂f/∂y = D
+                (rhs, adjoint),
             ]
         case let .numericBinary(.subtract, lhs, rhs):
             grad = [
-                (lhs, adjoint),                                     /// ∂f/∂x = D
-                (rhs, %bd.subtract(adjoint.makeScalar(0), adjoint)), /// ∂f/∂y = -D
+                /// ∂f/∂x = D
+                (lhs, adjoint),
+                /// ∂f/∂y = -D
+                (rhs, %bd.numeric(.negate, adjoint)),
             ]
         case let .numericBinary(.multiply, lhs, rhs):
             grad = [
-                (lhs, rhs), /// ∂f/∂x = y
-                (rhs, lhs), /// ∂f/∂y = x
+                /// ∂f/∂x = y
+                (lhs, rhs),
+                /// ∂f/∂y = x
+                (rhs, lhs),
             ]
         case let .numericBinary(.divide, lhs, rhs):
             let lhsClone = lhs
             let rhsClone = rhs
             grad = [
-                (lhs, %bd.divide(adjoint, rhsClone)),  /// ∂f/∂x = D/y
-                (rhs, %bd.subtract(lhsClone.makeScalar(0), /// ∂f/∂y = -x/y^2
-                                   %bd.divide(lhsClone, %bd.multiply(rhsClone, rhsClone))))
+                /// ∂f/∂x = D/y
+                (lhs, %bd.divide(adjoint, rhsClone)),
+                /// ∂f/∂y = -x/y^2
+                (rhs, %bd.numeric(.negate,
+                                  %bd.divide(lhsClone, %bd.multiply(rhsClone, rhsClone))))
             ]
 
         /* Dot */
@@ -261,25 +269,100 @@ fileprivate extension Differentiation {
                 (rhs, %bd.dot(%bd.transpose(lhsClone), adjoint)),
             ]
 
-        /* Unary elementwise transformations */
-        case let .numericUnary(.exp, x):
-            let cloned = instruction.makeUse()
+        /* Transpose */
+        case let .transpose(x):
             grad = [
-                (x, cloned)
+                /// ∂f/∂x = D^T
+                (x, %bd.transpose(adjoint))
+            ]
+
+        /* Unary elementwise transformations */
+        case let .numericUnary(.log, x):
+            grad = [
+                /// ∂f/∂x = D / x
+                (x, %bd.divide(adjoint, x))
+            ]
+
+        case let .numericUnary(.cos, x):
+            grad = [
+                /// ∂f/∂x = -D * sin(x)
+                (x, %bd.multiply(%bd.numeric(.negate, adjoint), %bd.numeric(.sin, x)))
+            ]
+
+        case let .numericUnary(.sin, x):
+            grad = [
+                /// ∂f/∂x = D * cos(x)
+                (x, %bd.multiply(adjoint, %bd.numeric(.cos, x)))
+            ]
+
+        case let .numericUnary(.tan, x):
+            let cosx = %bd.numeric(.cos, x)
+            grad = [
+                /// ∂f/∂x = D / (cos(x) * cos(x))
+                (x, %bd.divide(adjoint, %bd.multiply(cosx, cosx)))
+            ]
+
+        case let .numericUnary(.cosh, x):
+            grad = [
+                /// ∂f/∂x = D * sinh(x)
+                (x, %bd.multiply(adjoint, %bd.numeric(.sinh, x)))
+            ]
+
+        case let .numericUnary(.sinh, x):
+            grad = [
+                /// ∂f/∂x = D * cosh(x)
+                (x, %bd.multiply(adjoint, %bd.numeric(.cosh, x)))
             ]
 
         case let .numericUnary(.tanh, x):
             let cloned = instruction.makeUse()
             grad = [
-                (x, %bd.subtract(cloned, %bd.subtract(x.makeScalar(1),
-                                                      %bd.multiply(cloned, cloned))))
+                /// ∂f/∂x = D * (1 - (f * f))
+                (x, %bd.multiply(adjoint, %bd.subtract(x.makeScalar(1), %bd.multiply(cloned, cloned))))
             ]
 
+        case let .numericUnary(.acos, x):
+            let xClone = x
+            grad = [
+                /// ∂f/∂x = -D / sqrt(1 - (x * x))
+                (x, %bd.divide(%bd.numeric(.negate, adjoint),
+                               %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(xClone, xClone)))))
+            ]
+
+        case let .numericUnary(.asin, x):
+            let xClone = x
+            grad = [
+                /// ∂f/∂x = D / sqrt(1 - (x * x))
+                (x, %bd.divide(adjoint,
+                               %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(xClone, xClone)))))
+            ]
+
+        case let .numericUnary(.atan, x):
+            let xClone = x
+            grad = [
+                /// ∂f/∂x = D / (1 + (x * x))
+                (x, %bd.divide(adjoint, %bd.add(x.makeScalar(1), %bd.multiply(xClone, xClone))))
+            ]
+
+        case let .numericUnary(.exp, x):
+            let cloned = instruction.makeUse()
+            grad = [
+                /// ∂f/∂x = f * D
+                (x, %bd.multiply(cloned, adjoint))
+            ]
+
+        case let .numericUnary(.sqrt, x):
+            let cloned = instruction.makeUse()
+            grad = [
+                /// ∂f/∂x = D / (2 * f)
+                (x, %bd.divide(adjoint, %bd.multiply(instruction.makeScalar(2), cloned)))
+            ]
+
+        /* Element extraction */
         case let .extract(from: x, at: _):
             grad = [
-                (x, x.type.makeLiteral(1))
+                (x, x.makeScalar(1))
             ]
-
 
         default:
             /// - TODO: Implement all cases!
