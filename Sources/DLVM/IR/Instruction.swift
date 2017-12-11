@@ -477,7 +477,7 @@ public extension Literal {
             case let .literal(_, lit):
                 return lit.operands
             default:
-                return []
+                return [use]
             }
         }
         switch self {

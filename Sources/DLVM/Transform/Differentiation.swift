@@ -55,19 +55,11 @@ open class Differentiation: TransformPass {
                 expand(newFunc, in: context,
                        from: diffIndex, wrt: (varIndices ?? Array(0..<funcToDiff.argumentTypes.count)),
                        keeping: outputIndices, seedable: isSeedable)
-                print("new func", newFunc)
 
-                newFunc.parent = module
                 module.insert(newFunc, at: i)
                 function.removeFromParent()
                 changed = true
 
-                for bb in newFunc {
-                    assert(bb.existsInParent)
-                    for inst in bb {
-                        assert(inst.existsInParent)
-                    }
-                }
             }
         }
         
