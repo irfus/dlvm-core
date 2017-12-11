@@ -140,21 +140,21 @@ fileprivate class ADContext {
     }
 
     func hasAdjoint(for key: Use) -> Bool {
-        return getAdjoint(for: key) != nil
+        return adjoint(for: key) != nil
     }
 
     func hasAdjoint(for key: Instruction) -> Bool {
-        return getAdjoint(for: key) != nil
+        return adjoint(for: key) != nil
     }
 
-    func getAdjoint(for key: Use) -> Use? {
+    func adjoint(for key: Use) -> Use? {
         guard let definition = key.definition else {
             fatalError("\(key) has no definition")
         }
         return adjoints[ObjectIdentifier(definition)]
     }
 
-    func getAdjoint(for key: Instruction) -> Use? {
+    func adjoint(for key: Instruction) -> Use? {
         return adjoints[ObjectIdentifier(key as Definition)]
     }
 
@@ -201,7 +201,7 @@ fileprivate extension Differentiation {
 
             /// Build new return
             var newReturn: [Use] = []
-            newReturn += varIndices.map { context.getAdjoint(for: %function[0].arguments[$0])! }
+            newReturn += varIndices.map { context.adjoint(for: %function[0].arguments[$0])! }
             newReturn += outputIndices.map { returnInst.operands[$0] }
 
             let tupleLit = builder.buildInstruction(.literal(.tuple(newReturn), function.returnType))
@@ -217,7 +217,7 @@ fileprivate extension Differentiation {
         bd.move(to: instruction.parent)
 
         /// Get adjoint for instruction
-        var adjoint = context.getAdjoint(for: instruction) ?? %instruction.makeLiteral(0)
+        var adjoint = context.adjoint(for: instruction) ?? %instruction.makeLiteral(0)
         if let returnInst = returnValue.instruction, instruction == returnInst {
             adjoint = returnSeed
         }
@@ -231,42 +231,37 @@ fileprivate extension Differentiation {
                 /// ∂f/∂x = D
                 (lhs, adjoint),
                 /// ∂f/∂y = D
-                (rhs, adjoint),
+                (rhs, adjoint)
             ]
         case let .numericBinary(.subtract, lhs, rhs):
             grad = [
                 /// ∂f/∂x = D
                 (lhs, adjoint),
                 /// ∂f/∂y = -D
-                (rhs, %bd.numeric(.negate, adjoint)),
+                (rhs, %bd.numeric(.negate, adjoint))
             ]
         case let .numericBinary(.multiply, lhs, rhs):
             grad = [
                 /// ∂f/∂x = y
                 (lhs, rhs),
                 /// ∂f/∂y = x
-                (rhs, lhs),
+                (rhs, lhs)
             ]
         case let .numericBinary(.divide, lhs, rhs):
-            let lhsClone = lhs
-            let rhsClone = rhs
             grad = [
                 /// ∂f/∂x = D/y
-                (lhs, %bd.divide(adjoint, rhsClone)),
+                (lhs, %bd.divide(adjoint, rhs)),
                 /// ∂f/∂y = -x/y^2
-                (rhs, %bd.numeric(.negate,
-                                  %bd.divide(lhsClone, %bd.multiply(rhsClone, rhsClone))))
+                (rhs, %bd.numeric(.negate, %bd.divide(lhs, %bd.multiply(rhs, rhs))))
             ]
 
         /* Dot */
         case let .dot(lhs, rhs):
-            let lhsClone = lhs
-            let rhsClone = rhs
             grad = [
                 /// ∂f/∂x = D • y^T
-                (lhs, %bd.dot(adjoint, %bd.transpose(rhsClone))),
+                (lhs, %bd.dot(adjoint, %bd.transpose(rhs))),
                 /// ∂f/∂y = x^T • D
-                (rhs, %bd.dot(%bd.transpose(lhsClone), adjoint)),
+                (rhs, %bd.dot(%bd.transpose(lhs), adjoint))
             ]
 
         /* Transpose */
@@ -322,26 +317,23 @@ fileprivate extension Differentiation {
             ]
 
         case let .numericUnary(.acos, x):
-            let xClone = x
             grad = [
                 /// ∂f/∂x = -D / sqrt(1 - (x * x))
                 (x, %bd.divide(%bd.numeric(.negate, adjoint),
-                               %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(xClone, xClone)))))
+                               %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x)))))
             ]
 
         case let .numericUnary(.asin, x):
-            let xClone = x
             grad = [
                 /// ∂f/∂x = D / sqrt(1 - (x * x))
                 (x, %bd.divide(adjoint,
-                               %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(xClone, xClone)))))
+                               %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x)))))
             ]
 
         case let .numericUnary(.atan, x):
-            let xClone = x
             grad = [
                 /// ∂f/∂x = D / (1 + (x * x))
-                (x, %bd.divide(adjoint, %bd.add(x.makeScalar(1), %bd.multiply(xClone, xClone))))
+                (x, %bd.divide(adjoint, %bd.add(x.makeScalar(1), %bd.multiply(x, x))))
             ]
 
         case let .numericUnary(.exp, x):
@@ -371,7 +363,7 @@ fileprivate extension Differentiation {
 
         /// Update operand adjoints
         for (operand, derivative) in grad {
-            if let operandAdjoint = context.getAdjoint(for: operand) {
+            if let operandAdjoint = context.adjoint(for: operand) {
                 context.insertAdjoint(%bd.add(operandAdjoint, derivative), for: operand)
             } else {
                 context.insertAdjoint(derivative, for: operand)
