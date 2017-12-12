@@ -113,7 +113,7 @@ extension OrderedSet : Sequence {
 
 extension OrderedSet : RandomAccessCollection {
 
-    public typealias SubSequence = RangeReplaceableRandomAccessSlice<OrderedSet<Element>>
+    public typealias SubSequence = Slice<OrderedSet<Element>>
 
     public func index(after i: Int) -> Int {
         return i + 1
