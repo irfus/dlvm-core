@@ -66,6 +66,8 @@ extension DLVM.`Type` : LLEmittable {
             return shape.loweredArrayType(of: dt)
         case .void:
             return LLVMVoidType()
+        case .stack:
+            return stackType
         case let .tuple(elemTypes):
             return ^elemTypes.map{$0.emit(to: context, in: env)}
         case let .struct(structTy):
@@ -132,6 +134,9 @@ extension DLVM.`Type` : LLEmittable {
         /// Tuple
         case let .tuple(elems):
             return elems.forAll { $0.shouldBePassedIndirectly }
+        /// Stack
+        case .stack:
+            return true
         /// Impossible cases
         case .invalid, .void: DLImpossible()
         }
@@ -224,6 +229,8 @@ extension Type {
         case .pointer(_):
             return Target.pointerSize
         case .function(_, _):
+            return Target.pointerSize
+        case .stack:
             return Target.pointerSize
         case let .struct(structTy):
             return structTy.size(for: target)

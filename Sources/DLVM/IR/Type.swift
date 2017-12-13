@@ -114,6 +114,8 @@ public indirect enum Type {
     case box(Type)
     /// Function type
     case function([Type], Type)
+    /// Stack type, used for automatic differentiation
+    case stack
     /// Alias type, transparent or opaque
     case alias(TypeAlias)
     /// Invalid type during type inference, to be eliminated by
@@ -254,7 +256,7 @@ public extension Type {
         case let .box(t): return .box(t.canonical)
         case let .function(tt, t): return .function(tt.map{$0.canonical}, t.canonical)
         case let .alias(alias): return alias.type?.canonical ?? self
-        case .tensor, .invalid, .struct: return self
+        case .tensor, .struct, .stack, .invalid: return self
         }
     }
 
@@ -267,6 +269,7 @@ public extension Type {
 
     var isDifferentiable: Bool {
         switch self {
+        // TODO: add stack
         case let .tensor(_, dt) where dt.isNumeric:
             return true
         default:
@@ -296,6 +299,8 @@ extension Type : Equatable {
             return tt1 == tt2 && t1 == t2
         case let (.alias(a1), .alias(a2)) where a1.isOpaque && a2.isOpaque:
             return a1.name == a2.name
+        case (.stack, .stack):
+            return true
         default:
             return false
         }
@@ -313,7 +318,7 @@ public extension Type {
         switch self {
         case .invalid:
             return false
-        case .tensor, .void:
+        case .tensor, .void, .stack:
             return true
         case let .array(_, elementType),
              let .pointer(elementType),

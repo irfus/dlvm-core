@@ -39,6 +39,11 @@ var referenceCounterType: LLVMTypeRef {
     DLUnimplemented()
 }
 
+/// Stack type
+var stackType: LLVMTypeRef {
+    DLUnimplemented()
+}
+
 public extension Builtin {
     enum Memory {
         case memcpy(to: LLVMValueRef, from: LLVMValueRef, count: LLVMValueRef, align: LLVMValueRef, isVolatile: LLVMValueRef)

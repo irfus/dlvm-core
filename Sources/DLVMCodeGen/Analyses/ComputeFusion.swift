@@ -98,7 +98,7 @@ extension Instruction {
              .apply, .return, .trap, .allocateBox, .allocateHeap,
              .allocateStack, .concatenate, .copy, .conditional, .deallocate,
              .insert, .load, .projectBox, .release, .retain, .scan, .reduce,
-             .slice, .store, .literal:
+             .slice, .store, .createStack, .destroyStack, .push, .pop, .literal:
             return .host
         case .dot:
             return .device
@@ -119,8 +119,8 @@ extension Instruction {
             return false
         case .allocateBox, .allocateHeap, .allocateStack, .concatenate, .copy,
              .conditional, .deallocate, .insert, .load, .projectBox, .release,
-             .retain, .scan, .reduce, .slice, .store, .dot,
-             .transpose:
+             .retain, .scan, .reduce, .slice, .store, .dot, .transpose,
+             .createStack, .destroyStack, .push, .pop:
             return true
         }
     }

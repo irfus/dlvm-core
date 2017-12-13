@@ -729,6 +729,29 @@ extension Parser {
         case .projectBox:
             return try .projectBox(parseUse(in: basicBlock).0)
 
+        /// 'createStack'
+        case .createStack:
+            return .createStack
+
+        /// 'destroyStack' <val>
+        case .destroyStack:
+            let (stack, _) = try parseUse(in: basicBlock)
+            return .destroyStack(stack)
+
+        /// 'push' <val> 'to' <val>
+        case .push:
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.to))
+            let (stack, _) = try parseUse(in: basicBlock)
+            return .push(val, to: stack)
+
+        /// 'pop' <type> 'from' <val>
+        case .pop:
+            let (ty, _) = try parseType()
+            try consume(.keyword(.from))
+            let (stack, _) = try parseUse(in: basicBlock)
+            return .pop(ty, from: stack)
+
         /// 'retain' <val>
         case .retain:
             return try .retain(parseUse(in: basicBlock).0)

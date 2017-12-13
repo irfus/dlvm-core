@@ -21,70 +21,71 @@ import CoreTensor
 import CoreOp
 
 public enum VerificationError<Node : Verifiable> : Error {
-    case illegalName(String, Node)
-    case duplicateStructField(String, Node)
-    case redeclared(Node)
-    case noParent(Node)
+    case axisOutOfBounds(Int, Use, Node)
+    case basicBlockArgumentMismatch([Use], BasicBlock, Node)
     case blockFunctionMismatch(BasicBlock, Node)
-    case missingTerminator(Node)
-    case unbroadcastableMismatch([Use], Node)
-    case typeMismatch(Use, Use, Node)
-    case unexpectedShape(Use, TensorShape, Node)
-    case unexpectedDataType(Use, DataType, Node)
-    case unexpectedType(Use, Type, Node)
-    case notTensor(Use, Node)
-    case notTuple(Use, Node)
-    case cannotShapeCast(Use, TensorShape, Node)
     case cannotCastDataType(Use, DataType, Node)
     case cannotDot(Use, Use, Node)
-    case noOperands(Node)
+    case cannotShapeCast(Use, TensorShape, Node)
     case concatenationShapeMismatch([Use], Int, Node)
-    case useShapeMismatch(Node)
-    case useTypeMismatch(Node)
-    case noDimensions(Use, Node)
-    case invalidSlicingRange(CountableClosedRange<Int>, Node)
-    case noSpecifiedDimension(Use, Int, Node)
+    case dataTypeMismatch(Use, Use, Node)
+    case dataTypeNotBoolean(Use, Node)
+    case dataTypeNotNumeric(Use, Node)
+    case declarationCannotHaveBody(Node)
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
+    case duplicateStructField(String, Node)
     case functionArgumentMismatch([Use], Type, Node)
-    case notAFunctionCall(Use, Function, Node)
+    case functionEntryArgumentMismatch(BasicBlock, Node)
     case gradientArgumentMismatch(Function, Int?, [Int]?, Node)
-    case invalidTensorIndex(Use, TensorIndex, Node)
+    case gradientTypeMismatch(Function.DeclarationKind, Type, Node)
+    case illegalName(String, Node)
+    case invalidAllocationSize(Node)
+    case invalidCopyOperands(Use, Use, Node)
+    case invalidGradientArguments(Use, Node)
     case invalidIndex(Use, Int, Node)
+    case invalidIndices(Use, [ElementKey], Node)
+    case invalidLiteral(Type, Literal, Node)
+    case invalidOffsets(Use, [ElementKey], Node)
+    case invalidReductionDimensions([Int], Use, Node)
+    case invalidSlicingRange(CountableClosedRange<Int>, Node)
+    case invalidTensorIndex(Use, TensorIndex, Node)
+    case invalidType(Node)
+    case missingIndices(Use, Node)
+    case missingTerminator(Node)
     case multipleExits([BasicBlock], Node)
+    case namedVoidValue(Node)
+    case nestedLiteralNotInLiteralInstruction(Literal, Node)
+    case noDimensions(Use, Node)
     case noEntry(Node)
     case noExit(Node)
+    case noOperands(Node)
+    case noParent(Node)
     case noReturn(Node)
-    case useBeforeDef(user: Instruction, usee: Value, Node)
-    case basicBlockArgumentMismatch([Use], BasicBlock, Node)
-    case unexpectedBasicBlockType(BasicBlock, Node)
-    case axisOutOfBounds(Int, Use, Node)
-    case functionEntryArgumentMismatch(BasicBlock, Node)
-    case returnTypeMismatch(Instruction, Node)
-    case invalidType(Node)
-    case namedVoidValue(Node)
-    case notPointer(Use, Node)
-    case invalidIndices(Use, [ElementKey], Node)
-    case invalidOffsets(Use, [ElementKey], Node)
-    case gradientTypeMismatch(Function.DeclarationKind, Type, Node)
-    case invalidLiteral(Type, Literal, Node)
-    case missingIndices(Use, Node)
-    case notDifferentiable(Node)
-    case unexpectedMemoryType(Use, Node)
-    case invalidCopyOperands(Use, Use, Node)
+    case noSpecifiedDimension(Use, Int, Node)
+    case notAFunctionCall(Use, Function, Node)
     case notBox(Use, Node)
-    case notHeapObject(Use, Node)
-    case notFunction(Use, Node)
-    case invalidGradientArguments(Use, Node)
     case notConstantExpression(Node)
-    case structFieldNameMismatch(StructType, Use, Node)
-    case invalidReductionDimensions([Int], Use, Node)
-    case dataTypeNotNumeric(Use, Node)
-    case dataTypeNotBoolean(Use, Node)
-    case invalidAllocationSize(Node)
-    case declarationCannotHaveBody(Node)
-    case nestedLiteralNotInLiteralInstruction(Literal, Node)
+    case notDifferentiable(Node)
+    case notFunction(Use, Node)
+    case notHeapObject(Use, Node)
+    case notPointer(Use, Node)
+    case notStack(Use, Node)
+    case notTensor(Use, Node)
+    case notTuple(Use, Node)
     case randomBoundNotScalar(Use, Node)
-    case dataTypeMismatch(Use, Use, Node)
+    case redeclared(Node)
+    case returnTypeMismatch(Instruction, Node)
+    case structFieldNameMismatch(StructType, Use, Node)
+    case typeMismatch(Use, Use, Node)
+    case unbroadcastableMismatch([Use], Node)
+    case unexpectedBasicBlockType(BasicBlock, Node)
+    case unexpectedDataType(Use, DataType, Node)
+    case unexpectedMemoryType(Use, Node)
+    case unexpectedShape(Use, TensorShape, Node)
+    case unexpectedType(Use, Type, Node)
+    case useBeforeDef(user: Instruction, usee: Value, Node)
+    case useShapeMismatch(Node)
+    case useTypeMismatch(Node)
 }
 
 public protocol Verifiable {
@@ -368,6 +369,33 @@ extension Instruction : Verifiable {
         }
     }
 }
+
+/*
+fileprivate class StackContext {
+    var stacks: [ObjectIdentifier: [Type]] = [:]
+
+    func insert(_ stack: Use, instruction: Instruction) throws {
+        guard .stack == stack.type, let definition = stack.definition else {
+            throw VerificationError.notStack(stack, instruction)
+        }
+        stacks[ObjectIdentifier(definition)] = []
+    }
+
+    func push(_ value: Use, to stack: Use, instruction: Instruction) throws {
+        guard .stack == stack.type, let definition = stack.definition else {
+            throw VerificationError.notStack(stack, instruction)
+        }
+        stacks[ObjectIdentifier(definition)].append(value.type)
+    }
+
+    func pop(_ type: Type, to stack: Use, instruction: Instruction) throws {
+        guard let definition = stack.definition else {
+            throw VerificationError.notStack(stack, instruction)
+        }
+        stacks[ObjectIdentifier(definition)].dropLast()
+    }
+}
+ */
 
 extension InstructionKind {
     /// Verifies instruction
@@ -679,7 +707,24 @@ extension InstructionKind {
             guard n > 0 else {
                 throw VerificationError.invalidAllocationSize(instruction)
             }
-            
+
+        case .createStack: break
+
+        case let .destroyStack(stack):
+            guard case .stack = stack.type else {
+                throw VerificationError.notStack(stack, instruction)
+            }
+
+        case let .push(v, to: stack):
+            guard case .stack = stack.type else {
+                throw VerificationError.notStack(stack, instruction)
+            }
+
+        case let .pop(ty, from: stack):
+            guard case .stack = stack.type else {
+                throw VerificationError.notStack(stack, instruction)
+            }
+
         case let .random(_, from: lo, upTo: hi):
             /// Bounds must be scalar
             guard case let .tensor([], dt1) = lo.type.unaliased else {

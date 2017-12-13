@@ -108,6 +108,8 @@ extension Type : TextOutputStreamable {
         case let .struct(structTy):
             target.write("$")
             structTy.name.write(to: &target)
+        case .stack:
+            target.write("stack")
         }
     }
 }
@@ -184,6 +186,14 @@ extension InstructionKind : TextOutputStreamable {
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):
             target.write("apply \(f.identifier)(\(args.joinedDescription)): \(f.type)")
+        case .createStack:
+            target.write("createStack")
+        case .destroyStack:
+            target.write("destroyStack")
+        case let .push(v, to: stack):
+            target.write("push \(v) to \(stack)")
+        case let .pop(t, from: stack):
+            target.write("pop \(t) from \(stack)")
         case let .extract(use, indices):
             target.write("extract \(indices.joinedDescription) from \(use)")
         case let .insert(src, to: dest, at: indices):
@@ -212,12 +222,12 @@ extension InstructionKind : TextOutputStreamable {
             target.write("release \(v)")
         case let .copy(from: src, to: dest, count: count):
             target.write("copy from \(src) to \(dest) count \(count)")
-        case .trap:
-            target.write("trap")
         case let .random(shape, from: lo, upTo: hi):
             target.write("random \(shape) from \(lo) upto \(hi)")
         case let .select(left, right, by: flags):
             target.write("select \(left), \(right) by \(flags)")
+        case .trap:
+            target.write("trap")
         }
     }
 }

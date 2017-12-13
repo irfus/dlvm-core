@@ -99,6 +99,16 @@ public enum InstructionKind {
     /** Function application **/
     case apply(Use, [Use])
 
+    /** Stack data structure operations **/
+    /// Allocate a stack
+    case createStack
+    /// Dealloc a stack
+    case destroyStack(Use)
+    /// Push value to a stack
+    case push(Use, to: Use)
+    /// Pop value with type from a stack
+    case pop(Type, from: Use)
+
     /** Memory **/
     /// Allocate host stack memory, returning a pointer
     case allocateStack(Type, Int) /// => *T
@@ -418,7 +428,18 @@ public extension InstructionKind {
             guard case let .box(t) = v.type.unaliased else { return .invalid }
             return .pointer(t)
 
-        case .store, .copy, .deallocate,
+        case .createStack:
+            return .stack
+
+        case let .push(_, to: stack):
+            guard case .stack = stack.type else { return .invalid }
+            return .void
+
+        case let .pop(t, from: stack):
+            guard case .stack = stack.type else { return .invalid }
+            return t
+
+        case .store, .copy, .deallocate, .destroyStack,
              .branch, .conditional, .return, .retain, .release, .trap:
             return .void
         }
@@ -442,7 +463,8 @@ extension InstructionKind {
              let .dot(op1, op2),
              let .insert(op1, to: op2, at: _),
              let .reduce(_, op1, initial: op2, _),
-             let .random(_, from: op1, upTo: op2):
+             let .random(_, from: op1, upTo: op2),
+             let .push(op1, to: op2):
             return [op1, op2]
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
@@ -450,7 +472,8 @@ extension InstructionKind {
              let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateHeap(_, count: op),
-             let .projectBox(op), let .release(op), let .retain(op):
+             let .projectBox(op), let .release(op), let .retain(op),
+             let .destroyStack(op), let .pop(_, from: op):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -464,7 +487,7 @@ extension InstructionKind {
             return [op1, op2, op3]
         case let .literal(lit, _):
             return lit.operands
-        case .return(nil), .allocateBox, .trap, .allocateStack:
+        case .return(nil), .allocateBox, .trap, .allocateStack, .createStack:
             return []
         }
     }
@@ -708,6 +731,14 @@ public extension InstructionKind {
             return .select(v1, new, by: v3)
         case .select(let v1, let v2, by: old):
             return .select(v1, v2, by: new)
+        case .destroyStack(old):
+            return .destroyStack(new)
+        case .push(let val, to: old):
+            return .push(val, to: new)
+        case .push(old, to: let stack):
+            return .push(new, to: stack)
+        case .pop(let ty, from: old):
+            return .pop(ty, from: new)
         default:
             return self
         }
@@ -737,6 +768,10 @@ public enum Opcode : Equatable {
     case allocateHeap
     case allocateBox
     case projectBox
+    case createStack
+    case destroyStack
+    case push
+    case pop
     case retain
     case release
     case deallocate
@@ -785,6 +820,10 @@ public extension InstructionKind {
         case .allocateHeap: return .allocateHeap
         case .allocateBox: return .allocateBox
         case .projectBox: return .projectBox
+        case .createStack: return .createStack
+        case .destroyStack: return .destroyStack
+        case .push: return .push
+        case .pop: return .pop
         case .retain: return .retain
         case .release: return .release
         case .deallocate: return .deallocate
