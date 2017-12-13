@@ -733,6 +733,8 @@ public extension InstructionKind {
             return .select(v1, v2, by: new)
         case .destroyStack(old):
             return .destroyStack(new)
+        case .push(old, to: old):
+            return .push(new, to: new)
         case .push(let val, to: old):
             return .push(val, to: new)
         case .push(old, to: let stack):

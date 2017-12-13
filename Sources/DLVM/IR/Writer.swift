@@ -188,8 +188,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("apply \(f.identifier)(\(args.joinedDescription)): \(f.type)")
         case .createStack:
             target.write("createStack")
-        case .destroyStack:
-            target.write("destroyStack")
+        case let .destroyStack(stack):
+            target.write("destroyStack \(stack)")
         case let .push(v, to: stack):
             target.write("push \(v) to \(stack)")
         case let .pop(t, from: stack):

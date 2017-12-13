@@ -118,6 +118,7 @@ extension DLVM.`Type` : LLEmittable {
         case .box(_): return false
         case .function(_, _): return false
         case .pointer(_): return false
+        case .void: return false
         /// Struct
         case let .struct(structTy):
             return structTy.fields.forAll { (_, ty) in
@@ -136,9 +137,10 @@ extension DLVM.`Type` : LLEmittable {
             return elems.forAll { $0.shouldBePassedIndirectly }
         /// Stack
         case .stack:
-            return true
-        /// Impossible cases
-        case .invalid, .void: DLImpossible()
+            // Consider changing to true
+            return false
+        /// Impossible case
+        case .invalid: DLImpossible()
         }
     }
 
