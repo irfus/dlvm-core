@@ -3,7 +3,7 @@
 //  Package.swift
 //  DLVM
 //
-//  Copyright 2016-2017 Richard Wei.
+//  Copyright 2016-2017 The DLVM Team.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/rxwei/LLVM_C", from: "2.1.0"),
         .package(url: "https://github.com/rxwei/CommandLine", from: "4.0.0"),
-        .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.6.2")
+        .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.6.3")
     ],
     targets: [
         .target(name: "CoreOp", dependencies: ["CoreTensor"]),
@@ -48,7 +48,7 @@ let package = Package(
         .target(name: "DLVMCodeGen", dependencies: ["DLVM"]),
         .target(name: "DLParse", dependencies: ["DLVM"]),
         .target(name: "DLCommandLineTools", dependencies: [
-            "CommandLine", "DLVM", "DLVMCodeGen", "DLParse"
+            "CommandLineKit", "DLVM", "DLVMCodeGen", "DLParse"
         ]),
         .target(name: "dlopt", dependencies: [
             "DLVM", "DLParse", "DLCommandLineTools"
@@ -56,7 +56,7 @@ let package = Package(
         .target(name: "dlc", dependencies: [
             "DLVM", "DLVMCodeGen", "DLParse", "DLCommandLineTools"
         ]),
-        .testTarget(name: "DLVMTests", dependencies: [ "DLVM" ]),
+        .testTarget(name: "DLVMTests", dependencies: ["DLVM"]),
         .testTarget(name: "DLParseTests", dependencies: [
             "DLVM", "DLParse"
         ]),
