@@ -27,7 +27,7 @@ import class DLVM.Function
 public enum Keyword {
     case module
     case stage, raw, optimizable, compute, scheduled, canonical
-    case `struct`, `func`, `var`
+    case `struct`, `func`, `var`, stack
     case type, opaque
     case at, to, from, by, upto
     case then, `else`

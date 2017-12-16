@@ -392,6 +392,9 @@ extension Parser {
         /// Scalar
         case .dataType(let dt):
             return (.tensor([], dt), tok.range)
+        /// Stack
+        case .keyword(.stack):
+            return (.stack, tok.range)
         /// Array
         case .punctuation(.leftSquareBracket):
             let (count, _) = try parseInteger()
