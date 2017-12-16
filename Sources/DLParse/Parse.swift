@@ -642,6 +642,11 @@ extension Parser {
             let (upperBound, _) = try parseInteger()
             return .slice(val, at: lowerBound...upperBound)
 
+        /// 'rankLift' <val>
+        case .rankLift:
+            let (val, _) = try parseUse(in: basicBlock)
+            return .rankLift(val)
+
         /// 'shapeCast' <val> 'to' <shape>
         case .shapeCast:
             let (val, _) = try parseUse(in: basicBlock)

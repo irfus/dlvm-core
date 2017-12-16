@@ -50,7 +50,7 @@ public enum InstructionKind {
     case scan(ReductionCombinator, Use, [Int])
     /// Reduction operation
     case reduce(ReductionCombinator, Use, initial: Use, [Int])
-    /// vector dot, matrix-vector multiplication and matrix-matrix multiplication
+    /// Vector dot, matrix-vector multiplication and matrix-matrix multiplication
     case dot(Use, Use)
     /// Concatenation operation
     case concatenate([Use], axis: Int)
@@ -85,6 +85,8 @@ public enum InstructionKind {
 //    )
 
     /** Cost-free casts **/
+    /// Rank lift operation (add leading dimension of 1)
+    case rankLift(Use)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
     /// Bitcast
@@ -377,9 +379,13 @@ public extension InstructionKind {
             switch v1.type.unaliased {
             case let .tensor(s1, t1) where s1.contiguousSize == s.contiguousSize:
                 return .tensor(s, t1)
-            case let .tensor(s1, t1)
-                    where s1.contiguousSize == s.contiguousSize:
-                return .tensor(s, t1)
+            default: return .invalid
+            }
+
+        case let .rankLift(v1):
+            switch v1.type.unaliased {
+            case let .tensor(s1, t1):
+                return .tensor(s1.prepending(1), t1)
             default: return .invalid
             }
 
@@ -469,7 +475,7 @@ extension InstructionKind {
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
              let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
-             let .extract(from: op, at: _),
+             let .rankLift(op), let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateHeap(_, count: op),
              let .projectBox(op), let .release(op), let .retain(op),
@@ -669,6 +675,8 @@ public extension InstructionKind {
             return .dot(use1, new)
         case .dot(old, old):
             return .dot(new, new)
+        case .rankLift(old):
+            return .rankLift(new)
         case .shapeCast(old, let shape):
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
@@ -761,6 +769,7 @@ public enum Opcode : Equatable {
     case concatenate
     case transpose
     case slice
+    case rankLift
     case shapeCast
     case bitCast
     case extract
@@ -813,6 +822,7 @@ public extension InstructionKind {
         case .concatenate: return .concatenate
         case .transpose: return .transpose
         case .slice: return .slice
+        case .rankLift: return .rankLift
         case .shapeCast: return .shapeCast
         case .bitCast: return .bitCast
         case .extract: return .extract

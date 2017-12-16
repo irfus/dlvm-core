@@ -217,6 +217,7 @@ extension Opcode : CustomStringConvertible {
         case .concatenate: return "concatenate"
         case .transpose: return "transpose"
         case .slice: return "slice"
+        case .rankLift: return "rankLift"
         case .shapeCast: return "shapeCast"
         case .bitCast: return "bitCast"
         case .extract: return "extract"

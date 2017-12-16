@@ -599,6 +599,11 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
+        case let .rankLift(v1):
+            guard case .tensor(_, _) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+
         case let .shapeCast(v1, target):
             guard case let .tensor(s1, _) = v1.type.unaliased,
                   target.contiguousSize == s1.contiguousSize else {
@@ -715,12 +720,12 @@ extension InstructionKind {
                 throw VerificationError.notStack(stack, instruction)
             }
 
-        case let .push(v, to: stack):
+        case let .push(_, to: stack):
             guard case .stack = stack.type else {
                 throw VerificationError.notStack(stack, instruction)
             }
 
-        case let .pop(ty, from: stack):
+        case let .pop(_, from: stack):
             guard case .stack = stack.type else {
                 throw VerificationError.notStack(stack, instruction)
             }

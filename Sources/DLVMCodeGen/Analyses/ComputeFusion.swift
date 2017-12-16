@@ -94,8 +94,8 @@ extension Instruction {
             }
             let size = shape.contiguousSize
             return size == 1 ? .host : .device
-        case .bitCast, .shapeCast, .extract, .elementPointer, .branch,
-             .apply, .return, .trap, .allocateBox, .allocateHeap,
+        case .bitCast, .rankLift, .shapeCast, .extract, .elementPointer,
+             .branch, .apply, .return, .trap, .allocateBox, .allocateHeap,
              .allocateStack, .concatenate, .copy, .conditional, .deallocate,
              .insert, .load, .projectBox, .release, .retain, .scan, .reduce,
              .slice, .store, .createStack, .destroyStack, .push, .pop, .literal:
@@ -114,7 +114,7 @@ extension Instruction {
             }
             let size = shape.contiguousSize
             return size != 1
-        case .bitCast, .shapeCast, .extract,
+        case .bitCast, .rankLift, .shapeCast, .extract,
              .elementPointer, .branch, .apply, .return, .trap, .literal:
             return false
         case .allocateBox, .allocateHeap, .allocateStack, .concatenate, .copy,
