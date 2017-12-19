@@ -8,7 +8,6 @@ DLVM is:
 - a framework for building DSLs
 - an IR for linear algebra and neural networks
 - an automatic backpropagator
-- a GPU code generator (NVPTX, AMDGPU, HPVM)
 - a production-quality infrastructure
 
 ## Targets
@@ -19,17 +18,10 @@ DLVM is:
 |--------------------|---------------------------------------------------------|
 | DLVM               | Compiler infrastructure (ADT, IR, Analyses, Transforms) |
 | CoreOp             | Semantics of simple tensor ops                          |
-| CoreCompute        | Compute IR (stages `compute` and `schedule` of DLVM IR) |
 | DLParse            | Textual IR parser                                       |
-| DLVMCodeGen        | LLVM code generator                                     |
 | DLCommandLineTools | Tools for building DLVM CLIs                            |
 | dlopt              | CLI for DLVM optimizer                                  |
 | dlc                | CLI for DLVM IR compiler                                |
-
-### [DLVM Compute Primitives](Compute) (**deprecated**)
-
-The DLVM compute primitives (dlcompute) are a set of LLVM Bitcode modules
-containing HPVM intrinsic calls. It's built separately via CMake.
 
 ### [DLVM Runtime](Runtime)
 
@@ -38,21 +30,12 @@ reference counting, etc.
 
 ## Dependencies
 
-- LLVM 5
 - Swift 4.1 dev
-  - DEVELOPMENT-SNAPSHOT-2017-10-12 or above
+  - DEVELOPMENT-SNAPSHOT-2017-12-11 or above
   - **Not** 4.0-DEVELOPMENT-SNAPSHOT-*!
-- Xcode Command Line Tools 9.0 (for macOS only)
+- Xcode Command Line Tools 9.0+ (for macOS only)
 
 ## Build Instructions
-
-### Set up LLVM (macOS)
-
-```bash
-brew install llvm
-brew link --overwrite --force llvm
-cp Resources/pkgconfig/llvm.pc /usr/local/lib/pkgconfig
-```
 
 ### Build DLVM Core
 
@@ -70,7 +53,7 @@ swift package generate-xcodeproj
 
 ### Build All Targets
 
-For all targets (DLVM Core, Runtime, Compute), please use CMake.
+For all targets (DLVM Core and Runtime), please use CMake.
 
 ```bash
 mkdir build

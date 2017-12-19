@@ -1,15 +1,11 @@
-INCLUDEDIR=-I`llvm-config --includedir`
-LIBDIR=-L`llvm-config --libdir`
-SFLAGS=-Xcc $(INCLUDEDIR) -Xlinker -lLLVM -Xlinker $(LIBDIR)
-
 all:
-	swift build $(SFLAGS)
+	swift build
 
 release:
-	swift build -c release $(SFLAGS)
+	swift build -c release
 
 test:
-	swift test $(SFLAGS)
+	swift test
 
 check: all
 	lit FileCheck

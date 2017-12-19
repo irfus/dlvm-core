@@ -1,6 +1,0 @@
-Name: LLVM
-Description: LLVM
-Version: 5.0.0
-Libs: -L/usr/local/lib/ -lcurses -lz -lm -lc++ -lLLVM
-Requires.private:
-Cflags: -I/usr/local/include
