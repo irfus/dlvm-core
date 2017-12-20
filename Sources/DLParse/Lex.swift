@@ -485,6 +485,7 @@ private extension Lexer {
         case "concatenate": kind = .opcode(.concatenate)
         case "transpose": kind = .opcode(.transpose)
         case "slice": kind = .opcode(.slice)
+        case "padShape": kind = .opcode(.padShape)
         case "shapeCast": kind = .opcode(.shapeCast)
         case "bitCast": kind = .opcode(.bitCast)
         case "extract": kind = .opcode(.extract)
