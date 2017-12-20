@@ -28,8 +28,6 @@ open class Differentiation: TransformPass {
     open class func run(on module: Module) -> Bool {
         var changed = false
 
-        var expanded: [Function : Function] = [:]
-
         for (i, function) in module.enumerated() {
             if case let .gradient(funcToDiff,
                                    from: diffIndex,

@@ -129,7 +129,7 @@ public extension Function {
         return declarationKind == nil
     }
 
-    var instructions: LazyCollection<FlattenBidirectionalCollection<Function>> {
+    var instructions: LazyCollection<FlattenCollection<Function>> {
         return lazy.joined()
     }
 }
