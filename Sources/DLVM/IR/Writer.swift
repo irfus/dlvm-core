@@ -182,8 +182,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("slice \(v) from \(range.lowerBound) upto \(range.upperBound)")
         case let .dataTypeCast(op, t):
             target.write("dataTypeCast \(op) to \(t)")
-        case let .rankLift(op):
-            target.write("rankLift \(op)")
+        case let .padShape(op, at: index):
+            target.write("padShape \(op) at \(index)")
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):

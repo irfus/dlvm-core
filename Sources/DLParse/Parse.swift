@@ -642,10 +642,12 @@ extension Parser {
             let (upperBound, _) = try parseInteger()
             return .slice(val, at: lowerBound...upperBound)
 
-        /// 'rankLift' <val>
-        case .rankLift:
+        /// 'padShape' <val> 'at' <num>
+        case .padShape:
             let (val, _) = try parseUse(in: basicBlock)
-            return .rankLift(val)
+            try consume(.keyword(.at))
+            let (index, _) = try parseInteger()
+            return .padShape(val, at: index)
 
         /// 'shapeCast' <val> 'to' <shape>
         case .shapeCast:

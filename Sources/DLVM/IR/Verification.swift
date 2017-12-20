@@ -599,9 +599,12 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
-        case let .rankLift(v1):
-            guard case .tensor(_, _) = v1.type.unaliased else {
+        case let .padShape(v1, at: index):
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
+            }
+            guard s1.indices.contains(index) || s1.endIndex == index else {
+                throw VerificationError.invalidIndex(v1, index, instruction)
             }
 
         case let .shapeCast(v1, target):

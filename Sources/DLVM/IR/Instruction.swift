@@ -85,8 +85,8 @@ public enum InstructionKind {
 //    )
 
     /** Cost-free casts **/
-    /// Rank lift operation (add leading dimension of 1)
-    case rankLift(Use)
+    /// Pad shape with dimension of 1
+    case padShape(Use, at: Int)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
     /// Bitcast
@@ -382,10 +382,10 @@ public extension InstructionKind {
             default: return .invalid
             }
 
-        case let .rankLift(v1):
+        case let .padShape(v1, at: index):
             switch v1.type.unaliased {
-            case let .tensor(s1, t1):
-                return .tensor(s1.prepending(1), t1)
+            case let .tensor(s1, t1) where s1.indices.contains(index) || s1.endIndex == index:
+                return .tensor(s1.paddingDimension(at: index), t1)
             default: return .invalid
             }
 
@@ -475,7 +475,7 @@ extension InstructionKind {
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
              let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
-             let .rankLift(op), let .extract(from: op, at: _),
+             let .padShape(op, at: _), let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateHeap(_, count: op),
              let .projectBox(op), let .release(op), let .retain(op),
@@ -675,8 +675,8 @@ public extension InstructionKind {
             return .dot(use1, new)
         case .dot(old, old):
             return .dot(new, new)
-        case .rankLift(old):
-            return .rankLift(new)
+        case .padShape(old, at: let i):
+            return .padShape(new, at: i)
         case .shapeCast(old, let shape):
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
@@ -769,7 +769,7 @@ public enum Opcode : Equatable {
     case concatenate
     case transpose
     case slice
-    case rankLift
+    case padShape
     case shapeCast
     case bitCast
     case extract
@@ -822,7 +822,7 @@ public extension InstructionKind {
         case .concatenate: return .concatenate
         case .transpose: return .transpose
         case .slice: return .slice
-        case .rankLift: return .rankLift
+        case .padShape: return .padShape
         case .shapeCast: return .shapeCast
         case .bitCast: return .bitCast
         case .extract: return .extract
