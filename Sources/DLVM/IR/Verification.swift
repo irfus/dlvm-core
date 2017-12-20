@@ -771,6 +771,9 @@ extension InstructionKind {
             }
             
         case .trap, .allocateBox: break
+            
+        default:
+            DLImpossible()
         }
     }
 }
