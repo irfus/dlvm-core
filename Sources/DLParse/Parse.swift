@@ -147,7 +147,8 @@ private extension Parser {
         let name: String = "a bool"
         let tok = try consumeOrDiagnose(name)
         switch tok.kind {
-        case let .bool(b): return (b, tok.range)
+        case .keyword(.true): return (true, tok.range)
+        case .keyword(.false): return (false, tok.range)
         default: throw ParseError.unexpectedToken(expected: name, tok)
         }
     }
@@ -254,7 +255,7 @@ private extension Parser {
 
 extension Parser {
     /// Parse uses separated by ','
-    func parseUseList(in basicBlock: BasicBlock?, unless: @escaping (Token) -> Bool) throws -> [Use] {
+    func parseUseList(in basicBlock: BasicBlock?, unless: ((Token) -> Bool)? = nil) throws -> [Use] {
         return try parseMany({ try parseUse(in: basicBlock).0 },
                              unless: unless,
                              separatedBy: { try self.consumeWrappablePunctuation(.comma) })
@@ -621,11 +622,7 @@ extension Parser {
             try consume(.keyword(.by))
             let combinator = try parseReductionCombinator(in: basicBlock)
             try consume(.keyword(.along))
-            let dims = try parseMany({
-                return try parseInteger().0
-            }, separatedBy: {
-                try consumeWrappablePunctuation(.comma)
-            })
+            let dims = try parseIntegerList()
             return .scan(combinator, val, dims)
 
         /// 'reduce' <val> 'by' <func|assoc_op> 'init' <val> 'along' <num> (',' <num>)*
@@ -636,11 +633,7 @@ extension Parser {
             try consume(.keyword(.init))
             let (initial, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.along))
-            let dims = try parseMany({
-                try parseInteger().0
-            }, separatedBy: {
-                try consumeWrappablePunctuation(.comma)
-            })
+            let dims = try parseIntegerList()
             return .reduce(combinator, val, initial: initial, dims)
 
         /// 'reduceWindow' <val> 'by' <func|assoc_op> 'init' <val>
@@ -671,11 +664,7 @@ extension Parser {
             
         /// 'concatenate' <val> (',' <val>)* along <num>
         case .concatenate:
-            let vals = try parseMany({
-                try parseUse(in: basicBlock).0
-            }, separatedBy: {
-                try consumeWrappablePunctuation(.comma)
-            })
+            let vals = try parseUseList(in: basicBlock)
             try consume(.keyword(.along))
             let (axis, _) = try parseInteger()
             return .concatenate(vals, axis: axis)

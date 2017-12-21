@@ -445,12 +445,13 @@ public extension InstructionKind {
             /// Get window shape
             var windowDims: [Int] = []
             for i in 0..<s1.rank {
-                let paddedBase = padding && s1[i] >= dimensions[i] ? s1[i] : dimensions[i]
+                // let paddedBase = padding && s1[i] > dimensions[i] ? s1[i] : dimensions[i]
+                let paddedBase = padding && s1[i] < dimensions[i] ? dimensions[i] : s1[i]
                 let windowDim = dimensions[i] > paddedBase
                     ? 0 : (paddedBase - dimensions[i]) / strides[i] + 1
                 windowDims.append(windowDim)
             }
-            let windowShape = TensorShape(dimensions)
+            let windowShape = TensorShape(windowDims)
             /// Get result type
             switch (op, v1.type.unaliased) {
             case (.boolean(_), .tensor(_, t1)) where t1 == .bool:

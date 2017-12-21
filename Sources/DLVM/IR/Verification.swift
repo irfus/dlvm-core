@@ -552,18 +552,28 @@ extension InstructionKind {
             guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
+
+        case let .scan(.function(f), v1, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+            let expectedFuncType: Type = .function([.scalar(t1)], .scalar(t1))
+            guard expectedFuncType == f.type.unaliased else {
+                throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
+            }
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
             
         case let .reduce(.numeric(_), v1, initial, dims):
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
                 throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
-            let shape = s1
-            let dtype = t1
-            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Initial must be a scalar
-            guard case .tensor([], dtype) = initial.type.canonical else {
+            guard case .scalar(t1) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
             
@@ -571,13 +581,11 @@ extension InstructionKind {
             guard case let .tensor(s1, .bool) = v1.type.unaliased else {
                 throw VerificationError.unexpectedDataType(v1, .bool, instruction)
             }
-            let shape = s1
-            let dtype: DataType = .bool
-            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Initial must be a scalar
-            guard case .tensor([], dtype) = initial.type.canonical else {
+            guard case .scalar(.bool) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
@@ -585,7 +593,7 @@ extension InstructionKind {
             guard case let .tensor(s1, t1) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
-            let expectedFuncType: Type = .function([.tensor([], t1)], .tensor([], t1))
+            let expectedFuncType: Type = .function([.scalar(t1)], .scalar(t1))
             guard expectedFuncType == f.type.unaliased else {
                 throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
             }
@@ -593,7 +601,7 @@ extension InstructionKind {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Initial must be a scalar
-            guard case .tensor([], t1) = initial.type.canonical else {
+            guard case .scalar(t1) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
@@ -611,7 +619,7 @@ extension InstructionKind {
                 throw VerificationError.windowInvalidStrides(strides, instruction)
             }
             /// Initial must be a scalar
-            guard case .tensor([], t1) = initial.type.canonical else {
+            guard case .scalar(t1) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
@@ -629,7 +637,7 @@ extension InstructionKind {
                 throw VerificationError.windowInvalidStrides(strides, instruction)
             }
             /// Initial must be a scalar
-            guard case .tensor([], .bool) = initial.type.canonical else {
+            guard case .scalar(.bool) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
@@ -643,7 +651,7 @@ extension InstructionKind {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Check expected function type
-            let expectedFuncType: Type = .function([.tensor([], t1)], .tensor([], t1))
+            let expectedFuncType: Type = .function([.scalar(t1)], .scalar(t1))
             guard expectedFuncType == f.type.unaliased else {
                 throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
             }
@@ -652,7 +660,7 @@ extension InstructionKind {
                 throw VerificationError.windowInvalidStrides(strides, instruction)
             }
             /// Initial must be a scalar
-            guard case .tensor([], t1) = initial.type.canonical else {
+            guard case .scalar(t1) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
@@ -751,8 +759,8 @@ extension InstructionKind {
             }
 
         case let .allocateHeap(_, count: v):
-            guard case .tensor([], .int(64)) = v.type.unaliased else {
-                throw VerificationError.unexpectedType(v, .tensor([], .int(64)), instruction)
+            guard case .scalar(.int(64)) = v.type.unaliased else {
+                throw VerificationError.unexpectedType(v, .scalar(.int(64)), instruction)
             }
 
         case let .extract(v1, indices):
@@ -796,7 +804,7 @@ extension InstructionKind {
             }
 
         case let .copy(from: src, to: dest, count: count):
-            guard case .tensor([], .int(64)) = count.type.unaliased else {
+            guard case .scalar(.int(64)) = count.type.unaliased else {
                 throw VerificationError.unexpectedType(count, .scalar(.int(64)), instruction)
             }
             switch (src.type, dest.type) {

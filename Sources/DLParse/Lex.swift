@@ -72,7 +72,6 @@ public enum TokenKind : Equatable {
     case punctuation(Punctuation)
     case keyword(Keyword)
     case opcode(Opcode)
-    case bool(BooleanLiteralType)
     case integer(IntegerLiteralType)
     case float(FloatLiteralType)
     case identifier(IdentifierKind, String)
@@ -479,6 +478,7 @@ private extension Lexer {
         case "gradient": kind = .keyword(.gradient)
         case "init": kind = .keyword(.init)
         case "along": kind = .keyword(.along)
+        case "dims": kind = .keyword(.dims)
         /// Opcode
         case "literal": kind = .opcode(.literal)
         case "branch": kind = .opcode(.branch)
