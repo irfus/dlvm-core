@@ -6,12 +6,12 @@ module "mmr"
 stage raw
 
 // Dimensions
-//                      M6
-//                  M5
-//               M4
-//           M3
-//       M2
-//   M1
+//                   M6
+//                M5  \
+//             M4  \   \
+//          M3  \   \   \
+//       M2  \   \   \   \
+//   M1    \  \   \   \   \
 // 30, 35, 15, 5, 10, 20, 25
 
 // Optimal ordering
