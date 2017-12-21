@@ -67,10 +67,8 @@ public enum InstructionKind {
     /// base area and a computation is performed for each possible position of the window.
     /// (https://www.tensorflow.org/performance/xla/operation_semantics#conv)
     case convolve(
-        // Input of rank n+2 [batchs, inChannels, ...spatialDims]
-        Use,
-        // Kernel weights of rank n+2 [outChannels, inChannels, ...spatialDims]
-        kernel: Use,
+        Use, // Input of rank n+2 [batchs, inChannels, ...spatialDims]
+        kernel: Use, // Kernel weights of rank n+2 [outChannels, inChannels, ...spatialDims]
         strides: [Int]?, // Kernel strides of rank n, default value 1
         padding: [(low: Int, high: Int)]?, // Padding of rank n, default value 0
         leftDilation: [Int]?, // Dilation factor of rank n, default value 1

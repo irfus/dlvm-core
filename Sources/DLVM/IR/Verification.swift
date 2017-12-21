@@ -380,33 +380,6 @@ extension Instruction : Verifiable {
     }
 }
 
-/*
-fileprivate class StackContext {
-    var stacks: [ObjectIdentifier: [Type]] = [:]
-
-    func insert(_ stack: Use, instruction: Instruction) throws {
-        guard .stack == stack.type, let definition = stack.definition else {
-            throw VerificationError.notStack(stack, instruction)
-        }
-        stacks[ObjectIdentifier(definition)] = []
-    }
-
-    func push(_ value: Use, to stack: Use, instruction: Instruction) throws {
-        guard .stack == stack.type, let definition = stack.definition else {
-            throw VerificationError.notStack(stack, instruction)
-        }
-        stacks[ObjectIdentifier(definition)].append(value.type)
-    }
-
-    func pop(_ type: Type, to stack: Use, instruction: Instruction) throws {
-        guard let definition = stack.definition else {
-            throw VerificationError.notStack(stack, instruction)
-        }
-        stacks[ObjectIdentifier(definition)].dropLast()
-    }
-}
- */
-
 extension InstructionKind {
     /// Verifies instruction
     public func performVerification(in instruction: Instruction) throws {
