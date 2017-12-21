@@ -283,16 +283,16 @@ public extension InstructionKind {
             }.map(Type.tensor) ?? .invalid
 
         case let .dot(v1, v2):
-            guard case let .tensor(s1, dt1) = v1.type.unaliased,
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
-                  dt1 == t2 else { return .invalid }
+                  t1 == t2 else { return .invalid }
             /// Matrix multiplication
             if let newShape = s1.matrixMultiplied(by: s2) {
-                return .tensor(newShape, dt1)
+                return .tensor(newShape, t1)
             }
             /// Vector dot product
             else if s1.isVector, s1 == s2 {
-                return .scalar(dt1)
+                return .scalar(t1)
             }
             return .invalid
 

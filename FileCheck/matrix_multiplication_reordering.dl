@@ -2,7 +2,7 @@
 
 // CHECK: MMR: changed
 
-module "mnist"
+module "mmr"
 stage raw
 
 // Dimensions

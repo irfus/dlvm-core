@@ -2,7 +2,7 @@
 
 // CHECK: DCE: changed
 
-module "mnist"
+module "dce"
 stage raw
 
 func @inference: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 10 x f32> {

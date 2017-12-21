@@ -2,7 +2,7 @@
 
 // CHECK: AD: changed
 
-module "mnist"
+module "autodiff"
 stage raw
 
 // Simple scalar test (x * w + b)
