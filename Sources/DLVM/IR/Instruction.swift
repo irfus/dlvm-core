@@ -66,18 +66,20 @@ public enum InstructionKind {
     /// A convolution can be thought of as a n-dimensional window moving across a n-dimensional
     /// base area and a computation is performed for each possible position of the window.
     /// (https://www.tensorflow.org/performance/xla/operation_semantics#conv)
-//    case convolve(
-//        Use, // Input of rank n+2
-//        kernel: Use, // Kernel weights of rank n+2
-//        strides: [Int], // Kernel strides of rank n
-//        padding: [(low: Int, high: Int)], // Padding of rank n
-//        leftDilation: [Int], // Dilation factor of rank n
-//        rightDilation: [Int] // Dilation factor of rank n
-//    )
+    case convolve(
+        // Input of rank n+2 [batchs, inChannels, ...spatialDims]
+        Use,
+        // Kernel weights of rank n+2 [outChannels, inChannels, ...spatialDims]
+        kernel: Use,
+        strides: [Int], // Kernel strides of rank n
+        padding: [(low: Int, high: Int)], // Padding of rank n
+        leftDilation: [Int], // Dilation factor of rank n
+        rightDilation: [Int] // Dilation factor of rank n
+    )
 //    /// Reduce window
 //    case reduceWindow(
 //        ReductionCombinator, // Function or op
-//        Use, // Usage
+//        Use, // Operand
 //        initial: Use, // Initial value
 //        dimensions: [Int], // Window dimensions
 //        strides: [Int], // Window strides
@@ -368,7 +370,51 @@ public extension InstructionKind {
                     }
                 }
             }.map(Type.tensor) ?? .invalid
-            
+
+        case let .convolve(
+            lhs, // Input of rank n+2
+            kernel: rhs, // Kernel weights of rank n+2
+            strides: strides, // Kernel strides of rank n
+            padding: padding, // Padding of rank n
+            leftDilation: leftDilation, // Dilation factor of rank n
+            rightDilation: rightDilation // Dilation factor of rank n
+            ):
+            guard case let .tensor(s1, t1) = lhs.type.unaliased,
+                case let .tensor(s2, t2) = rhs.type.unaliased,
+                /// Rank and datatypes must match, rank must be at least 3
+                s1.rank == s2.rank, t1 == t2, s1.rank >= 3,
+                /// Input channel dimensions must match
+                s1[1] == s2[1] else {
+                    return .invalid
+            }
+            /// Strides/padding/dilation factors must have rank equal to n
+            let n = s1.rank - 2
+            guard strides.count == n, padding.count == n,
+                leftDilation.count == n, rightDilation.count == n else {
+                    return .invalid
+            }
+            /// Strides must be greater than one, padding must be non-negative
+            /// Dilation factors must be positive
+            guard strides.forAll({ $0 >= 1 }),
+                padding.forAll({ $0.low >= 0 && $0.high >= 0 }),
+                leftDilation.forAll({ $0 > 0 }), rightDilation.forAll({ $0 > 0 }) else {
+                    return .invalid
+            }
+            /// Calculate output spatial dimensions
+            var outputDims: [Int] = []
+            for i in 0..<n {
+                let dilatedBase = (s1[i + 2] - 1) * leftDilation[i] + 1
+                let paddedDilatedBase = padding[i].low + dilatedBase + padding[i].high
+                let dilatedWindow = (s2[i + 2] - 1) * rightDilation[i] + 1
+                let outputDim = dilatedWindow > paddedDilatedBase
+                    ? 0 : (paddedDilatedBase - dilatedWindow) / strides[i] + 1
+                outputDims.append(outputDim)
+            }
+            /// Construct full output shape
+            let batchCount = s1[0]
+            let outChannelDim = s2[0]
+            return .tensor(TensorShape([batchCount, outChannelDim] + outputDims), t1)
+
         case let .dataTypeCast(v1, dt):
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.canCast(to: dt) else {
                 return .invalid
@@ -468,6 +514,8 @@ extension InstructionKind {
              let .compare(_, op1, op2),
              let .dot(op1, op2),
              let .insert(op1, to: op2, at: _),
+             let .convolve(op1, kernel: op2, strides: _, padding: _,
+                           leftDilation: _, rightDilation: _),
              let .reduce(_, op1, initial: op2, _),
              let .random(_, from: op1, upTo: op2),
              let .push(op1, to: op2):
@@ -553,6 +601,12 @@ extension InstructionKind : Equatable {
             return s1 == s2 && l1 == l2 && h1 == h2
         case let (.select(l1, r1, by: f1), .select(l2, r2, by: f2)):
             return l1 == l2 && r1 == r2 && f1 == f2
+        case let (.convolve(l1, kernel: r1, strides: s1, padding: p1,
+                             leftDilation: ld1, rightDilation: rd1),
+                  .convolve(l2, kernel: r2, strides: s2, padding: p2,
+                             leftDilation: ld2, rightDilation: rd2)):
+            return l1 == l2 && r1 == r2 && s1 == s2 && ld1 == ld2 && rd1 == rd2
+                && zip(p1, p2).forAll({ $0 == $1 })
         case let (.dataTypeCast(x1, dt1), .dataTypeCast(x2, dt2)):
             return x1 == x2 && dt1 == dt2
         case let (.shapeCast(x1, s1), .shapeCast(x2, s2)):
@@ -669,6 +723,18 @@ public extension InstructionKind {
             return .reduce(.function(v1), new, initial: v2, dims)
         case .reduce(.function(old), let v1, initial: let v2, let dims):
             return .reduce(.function(new), v1, initial: v2, dims)
+        case .convolve(old, kernel: old, strides: let s, padding: let p,
+                       leftDilation: let ld, rightDilation: let rd):
+            return .convolve(new, kernel: new, strides: s, padding: p,
+                             leftDilation: ld, rightDilation: rd)
+        case .convolve(old, kernel: let v1, strides: let s, padding: let p,
+                       leftDilation: let ld, rightDilation: let rd):
+            return .convolve(new, kernel: v1, strides: s, padding: p,
+                             leftDilation: ld, rightDilation: rd)
+        case .convolve(let v1, kernel: old, strides: let s, padding: let p,
+                       leftDilation: let ld, rightDilation: let rd):
+            return .convolve(v1, kernel: new, strides: s, padding: p,
+                             leftDilation: ld, rightDilation: rd)
         case .dot(old, let use2):
             return .dot(new, use2)
         case .dot(let use1, old):
@@ -769,6 +835,7 @@ public enum Opcode : Equatable {
     case concatenate
     case transpose
     case slice
+    case convolve
     case padShape
     case shapeCast
     case bitCast
@@ -822,6 +889,7 @@ public extension InstructionKind {
         case .concatenate: return .concatenate
         case .transpose: return .transpose
         case .slice: return .slice
+        case .convolve: return .convolve
         case .padShape: return .padShape
         case .shapeCast: return .shapeCast
         case .bitCast: return .bitCast

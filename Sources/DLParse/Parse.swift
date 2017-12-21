@@ -331,6 +331,29 @@ extension Parser {
         }) { dims.append(dim) }
         return (TensorShape(dims), firstRange.lowerBound..<lastLoc)
     }
+
+    /// Parse an integer list
+    func parseIntegerList() throws -> [Int] {
+        return try parseMany({
+            try parseInteger().0
+        }, separatedBy: {
+            try consumeWrappablePunctuation(.comma)
+        })
+    }
+
+    /// Parse a list of integer tuples
+    func parseIntegerTupleList() throws -> [(Int, Int)] {
+        return try parseMany({
+            try consumeWrappablePunctuation(.leftParenthesis)
+            let first = try parseInteger().0
+            try consumeWrappablePunctuation(.comma)
+            let second = try parseInteger().0
+            try consumeWrappablePunctuation(.rightParenthesis)
+            return (first, second)
+        }, separatedBy: {
+            try consumeWrappablePunctuation(.comma)
+        })
+    }
     
     /// Parse a shape
     func parseShape() throws -> TensorShape {
@@ -641,6 +664,23 @@ extension Parser {
             try consume(.keyword(.upto))
             let (upperBound, _) = try parseInteger()
             return .slice(val, at: lowerBound...upperBound)
+
+        /// 'convolve' <val> 'kernel' <val> 'stride' <val> 'pad' <val>
+        ///            'leftDilate' <val> 'rightDilate' <val'
+        case .convolve:
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.kernel))
+            let (kernel, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.strides))
+            let strides = try parseIntegerList()
+            try consume(.keyword(.padding))
+            let padding = try parseIntegerTupleList()
+            try consume(.keyword(.leftDilation))
+            let ld = try parseIntegerList()
+            try consume(.keyword(.rightDilation))
+            let rd = try parseIntegerList()
+            return .convolve(val, kernel: kernel, strides: strides, padding: padding,
+                             leftDilation: ld, rightDilation: rd)
 
         /// 'padShape' <val> 'at' <num>
         case .padShape:

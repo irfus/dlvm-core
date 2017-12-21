@@ -180,6 +180,14 @@ extension InstructionKind : TextOutputStreamable {
             target.write("transpose \(op)")
         case let .slice(v, at: range):
             target.write("slice \(v) from \(range.lowerBound) upto \(range.upperBound)")
+        case let .convolve(v, kernel: k, strides: s, padding: p,
+                           leftDilation: ld, rightDilation: rd):
+            // target.write("convolve \(v) with \(k) strides \(s) padding \(p)")
+            // target.write("leftDilation \(ld) rightDilation \(rd)")
+            target.write("convolve \(v) with \(k) strides \(s.description(joinedBy: ", ")) ")
+            target.write("padding \(p.map({ ($0.low, $0.high) }).description(joinedBy: ", ")) ")
+            target.write("leftDilation \(ld.description(joinedBy: ", ")) ")
+            target.write("rightDilation \(rd.description(joinedBy: ", "))")
         case let .dataTypeCast(op, t):
             target.write("dataTypeCast \(op) to \(t)")
         case let .padShape(op, at: index):

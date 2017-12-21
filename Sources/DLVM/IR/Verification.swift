@@ -24,6 +24,12 @@ public enum VerificationError<Node : Verifiable> : Error {
     case axisOutOfBounds(Int, Use, Node)
     case basicBlockArgumentMismatch([Use], BasicBlock, Node)
     case blockFunctionMismatch(BasicBlock, Node)
+    case convolveInvalidShape(Use, Node)
+    case convolveInputChannelMismatch(Use, Use, Node)
+    case convolveInvalidDilation([Int], Node)
+    case convolveInvalidDilationRank([Int], Int, Node)
+    case convolveTypeMismatch(Use, Use, Node)
+    case windowDimensionsMismatch([Int], Use, Node)
     case cannotCastDataType(Use, DataType, Node)
     case cannotDot(Use, Use, Node)
     case cannotShapeCast(Use, TensorShape, Node)
@@ -86,6 +92,10 @@ public enum VerificationError<Node : Verifiable> : Error {
     case useBeforeDef(user: Instruction, usee: Value, Node)
     case useShapeMismatch(Node)
     case useTypeMismatch(Node)
+    case windowInvalidStrides([Int], Node)
+    case windowInvalidStridesRank([Int], Int, Node)
+    case windowInvalidPadding([(low: Int, high: Int)], Node)
+    case windowInvalidPaddingRank([(low: Int, high: Int)], Int, Node)
 }
 
 public protocol Verifiable {
@@ -571,18 +581,6 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
-        case let .scan(.function(f), v1, dims):
-            guard case let .tensor(s1, t1) = v1.type.unaliased else {
-                throw VerificationError.notTensor(v1, instruction)
-            }
-            let expectedFuncType: Type = .function([.tensor([], t1)], .tensor([], t1))
-            guard expectedFuncType == f.type.unaliased else {
-                throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
-            }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
-                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
-            }
-            
         case let .reduce(.function(f), v1, initial, dims):
             guard case let .tensor(s1, t1) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
@@ -597,6 +595,68 @@ extension InstructionKind {
             /// Initial must be a scalar
             guard case .tensor([], t1) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
+            }
+
+        case let .scan(.function(f), v1, dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+            let expectedFuncType: Type = .function([.tensor([], t1)], .tensor([], t1))
+            guard expectedFuncType == f.type.unaliased else {
+                throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
+            }
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+
+        case let .convolve(lhs, kernel: rhs, strides: strides, padding: padding,
+                           leftDilation: ld, rightDilation: rd):
+            guard case let .tensor(s1, t1) = lhs.type.unaliased else {
+                throw VerificationError.notTensor(lhs, instruction)
+            }
+            guard case let .tensor(s2, t2) = rhs.type.unaliased else {
+                throw VerificationError.notTensor(rhs, instruction)
+            }
+            /// Rank and datatypes must match
+            guard s1.rank == s2.rank, t1 == t2 else {
+                throw VerificationError.convolveTypeMismatch(lhs, rhs, instruction)
+            }
+            /// Rank must be at least 3
+            guard s1.rank >= 3 else {
+                throw VerificationError.convolveInvalidShape(lhs, instruction)
+            }
+            /// Input channel dimensions must match
+            guard s1[1] == s2[1] else {
+                throw VerificationError.convolveInputChannelMismatch(lhs, rhs, instruction)
+            }
+            /// Strides/padding/dilation factors must have rank equal to n
+            let n = s1.rank - 2
+            guard strides.count == n else {
+                throw VerificationError.windowInvalidStridesRank(strides, n, instruction)
+            }
+            guard padding.count == n else {
+                throw VerificationError.windowInvalidPaddingRank(padding, n, instruction)
+            }
+            guard ld.count == n else {
+                throw VerificationError.convolveInvalidDilationRank(ld, n, instruction)
+            }
+            guard rd.count == n else {
+                throw VerificationError.convolveInvalidDilationRank(rd, n, instruction)
+            }
+            /// Strides must be greater than one
+            guard strides.forAll({ $0 >= 1 }) else {
+                throw VerificationError.windowInvalidStrides(strides, instruction)
+            }
+            /// Padding must be non-negative
+            guard padding.forAll({ $0.low >= 0 && $0.high >= 0 }) else {
+                throw VerificationError.windowInvalidPadding(padding, instruction)
+            }
+            /// Dilation factors must be positive
+            guard ld.forAll({ $0 > 0 }) else {
+                throw VerificationError.convolveInvalidDilation(ld, instruction)
+            }
+            guard rd.forAll({ $0 > 0 }) else {
+                throw VerificationError.convolveInvalidDilation(rd, instruction)
             }
 
         case let .padShape(v1, at: index):
