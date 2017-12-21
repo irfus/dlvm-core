@@ -213,6 +213,7 @@ extension Opcode : CustomStringConvertible {
         case .dataTypeCast: return "dataTypeCast"
         case .scan: return "scan"
         case .reduce: return "reduce"
+        case .reduceWindow: return "reduceWindow"
         case .dot: return "dot"
         case .concatenate: return "concatenate"
         case .transpose: return "transpose"
@@ -256,6 +257,7 @@ extension TokenKind : CustomStringConvertible {
         switch self {
         case let .punctuation(p): return "'\(p)'"
         case let .dataType(dt): return String(describing: dt)
+        case let .bool(val): return val.description
         case let .float(val): return val.description
         case let .integer(val): return val.description
         case let .keyword(kw): return String(describing: kw)

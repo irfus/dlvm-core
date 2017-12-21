@@ -143,6 +143,15 @@ private extension Parser {
         }
     }
 
+    func parseBool() throws -> (Bool, SourceRange) {
+        let name: String = "a bool"
+        let tok = try consumeOrDiagnose(name)
+        switch tok.kind {
+        case let .bool(b): return (b, tok.range)
+        default: throw ParseError.unexpectedToken(expected: name, tok)
+        }
+    }
+
     func parseDataType() throws -> (DataType, SourceRange) {
         let name: String = "a data type"
         let tok = try consumeOrDiagnose(name)
@@ -633,6 +642,25 @@ extension Parser {
                 try consumeWrappablePunctuation(.comma)
             })
             return .reduce(combinator, val, initial: initial, dims)
+
+        /// 'reduceWindow' <val> 'by' <func|assoc_op> 'init' <val>
+        ///     'dims' <num> (',' <num>)*
+        ///     'strides' <num> (',' <num>)*
+        ///     'padding' <bool>
+        case .reduceWindow:
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.by))
+            let combinator = try parseReductionCombinator(in: basicBlock)
+            try consume(.keyword(.init))
+            let (initial, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.dims))
+            let dims = try parseIntegerList()
+            try consume(.keyword(.strides))
+            let strides = try parseIntegerList()
+            try consume(.keyword(.padding))
+            let padding = try parseBool().0
+            return .reduceWindow(combinator, val, initial: initial, dimensions: dims,
+                                 strides: strides, padding: padding)
 
         /// 'dot' <val> ',' <val>
         case .dot:

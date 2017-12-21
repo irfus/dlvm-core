@@ -76,15 +76,15 @@ public enum InstructionKind {
         leftDilation: [Int]?, // Dilation factor of rank n, default value 1
         rightDilation: [Int]? // Dilation factor of rank n, default value 1
     )
-//    /// Reduce window
-//    case reduceWindow(
-//        ReductionCombinator, // Function or op
-//        Use, // Operand
-//        initial: Use, // Initial value
-//        dimensions: [Int], // Window dimensions
-//        strides: [Int], // Window strides
-//        padding: Bool // Whether padding should be preserved
-//    )
+    /// Reduce window
+    case reduceWindow(
+        ReductionCombinator, // Function or op
+        Use, // Operand
+        initial: Use, // Initial value
+        dimensions: [Int], // Window dimensions
+        strides: [Int], // Window strides
+        padding: Bool // true = half padding, false = valid/no padding
+    )
 
     /** Cost-free casts **/
     /// Pad shape with dimension of 1
@@ -420,6 +420,57 @@ public extension InstructionKind {
             let outChannelDim = s2[0]
             return .tensor(TensorShape([batchCount, outChannelDim] + outputDims), t1)
 
+        /// Reduce window
+        case let .reduceWindow(
+            op, // Function or op
+            v1, // Operand
+            initial: initial, // Initial value
+            dimensions: dimensions, // Window dimensions
+            strides: strides, // Window strides
+            padding: padding // Whether padding should be preserved
+            ):
+            let resultType: Type
+            /// Operand must be a tensor
+            guard case let .tensor(s1, t1) = v1.type.unaliased else {
+                return .invalid
+            }
+            /// Window must have same rank as operand, window dims must be positive
+            guard dimensions.count == s1.rank, dimensions.forAll({ $0 > 0}) else {
+                    return .invalid
+            }
+            /// Strides must be greater than one
+            guard strides.forAll({ $0 >= 1 }) else {
+                return .invalid
+            }
+            /// Get window shape
+            var windowDims: [Int] = []
+            for i in 0..<s1.rank {
+                let paddedBase = padding && s1[i] >= dimensions[i] ? s1[i] : dimensions[i]
+                let windowDim = dimensions[i] > paddedBase
+                    ? 0 : (paddedBase - dimensions[i]) / strides[i] + 1
+                windowDims.append(windowDim)
+            }
+            let windowShape = TensorShape(dimensions)
+            /// Get result type
+            switch (op, v1.type.unaliased) {
+            case (.boolean(_), .tensor(_, t1)) where t1 == .bool:
+                resultType = .tensor(windowShape, .bool)
+                break
+            case let (.numeric(_), .tensor(_, t1)) where t1.isNumeric:
+                resultType = .tensor(windowShape, t1)
+                break
+            case let (.function(f), .tensor(_, t1))
+                where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):
+                resultType = .tensor(windowShape, t1)
+                break
+            default:
+                return .invalid
+            }
+            guard case .tensor([], t1) = initial.type.canonical else {
+                return .invalid
+            }
+            return resultType
+
         case let .dataTypeCast(v1, dt):
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.canCast(to: dt) else {
                 return .invalid
@@ -522,6 +573,8 @@ extension InstructionKind {
              let .convolve(op1, kernel: op2, strides: _, padding: _,
                            leftDilation: _, rightDilation: _),
              let .reduce(_, op1, initial: op2, _),
+             let .reduceWindow(_, op1, initial: op2, dimensions: _, strides: _,
+                               padding: _),
              let .random(_, from: op1, upTo: op2),
              let .push(op1, to: op2):
             return [op1, op2]
@@ -739,6 +792,34 @@ public extension InstructionKind {
             return .reduce(.function(v1), new, initial: v2, dims)
         case .reduce(.function(old), let v1, initial: let v2, let dims):
             return .reduce(.function(new), v1, initial: v2, dims)
+        case .reduceWindow(.function(old), old, initial: old,
+                           dimensions: let d, strides: let s, padding: let p):
+            return .reduceWindow(.function(new), new, initial: new,
+                                 dimensions: d, strides: s, padding: p)
+        case .reduceWindow(.function(old), old, initial: let v1,
+                           dimensions: let d, strides: let s, padding: let p):
+            return .reduceWindow(.function(new), new, initial: v1,
+                                 dimensions: d, strides: s, padding: p)
+        case .reduceWindow(.function(old), let v1, initial: old,
+                           dimensions: let d, strides: let s, padding: let p):
+            return .reduceWindow(.function(new), v1, initial: new,
+                                 dimensions: d, strides: s, padding: p)
+        case .reduceWindow(.function(let v1), old, initial: old,
+                           dimensions: let d, strides: let s, padding: let p):
+            return .reduceWindow(.function(v1), new, initial: new,
+                                 dimensions: d, strides: s, padding: p)
+        case .reduceWindow(.function(let v1), old, initial: let v2,
+                           dimensions: let d, strides: let s, padding: let p):
+            return .reduceWindow(.function(v1), new, initial: v2,
+                                 dimensions: d, strides: s, padding: p)
+        case .reduceWindow(.function(let v1), let v2, initial: old,
+                           dimensions: let d, strides: let s, padding: let p):
+            return .reduceWindow(.function(v1), v2, initial: new,
+                                 dimensions: d, strides: s, padding: p)
+        case .reduceWindow(.function(old), let v1, initial: let v2,
+                           dimensions: let d, strides: let s, padding: let p):
+            return .reduceWindow(.function(new), v1, initial: v2,
+                                 dimensions: d, strides: s, padding: p)
         case .convolve(old, kernel: old, strides: let s, padding: let p,
                        leftDilation: let ld, rightDilation: let rd):
             return .convolve(new, kernel: new, strides: s, padding: p,
@@ -847,6 +928,7 @@ public enum Opcode : Equatable {
     case dataTypeCast
     case scan
     case reduce
+    case reduceWindow
     case dot
     case concatenate
     case transpose
@@ -901,6 +983,7 @@ public extension InstructionKind {
         case .dataTypeCast: return .dataTypeCast
         case .scan: return .scan
         case .reduce: return .reduce
+        case .reduceWindow: return .reduceWindow
         case .dot: return .dot
         case .concatenate: return .concatenate
         case .transpose: return .transpose

@@ -597,16 +597,63 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
-        case let .scan(.function(f), v1, dims):
-            guard case let .tensor(s1, t1) = v1.type.unaliased else {
-                throw VerificationError.notTensor(v1, instruction)
+        case let .reduceWindow(.numeric(_), v1, initial: initial, dimensions: dims,
+                               strides: strides, padding: _):
+            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
+            /// Window must have same rank as operand, window dims must be positive
+            guard dims.count <= s1.rank, dims.forAll({ $0 > 0 }) else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            /// Strides must be greater than one
+            guard strides.forAll({ $0 >= 1 }) else {
+                throw VerificationError.windowInvalidStrides(strides, instruction)
+            }
+            /// Initial must be a scalar
+            guard case .tensor([], t1) = initial.type.canonical else {
+                throw VerificationError.unexpectedShape(initial, .scalar, instruction)
+            }
+
+        case let .reduceWindow(.boolean(_), v1, initial: initial, dimensions: dims,
+                               strides: strides, padding: _):
+            guard case let .tensor(s1, .bool) = v1.type.unaliased else {
+                throw VerificationError.unexpectedDataType(v1, .bool, instruction)
+            }
+            /// Window must have same rank as operand, window dims must be positive
+            guard dims.count <= s1.rank, dims.forAll({ $0 > 0 }) else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            /// Strides must be greater than one
+            guard strides.forAll({ $0 >= 1 }) else {
+                throw VerificationError.windowInvalidStrides(strides, instruction)
+            }
+            /// Initial must be a scalar
+            guard case .tensor([], .bool) = initial.type.canonical else {
+                throw VerificationError.unexpectedShape(initial, .scalar, instruction)
+            }
+
+        case let .reduceWindow(.function(f), v1, initial: initial, dimensions: dims,
+                               strides: strides, padding: _):
+            guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
+                throw VerificationError.dataTypeNotNumeric(v1, instruction)
+            }
+            /// Window must have same rank as operand, window dims must be positive
+            guard dims.count <= s1.rank, dims.forAll({ $0 > 0 }) else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+            /// Check expected function type
             let expectedFuncType: Type = .function([.tensor([], t1)], .tensor([], t1))
             guard expectedFuncType == f.type.unaliased else {
                 throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
             }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
-                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            /// Strides must be greater than one
+            guard strides.forAll({ $0 >= 1 }) else {
+                throw VerificationError.windowInvalidStrides(strides, instruction)
+            }
+            /// Initial must be a scalar
+            guard case .tensor([], t1) = initial.type.canonical else {
+                throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
         case let .convolve(lhs, kernel: rhs, strides: strides, padding: padding,

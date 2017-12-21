@@ -40,7 +40,7 @@ public enum Keyword {
     case count
     case seedable
     case extern, gradient
-    case `init`, along
+    case `init`, along, dims
 }
 
 public enum Punctuation {
@@ -72,6 +72,7 @@ public enum TokenKind : Equatable {
     case punctuation(Punctuation)
     case keyword(Keyword)
     case opcode(Opcode)
+    case bool(BooleanLiteralType)
     case integer(IntegerLiteralType)
     case float(FloatLiteralType)
     case identifier(IdentifierKind, String)
@@ -486,6 +487,7 @@ private extension Lexer {
         case "dataTypeCast": kind = .opcode(.dataTypeCast)
         case "scan": kind = .opcode(.scan)
         case "reduce": kind = .opcode(.reduce)
+        case "reduceWindow": kind = .opcode(.reduceWindow)
         case "dot": kind = .opcode(.dot)
         case "matrixMultiply": kind = .opcode(.dot) // TODO: Deprecated. Should emit warning
         case "concatenate": kind = .opcode(.concatenate)

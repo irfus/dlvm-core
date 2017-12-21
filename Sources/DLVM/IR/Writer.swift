@@ -172,6 +172,10 @@ extension InstructionKind : TextOutputStreamable {
             target.write("\(f) \(op)")
         case let .reduce(comb, op, initial, dims):
             target.write("reduce \(op) by \(comb) init \(initial) along \(dims.joinedDescription)")
+        case let .reduceWindow(comb, op, initial, dims, strides, padding):
+            target.write("reduceWindow \(op) by \(comb) init \(initial) ")
+            target.write("dims \(dims.joinedDescription) strides \(strides.joinedDescription)")
+            target.write("padding \(padding)")
         case let .scan(f, op, dims):
             target.write("scan \(op) by \(f) along \(dims.joinedDescription)")
         case let .concatenate(ops, axis: axis):
