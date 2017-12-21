@@ -182,7 +182,7 @@ extension InstructionKind : TextOutputStreamable {
             target.write("slice \(v) from \(range.lowerBound) upto \(range.upperBound)")
         case let .convolve(v, kernel: k, strides: s, padding: p,
                            leftDilation: ld, rightDilation: rd):
-            target.write("convolve \(v) with \(k) ")
+            target.write("convolve \(v) kernel \(k) ")
             if let s = s {
                 target.write("strides \(s.joinedDescription) ")
             }
