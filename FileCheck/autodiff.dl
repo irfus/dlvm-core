@@ -1,4 +1,4 @@
-// RUN: dlopt -f %s -p AD --print-ir | FileCheck %s
+// RUN: dlopt -f %s -p AD AS CSE DCE --print-ir | FileCheck %s
 
 // CHECK: AD: changed
 
@@ -17,14 +17,32 @@ func @scalar_simp: (f32, f32, f32) -> f32 {
 [gradient @scalar_simp]
 func @scalar_simp_dxwb: (f32, f32, f32) -> (f32, f32, f32)
 
+// CHECK-LABEL: func @scalar_simp_dxwb
+// CHECK: %0.0 = literal (%w: f32, %x: f32, 1: f32): (f32, f32, f32)
+// CHECK-NEXT: return %0.0: (f32, f32, f32)
+
 [gradient @scalar_simp wrt 1, 2]
 func @scalar_simp_dwb: (f32, f32, f32) -> (f32, f32)
+
+// CHECK-LABEL: func @scalar_simp_dwb
+// CHECK: %0.0 = literal (%x: f32, 1: f32): (f32, f32)
+// CHECK-NEXT: return %0.0: (f32, f32)
 
 [gradient @scalar_simp wrt 1, 2 keeping 0]
 func @scalar_simp_dwb_keeping: (f32, f32, f32) -> (f32, f32, f32)
 
+// CHECK-LABEL: func @scalar_simp_dwb_keeping
+// CHECK: %0.0 = multiply %x: f32, %w: f32
+// CHECK-NEXT: %0.1 = add %0.0: f32, %b: f32
+// CHECK-NEXT: %0.2 = literal (%x: f32, 1: f32, %0.1: f32): (f32, f32, f32)
+// CHECK-NEXT: return %0.2: (f32, f32, f32)
+
 [gradient @scalar_simp wrt 1, 2 seedable]
 func @scalar_simp_dwb_seedable: (f32, f32, f32, f32) -> (f32, f32)
+
+// CHECK-LABEL: func @scalar_simp_dwb_seedable
+// CHECK: %0.0 = literal (%x: f32, %seed: f32): (f32, f32)
+// CHECK-NEXT: return %0.0: (f32, f32)
 
 // Simple tensor test (x • w + b)
 
@@ -39,14 +57,43 @@ func @tensor_simp: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 1
 func @tensor_simp_dxwb: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
                        -> (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
 
+// CHECK-LABEL: func @tensor_simp_dxwb
+// CHECK: %0.0 = transpose %w: <784 x 10 x f32>
+// CHECK-NEXT: %0.1 = dot 1: <1 x 10 x f32>, %0.0: <10 x 784 x f32>
+// CHECK-NEXT: %0.2 = transpose %x: <1 x 784 x f32>
+// CHECK-NEXT: %0.3 = dot %0.2: <784 x 1 x f32>, 1: <1 x 10 x f32>
+// CHECK-NEXT: %0.4 = literal (%0.1: <1 x 784 x f32>, %0.3: <784 x 10 x f32>, 1: <1 x 10 x f32>): (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
+// CHECK-NEXT: return %0.4: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
+
 [gradient @tensor_simp wrt 1, 2]
 func @tensor_simp_dwb: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
                       -> (<784 x 10 x f32>, <1 x 10 x f32>)
+
+// CHECK-LABEL: func @tensor_simp_dwb
+// CHECK: %0.0 = transpose %x: <1 x 784 x f32>
+// CHECK-NEXT: %0.1 = dot %0.0: <784 x 1 x f32>, 1: <1 x 10 x f32>
+// CHECK-NEXT: %0.2 = literal (%0.1: <784 x 10 x f32>, 1: <1 x 10 x f32>): (<784 x 10 x f32>, <1 x 10 x f32>)
+// CHECK-NEXT: return %0.2: (<784 x 10 x f32>, <1 x 10 x f32>)
+
 
 [gradient @tensor_simp wrt 1, 2 keeping 0]
 func @tensor_simp_dwb_keeping: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
                               -> (<784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
 
+// CHECK-LABEL: func @tensor_simp_dwb_keeping
+// CHECK: %0.0 = dot %x: <1 x 784 x f32>, %w: <784 x 10 x f32>
+// CHECK-NEXT: %0.1 = add %0.0: <1 x 10 x f32>, %b: <1 x 10 x f32>
+// CHECK-NEXT: %0.2 = transpose %x: <1 x 784 x f32>
+// CHECK-NEXT: %0.3 = dot %0.2: <784 x 1 x f32>, 1: <1 x 10 x f32>
+// CHECK-NEXT: %0.4 = literal (%0.3: <784 x 10 x f32>, 1: <1 x 10 x f32>, %0.1: <1 x 10 x f32>): (<784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
+// CHECK-NEXT: return %0.4: (<784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
+
 [gradient @tensor_simp wrt 1, 2 seedable]
 func @tensor_simp_dwb_seedable: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
                                -> (<784 x 10 x f32>, <1 x 10 x f32>)
+
+// CHECK-LABEL: func @tensor_simp_dwb_seedable
+// CHECK: %0.0 = transpose %x: <1 x 784 x f32>
+// CHECK-NEXT: %0.1 = dot %0.0: <784 x 1 x f32>, %seed: <1 x 10 x f32>
+// CHECK-NEXT: %0.2 = literal (%0.1: <784 x 10 x f32>, %seed: <1 x 10 x f32>): (<784 x 10 x f32>, <1 x 10 x f32>)
+// CHECK-NEXT: return %0.2: (<784 x 10 x f32>, <1 x 10 x f32>)
