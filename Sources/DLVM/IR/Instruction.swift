@@ -662,9 +662,17 @@ extension InstructionKind : Equatable {
                              leftDilation: ld1, rightDilation: rd1),
                   .convolve(l2, kernel: r2, strides: s2, padding: p2,
                              leftDilation: ld2, rightDilation: rd2)):
-            guard let q1 = p1, let q2 = p2 else { return p1 == nil && p2 == nil }
-            return l1 == l2 && r1 == r2 && s1 == s2 && ld1 == ld2 && rd1 == rd2
-                && zip(q1, q2).forAll(==)
+            guard l1 == l2 && r1 == r2 && s1 == s2 && ld1 == ld2 && rd1 == rd2 else {
+                return false
+            }
+            switch (p1, p2) {
+            case (.none, .none):
+                return true
+            case let (p1?, p2?) where p1 == p2:
+                return true
+            default:
+                return false
+            }
         case let (.dataTypeCast(x1, dt1), .dataTypeCast(x2, dt2)):
             return x1 == x2 && dt1 == dt2
         case let (.padShape(x1, at: i1), .padShape(x2, at: i2)):

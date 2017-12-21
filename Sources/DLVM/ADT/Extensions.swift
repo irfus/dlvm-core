@@ -44,6 +44,10 @@ public extension Sequence {
     }
 }
 
+public func ==<A: Equatable, B: Equatable>(lhs: [(A, B)], rhs: [(A, B)]) -> Bool {
+    return lhs.count == rhs.count && zip(lhs, rhs).forAll(==)
+}
+
 public extension Optional {
     @discardableResult
     func ifAny<T>(_ execute: (Wrapped) throws -> T) rethrows -> T? {
