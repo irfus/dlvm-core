@@ -21,7 +21,6 @@ DLVM is:
 | DLParse            | Textual IR parser                                       |
 | DLCommandLineTools | Tools for building DLVM CLIs                            |
 | dlopt              | CLI for DLVM optimizer                                  |
-| dlc                | CLI for DLVM IR compiler                                |
 
 ### [DLVM Runtime](Runtime)
 
