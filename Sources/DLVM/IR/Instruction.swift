@@ -425,7 +425,7 @@ public extension InstructionKind {
             initial: initial, // Initial value
             dimensions: dimensions, // Window dimensions
             strides: strides, // Window strides
-            padding: padding // Whether padding should be preserved
+            padding: padding // true = half padding, false = valid/no padding
             ):
             let resultType: Type
             /// Operand must be a tensor

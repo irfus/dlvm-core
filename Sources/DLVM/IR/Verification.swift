@@ -620,7 +620,7 @@ extension InstructionKind {
                 throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
             /// Window must have same rank as operand, window dims must be positive
-            guard dims.count <= s1.rank, dims.forAll({ $0 > 0 }) else {
+            guard dims.count == s1.rank, dims.forAll({ $0 > 0 }) else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Check expected function type
