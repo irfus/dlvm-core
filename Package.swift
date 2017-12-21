@@ -36,7 +36,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/rxwei/CommandLine", from: "4.0.0"),
-        .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.6.3")
+        .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.7.0")
     ],
     targets: [
         .target(name: "CoreOp", dependencies: ["CoreTensor"]),
