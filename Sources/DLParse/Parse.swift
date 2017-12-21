@@ -344,11 +344,11 @@ extension Parser {
     /// Parse a list of integer tuples
     func parseIntegerTupleList() throws -> [(Int, Int)] {
         return try parseMany({
-            try consumeWrappablePunctuation(.leftParenthesis)
+            try consume(.punctuation(.leftParenthesis))
             let first = try parseInteger().0
-            try consumeWrappablePunctuation(.comma)
+            try consume(.punctuation(.comma))
             let second = try parseInteger().0
-            try consumeWrappablePunctuation(.rightParenthesis)
+            try consume(.punctuation(.rightParenthesis))
             return (first, second)
         }, separatedBy: {
             try consumeWrappablePunctuation(.comma)
@@ -665,20 +665,36 @@ extension Parser {
             let (upperBound, _) = try parseInteger()
             return .slice(val, at: lowerBound...upperBound)
 
-        /// 'convolve' <val> 'kernel' <val> 'stride' <val> 'pad' <val>
-        ///            'leftDilate' <val> 'rightDilate' <val'
+        /// 'convolve' <val> 'kernel' <val> 'strides' <nums> 'padding' <numTups>
+        ///            'leftDilation' <nums> 'rightDilation' <nums>
         case .convolve:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.kernel))
             let (kernel, _) = try parseUse(in: basicBlock)
-            try consume(.keyword(.strides))
-            let strides = try parseIntegerList()
-            try consume(.keyword(.padding))
-            let padding = try parseIntegerTupleList()
-            try consume(.keyword(.leftDilation))
-            let ld = try parseIntegerList()
-            try consume(.keyword(.rightDilation))
-            let rd = try parseIntegerList()
+            /// strides
+            var strides: [Int]?
+            if case .keyword(.strides)? = currentToken?.kind {
+                consumeToken()
+                strides = try parseIntegerList()
+            }
+            /// padding
+            var padding: [(low: Int, high: Int)]?
+            if case .keyword(.padding)? = currentToken?.kind {
+                consumeToken()
+                padding = try parseIntegerTupleList()
+            }
+            /// left dilation
+            var ld: [Int]?
+            if case .keyword(.leftDilation)? = currentToken?.kind {
+                consumeToken()
+                ld = try parseIntegerList()
+            }
+            /// right dilation
+            var rd: [Int]?
+            if case .keyword(.rightDilation)? = currentToken?.kind {
+                consumeToken()
+                rd = try parseIntegerList()
+            }
             return .convolve(val, kernel: kernel, strides: strides, padding: padding,
                              leftDilation: ld, rightDilation: rd)
 
@@ -991,14 +1007,6 @@ extension Parser {
             try consumeOneOrMore(.newLine)
         }
         return bb
-    }
-
-    func parseIndexList() throws -> [Int] {
-        return try parseMany({
-            try parseInteger().0
-        }, separatedBy: {
-            try self.consumeWrappablePunctuation(.comma)
-        })
     }
 
     func parseFunctionDeclarationKind() throws -> Function.DeclarationKind {

@@ -629,8 +629,13 @@ extension InstructionKind {
             guard s1[1] == s2[1] else {
                 throw VerificationError.convolveInputChannelMismatch(lhs, rhs, instruction)
             }
-            /// Strides/padding/dilation factors must have rank equal to n
+            /// Set argument defaults
             let n = s1.rank - 2
+            let strides = strides ?? Array(repeating: 1, count: n)
+            let padding = padding ?? Array(repeating: (low: 0, high: 0), count: n)
+            let ld = ld ?? Array(repeating: 1, count: n)
+            let rd = rd ?? Array(repeating: 1, count: n)
+            /// Strides/padding/dilation factors must have rank equal to n
             guard strides.count == n else {
                 throw VerificationError.windowInvalidStridesRank(strides, n, instruction)
             }

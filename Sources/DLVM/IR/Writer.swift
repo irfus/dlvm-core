@@ -182,12 +182,19 @@ extension InstructionKind : TextOutputStreamable {
             target.write("slice \(v) from \(range.lowerBound) upto \(range.upperBound)")
         case let .convolve(v, kernel: k, strides: s, padding: p,
                            leftDilation: ld, rightDilation: rd):
-            // target.write("convolve \(v) with \(k) strides \(s) padding \(p)")
-            // target.write("leftDilation \(ld) rightDilation \(rd)")
-            target.write("convolve \(v) with \(k) strides \(s.description(joinedBy: ", ")) ")
-            target.write("padding \(p.map({ ($0.low, $0.high) }).description(joinedBy: ", ")) ")
-            target.write("leftDilation \(ld.description(joinedBy: ", ")) ")
-            target.write("rightDilation \(rd.description(joinedBy: ", "))")
+            target.write("convolve \(v) with \(k) ")
+            if let s = s {
+                target.write("strides \(s.description(joinedBy: ", ")) ")
+            }
+            if let p = p {
+                target.write("padding \(p.map({ ($0.low, $0.high) }).description(joinedBy: ", ")) ")
+            }
+            if let ld = ld {
+                target.write("leftDilation \(ld.description(joinedBy: ", ")) ")
+            }
+            if let rd = rd {
+                target.write("rightDilation \(rd.description(joinedBy: ", "))")
+            }
         case let .dataTypeCast(op, t):
             target.write("dataTypeCast \(op) to \(t)")
         case let .padShape(op, at: index):
