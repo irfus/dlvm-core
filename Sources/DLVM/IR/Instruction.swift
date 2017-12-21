@@ -543,6 +543,8 @@ extension InstructionKind {
             return lit.operands
         case .return(nil), .allocateBox, .trap, .allocateStack, .createStack:
             return []
+        default:
+            DLImpossible()
         }
     }
 }

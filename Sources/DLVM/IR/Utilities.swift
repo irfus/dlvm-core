@@ -22,3 +22,7 @@ import Foundation
 func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
     fatalError("\(function) is not fully implemented. \(file):\(line)")
 }
+
+func DLImpossible(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
+    fatalError("Impossible case at \(function), \(file):\(line). Most likely a bug.")
+}

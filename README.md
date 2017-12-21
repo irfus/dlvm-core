@@ -32,7 +32,10 @@ reference counting, etc.
 
 - Swift 4.1 dev
   - DEVELOPMENT-SNAPSHOT-2017-12-11 or above
-  - **Not** 4.0-DEVELOPMENT-SNAPSHOT-*!
+- LLVM
+  - `brew install llvm && brew link --force --overwrite llvm`
+- LLVM Integrated Tester
+  - `pip install lit`
 - Xcode Command Line Tools 9.0+ (for macOS only)
 
 ## Build Instructions
