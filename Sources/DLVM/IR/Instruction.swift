@@ -543,8 +543,6 @@ extension InstructionKind {
             return lit.operands
         case .return(nil), .allocateBox, .trap, .allocateStack, .createStack:
             return []
-        default:
-            DLImpossible()
         }
     }
 }
@@ -611,10 +609,22 @@ extension InstructionKind : Equatable {
                 && zip(p1, p2).forAll({ $0 == $1 })
         case let (.dataTypeCast(x1, dt1), .dataTypeCast(x2, dt2)):
             return x1 == x2 && dt1 == dt2
+        case let (.padShape(x1, at: i1), .padShape(x2, at: i2)):
+            return x1 == x2 && i1 == i2
         case let (.shapeCast(x1, s1), .shapeCast(x2, s2)):
             return x1 == x2 && s1 == s2
+        case let (.bitCast(x1, t1), .bitCast(x2, t2)):
+            return x1 == x2 && t1 == t2
         case let (.apply(f1, args1), .apply(f2, args2)):
             return f1 == f2 && args1 == args2
+        case (.createStack, .createStack):
+            return true
+        case let (.destroyStack(x1), .destroyStack(x2)):
+            return x1 == x2
+        case let (.push(v1, to: x1), .push(v2, to: x2)):
+            return v1 == v2 && x1 == x2
+        case let (.pop(t1, from: x1), .pop(t2, from: x2)):
+            return t1 == t2 && x1 == x2
         case let (.extract(from: v1, at: i1), .extract(from: v2, at: i2)):
             return v1 == v2 && i1 == i2
         case let (.insert(s1, to: d1, at: i1), .insert(s2, to: d2, at: i2)):
@@ -625,8 +635,6 @@ extension InstructionKind : Equatable {
             return x1 == x2
         case let (.elementPointer(x1, ii1), .elementPointer(x2, ii2)):
             return x1 == x2 && ii1 == ii2
-        case let (.bitCast(x1, t1), .bitCast(x2, t2)):
-            return x1 == x2 && t1 == t2
         case let (.allocateBox(t1), .allocateBox(t2)):
             return t1 == t2
         case let (.allocateHeap(t1, count: c1), .allocateHeap(t2, count: c2)):
