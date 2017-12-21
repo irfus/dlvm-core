@@ -184,16 +184,16 @@ extension InstructionKind : TextOutputStreamable {
                            leftDilation: ld, rightDilation: rd):
             target.write("convolve \(v) with \(k) ")
             if let s = s {
-                target.write("strides \(s.description(joinedBy: ", ")) ")
+                target.write("strides \(s.joinedDescription) ")
             }
             if let p = p {
-                target.write("padding \(p.map({ ($0.low, $0.high) }).description(joinedBy: ", ")) ")
+                target.write("padding \(p.map({ ($0.low, $0.high) }).joinedDescription) ")
             }
             if let ld = ld {
-                target.write("leftDilation \(ld.description(joinedBy: ", ")) ")
+                target.write("leftDilation \(ld.joinedDescription) ")
             }
             if let rd = rd {
-                target.write("rightDilation \(rd.description(joinedBy: ", "))")
+                target.write("rightDilation \(rd.joinedDescription))")
             }
         case let .dataTypeCast(op, t):
             target.write("dataTypeCast \(op) to \(t)")
