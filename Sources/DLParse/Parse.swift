@@ -665,8 +665,11 @@ extension Parser {
             let (upperBound, _) = try parseInteger()
             return .slice(val, at: lowerBound...upperBound)
 
-        /// 'convolve' <val> 'kernel' <val> 'strides' <nums> 'padding' <numTups>
-        ///            'leftDilation' <nums> 'rightDilation' <nums>
+        /// 'convolve' <val> 'kernel' <val>
+        ///     'strides' <num> (',' <num>)*
+        ///     'padding' '(' <num> ',' <num> ')' (',' '(' <num> ',' <num> ')')*
+        ///     'leftDilation' <num> (',' <num>)*
+        ///     'rightDilation' <num> (',' <num>)*
         case .convolve:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.kernel))
