@@ -608,9 +608,9 @@ extension InstructionKind : Equatable {
                              leftDilation: ld1, rightDilation: rd1),
                   .convolve(l2, kernel: r2, strides: s2, padding: p2,
                              leftDilation: ld2, rightDilation: rd2)):
-            return l1 == l2 && r1 == r2 && s1 == s2 && ld1 == ld2 && rd1 == rd2 &&
-                ((p1 == nil && p2 == nil) ||
-                    (p1 != nil && p2 != nil && zip(p1!, p2!).forAll({ $0 == $1 })))
+            guard let p1 = p1, let p2 = p2 else { return false }
+            return l1 == l2 && r1 == r2 && s1 == s2 && ld1 == ld2 && rd1 == rd2
+                && zip(p1, p2).forAll(==)
         case let (.dataTypeCast(x1, dt1), .dataTypeCast(x2, dt2)):
             return x1 == x2 && dt1 == dt2
         case let (.padShape(x1, at: i1), .padShape(x2, at: i2)):
