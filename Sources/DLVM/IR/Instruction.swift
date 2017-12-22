@@ -168,7 +168,7 @@ public extension InstructionKind {
     /// `branch`, `conditional` or `return`
     var isTerminator: Bool {
         switch self {
-        case .branch, .conditional, .`return`:
+        case .branch, .conditional, .return:
             return true
         default:
             return false
@@ -178,7 +178,7 @@ public extension InstructionKind {
     /// Returns true iff the instruction is a `return`
     var isReturn: Bool {
         switch self {
-        case .`return`: return true
+        case .return: return true
         default: return false
         }
     }

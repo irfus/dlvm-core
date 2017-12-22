@@ -151,7 +151,7 @@ extension InstructionKind : TextOutputStreamable {
             target.write("branch '\(bb.name)(\(args.joinedDescription))")
         case let .conditional(op, thenBB, thenArgs, elseBB, elseArgs):
             target.write("conditional \(op) then '\(thenBB.name)(\(thenArgs.joinedDescription)) else '\(elseBB.name)(\(elseArgs.joinedDescription))")
-        case let .`return`(op):
+        case let .return(op):
             target.write("return")
             if let op = op {
                 target.write(" \(op)")
