@@ -666,10 +666,10 @@ extension InstructionKind : Equatable {
                 return false
             }
             switch (p1, p2) {
-            case (.none, .none):
+            case (nil, nil):
                 return true
-            case let (p1?, p2?) where p1 == p2:
-                return true
+            case let (p1?, p2?):
+                return p1 == p2
             default:
                 return false
             }

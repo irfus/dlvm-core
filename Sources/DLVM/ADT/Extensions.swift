@@ -44,7 +44,7 @@ public extension Sequence {
     }
 }
 
-public func ==<A: Equatable, B: Equatable>(lhs: [(A, B)], rhs: [(A, B)]) -> Bool {
+func ==<A: Equatable, B: Equatable>(lhs: [(A, B)], rhs: [(A, B)]) -> Bool {
     return lhs.count == rhs.count && zip(lhs, rhs).forAll(==)
 }
 
