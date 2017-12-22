@@ -20,6 +20,12 @@
 import CoreTensor
 import CoreOp
 
+/// Padding type, used for convolve and reduceWindow
+public enum Padding : Equatable {
+    case none
+    case half
+}
+
 /// Element key to form a key path in GEP and use
 public enum ElementKey : Equatable {
     case index(Int)

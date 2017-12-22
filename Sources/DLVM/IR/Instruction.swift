@@ -81,7 +81,7 @@ public enum InstructionKind {
         initial: Use, // Initial value
         dimensions: [Int], // Window dimensions
         strides: [Int], // Window strides
-        padding: Bool // true = half padding, false = valid/no padding
+        padding: Padding // Padding type
     )
 
     /** Cost-free casts **/
@@ -425,7 +425,7 @@ public extension InstructionKind {
             initial: initial, // Initial value
             dimensions: dimensions, // Window dimensions
             strides: strides, // Window strides
-            padding: padding // true = half padding, false = valid/no padding
+            padding: padding // Padding type
             ):
             let resultType: Type
             /// Operand must be a tensor
@@ -443,8 +443,8 @@ public extension InstructionKind {
             /// Get window shape
             var windowDims: [Int] = []
             for i in 0..<s1.rank {
-                // let paddedBase = padding && s1[i] > dimensions[i] ? s1[i] : dimensions[i]
-                let paddedBase = padding && s1[i] < dimensions[i] ? dimensions[i] : s1[i]
+                let paddedBase = padding == .half && s1[i] < dimensions[i]
+                    ? dimensions[i] : s1[i]
                 let windowDim = dimensions[i] > paddedBase
                     ? 0 : (paddedBase - dimensions[i]) / strides[i] + 1
                 windowDims.append(windowDim)
@@ -644,8 +644,11 @@ extension InstructionKind : Equatable {
             return x1 == x2
         case let (.dot(x1, x2), .dot(y1, y2)):
             return x1 == y1 && x2 == y2
-        case let (.reduce(op1, x1, i1, d1), .reduce(op2, y1, i2, d2)):
-            return op1 == op2 && x1 == y1 && i1 == i2 && d1 == d2
+        case let (.reduce(op1, x1, i1, d1), .reduce(op2, x2, i2, d2)):
+            return op1 == op2 && x1 == x2 && i1 == i2 && d1 == d2
+        case let (.reduceWindow(op1, x1, initial: i1, dimensions: d1, strides: s1, padding: p1),
+                  .reduceWindow(op2, x2, initial: i2, dimensions: d2, strides: s2, padding: p2)):
+            return op1 == op2 && x1 == x2 && i1 == i2 && d1 == d2 && s1 == s2 && p1 == p2
         case let (.scan(op1, x1, i1), .scan(op2, x2, i2)):
             return op1 == op2 && x1 == x2 && i1 == i2
         case let (.concatenate(vv1, axis1), .concatenate(vv2, axis2)):

@@ -153,6 +153,16 @@ private extension Parser {
         }
     }
 
+    func parsePadding() throws -> (Padding, SourceRange) {
+        let name: String = "a padding type"
+        let tok = try consumeOrDiagnose(name)
+        switch tok.kind {
+        case .keyword(.none): return (.none, tok.range)
+        case .keyword(.half): return (.half, tok.range)
+        default: throw ParseError.unexpectedToken(expected: name, tok)
+        }
+    }
+
     func parseDataType() throws -> (DataType, SourceRange) {
         let name: String = "a data type"
         let tok = try consumeOrDiagnose(name)
@@ -651,7 +661,7 @@ extension Parser {
             try consume(.keyword(.strides))
             let strides = try parseIntegerList()
             try consume(.keyword(.padding))
-            let padding = try parseBool().0
+            let padding = try parsePadding().0
             return .reduceWindow(combinator, val, initial: initial, dimensions: dims,
                                  strides: strides, padding: padding)
 
