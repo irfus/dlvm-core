@@ -40,6 +40,24 @@ func @conv2d_6: (<1 x 10 x 32 x 48 x f32>, <8 x 10 x 3 x 3 x f32>) -> <1 x 8 x 1
     return %0.0: <1 x 8 x 15 x 10 x f32>
 }
 
+func @conv2d_7: (<1 x 10 x 32 x 48 x f32>, <8 x 1 x 3 x 3 x f32>) -> <1 x 8 x 15 x 10 x f32> {
+'entry(%input: <1 x 10 x 32 x 48 x f32>, %kernel: <8 x 1 x 3 x 3 x f32>):
+    %0.0 = convolve %input: <1 x 10 x 32 x 48 x f32> kernel %kernel: <8 x 1 x 3 x 3 x f32> strides 2, 4 padding (1, 1), (2, 2) rightDilation 2, 6 groups 8
+    return %0.0: <1 x 8 x 15 x 10 x f32>
+}
+
+func @conv2d_8: (<1 x 10 x 32 x 48 x f32>, <8 x 1 x 3 x 3 x f32>) -> <1 x 6 x 15 x 10 x f32> {
+'entry(%input: <1 x 10 x 32 x 48 x f32>, %kernel: <8 x 1 x 3 x 3 x f32>):
+    %0.0 = convolve %input: <1 x 10 x 32 x 48 x f32> kernel %kernel: <8 x 1 x 3 x 3 x f32> strides 2, 4 padding (1, 1), (2, 2) rightDilation 2, 6 groups 6
+    return %0.0: <1 x 6 x 15 x 10 x f32>
+}
+
+func @conv2d_10: (<1 x 10 x 32 x 48 x f32>, <8 x 2 x 3 x 3 x f32>) -> <1 x 8 x 15 x 10 x f32> {
+'entry(%input: <1 x 10 x 32 x 48 x f32>, %kernel: <8 x 2 x 3 x 3 x f32>):
+    %0.0 = convolve %input: <1 x 10 x 32 x 48 x f32> kernel %kernel: <8 x 2 x 3 x 3 x f32> strides 2, 4 padding (1, 1), (2, 2) rightDilation 2, 6 groups 4
+    return %0.0: <1 x 8 x 15 x 10 x f32>
+}
+
 func @reduceWindow2d_1: (<4 x 6 x f32>) -> <3 x 4 x f32> {
 'entry(%input: <4 x 6 x f32>):
     %0.0 = literal 0: f32
