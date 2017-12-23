@@ -30,7 +30,7 @@ public enum Keyword {
     case `struct`, `func`, `var`, stack
     case type, opaque
     case at, to, from, by, upto
-    case kernel, strides, leftDilation, rightDilation
+    case kernel, strides, leftDilation, rightDilation, groups
     case padding, none, half
     case then, `else`
     case wrt, keeping
@@ -463,6 +463,7 @@ private extension Lexer {
         case "strides": kind = .keyword(.strides)
         case "leftDilation": kind = .keyword(.leftDilation)
         case "rightDilation": kind = .keyword(.rightDilation)
+        case "groups": kind = .keyword(.groups)
         case "padding": kind = .keyword(.padding)
         case "none": kind = .keyword(.none)
         case "half": kind = .keyword(.half)

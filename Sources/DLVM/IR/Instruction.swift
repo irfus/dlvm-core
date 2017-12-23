@@ -72,7 +72,8 @@ public enum InstructionKind {
         strides: [Int]?, // Kernel strides of rank n, default value 1
         padding: [(low: Int, high: Int)]?, // Padding of rank n, default value 0
         leftDilation: [Int]?, // Dilation factor of rank n, default value 1
-        rightDilation: [Int]? // Dilation factor of rank n, default value 1
+        rightDilation: [Int]?, // Dilation factor of rank n, default value 1
+        groups: Int? // Group count for grouped/depthwise convolutions, default value 1
     )
     /// Reduce window
     case reduceWindow(
@@ -375,14 +376,13 @@ public extension InstructionKind {
             strides: strides, // Kernel strides of rank n
             padding: padding, // Padding of rank n
             leftDilation: leftDilation, // Dilation factor of rank n
-            rightDilation: rightDilation // Dilation factor of rank n
+            rightDilation: rightDilation, // Dilation factor of rank n
+            groups: groups // Group count for grouped/depthwise convolutions
             ):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                 case let .tensor(s2, t2) = rhs.type.unaliased,
                 /// Rank and datatypes must match, rank must be at least 3
-                s1.rank == s2.rank, t1 == t2, s1.rank >= 3,
-                /// Input channel dimensions must match
-                s1[1] == s2[1] else {
+                s1.rank == s2.rank, t1 == t2, s1.rank >= 3 else {
                     return .invalid
             }
             /// Set argument defaults
@@ -391,6 +391,7 @@ public extension InstructionKind {
             let padding = padding ?? Array(repeating: (low: 0, high: 0), count: n)
             let leftDilation = leftDilation ?? Array(repeating: 1, count: n)
             let rightDilation = rightDilation ?? Array(repeating: 1, count: n)
+            let groups = groups ?? 1
             /// Strides/padding/dilation factors must have rank equal to n
             guard strides.count == n, padding.count == n,
                 leftDilation.count == n, rightDilation.count == n else {
@@ -398,9 +399,11 @@ public extension InstructionKind {
             }
             /// Strides must be greater than one, padding must be non-negative
             /// Dilation factors must be positive
+            /// Group count must equal quotient of input and kernel channel counts
             guard strides.forAll({ $0 >= 1 }),
                 padding.forAll({ $0.low >= 0 && $0.high >= 0 }),
-                leftDilation.forAll({ $0 > 0 }), rightDilation.forAll({ $0 > 0 }) else {
+                leftDilation.forAll({ $0 > 0 }), rightDilation.forAll({ $0 > 0 }),
+                s1[1] == s2[1] * groups else {
                     return .invalid
             }
             /// Calculate output spatial dimensions
@@ -570,7 +573,7 @@ extension InstructionKind {
              let .dot(op1, op2),
              let .insert(op1, to: op2, at: _),
              let .convolve(op1, kernel: op2, strides: _, padding: _,
-                           leftDilation: _, rightDilation: _),
+                           leftDilation: _, rightDilation: _, groups: _),
              let .reduce(_, op1, initial: op2, _),
              let .reduceWindow(_, op1, initial: op2, dimensions: _, strides: _,
                                padding: _),
@@ -662,10 +665,10 @@ extension InstructionKind : Equatable {
         case let (.select(l1, r1, by: f1), .select(l2, r2, by: f2)):
             return l1 == l2 && r1 == r2 && f1 == f2
         case let (.convolve(l1, kernel: r1, strides: s1, padding: p1,
-                             leftDilation: ld1, rightDilation: rd1),
+                            leftDilation: ld1, rightDilation: rd1, groups: g1),
                   .convolve(l2, kernel: r2, strides: s2, padding: p2,
-                             leftDilation: ld2, rightDilation: rd2)):
-            guard l1 == l2 && r1 == r2 && s1 == s2 && ld1 == ld2 && rd1 == rd2 else {
+                            leftDilation: ld2, rightDilation: rd2, groups: g2)):
+            guard l1 == l2 && r1 == r2 && s1 == s2 && ld1 == ld2 && rd1 == rd2 && g1 == g2 else {
                 return false
             }
             switch (p1, p2) {
@@ -831,17 +834,17 @@ public extension InstructionKind {
             return .reduceWindow(.function(new), v1, initial: v2,
                                  dimensions: d, strides: s, padding: p)
         case .convolve(old, kernel: old, strides: let s, padding: let p,
-                       leftDilation: let ld, rightDilation: let rd):
+                       leftDilation: let ld, rightDilation: let rd, groups: let g):
             return .convolve(new, kernel: new, strides: s, padding: p,
-                             leftDilation: ld, rightDilation: rd)
+                             leftDilation: ld, rightDilation: rd, groups: g)
         case .convolve(old, kernel: let v1, strides: let s, padding: let p,
-                       leftDilation: let ld, rightDilation: let rd):
+                       leftDilation: let ld, rightDilation: let rd, groups: let g):
             return .convolve(new, kernel: v1, strides: s, padding: p,
-                             leftDilation: ld, rightDilation: rd)
+                             leftDilation: ld, rightDilation: rd, groups: g)
         case .convolve(let v1, kernel: old, strides: let s, padding: let p,
-                       leftDilation: let ld, rightDilation: let rd):
+                       leftDilation: let ld, rightDilation: let rd, groups: let g):
             return .convolve(v1, kernel: new, strides: s, padding: p,
-                             leftDilation: ld, rightDilation: rd)
+                             leftDilation: ld, rightDilation: rd, groups: g)
         case .dot(old, let use2):
             return .dot(new, use2)
         case .dot(let use1, old):

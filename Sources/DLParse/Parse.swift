@@ -697,6 +697,7 @@ extension Parser {
         ///     'padding' '(' <num> ',' <num> ')' (',' '(' <num> ',' <num> ')')*
         ///     'leftDilation' <num> (',' <num>)*
         ///     'rightDilation' <num> (',' <num>)*
+        ///     'groups' <num>
         case .convolve:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.kernel))
@@ -725,8 +726,14 @@ extension Parser {
                 consumeToken()
                 rd = try parseIntegerList()
             }
+            /// groups
+            var groups: Int?
+            if case .keyword(.groups)? = currentToken?.kind {
+                consumeToken()
+                groups = try parseInteger().0
+            }
             return .convolve(val, kernel: kernel, strides: strides, padding: padding,
-                             leftDilation: ld, rightDilation: rd)
+                             leftDilation: ld, rightDilation: rd, groups: groups)
 
         /// 'padShape' <val> 'at' <num>
         case .padShape:

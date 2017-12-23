@@ -638,7 +638,7 @@ extension InstructionKind {
             }
 
         case let .convolve(lhs, kernel: rhs, strides: strides, padding: padding,
-                           leftDilation: ld, rightDilation: rd):
+                           leftDilation: ld, rightDilation: rd, groups: g):
             guard case let .tensor(s1, t1) = lhs.type.unaliased else {
                 throw VerificationError.notTensor(lhs, instruction)
             }
@@ -653,16 +653,17 @@ extension InstructionKind {
             guard s1.rank >= 3 else {
                 throw VerificationError.convolveInvalidShape(lhs, instruction)
             }
-            /// Input channel dimensions must match
-            guard s1[1] == s2[1] else {
-                throw VerificationError.convolveInputChannelMismatch(lhs, rhs, instruction)
-            }
             /// Set argument defaults
             let n = s1.rank - 2
             let strides = strides ?? Array(repeating: 1, count: n)
             let padding = padding ?? Array(repeating: (low: 0, high: 0), count: n)
             let ld = ld ?? Array(repeating: 1, count: n)
             let rd = rd ?? Array(repeating: 1, count: n)
+            let g = g ?? 1
+            /// Group count must equal quotient of input and kernel channel counts
+            guard s1[1] == s2[1] * g else {
+                throw VerificationError.convolveInputChannelMismatch(lhs, rhs, instruction)
+            }
             /// Strides/padding/dilation factors must have rank equal to n
             guard strides.count == n else {
                 throw VerificationError.windowInvalidStridesRank(strides, n, instruction)
