@@ -1,5 +1,5 @@
 //
-//  dlrt.h
+//  ad_stack.cpp
 //  DLVM
 //
 //  Copyright 2016-2017 DLVM Team.
@@ -17,15 +17,28 @@
 //  limitations under the License.
 //
 
+#include "ad_stack.h"
 
-#ifndef _DLRT_H_
-#define _DLRT_H_
+DLADStack * _Nonnull DLADStackCreate() {
+    return new DLADStack;
+}
 
-#include "reference.h"
-#include "access_owner.h"
-#ifdef __cplusplus
-#include "memory_manager.h"
-#include "memory_tracker.h"
-#endif
+void DLADStackDestroy(DLADStack * _Nonnull stack) {
+    delete stack;
+}
 
-#endif /* _DLRT_H_ */
+void DLADStackPush(DLADStack * _Nonnull stack, DLValue value) {
+    stack->push(value);
+}
+
+void DLADStackPop(DLADStack * _Nonnull stack) {
+    stack->pop();
+}
+
+DLValue DLADStackTop(DLADStack * _Nonnull stack) {
+    return stack->top();
+}
+
+size_t DLADStackSize(DLADStack * _Nonnull stack) {
+    return stack->size();
+}

@@ -1,5 +1,5 @@
 //
-//  dlrt.h
+//  ad_stack.h
 //  DLVM
 //
 //  Copyright 2016-2017 DLVM Team.
@@ -17,15 +17,27 @@
 //  limitations under the License.
 //
 
+#ifndef _AD_STACK_H_
+#define _AD_STACK_H_
 
-#ifndef _DLRT_H_
-#define _DLRT_H_
+#include <stack>
 
-#include "reference.h"
-#include "access_owner.h"
-#ifdef __cplusplus
-#include "memory_manager.h"
-#include "memory_tracker.h"
-#endif
+extern "C" {
 
-#endif /* _DLRT_H_ */
+struct DLValue {
+    int64_t data;
+    int8_t * _Nonnull typeMetadata;
+};
+
+typedef std::stack<DLValue> DLADStack;
+
+DLADStack * _Nonnull DLADStackCreate();
+void DLADStackDestroy(DLADStack * _Nonnull stack);
+void DLADStackPush(DLADStack * _Nonnull stack, DLValue value);
+void DLADStackPop(DLADStack * _Nonnull stack);
+DLValue DLADStackTop(DLADStack * _Nonnull stack);
+size_t DLADStackSize(DLADStack * _Nonnull stack);
+
+}
+
+#endif /* _AD_STACK_H_ */

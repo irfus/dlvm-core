@@ -18,7 +18,7 @@ add_subdirectory(Runtime)
 file(GLOB_RECURSE CORE_SOURCES Sources/*.swift)
 
 add_custom_target(Core
-  COMMAND swift build --build-path ${CMAKE_CURRENT_BINARY_DIR}/Core -c ${SWIFTPM_BUILD_TYPE} -Xcc -I${LLVM_INC_DIR} -Xlinker -lLLVM -Xlinker -L${LLVM_LIB_DIR}
+  COMMAND swift build --build-path ${CMAKE_CURRENT_BINARY_DIR}/Core -c ${SWIFTPM_BUILD_TYPE}
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   COMMENT "DLVM Core"
   SOURCES ${CORE_SOURCES})
