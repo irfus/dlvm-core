@@ -399,11 +399,12 @@ public extension InstructionKind {
             }
             /// Strides must be greater than one, padding must be non-negative
             /// Dilation factors must be positive
-            /// Group count must equal quotient of input and kernel channel counts
+            /// Group count must be between 1 and output channel count
+            /// Group count must satisfy s1[1] / groups == s2[1]
             guard strides.forAll({ $0 >= 1 }),
                 padding.forAll({ $0.low >= 0 && $0.high >= 0 }),
                 leftDilation.forAll({ $0 > 0 }), rightDilation.forAll({ $0 > 0 }),
-                s1[1] == s2[1] * groups else {
+                1 <= groups && groups <= s2[0], s1[1] / groups == s2[1] else {
                     return .invalid
             }
             /// Calculate output spatial dimensions
@@ -418,7 +419,7 @@ public extension InstructionKind {
             }
             /// Construct full output shape
             let batchCount = s1[0]
-            let outChannelDim = s2[0]
+            let outChannelDim = (s2[0] / groups) * groups
             return .tensor(TensorShape([batchCount, outChannelDim] + outputDims), t1)
 
         /// Reduce window

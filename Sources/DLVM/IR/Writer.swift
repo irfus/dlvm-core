@@ -197,7 +197,7 @@ extension InstructionKind : TextOutputStreamable {
                 target.write("leftDilation \(ld.joinedDescription) ")
             }
             if let rd = rd {
-                target.write("rightDilation \(rd.joinedDescription))")
+                target.write("rightDilation \(rd.joinedDescription) ")
             }
             if let g = g {
                 target.write("groups \(g)")

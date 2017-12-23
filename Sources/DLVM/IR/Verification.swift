@@ -24,8 +24,8 @@ public enum VerificationError<Node : Verifiable> : Error {
     case axisOutOfBounds(Int, Use, Node)
     case basicBlockArgumentMismatch([Use], BasicBlock, Node)
     case blockFunctionMismatch(BasicBlock, Node)
+    case convolveInputChannelMismatch(Use, Use, Int, Node)
     case convolveInvalidShape(Use, Node)
-    case convolveInputChannelMismatch(Use, Use, Node)
     case convolveInvalidDilation([Int], Node)
     case convolveInvalidDilationRank([Int], Int, Node)
     case convolveTypeMismatch(Use, Use, Node)
@@ -660,9 +660,10 @@ extension InstructionKind {
             let ld = ld ?? Array(repeating: 1, count: n)
             let rd = rd ?? Array(repeating: 1, count: n)
             let g = g ?? 1
-            /// Group count must equal quotient of input and kernel channel counts
-            guard s1[1] == s2[1] * g else {
-                throw VerificationError.convolveInputChannelMismatch(lhs, rhs, instruction)
+            /// Group count must be between 1 and output channel count
+            /// Group count must satisfy s1[1] / groups == s2[1]
+            guard 1 <= g && g <= s2[0], s1[1] / g == s2[1] else {
+                throw VerificationError.convolveInputChannelMismatch(lhs, rhs, g, instruction)
             }
             /// Strides/padding/dilation factors must have rank equal to n
             guard strides.count == n else {

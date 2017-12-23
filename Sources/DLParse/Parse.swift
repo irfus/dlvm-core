@@ -956,7 +956,7 @@ extension Parser {
         func parseKind(isNamed: Bool) throws -> InstructionKind {
             let kind = try parseInstructionKind(in: basicBlock)
             let type = kind.type
-            /// If instruction kind gives invalid result, operands gotta be wrong
+            /// If instruction kind gives invalid result, operands must be wrong
             guard type != .invalid else {
                 throw ParseError.invalidOperands(tok, kind.opcode)
             }
