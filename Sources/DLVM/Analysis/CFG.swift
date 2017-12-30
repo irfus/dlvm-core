@@ -64,40 +64,28 @@ public extension Function {
 
     /// Compute and returns back edges in function
     func backEdges(fromEntry entry: BasicBlock) -> [(BasicBlock, BasicBlock)] {
-        var bb = entry
         var visited: ObjectSet<BasicBlock> = []
-        var visitStack: [BasicBlock] = []
         var inStack: ObjectSet<BasicBlock> = []
         var result: [(BasicBlock, BasicBlock)] = []
 
-        /// Initialization
-        visited.insert(bb)
-        visitStack.append(bb)
-        inStack.insert(bb)
+        /// Define helper function
+        func backEdgesHelper(_ bb: BasicBlock) {
+            visited.insert(bb)
+            inStack.insert(bb)
 
-        repeat {
-            let parent = visitStack.removeFirst()
-            var foundNew = false
-            for succ in parent.successors {
-                bb = succ
-                visited.insert(bb)
-                if bb.hasSuccessors {
-                    foundNew = true
-                    break
-                }
-                /// Successor is in visitStack, it's a back edge
-                if inStack.contains(bb) {
-                    result.append((parent, bb))
+            for succ in bb.successors {
+                if !visited.contains(succ) {
+                    backEdgesHelper(succ)
+                } else if inStack.contains(succ) {
+                    result.append((bb, succ))
                 }
             }
-            if foundNew {
-                inStack.insert(bb)
-                visitStack.append(bb)
-            } else {
-                inStack.remove(visitStack.last!)
-            }
-        } while !visitStack.isEmpty
 
+            inStack.remove(bb)
+        }
+
+        /// Call helper function entry
+        backEdgesHelper(entry)
         return result
     }
 

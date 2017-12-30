@@ -128,12 +128,50 @@ class IRTests: XCTestCase {
             """)
     }
 
+    func testBackEdges() {
+        let fun = builder.buildFunction(named: "gcd",
+                                        argumentTypes: [.scalar(.int(32)), .scalar(.int(32))],
+                                        returnType: .int(32))
+        let entry = builder.buildEntry(argumentNames: ["a", "b"], in: fun)
+        builder.move(to: entry)
+        let cmp = builder.compare(.equal, %entry.arguments[1], .literal(.int(32), 0))
+        let thenBB = builder.buildBasicBlock(named: "then", arguments: [ "a" : .int(32) ], in: fun)
+        let elseBB = builder.buildBasicBlock(named: "else", arguments: [ "a" : .int(32), "b" : .int(32) ], in: fun)
+        let contBB = builder.buildBasicBlock(named: "cont", arguments: [ "a" : .int(32) ], in: fun)
+        builder.conditional(%cmp, then: thenBB, arguments: [ %entry.arguments[0] ],
+                            else: elseBB, arguments: [ %entry.arguments[0], %entry.arguments[1] ])
+        builder.move(to: thenBB)
+        builder.branch(contBB, [ %thenBB.arguments[0] ])
+        builder.move(to: elseBB)
+        let t = builder.numeric(.modulo, %elseBB.arguments[0], %elseBB.arguments[1])
+        builder.branch(entry, [%elseBB.arguments[1], %t])
+        builder.move(to: contBB)
+        builder.return(%contBB.arguments[0])
+        XCTAssertEqual(fun.description, """
+            func @gcd: (i32, i32) -> i32 {
+            'entry(%a: i32, %b: i32):
+                %0.0 = equal %b: i32, 0: i32
+                conditional %0.0: bool then 'then(%a: i32) else 'else(%a: i32, %b: i32)
+            'then(%a: i32):
+                branch 'cont(%a: i32)
+            'else(%a: i32, %b: i32):
+                %2.0 = modulo %a: i32, %b: i32
+                branch 'entry(%b: i32, %2.0: i32)
+            'cont(%a: i32):
+                return %a: i32
+            }
+            """)
+        let backEdges = fun.backEdges(fromEntry: entry)
+        XCTAssert(backEdges == [(elseBB, entry)])
+    }
+
     static var allTests : [(String, (IRTests) -> () throws -> Void)] {
         return [
             ("testWriteGlobal", testWriteGlobal),
             ("testWriteStruct", testWriteStruct),
             ("testWriteSimpleFunction", testWriteSimpleFunction),
-            ("testWriteMultiBBFunction", testWriteMultiBBFunction)
+            ("testWriteMultiBBFunction", testWriteMultiBBFunction),
+            ("testBackEdges", testBackEdges)
         ]
     }
     
