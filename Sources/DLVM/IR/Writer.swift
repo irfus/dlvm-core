@@ -182,6 +182,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("concatenate \(ops.joinedDescription) along \(axis)")
         case let .transpose(op):
             target.write("transpose \(op)")
+        case let .reverse(op, dims: dims):
+            target.write("reverse \(op) along \(dims.joinedDescription)")
         case let .slice(v, at: range):
             target.write("slice \(v) from \(range.lowerBound) upto \(range.upperBound)")
         case let .convolve(v, kernel: k, strides: s, padding: p,

@@ -217,6 +217,7 @@ extension Opcode : CustomStringConvertible {
         case .dot: return "dot"
         case .concatenate: return "concatenate"
         case .transpose: return "transpose"
+        case .reverse: return "reverse"
         case .slice: return "slice"
         case .convolve: return "convolve"
         case .padShape: return "padShape"

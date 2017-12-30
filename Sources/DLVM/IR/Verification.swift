@@ -413,6 +413,14 @@ extension InstructionKind {
                 throw VerificationError.notTensor(v1, instruction)
             }
 
+        case let .reverse(v1, dims: dims):
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+                throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
+            }
+
         case let .slice(v, at: range):
             guard case let .tensor(shape, _) = v.type.unaliased else {
                 throw VerificationError.notTensor(v, instruction)

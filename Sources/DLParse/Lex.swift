@@ -496,6 +496,7 @@ private extension Lexer {
         case "matrixMultiply": kind = .opcode(.dot) // TODO: Deprecated. Should emit warning
         case "concatenate": kind = .opcode(.concatenate)
         case "transpose": kind = .opcode(.transpose)
+        case "reverse": kind = .opcode(.reverse)
         case "slice": kind = .opcode(.slice)
         case "convolve": kind = .opcode(.convolve)
         case "padShape": kind = .opcode(.padShape)

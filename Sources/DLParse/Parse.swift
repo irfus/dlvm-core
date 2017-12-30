@@ -683,6 +683,13 @@ extension Parser {
         case .transpose:
             return try .transpose(parseUse(in: basicBlock).0)
 
+        /// 'reverse' <val> 'along' <num> (',' <num>)*
+        case .reverse:
+            let val = try parseUse(in: basicBlock).0
+            try consume(.keyword(.along))
+            let dims = try parseIntegerList()
+            return .reverse(val, dims: dims)
+
         /// 'slice' <val> 'from' <num> 'upto' <num>
         case .slice:
             let (val, _) = try parseUse(in: basicBlock)

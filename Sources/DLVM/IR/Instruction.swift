@@ -56,6 +56,8 @@ public enum InstructionKind {
     case concatenate([Use], axis: Int)
     /// Transpose
     case transpose(Use)
+    /// Reverse order of elements
+    case reverse(Use, dims: [Int])
     /// Slice
     case slice(Use, at: CountableClosedRange<Int>)
     /// Shuffle
@@ -348,6 +350,13 @@ public extension InstructionKind {
             guard case let .tensor(s1, t1) = v1.type.unaliased
                 else { return .invalid }
             return .tensor(s1.transpose, t1)
+
+        case let .reverse(v1, dims: dims):
+            guard case let .tensor(s1, t1) = v1.type.unaliased
+                else { return .invalid }
+            guard dims.count <= s1.rank && dims.forAll({$0 < s1.rank})
+                else { return .invalid }
+            return .tensor(s1, t1)
         
         case let .slice(v, at: range):
             return v.type.tensorType.flatMap { tensorTy in
@@ -582,9 +591,9 @@ extension InstructionKind {
              let .push(op1, to: op2):
             return [op1, op2]
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
-             let .transpose(op), let .slice(op, at: _), let .shapeCast(op, _),
-             let .dataTypeCast(op, _), let .bitCast(op, _), let .return(op?),
-             let .padShape(op, at: _), let .extract(from: op, at: _),
+             let .transpose(op), let .reverse(op, dims: _), let .slice(op, at: _),
+             let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _),
+             let .return(op?), let .padShape(op, at: _), let .extract(from: op, at: _),
              let .store(op, _), let .load(op), let .elementPointer(op, _),
              let .deallocate(op), let .allocateHeap(_, count: op),
              let .projectBox(op), let .release(op), let .retain(op),
@@ -659,6 +668,8 @@ extension InstructionKind : Equatable {
             return vv1 == vv2 && axis1 == axis2
         case let (.transpose(x1), .transpose(x2)):
             return x1 == x2
+        case let (.reverse(x1, dims: d1), .reverse(x2, dims: d2)):
+            return x1 == x2 && d1 == d2
         case let (.slice(x1, at: range1), .slice(x2, at: range2)):
             return x1 == x2 && range1 == range2
         case let (.random(s1, from: l1, upTo: h1), .random(s2, from: l2, upTo: h2)):
@@ -790,6 +801,8 @@ public extension InstructionKind {
             return .concatenate(uses.map(condSubst), axis: axis)
         case .transpose(old):
             return .transpose(new)
+        case .reverse(old, dims: let dims):
+            return .reverse(new, dims: dims)
         case .slice(old, at: let range):
             return .slice(new, at: range)
         case .reduce(.function(old), old, initial: old, let dims):
@@ -946,6 +959,7 @@ public enum Opcode : Equatable {
     case dot
     case concatenate
     case transpose
+    case reverse
     case slice
     case convolve
     case padShape
@@ -1001,6 +1015,7 @@ public extension InstructionKind {
         case .dot: return .dot
         case .concatenate: return .concatenate
         case .transpose: return .transpose
+        case .reverse: return .reverse
         case .slice: return .slice
         case .convolve: return .convolve
         case .padShape: return .padShape
