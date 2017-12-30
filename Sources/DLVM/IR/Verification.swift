@@ -502,7 +502,7 @@ extension InstructionKind {
                 t1 == t2
                 else { throw VerificationError.cannotDot(lhs, rhs, instruction) }
 
-        case let .concatenate(vv, axis: axis):
+        case let .concatenate(vv, axis):
             guard let first = vv.first,
                   case let .tensor(s1, t1) = first.type.unaliased else {
                 throw VerificationError.noOperands(instruction)
@@ -520,8 +520,7 @@ extension InstructionKind {
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
                 throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
-            let shape = s1
-            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank }), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             
@@ -529,8 +528,7 @@ extension InstructionKind {
             guard case let .tensor(s1, .bool) = v1.type.unaliased else {
                 throw VerificationError.unexpectedDataType(v1, .bool, instruction)
             }
-            let shape = s1
-            guard dims.count <= shape.rank, dims.forAll({$0 < shape.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank }), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
 
@@ -542,7 +540,7 @@ extension InstructionKind {
             guard expectedFuncType == f.type.unaliased else {
                 throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
             }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             
@@ -550,7 +548,7 @@ extension InstructionKind {
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
                 throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank }), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Initial must be a scalar
@@ -562,7 +560,7 @@ extension InstructionKind {
             guard case let .tensor(s1, .bool) = v1.type.unaliased else {
                 throw VerificationError.unexpectedDataType(v1, .bool, instruction)
             }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank }), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Initial must be a scalar
@@ -578,7 +576,7 @@ extension InstructionKind {
             guard expectedFuncType == f.type.unaliased else {
                 throw VerificationError.unexpectedType(f, expectedFuncType, instruction)
             }
-            guard dims.count <= s1.rank, dims.forAll({$0 < s1.rank}), !dims.containsDuplicate else {
+            guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank }), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
             /// Initial must be a scalar
@@ -586,8 +584,7 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
-        case let .reduceWindow(.numeric(_), v1, initial: initial, dimensions: dims,
-                               strides: strides, padding: _):
+        case let .reduceWindow(.numeric(_), v1, initial, dims, strides, padding: _):
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
                 throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
@@ -604,8 +601,7 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
-        case let .reduceWindow(.boolean(_), v1, initial: initial, dimensions: dims,
-                               strides: strides, padding: _):
+        case let .reduceWindow(.boolean(_), v1, initial, dims, strides, padding: _):
             guard case let .tensor(s1, .bool) = v1.type.unaliased else {
                 throw VerificationError.unexpectedDataType(v1, .bool, instruction)
             }
@@ -622,8 +618,7 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
-        case let .reduceWindow(.function(f), v1, initial: initial, dimensions: dims,
-                               strides: strides, padding: _):
+        case let .reduceWindow(.function(f), v1, initial, dims, strides, padding: _):
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
                 throw VerificationError.dataTypeNotNumeric(v1, instruction)
             }
@@ -645,7 +640,7 @@ extension InstructionKind {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
 
-        case let .convolve(lhs, kernel: rhs, strides: strides, padding: padding,
+        case let .convolve(lhs, kernel: rhs, strides, padding,
                            leftDilation: ld, rightDilation: rd, groups: g):
             guard case let .tensor(s1, t1) = lhs.type.unaliased else {
                 throw VerificationError.notTensor(lhs, instruction)
@@ -741,9 +736,9 @@ extension InstructionKind {
                 throw VerificationError.notBox(v, instruction)
             }
 
-        case let .allocateHeap(_, count: v):
-            guard case .scalar(.int(64)) = v.type.unaliased else {
-                throw VerificationError.unexpectedType(v, .scalar(.int(64)), instruction)
+        case let .allocateHeap(_, count):
+            guard case .scalar(.int(64)) = count.type.unaliased else {
+                throw VerificationError.unexpectedType(count, .scalar(.int(64)), instruction)
             }
 
         case let .extract(v1, indices):
@@ -786,7 +781,7 @@ extension InstructionKind {
                 throw VerificationError.invalidOffsets(v, ii, instruction)
             }
 
-        case let .copy(from: src, to: dest, count: count):
+        case let .copy(from: src, to: dest, count):
             guard case .scalar(.int(64)) = count.type.unaliased else {
                 throw VerificationError.unexpectedType(count, .scalar(.int(64)), instruction)
             }

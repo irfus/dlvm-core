@@ -49,7 +49,7 @@ public enum InstructionKind {
     /// Scan operation
     case scan(ReductionCombinator, Use, [Int])
     /// Reduction operation
-    case reduce(ReductionCombinator, Use, initial: Use, [Int])
+    case reduce(ReductionCombinator, Use, initial: Use, dims: [Int])
     /// Vector dot, matrix-vector multiplication and matrix-matrix multiplication
     case dot(Use, Use)
     /// Concatenation operation
@@ -82,7 +82,7 @@ public enum InstructionKind {
         ReductionCombinator, // Function or op
         Use, // Operand
         initial: Use, // Initial value
-        dimensions: [Int], // Window dimensions
+        dims: [Int], // Window dimensions
         strides: [Int], // Window strides
         padding: Padding // Padding type
     )
@@ -302,20 +302,22 @@ public extension InstructionKind {
                 NumericUnaryOp.resultType(for: (v1Ty))
             }.map(Type.tensor) ?? .invalid
 
-        case let .reduce(op, v1, initial, dims):
+        case let .reduce(op, v1, initial, dims: dims):
             let dtype: DataType
             let resultType: Type
             let dimSet = Set(dims)
-            switch (op, v1.type.unaliased) {
-            case let (.boolean(_), .tensor(s1, .bool))
-                where dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            guard case let .tensor(s1, t1) = v1.type.unaliased,
+                dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank }) else {
+                    return .invalid
+            }
+            switch op {
+            case .boolean(_) where t1 == .bool:
                 dtype = .bool
                 resultType = .tensor(s1.droppingDimensions(dimSet), .bool)
-            case let (.numeric(_), .tensor(s1, t1))
-                where t1.isNumeric && dims.count <= s1.rank && dims.forAll({$0 < s1.rank}):
+            case .numeric(_) where t1.isNumeric:
                 dtype = t1
                 resultType = .tensor(s1.droppingDimensions(dimSet), t1)
-            case let (.function(f), .tensor(s1, t1))
+            case let .function(f)
                 where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):
                 dtype = t1
                 resultType = .tensor(s1.droppingDimensions(dimSet), t1)
@@ -354,7 +356,7 @@ public extension InstructionKind {
         case let .reverse(v1, dims: dims):
             guard case let .tensor(s1, t1) = v1.type.unaliased
                 else { return .invalid }
-            guard dims.count <= s1.rank && dims.forAll({$0 < s1.rank})
+            guard dims.count <= s1.rank && dims.forAll({ 0 <= $0 && $0 < s1.rank })
                 else { return .invalid }
             return .tensor(s1, t1)
         
@@ -436,7 +438,7 @@ public extension InstructionKind {
             op, // Function or op
             v1, // Operand
             initial: initial, // Initial value
-            dimensions: dimensions, // Window dimensions
+            dims: dims, // Window dimensions
             strides: strides, // Window strides
             padding: padding // Padding type
             ):
@@ -446,7 +448,7 @@ public extension InstructionKind {
                 return .invalid
             }
             /// Window must have same rank as operand, window dims must be positive
-            guard dimensions.count == s1.rank, dimensions.forAll({ $0 > 0}) else {
+            guard dims.count == s1.rank, dims.forAll({ $0 > 0 }) else {
                     return .invalid
             }
             /// Strides must be greater than one
@@ -456,10 +458,10 @@ public extension InstructionKind {
             /// Get window shape
             var windowDims: [Int] = []
             for i in 0..<s1.rank {
-                let paddedBase = padding == .half && s1[i] < dimensions[i]
-                    ? dimensions[i] : s1[i]
-                let windowDim = dimensions[i] > paddedBase
-                    ? 0 : (paddedBase - dimensions[i]) / strides[i] + 1
+                let paddedBase = padding == .half && s1[i] < dims[i]
+                    ? dims[i] : s1[i]
+                let windowDim = dims[i] > paddedBase
+                    ? 0 : (paddedBase - dims[i]) / strides[i] + 1
                 windowDims.append(windowDim)
             }
             let windowShape = TensorShape(windowDims)
@@ -585,7 +587,7 @@ extension InstructionKind {
              let .convolve(op1, kernel: op2, strides: _, padding: _,
                            leftDilation: _, rightDilation: _, groups: _),
              let .reduce(_, op1, initial: op2, _),
-             let .reduceWindow(_, op1, initial: op2, dimensions: _, strides: _,
+             let .reduceWindow(_, op1, initial: op2, dims: _, strides: _,
                                padding: _),
              let .random(_, from: op1, upTo: op2),
              let .push(op1, to: op2):
@@ -659,8 +661,8 @@ extension InstructionKind : Equatable {
             return x1 == y1 && x2 == y2
         case let (.reduce(op1, x1, i1, d1), .reduce(op2, x2, i2, d2)):
             return op1 == op2 && x1 == x2 && i1 == i2 && d1 == d2
-        case let (.reduceWindow(op1, x1, initial: i1, dimensions: d1, strides: s1, padding: p1),
-                  .reduceWindow(op2, x2, initial: i2, dimensions: d2, strides: s2, padding: p2)):
+        case let (.reduceWindow(op1, x1, initial: i1, dims: d1, strides: s1, padding: p1),
+                  .reduceWindow(op2, x2, initial: i2, dims: d2, strides: s2, padding: p2)):
             return op1 == op2 && x1 == x2 && i1 == i2 && d1 == d2 && s1 == s2 && p1 == p2
         case let (.scan(op1, x1, i1), .scan(op2, x2, i2)):
             return op1 == op2 && x1 == x2 && i1 == i2
@@ -805,48 +807,48 @@ public extension InstructionKind {
             return .reverse(new, dims: dims)
         case .slice(old, at: let range):
             return .slice(new, at: range)
-        case .reduce(.function(old), old, initial: old, let dims):
-            return .reduce(.function(new), new, initial: new, dims)
-        case .reduce(.function(old), old, initial: let v1, let dims):
-            return .reduce(.function(new), new, initial: v1, dims)
-        case .reduce(.function(old), let v1, initial: old, let dims):
-            return .reduce(.function(new), v1, initial: new, dims)
-        case .reduce(.function(let v1), old, initial: old, let dims):
-            return .reduce(.function(v1), new, initial: new, dims)
-        case .reduce(.function(let v1), let v2, initial: old, let dims):
-            return .reduce(.function(v1), v2, initial: new, dims)
-        case .reduce(.function(let v1), old, initial: let v2, let dims):
-            return .reduce(.function(v1), new, initial: v2, dims)
-        case .reduce(.function(old), let v1, initial: let v2, let dims):
-            return .reduce(.function(new), v1, initial: v2, dims)
-        case .reduceWindow(.function(old), old, initial: old,
-                           dimensions: let d, strides: let s, padding: let p):
+        case .reduce(.function(old), old, initial: old, dims: let dims):
+            return .reduce(.function(new), new, initial: new, dims: dims)
+        case .reduce(.function(old), old, initial: let v1, dims: let dims):
+            return .reduce(.function(new), new, initial: v1, dims: dims)
+        case .reduce(.function(old), let v1, initial: old, dims: let dims):
+            return .reduce(.function(new), v1, initial: new, dims: dims)
+        case .reduce(.function(let v1), old, initial: old, dims: let dims):
+            return .reduce(.function(v1), new, initial: new, dims: dims)
+        case .reduce(.function(let v1), let v2, initial: old, dims: let dims):
+            return .reduce(.function(v1), v2, initial: new, dims: dims)
+        case .reduce(.function(let v1), old, initial: let v2, dims: let dims):
+            return .reduce(.function(v1), new, initial: v2, dims: dims)
+        case .reduce(.function(old), let v1, initial: let v2, dims: let dims):
+            return .reduce(.function(new), v1, initial: v2, dims: dims)
+        case .reduceWindow(.function(old), old, initial: old, dims: let d,
+                           strides: let s, padding: let p):
             return .reduceWindow(.function(new), new, initial: new,
-                                 dimensions: d, strides: s, padding: p)
+                                 dims: d, strides: s, padding: p)
         case .reduceWindow(.function(old), old, initial: let v1,
-                           dimensions: let d, strides: let s, padding: let p):
+                           dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(new), new, initial: v1,
-                                 dimensions: d, strides: s, padding: p)
+                                 dims: d, strides: s, padding: p)
         case .reduceWindow(.function(old), let v1, initial: old,
-                           dimensions: let d, strides: let s, padding: let p):
+                           dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(new), v1, initial: new,
-                                 dimensions: d, strides: s, padding: p)
+                                 dims: d, strides: s, padding: p)
         case .reduceWindow(.function(let v1), old, initial: old,
-                           dimensions: let d, strides: let s, padding: let p):
+                           dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(v1), new, initial: new,
-                                 dimensions: d, strides: s, padding: p)
+                                 dims: d, strides: s, padding: p)
         case .reduceWindow(.function(let v1), old, initial: let v2,
-                           dimensions: let d, strides: let s, padding: let p):
+                           dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(v1), new, initial: v2,
-                                 dimensions: d, strides: s, padding: p)
+                                 dims: d, strides: s, padding: p)
         case .reduceWindow(.function(let v1), let v2, initial: old,
-                           dimensions: let d, strides: let s, padding: let p):
+                           dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(v1), v2, initial: new,
-                                 dimensions: d, strides: s, padding: p)
+                                 dims: d, strides: s, padding: p)
         case .reduceWindow(.function(old), let v1, initial: let v2,
-                           dimensions: let d, strides: let s, padding: let p):
+                           dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(new), v1, initial: v2,
-                                 dimensions: d, strides: s, padding: p)
+                                 dims: d, strides: s, padding: p)
         case .convolve(old, kernel: old, strides: let s, padding: let p,
                        leftDilation: let ld, rightDilation: let rd, groups: let g):
             return .convolve(new, kernel: new, strides: s, padding: p,

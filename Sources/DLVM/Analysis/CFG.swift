@@ -84,7 +84,7 @@ public extension Function {
             inStack.remove(bb)
         }
 
-        /// Call helper function entry
+        /// Call helper function on entry
         backEdgesHelper(entry)
         return result
     }

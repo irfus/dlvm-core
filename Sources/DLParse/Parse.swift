@@ -644,7 +644,7 @@ extension Parser {
             let (initial, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.along))
             let dims = try parseIntegerList()
-            return .reduce(combinator, val, initial: initial, dims)
+            return .reduce(combinator, val, initial: initial, dims: dims)
 
         /// 'reduceWindow' <val> 'by' <func|assoc_op> 'init' <val>
         ///     'dims' <num> (',' <num>)*
@@ -662,7 +662,7 @@ extension Parser {
             let strides = try parseIntegerList()
             try consume(.keyword(.padding))
             let padding = try parsePadding().0
-            return .reduceWindow(combinator, val, initial: initial, dimensions: dims,
+            return .reduceWindow(combinator, val, initial: initial, dims: dims,
                                  strides: strides, padding: padding)
 
         /// 'dot' <val> ',' <val>
