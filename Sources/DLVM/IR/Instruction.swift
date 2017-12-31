@@ -455,27 +455,29 @@ public extension InstructionKind {
             guard strides.forAll({ $0 >= 1 }) else {
                 return .invalid
             }
-            /// Get window shape
-            var windowDims: [Int] = []
+            /// Get output shape
+            var outputDims: [Int] = []
             for i in 0..<s1.rank {
-                let paddedBase = padding == .half && s1[i] < dims[i]
-                    ? dims[i] : s1[i]
-                let windowDim = dims[i] > paddedBase
-                    ? 0 : (paddedBase - dims[i]) / strides[i] + 1
-                windowDims.append(windowDim)
+                let outputDim: Int
+                switch padding {
+                case .none: outputDim = max((s1[i] - dims[i]) / strides[i] + 1, 0)
+                case .half: outputDim = (s1[i] - 1) / strides[i] + 1
+                case .full: outputDim = (s1[i] + dims[i] - 2) / strides[i] + 1
+                }
+                outputDims.append(outputDim)
             }
-            let windowShape = TensorShape(windowDims)
+            let outputShape = TensorShape(outputDims)
             /// Get result type
             switch (op, v1.type.unaliased) {
             case (.boolean(_), .tensor(_, t1)) where t1 == .bool:
-                resultType = .tensor(windowShape, .bool)
+                resultType = .tensor(outputShape, .bool)
                 break
             case let (.numeric(_), .tensor(_, t1)) where t1.isNumeric:
-                resultType = .tensor(windowShape, t1)
+                resultType = .tensor(outputShape, t1)
                 break
             case let (.function(f), .tensor(_, t1))
                 where f.type.unaliased == .function([.tensor([], t1)], .tensor([], t1)):
-                resultType = .tensor(windowShape, t1)
+                resultType = .tensor(outputShape, t1)
                 break
             default:
                 return .invalid

@@ -31,7 +31,7 @@ public enum Keyword {
     case type, opaque
     case at, to, from, by, upto
     case kernel, strides, leftDilation, rightDilation, groups
-    case padding, none, half
+    case padding, none, half, full
     case then, `else`
     case wrt, keeping
     case void
@@ -467,6 +467,7 @@ private extension Lexer {
         case "padding": kind = .keyword(.padding)
         case "none": kind = .keyword(.none)
         case "half": kind = .keyword(.half)
+        case "full": kind = .keyword(.full)
         case "wrt": kind = .keyword(.wrt)
         case "keeping": kind = .keyword(.keeping)
         case "void": kind = .keyword(.void)

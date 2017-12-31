@@ -20,10 +20,11 @@
 import CoreTensor
 import CoreOp
 
-/// Padding type, used for convolve and reduceWindow
+/// Padding type, used for operations involving windows (convolve, reduceWindow)
 public enum Padding : Equatable {
     case none
     case half
+    case full
 }
 
 /// Element key to form a key path in GEP and use

@@ -159,6 +159,7 @@ private extension Parser {
         switch tok.kind {
         case .keyword(.none): return (.none, tok.range)
         case .keyword(.half): return (.half, tok.range)
+        case .keyword(.full): return (.full, tok.range)
         default: throw ParseError.unexpectedToken(expected: name, tok)
         }
     }
