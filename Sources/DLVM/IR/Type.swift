@@ -17,7 +17,6 @@
 //  limitations under the License.
 //
 
-import CoreTensor
 import CoreOp
 
 /// Padding type, used for convolve and reduceWindow

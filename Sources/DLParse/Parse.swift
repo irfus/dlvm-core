@@ -20,7 +20,6 @@
 /// This file contains a hand-written LL parser with reasonably fine-tuned 
 /// diagnostics. The parser entry is `Parser.parseModule`.
 
-import CoreTensor
 import DLVM
 
 // MARK: - Semantic environment

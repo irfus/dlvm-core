@@ -265,7 +265,7 @@ public extension IRBuilder {
         return buildInstruction(.bitCast(source, targetType))
     }
 
-    func shapeCast(_ source: Use, to targetShape: TensorShape) -> Instruction {
+    func shapeCast(_ source: Use, to targetShape: CoreTensor.TensorShape) -> Instruction {
         return buildInstruction(.shapeCast(source, targetShape))
     }
 

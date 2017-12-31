@@ -88,7 +88,7 @@ public enum InstructionKind {
     /// Pad shape with dimension of 1
     case padShape(Use, at: Int)
     /// Shape cast operation
-    case shapeCast(Use, TensorShape)
+    case shapeCast(Use, CoreTensor.TensorShape)
     /// Bitcast
     case bitCast(Use, Type)
 
