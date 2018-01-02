@@ -142,3 +142,50 @@ public extension Loop {
         DLUnimplemented()
     }
 }
+
+public struct LoopInfo {
+    public private(set) var innerMostLoops: [BasicBlock : Loop] = [:]
+    public private(set) var topLevelLoops: [Loop] = []
+}
+
+/// Analyze LoopInfo discovers loops during a postorder DominatorTree traversal
+/// interleaved with backward CFG traversals within each subloop. The backward
+/// traversal skips inner subloops, so this part of the algorithm is linear in
+/// the number of CFG edges. `subloops` and `blocks` in Loop are then populated
+/// during a single forward CFG traversal.
+///
+/// During the two CFG traversals each block is seen three times:
+/// 1) Discovered and mapped by a reverse CFG traversal.
+/// 2) Visited during a forward DFS CFG traversal.
+/// 3) Reverse-inserted in the loop in postorder following forward DFS.
+///
+/// The `blocks` sets are inclusive, so step 3 requires loop-depth number of
+/// insertions per block.
+open class LoopAnalysis : AnalysisPass {
+    public typealias Body = Function
+    public typealias Result = LoopInfo
+    
+    public static func run(on body: Function) -> LoopInfo {
+        // Pseudocode:
+        // let domTree = body.analysis(from: DominanceAnalysis.self)
+        // for header in domTree.traversed(in: .postOrder) {
+        //     var backEdges: [(BB, BB)] = [];
+        //     // Check each predecessor of the potential loop header.
+        //     for backEdge in body.backEdges(fromEntry: header) {
+        //         if domTree.dominates(header, backEdge) && domTree.isReachableFromEntry(backEdge) {
+        //             backEdges.append(backEdge)
+        //         }
+        //     }
+        //     if !backEdges.isEmpty {
+        //         let loop = Loop(header: header)
+        //         // Discover a subloop with the specified backedges such that: All blocks within
+        //         // this loop are mapped to this loop or a subloop. And all subloops within this
+        //         // loop have their parent loop set to this loop or a subloop.
+        //         discoverAndMapSubloop(for: loop, backEdges: backEdges)
+        //     }
+        // }
+        // Perform a single forward CFG traversal to populate block and subloop vectors for all loops.
+        // populateLoops(from: domTree.root)
+        DLUnimplemented()
+    }
+}
