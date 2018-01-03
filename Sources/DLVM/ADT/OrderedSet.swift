@@ -19,49 +19,57 @@
 
 import Foundation
 
-public protocol OrderedSetCollection : RangeReplaceableCollection, RandomAccessCollection, MutableCollection {
+public protocol OrderedSetCollection : RandomAccessCollection, MutableCollection {
     mutating func remove(_ element: Element)
     mutating func insert(_ element: Element, after other: Element)
     mutating func insert(_ element: Element, before other: Element)
 }
 
 public struct OrderedSet<Element : Hashable> : OrderedSetCollection {
-    fileprivate var elements = NSMutableOrderedSet()
-    fileprivate var mutatingElements: NSMutableOrderedSet {
-        mutating get {
-            if !isKnownUniquelyReferenced(&elements) {
-                elements = elements.mutableCopy() as! NSMutableOrderedSet
-            }
-            return elements
-        }
-    }
+    public typealias Index = Int
+    public typealias Indices = CountableRange<Int>
+
+    private var array: [Element] = []
+    private var set: Set<Element> = Set()
+
     public init() {}
 
-    public init<S : Sequence>(_ elements: S) where S.Iterator.Element == Element {
-        append(contentsOf: elements)
-    }
-}
-
-extension OrderedSet : ExpressibleByArrayLiteral {
-    public init(arrayLiteral elements: Element...) {
-        self.init(elements)
+    public init(_ array: [Element]) {
+        self.init()
+        for element in array {
+            append(element)
+        }
     }
 }
 
 public extension OrderedSet {
+    var count: Int { return array.count }
+    var isEmpty: Bool { return array.isEmpty }
 
-    mutating func append(_ element: Element) {
-        mutatingElements.add(element)
+    func contains(_ member: Element) -> Bool {
+        return set.contains(member)
     }
 
-    mutating func append<S: Sequence>(contentsOf elements: S) where S.Iterator.Element == Element {
+    @discardableResult
+    mutating func append(_ element: Element) -> Bool {
+        let inserted = set.insert(element).inserted
+        if inserted {
+            array.append(element)
+        }
+        return inserted
+    }
+
+    mutating func append<S: Sequence>(contentsOf elements: S) where S.Element == Element {
         for element in elements {
             append(element)
         }
     }
 
     mutating func insert(_ element: Element, at index: Int) {
-        mutatingElements.insert(element, at: index)
+        let inserted = set.insert(element).inserted
+        if inserted {
+            array.insert(element, at: index)
+        }
     }
 
     mutating func insert(_ element: Element, after other: Element) {
@@ -79,30 +87,23 @@ public extension OrderedSet {
     }
 
     mutating func remove(_ element: Element) {
-        mutatingElements.remove(element)
+        guard contains(element) else {
+            return
+        }
+        set.remove(element)
+        array.remove(at: index(of: element)!)
     }
 
-    mutating func removeAll() {
-        mutatingElements.removeAllObjects()
+    mutating func removeAll(keepingCapacity keepCapacity: Bool) {
+        array.removeAll(keepingCapacity: keepCapacity)
+        set.removeAll(keepingCapacity: keepCapacity)
     }
-
 }
 
-/// Predicates
-public extension OrderedSet {
-
-    func contains(_ element: Element) -> Bool {
-        return elements.contains(element)
+extension OrderedSet : ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: Element...) {
+        self.init(elements)
     }
-
-    func index(of element: Element) -> Int? {
-        return elements.index(of: element)
-    }
-
-    var array: [Element] {
-        return elements.array as! [Element]
-    }
-
 }
 
 extension OrderedSet : Sequence {
@@ -111,48 +112,17 @@ extension OrderedSet : Sequence {
     }
 }
 
-extension OrderedSet : RandomAccessCollection {
-
-    public typealias SubSequence = Slice<OrderedSet<Element>>
-
-    public func index(after i: Int) -> Int {
-        return i + 1
-    }
-
-    public func index(before i: Int) -> Int {
-        return i - 1
-    }
-
-    public var startIndex: Int {
-        return 0
-    }
-
-    public var endIndex: Int {
-        return elements.count
-    }
-
-    public var indices: CountableRange<Int> {
-        return 0..<elements.count
-    }
-
-}
-
-extension OrderedSet : RangeReplaceableCollection {
-    public mutating func replaceSubrange<C>(_ subrange: Range<Int>, with newElements: C) where C : Collection, C.Iterator.Element == Element {
-        #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        var newElements = newElements.map{$0} as [AnyObject]
-        #else
-        var newElements = newElements.map{$0} as! [AnyObject]
-        #endif
-        elements.replaceObjects(in: NSRange(subrange), with: &newElements, count: subrange.count)
-    }
-
-    public subscript(position: Int) -> Element {
+extension OrderedSet : MutableCollection, RangeReplaceableCollection {
+    public var startIndex: Int { return array.startIndex }
+    public var endIndex: Int { return array.endIndex }
+    public subscript(index: Int) -> Element {
         get {
-            return elements[position] as! Element
+            return array[index]
         }
         set {
-            elements.replaceObject(at: position, with: newValue)
+            set.remove(array[index])
+            array[index] = newValue
+            set.insert(newValue)
         }
     }
 }

@@ -24,30 +24,28 @@ class AnalysisTests: XCTestCase {
     let builder = IRBuilder(moduleName: "AnalysisTest")
 
     func testLoop() {
-        /// Test multiple times to account for nondeterminstic behavior
-        for _ in 0...100 {
-            let fun = builder.buildFunction(named: "gcd",
-                                            argumentTypes: [.scalar(.int(32)), .scalar(.int(32))],
-                                            returnType: .int(32))
-            let entry = builder.buildEntry(argumentNames: ["a", "b"], in: fun)
-            builder.move(to: entry)
-            let cmp = builder.compare(.equal, %entry.arguments[1], .literal(.int(32), 0))
-            let nextBB = builder.buildBasicBlock(named: "next", arguments: [:], in: fun)
-            let thenBB = builder.buildBasicBlock(named: "then", arguments: ["a" : .int(32)], in: fun)
-            let elseBB = builder.buildBasicBlock(named: "else", arguments: ["a" : .int(32), "b" : .int(32)], in: fun)
-            let contBB = builder.buildBasicBlock(named: "cont", arguments: ["a" : .int(32)], in: fun)
-            builder.branch(nextBB, [])
-            builder.move(to: nextBB)
-            builder.conditional(%cmp, then: thenBB, arguments: [%entry.arguments[0]],
-                                else: elseBB, arguments: [%entry.arguments[0], %entry.arguments[1]])
-            builder.move(to: thenBB)
-            builder.branch(contBB, [%thenBB.arguments[0]])
-            builder.move(to: elseBB)
-            let t = builder.modulo(%elseBB.arguments[0], %elseBB.arguments[1])
-            builder.branch(entry, [%elseBB.arguments[1], %t])
-            builder.move(to: contBB)
-            builder.return(%contBB.arguments[0])
-            XCTAssertEqual(fun.description, """
+        let fun = builder.buildFunction(named: "gcd",
+                                        argumentTypes: [.scalar(.int(32)), .scalar(.int(32))],
+                                        returnType: .int(32))
+        let entry = builder.buildEntry(argumentNames: ["a", "b"], in: fun)
+        builder.move(to: entry)
+        let cmp = builder.compare(.equal, %entry.arguments[1], .literal(.int(32), 0))
+        let nextBB = builder.buildBasicBlock(named: "next", arguments: [:], in: fun)
+        let thenBB = builder.buildBasicBlock(named: "then", arguments: ["a" : .int(32)], in: fun)
+        let elseBB = builder.buildBasicBlock(named: "else", arguments: ["a" : .int(32), "b" : .int(32)], in: fun)
+        let contBB = builder.buildBasicBlock(named: "cont", arguments: ["a" : .int(32)], in: fun)
+        builder.branch(nextBB, [])
+        builder.move(to: nextBB)
+        builder.conditional(%cmp, then: thenBB, arguments: [%entry.arguments[0]],
+                            else: elseBB, arguments: [%entry.arguments[0], %entry.arguments[1]])
+        builder.move(to: thenBB)
+        builder.branch(contBB, [%thenBB.arguments[0]])
+        builder.move(to: elseBB)
+        let t = builder.modulo(%elseBB.arguments[0], %elseBB.arguments[1])
+        builder.branch(entry, [%elseBB.arguments[1], %t])
+        builder.move(to: contBB)
+        builder.return(%contBB.arguments[0])
+        XCTAssertEqual(fun.description, """
             func @gcd: (i32, i32) -> i32 {
             'entry(%a: i32, %b: i32):
                 %0.0 = equal %b: i32, 0: i32
@@ -63,6 +61,8 @@ class AnalysisTests: XCTestCase {
                 return %a: i32
             }
             """)
+        /// Test multiple times to account for nondeterminstic behavior
+        for _ in 0...100 {
             /// Check back edges
             let backEdges = fun.backEdges(fromEntry: entry)
             XCTAssert(backEdges == [(elseBB, entry)])
@@ -85,41 +85,39 @@ class AnalysisTests: XCTestCase {
     }
 
     func testNestedLoop() {
-        /// Test multiple times to account for nondeterminstic behavior
-        for _ in 0...100 {
-            let fun = builder.buildFunction(named: "double_loop",
-                                            argumentTypes: [.scalar(.int(32)), .scalar(.int(32))],
-                                            returnType: .int(32))
-            let entry = builder.buildEntry(argumentNames: ["a", "b"], in: fun)
-            builder.move(to: entry)
-            let i = builder.literal(0, .int(32))
-            let j = builder.literal(0, .int(32))
-            let outerBB = builder.buildBasicBlock(named: "outer", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
-            let innerBB = builder.buildBasicBlock(named: "inner", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
-            let iBodyBB = builder.buildBasicBlock(named: "inner_body", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
-            let oBodyBB = builder.buildBasicBlock(named: "outer_body", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
-            let contBB = builder.buildBasicBlock(named: "cont", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
-            builder.branch(outerBB, [%i, %j])
-            builder.move(to: outerBB)
-            let outerArgs = outerBB.arguments.map({ arg in %arg })
-            let outerCond = builder.compare(.lessThan, outerArgs[0], %entry.arguments[0])
-            builder.conditional(%outerCond, then: innerBB, arguments: outerArgs,
-                                else: contBB, arguments: outerArgs)
-            builder.move(to: innerBB)
-            let innerArgs = innerBB.arguments.map({ arg in %arg })
-            let innerCond = builder.compare(.lessThan, innerArgs[1], %entry.arguments[1])
-            builder.conditional(%innerCond, then: iBodyBB, arguments: innerArgs,
-                                else: oBodyBB, arguments: innerArgs)
-            builder.move(to: iBodyBB)
-            let jIncr = builder.add(%iBodyBB.arguments[1], .literal(.int(32), 1))
-            builder.branch(innerBB, [%iBodyBB.arguments[0], %jIncr])
-            builder.move(to: oBodyBB)
-            let iIncr = builder.add(%iBodyBB.arguments[0], .literal(.int(32), 1))
-            builder.branch(outerBB, [%iIncr, %oBodyBB.arguments[1]])
-            builder.move(to: contBB)
-            let sum = builder.add(%contBB.arguments[0], %contBB.arguments[1])
-            builder.return(%sum)
-            XCTAssertEqual(fun.description, """
+        let fun = builder.buildFunction(named: "double_loop",
+                                        argumentTypes: [.scalar(.int(32)), .scalar(.int(32))],
+                                        returnType: .int(32))
+        let entry = builder.buildEntry(argumentNames: ["a", "b"], in: fun)
+        builder.move(to: entry)
+        let i = builder.literal(0, .int(32))
+        let j = builder.literal(0, .int(32))
+        let outerBB = builder.buildBasicBlock(named: "outer", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+        let innerBB = builder.buildBasicBlock(named: "inner", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+        let iBodyBB = builder.buildBasicBlock(named: "inner_body", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+        let oBodyBB = builder.buildBasicBlock(named: "outer_body", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+        let contBB = builder.buildBasicBlock(named: "cont", arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+        builder.branch(outerBB, [%i, %j])
+        builder.move(to: outerBB)
+        let outerArgs = outerBB.arguments.map { arg in %arg }
+        let outerCond = builder.compare(.lessThan, outerArgs[0], %entry.arguments[0])
+        builder.conditional(%outerCond, then: innerBB, arguments: outerArgs,
+                            else: contBB, arguments: outerArgs)
+        builder.move(to: innerBB)
+        let innerArgs = innerBB.arguments.map { arg in %arg }
+        let innerCond = builder.compare(.lessThan, innerArgs[1], %entry.arguments[1])
+        builder.conditional(%innerCond, then: iBodyBB, arguments: innerArgs,
+                            else: oBodyBB, arguments: innerArgs)
+        builder.move(to: iBodyBB)
+        let jIncr = builder.add(%iBodyBB.arguments[1], .literal(.int(32), 1))
+        builder.branch(innerBB, [%iBodyBB.arguments[0], %jIncr])
+        builder.move(to: oBodyBB)
+        let iIncr = builder.add(%iBodyBB.arguments[0], .literal(.int(32), 1))
+        builder.branch(outerBB, [%iIncr, %oBodyBB.arguments[1]])
+        builder.move(to: contBB)
+        let sum = builder.add(%contBB.arguments[0], %contBB.arguments[1])
+        builder.return(%sum)
+        XCTAssertEqual(fun.description, """
             func @double_loop: (i32, i32) -> i32 {
             'entry(%a: i32, %b: i32):
                 %0.0 = literal 0: i32
@@ -142,6 +140,8 @@ class AnalysisTests: XCTestCase {
                 return %5.0: i32
             }
             """)
+        /// Test multiple times to account for nondeterminstic behavior
+        for _ in 0...100 {
             /// Check back edges
             let backEdges = fun.backEdges(fromEntry: entry)
                 .sorted(by: {$0.0.indexInParent < $1.0.indexInParent})
