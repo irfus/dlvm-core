@@ -18,7 +18,7 @@
 //
 
 /// IRCollection
-public protocol IRCollection : class, RandomAccessCollection, Verifiable, PassResultCache
+public protocol IRCollection : AnyObject, RandomAccessCollection, Verifiable, PassResultCache
     where Index == Int
 {
     associatedtype Base : OrderedSetCollection where Base.Element == Element

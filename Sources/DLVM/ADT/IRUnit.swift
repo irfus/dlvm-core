@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-public protocol EquatableByReference : class, Equatable {}
+public protocol EquatableByReference : AnyObject, Equatable {}
 public protocol HashableByReference : EquatableByReference, Hashable {}
 
 public extension EquatableByReference {
