@@ -188,21 +188,21 @@ extension InstructionKind : TextOutputStreamable {
             target.write("slice \(v) from \(range.lowerBound) upto \(range.upperBound)")
         case let .convolve(v, kernel: k, strides: s, padding: p,
                            leftDilation: ld, rightDilation: rd, groups: g):
-            target.write("convolve \(v) kernel \(k) ")
+            target.write("convolve \(v) kernel \(k)")
             if let s = s {
-                target.write("strides \(s.joinedDescription) ")
+                target.write(" strides \(s.joinedDescription)")
             }
             if let p = p {
-                target.write("padding \(p.map({ ($0.low, $0.high) }).joinedDescription) ")
+                target.write(" padding \(p.map({ ($0.low, $0.high) }).joinedDescription)")
             }
             if let ld = ld {
-                target.write("leftDilation \(ld.joinedDescription) ")
+                target.write(" leftDilation \(ld.joinedDescription)")
             }
             if let rd = rd {
-                target.write("rightDilation \(rd.joinedDescription) ")
+                target.write(" rightDilation \(rd.joinedDescription)")
             }
             if let g = g {
-                target.write("groups \(g)")
+                target.write(" groups \(g)")
             }
         case let .dataTypeCast(op, t):
             target.write("dataTypeCast \(op) to \(t)")

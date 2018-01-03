@@ -302,7 +302,7 @@ public extension InstructionKind {
                 NumericUnaryOp.resultType(for: (v1Ty))
             }.map(Type.tensor) ?? .invalid
 
-        case let .reduce(op, v1, initial, dims: dims):
+        case let .reduce(op, v1, initial, dims):
             let dtype: DataType
             let resultType: Type
             let dimSet = Set(dims)
@@ -383,15 +383,15 @@ public extension InstructionKind {
 
         case let .convolve(
             lhs, // Input of rank n+2
-            kernel: rhs, // Kernel weights of rank n+2
-            strides: strides, // Kernel strides of rank n
-            padding: padding, // Padding of rank n
-            leftDilation: leftDilation, // Dilation factor of rank n
-            rightDilation: rightDilation, // Dilation factor of rank n
-            groups: groups // Group count for grouped/depthwise convolutions
+            kernel, // Kernel weights of rank n+2
+            strides, // Kernel strides of rank n
+            padding, // Padding of rank n
+            leftDilation: ld, // Dilation factor of rank n
+            rightDilation: rd, // Dilation factor of rank n
+            groups // Group count for grouped/depthwise convolutions
             ):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
-                case let .tensor(s2, t2) = rhs.type.unaliased,
+                case let .tensor(s2, t2) = kernel.type.unaliased,
                 /// Rank and datatypes must match, rank must be at least 3
                 s1.rank == s2.rank, t1 == t2, s1.rank >= 3 else {
                     return .invalid
@@ -400,12 +400,12 @@ public extension InstructionKind {
             let n = s1.rank - 2
             let strides = strides ?? Array(repeating: 1, count: n)
             let padding = padding ?? Array(repeating: (low: 0, high: 0), count: n)
-            let leftDilation = leftDilation ?? Array(repeating: 1, count: n)
-            let rightDilation = rightDilation ?? Array(repeating: 1, count: n)
+            let ld = ld ?? Array(repeating: 1, count: n)
+            let rd = rd ?? Array(repeating: 1, count: n)
             let groups = groups ?? 1
             /// Strides/padding/dilation factors must have rank equal to n
             guard strides.count == n, padding.count == n,
-                leftDilation.count == n, rightDilation.count == n else {
+                ld.count == n, rd.count == n else {
                     return .invalid
             }
             /// Strides must be greater than one, padding must be non-negative
@@ -414,16 +414,16 @@ public extension InstructionKind {
             /// Group count must satisfy s1[1] / groups == s2[1]
             guard strides.forAll({ $0 >= 1 }),
                 padding.forAll({ $0.low >= 0 && $0.high >= 0 }),
-                leftDilation.forAll({ $0 > 0 }), rightDilation.forAll({ $0 > 0 }),
+                ld.forAll({ $0 > 0 }), rd.forAll({ $0 > 0 }),
                 1 <= groups && groups <= s2[0], s1[1] / groups == s2[1] else {
                     return .invalid
             }
             /// Calculate output spatial dimensions
             var outputDims: [Int] = []
             for i in 0..<n {
-                let dilatedBase = (s1[i + 2] - 1) * leftDilation[i] + 1
+                let dilatedBase = (s1[i + 2] - 1) * ld[i] + 1
                 let paddedDilatedBase = padding[i].low + dilatedBase + padding[i].high
-                let dilatedWindow = (s2[i + 2] - 1) * rightDilation[i] + 1
+                let dilatedWindow = (s2[i + 2] - 1) * rd[i] + 1
                 let outputDim = dilatedWindow > paddedDilatedBase
                     ? 0 : (paddedDilatedBase - dilatedWindow) / strides[i] + 1
                 outputDims.append(outputDim)
@@ -437,10 +437,10 @@ public extension InstructionKind {
         case let .reduceWindow(
             op, // Function or op
             v1, // Operand
-            initial: initial, // Initial value
-            dims: dims, // Window dimensions
-            strides: strides, // Window strides
-            padding: padding // Padding type
+            initial, // Initial value
+            dims, // Window dimensions
+            strides, // Window strides
+            padding // Padding type
             ):
             let resultType: Type
             /// Operand must be a tensor

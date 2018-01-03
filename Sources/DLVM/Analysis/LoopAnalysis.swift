@@ -17,15 +17,15 @@
 //  limitations under the License.
 //
 
-// This file defines the LoopInfo class that is used to identify natural loops
-// and determine the loop depth of various nodes of the CFG. A natural loop
-// has exactly one entry-point, which is called the header. Note that natural
-// loops may actually be several loops that share the same header node.
-//
-// This analysis calculates the nesting structure of loops in a function. For
-// each natural loop identified, this analysis identifies natural loops
-// contained entirely within the loop and the basic blocks that make up the
-// loop.
+/// This file defines the LoopInfo class that is used to identify natural loops
+/// and determine the loop depth of various nodes of the CFG. A natural loop
+/// has exactly one entry-point, which is called the header. Note that natural
+/// loops may actually be several loops that share the same header node.
+///
+/// This analysis calculates the nesting structure of loops in a function. For
+/// each natural loop identified, this analysis identifies natural loops
+/// contained entirely within the loop and the basic blocks that make up the
+/// loop.
 
 public class Loop : EquatableByReference {
     public fileprivate(set) weak var parent: Loop?
