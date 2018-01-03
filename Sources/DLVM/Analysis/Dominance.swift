@@ -25,17 +25,16 @@
 
 public struct DominatorTree<Node : IRUnit> {
     public unowned let root: Node
-    fileprivate var immediateDominators: [Node : Node] = [:]
-    fileprivate var immediateDominatees: [Node : ObjectSet<Node>] = [:]
+    fileprivate var graph = DirectedGraph<Node>()
 }
 
 extension DominatorTree : BidirectionalEdgeSet {
     public func predecessors(of node: Node) -> ObjectSet<Node> {
-        return [immediateDominator(of: node)]
+        return graph.predecessors(of: node)
     }
 
     public func successors(of node: Node) -> ObjectSet<Node> {
-        return immediateDominatees(of: node)
+        return graph.successors(of: node)
     }
 }
 
@@ -43,27 +42,22 @@ public extension DominatorTree {
 
     init(root: Node) {
         self.root = root
-        self.immediateDominators[root] = root
+        self.graph.insertEdge(from: root, to: root)
     }
 
     mutating func updateImmediateDominator(_ dominator: Node, for node: Node) {
-        if let oldDom = immediateDominators[node] {
-            immediateDominatees[oldDom]!.remove(node)
+        if contains(node), let oldDom = graph.predecessors(of: node).first {
+            graph.removeEdge(from: oldDom, to: node)
         }
-        if !immediateDominatees.keys.contains(dominator) {
-            immediateDominatees[dominator] = [node]
-        } else {
-            immediateDominatees[dominator]!.insert(node)
-        }
-        immediateDominators[node] = dominator
+        graph.insertEdge(from: dominator, to: node)
     }
 
     func immediateDominator(of node: Node) -> Node {
-        return immediateDominators[node]!
+        return predecessors(of: node).first!
     }
 
     func immediateDominatees(of node: Node) -> ObjectSet<Node> {
-        return immediateDominatees[node] ?? []
+        return successors(of: node)
     }
 
     func nearestCommonDominator(_ b1: Node, _ b2: Node) -> Node {
@@ -92,7 +86,7 @@ public extension DominatorTree {
     }
 
     func contains(_ node: Node) -> Bool {
-        return immediateDominators.keys.contains(node)
+        return graph.contains(node)
     }
 
     func properlyDominates(_ block: Node, _ otherBlock: Node) -> Bool {

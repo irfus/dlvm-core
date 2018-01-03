@@ -131,6 +131,13 @@ public extension DirectedGraph {
         entries[dest]!.predecessors.insert(src)
     }
 
+    /// Remove edge from the graph, if it exists
+    mutating func removeEdge(from src: Node, to dest: Node) {
+        if !contains(src) || !contains(dest) || !containsEdge(from: src, to: dest) { return }
+        entries[src]!.successors.remove(dest)
+        entries[dest]!.predecessors.remove(src)
+    }
+
     /// Remove everything from the graph
     mutating func removeAll() {
         entries.removeAll()

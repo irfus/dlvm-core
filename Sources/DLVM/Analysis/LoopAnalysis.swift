@@ -174,7 +174,7 @@ open class LoopAnalysis : AnalysisPass {
             var backEdges: [BasicBlock] = []
             /// Check each predecessor of the potential loop header.
             for pred in cfg.predecessors(of: header) {
-                if header.dominates(pred, in: domTree) && domTree.contains(pred) {
+                if domTree.contains(pred) && header.dominates(pred, in: domTree) {
                     backEdges.append(pred)
                 }
             }
