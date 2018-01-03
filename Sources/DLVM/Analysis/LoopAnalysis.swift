@@ -30,7 +30,7 @@
 public class Loop : EquatableByReference {
     public fileprivate(set) weak var parent: Loop?
     public fileprivate(set) var subloops: [Loop] = []
-    public fileprivate(set) var blocks: [BasicBlock]
+    public fileprivate(set) var blocks: OrderedSet<BasicBlock>
 
     public init(parent: Loop? = nil, header: BasicBlock) {
         self.parent = parent
@@ -64,11 +64,11 @@ public extension Loop {
     /// Return all of the successor blocks of this loop. These are the blocks
     /// _outside of the current loop_ which are branched to.
     var exits: [BasicBlock] {
-        return blocks.flatMap{$0.successors}.filter{!contains($0)}
+        return blocks.lazy.flatMap{$0.successors}.filter{!contains($0)}
     }
     
     var exitEdges: [(source: BasicBlock, destination: BasicBlock)] {
-        return blocks
+        return blocks.lazy
             .flatMap { bb in bb.successors.map { (bb, $0) } }
             .filter { !contains($0.1) }
     }

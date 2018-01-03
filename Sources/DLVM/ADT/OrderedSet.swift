@@ -19,7 +19,7 @@
 
 import Foundation
 
-public protocol OrderedSetCollection : RandomAccessCollection, MutableCollection {
+public protocol OrderedSetCollection : RandomAccessCollection, RangeReplaceableCollection, MutableCollection {
     mutating func remove(_ element: Element)
     mutating func insert(_ element: Element, after other: Element)
     mutating func insert(_ element: Element, before other: Element)
@@ -106,13 +106,19 @@ extension OrderedSet : ExpressibleByArrayLiteral {
     }
 }
 
+extension OrderedSet : Equatable {
+    public static func == (lhs: OrderedSet, rhs: OrderedSet) -> Bool {
+        return lhs.array == rhs.array
+    }
+}
+
 extension OrderedSet : Sequence {
     public func makeIterator() -> IndexingIterator<[Element]> {
         return array.makeIterator()
     }
 }
 
-extension OrderedSet : MutableCollection, RangeReplaceableCollection {
+extension OrderedSet : RangeReplaceableCollection, MutableCollection {
     public var startIndex: Int { return array.startIndex }
     public var endIndex: Int { return array.endIndex }
     public subscript(index: Int) -> Element {
