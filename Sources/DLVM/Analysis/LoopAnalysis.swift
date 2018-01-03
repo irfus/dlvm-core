@@ -170,7 +170,7 @@ open class LoopAnalysis : AnalysisPass {
         let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         let domTree = body.analysis(from: DominanceAnalysis.self)
 
-        for header in domTree.root.postorder {
+        for header in domTree.traversed(from: domTree.root, in: .postorder) {
             var backEdges: [BasicBlock] = []
             /// Check each predecessor of the potential loop header.
             for pred in cfg.predecessors(of: header) {
@@ -183,17 +183,17 @@ open class LoopAnalysis : AnalysisPass {
                 /// Discover a subloop with the specified backedges such that: All blocks within
                 /// this loop are mapped to this loop or a subloop. And all subloops within this
                 /// loop have their parent loop set to this loop or a subloop.
-                discoverAndMapSubloop(for: loop, backEdges: backEdges, info: &info, cfg: cfg, domTree: domTree)
+                discoverAndMapSubloop(for: loop, backEdges: backEdges, info: &info, controlFlow: cfg, dominance: domTree)
             }
         }
         /// Perform a single forward CFG traversal to populate block and subloop vectors for all loops.
-        populateLoops(from: domTree.root, info: &info)
+        populateLoops(from: domTree.root, into: &info)
         return info
     }
 
     private static func discoverAndMapSubloop(
         for loop: Loop, backEdges: [BasicBlock], info: inout LoopInfo,
-        cfg: ControlFlowGraphAnalysis.Result, domTree: DominatorTree<BasicBlock>)
+        controlFlow cfg: ControlFlowGraphAnalysis.Result, dominance domTree: DominatorTree<BasicBlock>)
     {
         /// Perform a backward CFG traversal using a worklist.
         var workList = backEdges
@@ -227,26 +227,21 @@ open class LoopAnalysis : AnalysisPass {
             /// reach another subloop that is not yet discovered to be a subloop of
             /// this loop, which we must traverse.
             for pred in cfg.predecessors(of: block) {
-                switch info.innerMostLoops[pred] {
-                case nil:
+                if info.innerMostLoops[pred] != subloop {
                     workList.append(pred)
-                case let l? where l != subloop:
-                    workList.append(pred)
-                default:
-                    break
                 }
             }
         }
     }
 
-    private static func populateLoops(from header: BasicBlock, info: inout LoopInfo) {
-        for block in header.postorder {
+    private static func populateLoops(from header: BasicBlock, into info: inout LoopInfo) {
+        for bb in header.postorder {
             /// Add a single block to its ancestor loops in postorder. If the
             /// block is a subloop header, add the subloop to its parent in
             /// postorder, then reverse the block and subloop arrays of the
             /// now complete subloop to achieve RPO.
-            guard var subloop = info.innerMostLoops[block] else { continue }
-            if block == subloop.header {
+            guard var subloop = info.innerMostLoops[bb] else { continue }
+            if bb == subloop.header {
                 /// We reach this point once per subloop after processing all
                 /// the blocks in the subloop.
                 if let parent = subloop.parent {
@@ -257,16 +252,16 @@ open class LoopAnalysis : AnalysisPass {
                 /// For convenience, blocks and subloops are inserted in postorder.
                 /// Reverse the lists, except for the loop header, which is always
                 /// at the beginning.
-                subloop.blocks = [subloop.blocks[0]] + subloop.blocks[1...].reversed()
+                subloop.blocks[1...].reverse()
                 subloop.subloops.reverse()
                 guard let parent = subloop.parent else {
                     continue
                 }
                 subloop = parent
             }
-            subloop.blocks.append(block)
+            subloop.blocks.append(bb)
             while let parent = subloop.parent {
-                parent.blocks.append(block)
+                parent.blocks.append(bb)
             }
         }
     }

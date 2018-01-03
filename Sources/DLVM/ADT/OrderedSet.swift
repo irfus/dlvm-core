@@ -19,7 +19,7 @@
 
 import Foundation
 
-public protocol OrderedSetCollection : RangeReplaceableCollection, RandomAccessCollection {
+public protocol OrderedSetCollection : RangeReplaceableCollection, RandomAccessCollection, MutableCollection {
     mutating func remove(_ element: Element)
     mutating func insert(_ element: Element, after other: Element)
     mutating func insert(_ element: Element, before other: Element)

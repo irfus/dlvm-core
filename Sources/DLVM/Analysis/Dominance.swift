@@ -24,8 +24,19 @@
 
 
 public struct DominatorTree<Node : IRUnit> {
-    fileprivate var immediateDominators: [Node : Node] = [:]
     public unowned let root: Node
+    fileprivate var immediateDominators: [Node : Node] = [:]
+    fileprivate var immediatelyDominated: [Node : ObjectSet<Node>] = [:]
+}
+
+extension DominatorTree : BidirectionalEdgeSet {
+    public func predecessors(of node: Node) -> ObjectSet<Node> {
+        return [immediateDominator(of: node)]
+    }
+
+    public func successors(of node: Node) -> ObjectSet<Node> {
+        return immediatelyDominated(by: node)
+    }
 }
 
 public extension DominatorTree {
@@ -36,11 +47,23 @@ public extension DominatorTree {
     }
 
     mutating func updateImmediateDominator(_ dominator: Node, for node: Node) {
+        if let oldDom = immediateDominators[node] {
+            immediatelyDominated[dominator]!.remove(oldDom)
+        }
+        if !immediatelyDominated.keys.contains(dominator) {
+            immediatelyDominated[dominator] = [node]
+        } else {
+            immediatelyDominated[dominator]!.insert(node)
+        }
         immediateDominators[node] = dominator
     }
 
     func immediateDominator(of node: Node) -> Node {
         return immediateDominators[node]!
+    }
+
+    func immediatelyDominated(by node: Node) -> ObjectSet<Node> {
+        return immediatelyDominated[node] ?? []
     }
 
     func nearestCommonDominator(_ b1: Node, _ b2: Node) -> Node {
@@ -56,7 +79,7 @@ public extension DominatorTree {
             b1Dom = immediateDominator(of: b1Dom)
         }
 
-        /// Check all b2's dominators against b1Dominators
+        /// Check all b2's dominators against b1's dominators
         var b2Dom = immediateDominator(of: b2)
         while b2Dom !== root {
             if b1Dominators.contains(b2Dom) {

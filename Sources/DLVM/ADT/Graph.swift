@@ -69,12 +69,20 @@ public extension ForwardGraphNode where Self : BackwardGraphNode {
     }
 }
 
-/// Graph representation storing all forward and backward edges
-public protocol BidirectionalEdgeSet {
+/// Graph representation storing all forward edges
+public protocol ForwardEdgeSet {
     associatedtype Node : HashableByReference
-    func predecessors(of node: Node) -> ObjectSet<Node>
     func successors(of node: Node) -> ObjectSet<Node>
 }
+
+/// Graph representation storing all backward edges
+public protocol BackwardEdgeSet {
+    associatedtype Node : HashableByReference
+    func predecessors(of node: Node) -> ObjectSet<Node>
+}
+
+/// Graph representation storing all forward and backward edges
+public protocol BidirectionalEdgeSet : ForwardEdgeSet, BackwardEdgeSet {}
 
 extension BidirectionalEdgeSet {
     public var transpose: TransposeEdgeSet<Self> {
@@ -84,7 +92,6 @@ extension BidirectionalEdgeSet {
 
 /// Transpose edge set
 public struct TransposeEdgeSet<Base : BidirectionalEdgeSet> : BidirectionalEdgeSet {
-
     public typealias Node = Base.Node
 
     public let base: Base
@@ -96,7 +103,6 @@ public struct TransposeEdgeSet<Base : BidirectionalEdgeSet> : BidirectionalEdgeS
     public func successors(of node: Node) -> ObjectSet<Node> {
         return base.predecessors(of: node)
     }
-
 }
 
 /// Directed graph
@@ -195,7 +201,6 @@ public extension DirectedGraph {
     }
     
 }
-
 
 /// Initializer from source nodes that store successors
 public extension DirectedGraph where Node : ForwardGraphNode {
