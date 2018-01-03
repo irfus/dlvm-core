@@ -172,7 +172,7 @@ open class DominanceAnalysis : AnalysisPass {
         repeat {
             changed = false
             for node in entry.postorder.reversed().dropFirst() {
-                let preds = cfg.predecessors(of: node).filter(domTree.contains)
+                let preds = cfg.predecessors(of: node).lazy.filter(domTree.contains)
                 guard var newIDom = preds.first else {
                     preconditionFailure("Successor node doesn't have any predecessor")
                 }
