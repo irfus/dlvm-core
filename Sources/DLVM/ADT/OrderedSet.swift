@@ -48,8 +48,13 @@ extension OrderedSet : ExpressibleByArrayLiteral {
     }
 }
 
-public extension OrderedSet {
+extension OrderedSet : Equatable {
+    public static func == (lhs: OrderedSet, rhs: OrderedSet) -> Bool {
+        return lhs.elements.isEqual(to: rhs.elements)
+    }
+}
 
+public extension OrderedSet {
     mutating func append(_ element: Element) {
         mutatingElements.add(element)
     }
@@ -81,16 +86,21 @@ public extension OrderedSet {
     mutating func remove(_ element: Element) {
         mutatingElements.remove(element)
     }
+    
+    @discardableResult
+    public mutating func remove(at position: Int) -> Element {
+        defer {
+            mutatingElements.removeObject(at: position)
+        }
+        return self[position]
+    }
 
     mutating func removeAll() {
         mutatingElements.removeAllObjects()
     }
-
 }
 
-/// Predicates
 public extension OrderedSet {
-
     func contains(_ element: Element) -> Bool {
         return elements.contains(element)
     }
@@ -102,7 +112,6 @@ public extension OrderedSet {
     var array: [Element] {
         return elements.array as! [Element]
     }
-
 }
 
 extension OrderedSet : Sequence {
@@ -112,8 +121,7 @@ extension OrderedSet : Sequence {
 }
 
 extension OrderedSet : RandomAccessCollection {
-
-    public typealias SubSequence = Slice<OrderedSet<Element>>
+    public typealias SubSequence = Slice<OrderedSet>
 
     public func index(after i: Int) -> Int {
         return i + 1
@@ -134,17 +142,39 @@ extension OrderedSet : RandomAccessCollection {
     public var indices: CountableRange<Int> {
         return 0..<elements.count
     }
+}
 
+extension OrderedSet : MutableCollection {
+    /// - Note: This is an in-house impleentation of `swapAt(_:_:)` to work around
+    /// NSMutableOrderedSet's behavior that assignments of an in-set object to an index.
+    /// - TODO: Reimplement OrderedSet in pure Swift.
+    /// do not change the ordering.
+    public mutating func swapAt(_ i: Int, _ j: Int) {
+        guard i != j else { return }
+        let a = self[i]
+        remove(at: i)
+        insert(a, at: j)
+        let b = self[j-1]
+        remove(at: j-1)
+        insert(b, at: i)
+    }
 }
 
 extension OrderedSet : RangeReplaceableCollection {
-    public mutating func replaceSubrange<C>(_ subrange: Range<Int>, with newElements: C) where C : Collection, C.Iterator.Element == Element {
-        #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        var newElements = newElements.map{$0} as [AnyObject]
-        #else
-        var newElements = newElements.map{$0} as! [AnyObject]
-        #endif
-        elements.replaceObjects(in: NSRange(subrange), with: &newElements, count: subrange.count)
+    public mutating func replaceSubrange<C>(_ subrange: Range<Int>, with newElements: C)
+        where C : Collection, C.Iterator.Element == Element
+    {
+        var newElements = Array(newElements) as [AnyObject]
+        mutatingElements.replaceObjects(in: NSRange(subrange), with: &newElements, count: subrange.count)
+    }
+
+    public subscript(bounds: Range<Int>) -> Slice<OrderedSet> {
+        get {
+            return Slice(base: self, bounds: bounds)
+        }
+        set {
+            replaceSubrange(bounds, with: newValue)
+        }
     }
 
     public subscript(position: Int) -> Element {
@@ -152,7 +182,7 @@ extension OrderedSet : RangeReplaceableCollection {
             return elements[position] as! Element
         }
         set {
-            elements.replaceObject(at: position, with: newValue)
+            mutatingElements.replaceObject(at: position, with: newValue)
         }
     }
 }
