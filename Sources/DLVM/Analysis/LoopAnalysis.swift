@@ -18,18 +18,19 @@
 //
 
 // This file defines the LoopInfo class that is used to identify natural loops
-// and determine the loop depth of various nodes of the CFG.  A natural loop
+// and determine the loop depth of various nodes of the CFG. A natural loop
 // has exactly one entry-point, which is called the header. Note that natural
 // loops may actually be several loops that share the same header node.
 //
-// This analysis calculates the nesting structure of loops in a function.  For
+// This analysis calculates the nesting structure of loops in a function. For
 // each natural loop identified, this analysis identifies natural loops
-// contained entirely within the loop and the basic blocks the make up the loop.
+// contained entirely within the loop and the basic blocks that make up the
+// loop.
 
-public class Loop {
-    public private(set) weak var parent: Loop?
-    public private(set) var subloops: [Loop] = []
-    public private(set) var blocks: OrderedSet<BasicBlock>
+public class Loop : EquatableByReference {
+    public fileprivate(set) weak var parent: Loop?
+    public fileprivate(set) var subloops: [Loop] = []
+    public fileprivate(set) var blocks: OrderedSet<BasicBlock>
 
     public init(parent: Loop? = nil, header: BasicBlock) {
         self.parent = parent
@@ -48,7 +49,7 @@ public extension Loop {
     }
     
     /// Return all blocks inside the loop that have successors outside of the
-    /// loop.  These are the blocks _inside of the current loop_ which branch out.
+    /// loop. These are the blocks _inside of the current loop_ which branch out.
     /// The returned list is always unique.
     var exitingBlocks: [BasicBlock] {
         var exiting: [BasicBlock] = []
@@ -60,7 +61,7 @@ public extension Loop {
         return exiting
     }
     
-    /// Return all of the successor blocks of this loop.  These are the blocks
+    /// Return all of the successor blocks of this loop. These are the blocks
     /// _outside of the current loop_ which are branched to.
     var exits: [BasicBlock] {
         return blocks.flatMap{$0.successors}.filter{!contains($0)}
@@ -86,8 +87,7 @@ public extension Loop {
         precondition(out != nil, "Header of loop has no predecessors from outside loop")
         return out
     }
-    
-    
+
     /// If there is a single latch block for this loop, return it. A latch block
     /// is a block that contains a branch back to the header.
     var latch: BasicBlock? {
@@ -144,8 +144,8 @@ public extension Loop {
 }
 
 public struct LoopInfo {
-    public private(set) var innerMostLoops: [BasicBlock : Loop] = [:]
-    public private(set) var topLevelLoops: [Loop] = []
+    public fileprivate(set) var innerMostLoops: [BasicBlock : Loop] = [:]
+    public fileprivate(set) var topLevelLoops: [Loop] = []
 }
 
 /// Analyze LoopInfo discovers loops during a postorder DominatorTree traversal
@@ -166,26 +166,108 @@ open class LoopAnalysis : AnalysisPass {
     public typealias Result = LoopInfo
     
     public static func run(on body: Function) -> LoopInfo {
-        // Pseudocode:
-        // let domTree = body.analysis(from: DominanceAnalysis.self)
-        // for header in domTree.traversed(in: .postOrder) {
-        //     var backEdges: [(BB, BB)] = [];
-        //     // Check each predecessor of the potential loop header.
-        //     for backEdge in body.backEdges(fromEntry: header) {
-        //         if domTree.dominates(header, backEdge) && domTree.isReachableFromEntry(backEdge) {
-        //             backEdges.append(backEdge)
-        //         }
-        //     }
-        //     if !backEdges.isEmpty {
-        //         let loop = Loop(header: header)
-        //         // Discover a subloop with the specified backedges such that: All blocks within
-        //         // this loop are mapped to this loop or a subloop. And all subloops within this
-        //         // loop have their parent loop set to this loop or a subloop.
-        //         discoverAndMapSubloop(for: loop, backEdges: backEdges)
-        //     }
-        // }
-        // Perform a single forward CFG traversal to populate block and subloop vectors for all loops.
-        // populateLoops(from: domTree.root)
-        DLUnimplemented()
+        var info = LoopInfo()
+        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+        let domTree = body.analysis(from: DominanceAnalysis.self)
+
+        for header in domTree.root.postorder {
+            var backEdges: [BasicBlock] = []
+            /// Check each predecessor of the potential loop header.
+            for pred in cfg.predecessors(of: header) {
+                if header.dominates(pred, in: domTree) && domTree.contains(pred) {
+                    backEdges.append(pred)
+                }
+            }
+            if !backEdges.isEmpty {
+                let loop = Loop(header: header)
+                /// Discover a subloop with the specified backedges such that: All blocks within
+                /// this loop are mapped to this loop or a subloop. And all subloops within this
+                /// loop have their parent loop set to this loop or a subloop.
+                discoverAndMapSubloop(for: loop, backEdges: backEdges, info: &info, cfg: cfg, domTree: domTree)
+            }
+        }
+        /// Perform a single forward CFG traversal to populate block and subloop vectors for all loops.
+        populateLoops(from: domTree.root, info: &info)
+        return info
+    }
+
+    private static func discoverAndMapSubloop(
+        for loop: Loop, backEdges: [BasicBlock], info: inout LoopInfo,
+        cfg: ControlFlowGraphAnalysis.Result, domTree: DominatorTree<BasicBlock>)
+    {
+        /// Perform a backward CFG traversal using a worklist.
+        var workList = backEdges
+        while !workList.isEmpty {
+            let block = workList.removeLast()
+            guard var subloop = info.innerMostLoops[block] else {
+                if !domTree.contains(block) {
+                    continue
+                }
+                /// This is an undiscovered block. Map it to the current loop.
+                info.innerMostLoops[block] = loop
+                if block == loop.header {
+                    continue
+                }
+                /// Push all block predecessors on the worklist.
+                workList.append(contentsOf: cfg.predecessors(of: block))
+                continue
+            }
+            /// This is a discovered block. Find its outermost discovered loop.
+            while let parent = subloop.parent {
+                subloop = parent
+            }
+            /// If it is already discovered to be a subloop of this loop, continue.
+            if subloop == loop {
+                continue
+            }
+            /// Discover a subloop of this loop.
+            subloop.parent = loop
+            /// Continue traversal along predecessors that are not loop-back edges from
+            /// within this subloop tree itself. Note that a predecessor may directly
+            /// reach another subloop that is not yet discovered to be a subloop of
+            /// this loop, which we must traverse.
+            for pred in cfg.predecessors(of: block) {
+                switch info.innerMostLoops[pred] {
+                case nil:
+                    workList.append(pred)
+                case let l? where l != subloop:
+                    workList.append(pred)
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    private static func populateLoops(from header: BasicBlock, info: inout LoopInfo) {
+        for block in header.postorder {
+            /// Add a single block to its ancestor loops in postorder. If the
+            /// block is a subloop header, add the subloop to its parent in
+            /// postorder, then reverse the block and subloop arrays of the
+            /// now complete subloop to achieve RPO.
+            guard var subloop = info.innerMostLoops[block] else { continue }
+            if block == subloop.header {
+                /// We reach this point once per subloop after processing all
+                /// the blocks in the subloop.
+                if let parent = subloop.parent {
+                    parent.subloops.append(subloop)
+                } else {
+                    info.topLevelLoops.append(subloop)
+                }
+                /// For convenience, blocks and subloops are inserted in postorder.
+                /// Reverse the lists, except for the loop header, which is always
+                /// at the beginning.
+                subloop.blocks = [subloop.blocks[0]] + subloop.blocks[1...].reversed()
+                subloop.subloops.reverse()
+                guard let parent = subloop.parent else {
+                    continue
+                }
+                subloop = parent
+            }
+            subloop.blocks.append(block)
+            while let parent = subloop.parent {
+                parent.blocks.append(block)
+            }
+        }
     }
 }

@@ -128,7 +128,7 @@ class IRTests: XCTestCase {
             """)
     }
 
-    func testBackEdges() {
+    func testLoops() {
         let fun = builder.buildFunction(named: "gcd",
                                         argumentTypes: [.scalar(.int(32)), .scalar(.int(32))],
                                         returnType: .int(32))
@@ -161,8 +161,17 @@ class IRTests: XCTestCase {
                 return %a: i32
             }
             """)
+        /// Check back edges
         let backEdges = fun.backEdges(fromEntry: entry)
         XCTAssert(backEdges == [(elseBB, entry)])
+        /// Check loop info
+        let loopInfo = fun.analysis(from: LoopAnalysis.self)
+        XCTAssertEqual(loopInfo.topLevelLoops.count, 1)
+        let loop = loopInfo.topLevelLoops[0]
+        XCTAssertEqual(loop.header, entry)
+        XCTAssertEqual(loop.subloops, [])
+        XCTAssertEqual(Array(loop.blocks), [entry, elseBB])
+        XCTAssertEqual(loopInfo.innerMostLoops, [entry : loop, elseBB : loop])
     }
 
     static var allTests : [(String, (IRTests) -> () throws -> Void)] {
@@ -171,8 +180,8 @@ class IRTests: XCTestCase {
             ("testWriteStruct", testWriteStruct),
             ("testWriteSimpleFunction", testWriteSimpleFunction),
             ("testWriteMultiBBFunction", testWriteMultiBBFunction),
-            ("testBackEdges", testBackEdges)
+            ("testLoops", testLoops)
         ]
     }
-    
+
 }
