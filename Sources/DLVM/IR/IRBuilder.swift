@@ -185,8 +185,16 @@ public extension IRBuilder {
         return buildInstruction(.numericBinary(.divide, lhs, rhs))
     }
 
+    func modulo(_ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.numericBinary(.modulo, lhs, rhs))
+    }
+
     func power(_ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.numericBinary(.power, lhs, rhs))
+    }
+
+    func literal(_ literal: Literal, _ type: Type) -> Instruction {
+        return buildInstruction(.literal(literal, type))
     }
 
     func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use) -> Instruction {
