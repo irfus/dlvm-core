@@ -30,7 +30,7 @@
 public class Loop : EquatableByReference {
     public fileprivate(set) weak var parent: Loop?
     public fileprivate(set) var subloops: [Loop] = []
-    public fileprivate(set) var blocks: OrderedSet<BasicBlock>
+    public fileprivate(set) var blocks: [BasicBlock]
 
     public init(parent: Loop? = nil, header: BasicBlock) {
         self.parent = parent
@@ -262,6 +262,7 @@ open class LoopAnalysis : AnalysisPass {
             subloop.blocks.append(bb)
             while let parent = subloop.parent {
                 parent.blocks.append(bb)
+                subloop = parent
             }
         }
     }

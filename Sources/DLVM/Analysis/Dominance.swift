@@ -26,7 +26,7 @@
 public struct DominatorTree<Node : IRUnit> {
     public unowned let root: Node
     fileprivate var immediateDominators: [Node : Node] = [:]
-    fileprivate var immediatelyDominated: [Node : ObjectSet<Node>] = [:]
+    fileprivate var immediateDominatees: [Node : ObjectSet<Node>] = [:]
 }
 
 extension DominatorTree : BidirectionalEdgeSet {
@@ -35,7 +35,7 @@ extension DominatorTree : BidirectionalEdgeSet {
     }
 
     public func successors(of node: Node) -> ObjectSet<Node> {
-        return immediatelyDominated(by: node)
+        return immediateDominatees(of: node)
     }
 }
 
@@ -48,12 +48,12 @@ public extension DominatorTree {
 
     mutating func updateImmediateDominator(_ dominator: Node, for node: Node) {
         if let oldDom = immediateDominators[node] {
-            immediatelyDominated[dominator]!.remove(oldDom)
+            immediateDominatees[oldDom]!.remove(node)
         }
-        if !immediatelyDominated.keys.contains(dominator) {
-            immediatelyDominated[dominator] = [node]
+        if !immediateDominatees.keys.contains(dominator) {
+            immediateDominatees[dominator] = [node]
         } else {
-            immediatelyDominated[dominator]!.insert(node)
+            immediateDominatees[dominator]!.insert(node)
         }
         immediateDominators[node] = dominator
     }
@@ -62,8 +62,8 @@ public extension DominatorTree {
         return immediateDominators[node]!
     }
 
-    func immediatelyDominated(by node: Node) -> ObjectSet<Node> {
-        return immediatelyDominated[node] ?? []
+    func immediateDominatees(of node: Node) -> ObjectSet<Node> {
+        return immediateDominatees[node] ?? []
     }
 
     func nearestCommonDominator(_ b1: Node, _ b2: Node) -> Node {
@@ -172,11 +172,11 @@ open class DominanceAnalysis : AnalysisPass {
         repeat {
             changed = false
             for node in entry.postorder.reversed().dropFirst() {
-                let preds = cfg.predecessors(of: node)
+                let preds = cfg.predecessors(of: node).filter(domTree.contains)
                 guard var newIDom = preds.first else {
                     preconditionFailure("Successor node doesn't have any predecessor")
                 }
-                for p in preds.dropFirst() where !domTree.contains(p) {
+                for p in preds.dropFirst() {
                     newIDom = domTree.nearestCommonDominator(p, newIDom)
                 }
                 if !domTree.contains(node) || domTree.immediateDominator(of: node) !== newIDom {
