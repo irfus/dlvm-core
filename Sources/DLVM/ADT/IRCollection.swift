@@ -19,9 +19,9 @@
 
 /// IRCollection
 public protocol IRCollection : AnyObject, RandomAccessCollection, Verifiable, PassResultCache
-    where Index == Int
+    where Index == Int, Element : Hashable
 {
-    associatedtype Base : OrderedSetCollection where Base.Element == Element
+    typealias Base = OrderedSet<Element>
     var elements: Base { get set }
     var canApplyTransforms: Bool { get }
     /// - Note: This is a workaround for a type checker bug in Swift 4

@@ -19,32 +19,29 @@
 
 import Foundation
 
-public protocol OrderedSetCollection : RandomAccessCollection, RangeReplaceableCollection, MutableCollection {
-    mutating func remove(_ element: Element)
-    mutating func insert(_ element: Element, after other: Element)
-    mutating func insert(_ element: Element, before other: Element)
-}
-
-public struct OrderedSet<Element : Hashable> : OrderedSetCollection {
+public struct OrderedSet<Element : Hashable> {
     public typealias Index = Int
     public typealias Indices = CountableRange<Int>
 
     private var array: [Element] = []
-    private var set: Set<Element> = Set()
+    private var set: Set<Element> = []
 
     public init() {}
-
-    public init(_ array: [Element]) {
-        self.init()
-        for element in array {
-            append(element)
-        }
-    }
 }
 
 public extension OrderedSet {
-    var count: Int { return array.count }
-    var isEmpty: Bool { return array.isEmpty }
+    init<S : Sequence>(_ elements: S) where S.Element == Element {
+        self.init()
+        append(contentsOf: elements)
+    }
+    
+    var count: Int {
+        return array.count
+    }
+    
+    var isEmpty: Bool {
+        return array.isEmpty
+    }
 
     func contains(_ member: Element) -> Bool {
         return set.contains(member)
@@ -87,11 +84,9 @@ public extension OrderedSet {
     }
 
     mutating func remove(_ element: Element) {
-        guard contains(element) else {
-            return
-        }
+        guard let foundIndex = index(of: element) else { return }
         set.remove(element)
-        array.remove(at: index(of: element)!)
+        array.remove(at: foundIndex)
     }
 
     mutating func removeAll(keepingCapacity keepCapacity: Bool) {
@@ -118,9 +113,27 @@ extension OrderedSet : Sequence {
     }
 }
 
-extension OrderedSet : RangeReplaceableCollection, MutableCollection {
-    public var startIndex: Int { return array.startIndex }
-    public var endIndex: Int { return array.endIndex }
+extension OrderedSet : RangeReplaceableCollection, BidirectionalCollection, MutableCollection {
+    public func index(after i: Int) -> Int {
+        return array.index(after: i)
+    }
+    
+    public func index(before i: Int) -> Int {
+        return array.index(before: i)
+    }
+
+    public var startIndex: Int {
+        return array.startIndex
+    }
+    
+    public var endIndex: Int {
+        return array.endIndex
+    }
+    
+    public var indices: CountableRange<Int> {
+        return array.indices
+    }
+    
     public subscript(index: Int) -> Element {
         get {
             return array[index]
