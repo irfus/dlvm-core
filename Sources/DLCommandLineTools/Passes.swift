@@ -130,5 +130,5 @@ public func runPass(_ pass: TransformPass, on module: Module,
     case .LiteralBroadcastingPromotion:
         changed = module.mapTransform(LiteralBroadcastingPromotion.self, bypassingVerification: noVerify)
     }
-    print("\(pass):", changed ? "changed" : "unchanged")
+    print("\(pass.abbrevation):", changed ? "changed" : "unchanged")
 }
