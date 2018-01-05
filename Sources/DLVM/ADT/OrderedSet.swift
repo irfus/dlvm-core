@@ -47,6 +47,11 @@ public extension OrderedSet {
         return set.contains(member)
     }
 
+    func index(of element: Element) -> Int? {
+        guard contains(element) else { return nil }
+        return array.index(of: element)
+    }
+
     @discardableResult
     mutating func append(_ element: Element) -> Bool {
         let inserted = set.insert(element).inserted
