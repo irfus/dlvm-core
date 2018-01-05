@@ -35,7 +35,7 @@ let package = Package(
                     targets: ["dlopt"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/rxwei/CommandLine", from: "4.0.0"),
+        .package(url: "https://github.com/apple/swift-package-manager", .branch("swift-4.1-branch")),
         .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.7.1")
     ],
     targets: [
@@ -43,7 +43,7 @@ let package = Package(
         .target(name: "DLVM", dependencies: ["CoreTensor", "CoreOp"]),
         .target(name: "DLParse", dependencies: ["DLVM"]),
         .target(name: "DLCommandLineTools", dependencies: [
-            "CommandLineKit", "DLVM", "DLParse"
+            "Utility", "DLVM", "DLParse"
         ]),
         .target(name: "dlopt", dependencies: [
             "DLVM", "DLParse", "DLCommandLineTools"

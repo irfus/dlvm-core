@@ -1,4 +1,4 @@
-// RUN: dlopt -f %s -p CSE --print-ir | FileCheck %s
+// RUN: dlopt %s -p CSE --print-ir | FileCheck %s
 
 // CHECK: CSE: changed
 
