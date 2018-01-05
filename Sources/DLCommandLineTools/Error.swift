@@ -18,8 +18,49 @@
 //
 
 import Foundation
+import Basic
+import Utility
 
-public func error(_ message: String) -> Never {
-    print("error: " + message)
+public func print(error: Any) {
+    let writer = InteractiveWriter.stderr
+    writer.write("error: ", inColor: .red, bold: true)
+    writer.write("\(error)")
+    writer.write("\n")
+}
+
+public func error(_ error: Any) -> Never {
+    print(error: error)
     exit(EXIT_FAILURE)
+}
+
+/// This class is used to write on the underlying stream.
+///
+/// If underlying stream is a not tty, the string will be written in without any
+/// formatting.
+private final class InteractiveWriter {
+
+    /// The standard error writer.
+    static let stderr = InteractiveWriter(stream: stderrStream)
+
+    /// The terminal controller, if present.
+    let term: TerminalController?
+
+    /// The output byte stream reference.
+    let stream: OutputByteStream
+
+    /// Create an instance with the given stream.
+    init(stream: OutputByteStream) {
+        self.term = (stream as? LocalFileOutputByteStream).flatMap(TerminalController.init(stream:))
+        self.stream = stream
+    }
+
+    /// Write the string to the contained terminal or stream.
+    func write(_ string: String, inColor color: TerminalController.Color = .noColor, bold: Bool = false) {
+        if let term = term {
+            term.write(string, inColor: color, bold: bold)
+        } else {
+            stream <<< string
+            stream.flush()
+        }
+    }
 }

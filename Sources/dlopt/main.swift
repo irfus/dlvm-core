@@ -19,94 +19,132 @@
 
 import DLVM
 import DLParse
-import Foundation
-import CommandLineKit
 import DLCommandLineTools
+import Foundation
+import Basic
+import Utility
 
-let cli = CommandLineKit.CommandLine()
-
-struct Options {
-    /// File
-    static let filePaths = MultiStringOption(shortFlag: "f", longFlag: "files",
-                                            helpMessage: "Paths to DLVM IR source files")
+public class Options {
+    /// Input files
+    var inputFiles: [AbsolutePath] = []
+    /// Transformation passes
+    var passes: [String]?
+    /// Output paths
+    var outputPaths: [AbsolutePath]?
     /// Print IR
-    static let shouldPrintIR = BoolOption(longFlag: "print-ir",
-                                          helpMessage: "Print IR after transformation instead of writing to file")
-
-    /// Transform passes
-    static let passes = MultiStringOption(shortFlag: "p", longFlag: "passes",
-                                          helpMessage: "Run passes")
-
-    /// Output
-    static let outputPaths = MultiStringOption(shortFlag: "o", longFlag: "outputs",
-                                               helpMessage: "Output file paths")
-    /// Help
-    static let needsHelp = BoolOption(shortFlag: "h", longFlag: "help",
-                                      helpMessage: "Print help message")
+    var shouldPrintIR = true
     /// Bypass verification
-    static let noVerify = BoolOption(longFlag: "no-verify",
-                                     helpMessage: "Bypass verification after applying transforms")
+    var noVerify = false
 }
 
-cli.addOptions(Options.filePaths,
-               Options.shouldPrintIR,
-               Options.passes,
-               Options.outputPaths,
-               Options.needsHelp,
-               Options.noVerify)
+/// Create the parser
+let parser = ArgumentParser(commandName: "dlopt", usage: "[options] <inputs>",
+                            overview: "DLVM IR optimizer")
+/// Create the binder
+let binder = ArgumentBinder<Options>()
 
-/// Parse command line
-do { try cli.parse(strict: true) }
-catch { cli.printUsage(error); exit(EXIT_FAILURE) }
+/// Bind options
+binder.bindArray(
+    positional: parser.add(positional: "input files", kind: [PathArgument].self,
+                           usage: "DLVM IR input files"),
+    to: { $0.inputFiles = $1.lazy.map({ $0.path }) })
 
-/// Command line entry
+binder.bindArray(
+    parser.add(option: "--passes", shortName: "-p", kind: [String].self,
+               usage: "Transform passes"),
+    parser.add(option: "--outputs", shortName: "-o", kind: [PathArgument].self,
+               usage: "Output paths"),
+    to: {
+        if !$1.isEmpty { $0.passes = $1 }
+        if !$2.isEmpty { $0.outputPaths = $2.lazy.map({ $0.path }) }
+    })
+
+binder.bind(
+    parser.add(option: "--print-ir", kind: Bool.self,
+               usage: "Print IR after transformation instead of writing to file"),
+    parser.add(option: "--no-verify", kind: Bool.self,
+               usage: "Bypass verification after applying transforms"),
+    to: {
+        $0.shouldPrintIR = $1 ?? $0.shouldPrintIR
+        $0.noVerify = $2 ?? $0.noVerify
+    })
+
 func main() throws {
-
-    guard !Options.needsHelp.wasSet else {
-        print("DLVM IR Optimizer\n")
-        cli.printUsage()
-        return
+    /// Parse arguments
+    var options = Options()
+    do {
+        let arguments = Array(CommandLine.arguments.dropFirst())
+        let result = try parser.parse(arguments)
+        binder.fill(result, into: &options)
+    } catch ArgumentParserError.expectedArguments(_, ["input files"]) {
+        throw Error.noInputPaths
     }
 
-    guard let filePaths = Options.filePaths.value else {
-        error("no input files; use -f to specify files")
-    }
-
-    let outputPaths = Options.outputPaths.value
+    let outputPaths = options.outputPaths
     if let outputPaths = outputPaths {
-        guard outputPaths.count == filePaths.count else {
-            error("different numbers of inputs and outputs specified")
+        guard outputPaths.count == options.inputFiles.count else {
+            throw Error.inputOutputCountMismatch
         }
     }
 
-    for (i, filePath) in filePaths.enumerated() {
+    /// Verify input files
+    // NOTE: To be removed when PathArgument init checks for invalid paths.
+    // Error should indicate raw string argument, not the corresponding path.
+    if let invalidPath = options.inputFiles.first(where: { !isFile($0) }) {
+        throw Error.invalidInputPath(invalidPath)
+    }
+
+    for (i, inputFile) in options.inputFiles.enumerated() {
         /// Read IR and verify
-        print("Source file:", filePath)
+        print("Source file:", inputFile.prettyPath())
         /// Parse
-        let module = try Module.parsed(fromFile: filePath)
+        let module = try Module.parsed(fromFile: inputFile.asString)
 
         /// Run passes
-        if let passes = Options.passes.value {
+        if let passes = options.passes {
             for passName in passes {
                 try runPass(named: passName, on: module,
-                            bypassingVerification: Options.noVerify.wasSet)
+                            bypassingVerification: options.noVerify)
             }
         }
 
         /// Print IR instead of writing to file if requested
-        if Options.shouldPrintIR.wasSet {
+        if options.shouldPrintIR {
             print()
             print(module)
         }
 
         /// Otherwise, write result to IR file by default
         else {
-            let path = outputPaths?[i] ?? filePath
-            try module.write(toFile: path)
+            let path = outputPaths?[i] ?? inputFile
+            try module.write(toFile: path.asString)
         }
     }
+}
 
+private enum Error: Swift.Error {
+    /// No input paths were specified.
+    case noInputPaths
+
+    /// An input path is invalid.
+    case invalidInputPath(AbsolutePath)
+
+    /// The number of input files and output paths do not match.
+    case inputOutputCountMismatch
+}
+
+extension Error: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .noInputPaths:
+            return "no input files"
+        case .invalidInputPath(let path):
+            return "invalid input path: \(path.prettyPath())"
+        case .inputOutputCountMismatch:
+            return "number of inputs and outputs do not match"
+        }
+    }
 }
 
 do { try main() }
-catch { print(error) }
+catch let err { error(err) }
