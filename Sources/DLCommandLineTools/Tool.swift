@@ -50,7 +50,7 @@ open class DLVMTool<Options : ToolOptions> {
         // Create the binder.
         let binder = ArgumentBinder<Options>()
 
-        /// Bind the common options.
+        // Bind the common options.
         binder.bindArray(
             positional: parser.add(positional: "input files", kind: [PathArgument].self,
                                    usage: "DLVM IR input files"),
@@ -77,7 +77,6 @@ open class DLVMTool<Options : ToolOptions> {
         do {
             // Parse the result.
             let result = try parser.parse(args)
-
             // Fill and set options.
             var options = Options()
             binder.fill(result, into: &options)
@@ -100,7 +99,7 @@ open class DLVMTool<Options : ToolOptions> {
         } catch {
             // Set execution status to failure in case of errors.
             executionStatus = .failure
-            print(error: error)
+            handle(error: error)
         }
         DLVMTool.exit(with: executionStatus)
     }
