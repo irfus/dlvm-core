@@ -1,4 +1,4 @@
-// RUN: dlopt -f %s --print-ir | FileCheck %s
+// RUN: dlopt %s --print-ir | FileCheck %s
 
 module "mnist"
 stage raw

@@ -1,4 +1,4 @@
-// RUN: dlopt -f %s -p AD AS CSE DCE --print-ir | FileCheck %s
+// RUN: dlopt %s -p AD AS CSE DCE --print-ir | FileCheck %s
 
 // CHECK: AD: changed
 
