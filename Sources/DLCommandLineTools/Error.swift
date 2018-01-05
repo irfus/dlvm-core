@@ -21,6 +21,31 @@ import Foundation
 import Basic
 import Utility
 
+public enum DLError: Swift.Error {
+    /// No input files were specified.
+    case noInputFiles
+
+    /// An input file is invalid.
+    // NOTE: To be removed when PathArgument init checks for invalid paths.
+    case invalidInputFile(AbsolutePath)
+
+    /// The number of input files and output paths do not match.
+    case inputOutputCountMismatch
+}
+
+extension DLError: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .noInputFiles:
+            return "no input files"
+        case .invalidInputFile(let path):
+            return "invalid input path: \(path.prettyPath())"
+        case .inputOutputCountMismatch:
+            return "number of inputs and outputs do not match"
+        }
+    }
+}
+
 public func print(error: Any) {
     let writer = InteractiveWriter.stderr
     writer.write("error: ", inColor: .red, bold: true)
@@ -28,9 +53,14 @@ public func print(error: Any) {
     writer.write("\n")
 }
 
-public func error(_ error: Any) -> Never {
-    print(error: error)
-    exit(EXIT_FAILURE)
+public func handle(error: Any) {
+    switch error {
+    case ArgumentParserError.expectedArguments(let parser, _):
+        print(error: error)
+        parser.printUsage(on: stderrStream)
+    default:
+        print(error: error)
+    }
 }
 
 /// This class is used to write on the underlying stream.
