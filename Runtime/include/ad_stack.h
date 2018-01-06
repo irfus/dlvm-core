@@ -2,7 +2,7 @@
 //  ad_stack.h
 //  DLVM
 //
-//  Copyright 2016-2017 DLVM Team.
+//  Copyright 2016-2018 The DLVM Team.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
