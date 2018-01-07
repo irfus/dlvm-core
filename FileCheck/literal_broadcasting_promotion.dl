@@ -1,0 +1,41 @@
+// RUN: dlopt %s -p LBP DCE --print-ir | FileCheck %s
+
+// CHECK: LBP: changed
+
+module "lbp"
+stage raw
+
+func @scalar_tests: (i32) -> i32 {
+'entry(%x: i32):
+    %0.0 = literal 1: i32
+    %0.1 = add %x: i32, %0.0: i32
+    %0.2 = multiply %0.0: i32, %0.1: i32
+    return %0.2: i32
+}
+
+// CHECK: func @scalar_tests: (i32) -> i32
+// CHECK: %0.0 = add %x: i32, 1: i32
+// CHECK: %0.1 = multiply 1: i32, %0.0: i32
+
+func @tensor_tests: (<1 x 10 x f32>) -> <1 x 10 x f32> {
+'entry(%x: <1 x 10 x f32>):
+    %0.0 = literal 1: <1 x 10 x f32>
+    %0.1 = add %x: <1 x 10 x f32>, %0.0: <1 x 10 x f32>
+    %0.2 = multiply %0.0: <1 x 10 x f32>, %0.1: <1 x 10 x f32>
+    return %0.2: <1 x 10 x f32>
+}
+
+// CHECK: func @tensor_tests: (<1 x 10 x f32>) -> <1 x 10 x f32>
+// CHECK: %0.0 = add %x: <1 x 10 x f32>, 1: <1 x 10 x f32>
+// CHECK: %0.1 = multiply 1: <1 x 10 x f32>, %0.0: <1 x 10 x f32>
+
+func @complex_tests: (<4 x 6 x f32>) -> <2 x 2 x f32> {
+'entry(%input: <4 x 6 x f32>):
+    %0.0 = literal 0: f32
+    %0.1 = reduceWindow %input: <4 x 6 x f32> by add init %0.0: f32 dims 2, 3 strides 2, 3 padding none
+    return %0.1: <2 x 2 x f32>
+}
+
+// CHECK: func @complex_tests: (<4 x 6 x f32>) -> <2 x 2 x f32>
+// CHECK: %0.0 = reduceWindow %input: <4 x 6 x f32> by add init 0: f32 dims 2, 3 strides 2, 3 padding none
+

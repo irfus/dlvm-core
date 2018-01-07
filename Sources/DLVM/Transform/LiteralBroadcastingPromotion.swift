@@ -23,30 +23,26 @@ open class LiteralBroadcastingPromotion : TransformPass {
     open class func run(on body: BasicBlock) -> Bool {
         var changed = false
         for inst in body {
-            /// `zipWith` is the only instruction kind supporting broadcasting
-            guard case .numericBinary(let op, var lhs, var rhs) = inst.kind else {
-                continue
-            }
-            /// Must have tensor type
-            guard case let (.tensor(s1, dt1),
-                            .tensor(s2, dt2)) = (lhs.type.canonical,
-                                                 rhs.type.canonical) else
-                { continue }
-            /// If s1 != s2, it's either the case that this IR is malformed or 
-            /// broadcasting is already used
-            guard s1 == s2, !s1.isScalar else { continue }
-            /// Broadcast the scalar side
-            switch (lhs, rhs) {
-            case (.literal(_, .scalar(_)), _):
-                changed = true
-                lhs.type = .scalar(dt1)
-                inst.kind = .numericBinary(op, lhs, rhs)
-            case (_, .literal(_, .scalar(_))):
-                changed = true
-                rhs.type = .scalar(dt2)
-                inst.kind = .numericBinary(op, lhs, rhs)
-            default:
-                break
+            for var operand in inst.operands {
+                /// Operand must have tensor type
+                guard case let .tensor(_, dt) = operand.type else {
+                    continue
+                }
+                /// Operand must be a literal or literal instruction
+                switch operand {
+                case .literal(_, .scalar(_)):
+                    changed = true
+                    operand.type = .scalar(dt)
+                    inst.substitute(operand, for: operand)
+                case .instruction(_, let i):
+                    guard case let .literal(lit, ty) = i.kind, ty.isTensor else {
+                        break
+                    }
+                    changed = true
+                    inst.substitute(.literal(ty, lit), for: operand)
+                default:
+                    break
+                }
             }
         }
         return changed
