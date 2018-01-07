@@ -158,6 +158,8 @@ extension InstructionKind : TextOutputStreamable {
             }
         case let .literal(lit, ty):
             target.write("literal \(lit): \(ty)")
+        case let .numericUnary(f, op):
+            target.write("\(f) \(op)")
         case let .numericBinary(f, op1, op2):
             target.write("\(f) \(op1), \(op2)")
         case let .booleanBinary(f, op1, op2):
@@ -168,8 +170,6 @@ extension InstructionKind : TextOutputStreamable {
             target.write("\(f) \(op1), \(op2)")
         case let .dot(op1, op2):
             target.write("dot \(op1), \(op2)")
-        case let .numericUnary(f, op):
-            target.write("\(f) \(op)")
         case let .reduce(comb, op, initial, dims):
             target.write("reduce \(op) by \(comb) init \(initial) along \(dims.joinedDescription)")
         case let .reduceWindow(comb, op, initial, dims, strides, padding):

@@ -815,14 +815,14 @@ public extension InstructionKind {
             return .reduce(.function(new), new, initial: v1, dims: dims)
         case .reduce(.function(old), let v1, initial: old, dims: let dims):
             return .reduce(.function(new), v1, initial: new, dims: dims)
-        case .reduce(.function(let v1), old, initial: old, dims: let dims):
-            return .reduce(.function(v1), new, initial: new, dims: dims)
-        case .reduce(.function(let v1), let v2, initial: old, dims: let dims):
-            return .reduce(.function(v1), v2, initial: new, dims: dims)
-        case .reduce(.function(let v1), old, initial: let v2, dims: let dims):
-            return .reduce(.function(v1), new, initial: v2, dims: dims)
         case .reduce(.function(old), let v1, initial: let v2, dims: let dims):
             return .reduce(.function(new), v1, initial: v2, dims: dims)
+        case .reduce(let op, old, initial: old, dims: let dims):
+            return .reduce(op, new, initial: new, dims: dims)
+        case .reduce(let op, let v2, initial: old, dims: let dims):
+            return .reduce(op, v2, initial: new, dims: dims)
+        case .reduce(let op, old, initial: let v2, dims: let dims):
+            return .reduce(op, new, initial: v2, dims: dims)
         case .reduceWindow(.function(old), old, initial: old, dims: let d,
                            strides: let s, padding: let p):
             return .reduceWindow(.function(new), new, initial: new,
@@ -835,21 +835,21 @@ public extension InstructionKind {
                            dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(new), v1, initial: new,
                                  dims: d, strides: s, padding: p)
-        case .reduceWindow(.function(let v1), old, initial: old,
-                           dims: let d, strides: let s, padding: let p):
-            return .reduceWindow(.function(v1), new, initial: new,
-                                 dims: d, strides: s, padding: p)
-        case .reduceWindow(.function(let v1), old, initial: let v2,
-                           dims: let d, strides: let s, padding: let p):
-            return .reduceWindow(.function(v1), new, initial: v2,
-                                 dims: d, strides: s, padding: p)
-        case .reduceWindow(.function(let v1), let v2, initial: old,
-                           dims: let d, strides: let s, padding: let p):
-            return .reduceWindow(.function(v1), v2, initial: new,
-                                 dims: d, strides: s, padding: p)
         case .reduceWindow(.function(old), let v1, initial: let v2,
                            dims: let d, strides: let s, padding: let p):
             return .reduceWindow(.function(new), v1, initial: v2,
+                                 dims: d, strides: s, padding: p)
+        case .reduceWindow(let op, old, initial: old,
+                           dims: let d, strides: let s, padding: let p):
+            return .reduceWindow(op, new, initial: new,
+                                 dims: d, strides: s, padding: p)
+        case .reduceWindow(let op, old, initial: let v2,
+                           dims: let d, strides: let s, padding: let p):
+            return .reduceWindow(op, new, initial: v2,
+                                 dims: d, strides: s, padding: p)
+        case .reduceWindow(let op, let v2, initial: old,
+                           dims: let d, strides: let s, padding: let p):
+            return .reduceWindow(op, v2, initial: new,
                                  dims: d, strides: s, padding: p)
         case .convolve(old, kernel: old, strides: let s, padding: let p,
                        leftDilation: let ld, rightDilation: let rd, groups: let g):

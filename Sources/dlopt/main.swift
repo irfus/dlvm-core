@@ -33,7 +33,7 @@ class DLOptTool : DLVMTool<OptToolOptions> {
     public convenience init(args: [String]) {
         self.init(
             toolName: "dlopt",
-            usage: "[options] <inputs>",
+            usage: "<inputs> [options]",
             overview: "DLVM IR optimizer",
             args: args
         )

@@ -60,35 +60,30 @@ func @conv2d_10: (<1 x 10 x 32 x 48 x f32>, <8 x 2 x 3 x 3 x f32>) -> <1 x 8 x 1
 
 func @reduceWindow2d_1: (<4 x 6 x f32>) -> <3 x 4 x f32> {
 'entry(%input: <4 x 6 x f32>):
-    %0.0 = literal 0: f32
-    %0.1 = reduceWindow %input: <4 x 6 x f32> by add init 0.0: f32 dims 2, 3 strides 1, 1 padding none
-    return %0.1: <3 x 4 x f32>
+    %0.0 = reduceWindow %input: <4 x 6 x f32> by add init 0: f32 dims 2, 3 strides 1, 1 padding none
+    return %0.0: <3 x 4 x f32>
 }
 
 func @reduceWindow2d_2: (<4 x 6 x f32>) -> <2 x 2 x f32> {
 'entry(%input: <4 x 6 x f32>):
-    %0.0 = literal 0: f32
-    %0.1 = reduceWindow %input: <4 x 6 x f32> by add init 0.0: f32 dims 2, 3 strides 2, 3 padding none
-    return %0.1: <2 x 2 x f32>
+    %0.0 = reduceWindow %input: <4 x 6 x f32> by add init 0: f32 dims 2, 3 strides 2, 3 padding none
+    return %0.0: <2 x 2 x f32>
 }
 
 func @reduceWindow2d_3: (<5 x 7 x f32>) -> <2 x 2 x f32> {
 'entry(%input: <5 x 7 x f32>):
-    %0.0 = literal 0: f32
-    %0.1 = reduceWindow %input: <5 x 7 x f32> by add init 0.0: f32 dims 2, 3 strides 2, 3 padding none
-    return %0.1: <2 x 2 x f32>
+    %0.0 = reduceWindow %input: <5 x 7 x f32> by add init 0: f32 dims 2, 3 strides 2, 3 padding none
+    return %0.0: <2 x 2 x f32>
 }
 
 func @reduceWindow2d_4: (<5 x 7 x f32>) -> <5 x 7 x f32> {
 'entry(%input: <5 x 7 x f32>):
-    %0.0 = literal 0: f32
-    %0.1 = reduceWindow %input: <5 x 7 x f32> by add init 0.0: f32 dims 2, 3 strides 1, 1 padding half
-    return %0.1: <5 x 7 x f32>
+    %0.0 = reduceWindow %input: <5 x 7 x f32> by add init 0: f32 dims 2, 3 strides 1, 1 padding half
+    return %0.0: <5 x 7 x f32>
 }
 
 func @reduceWindow2d_5: (<5 x 7 x f32>) -> <3 x 3 x f32> {
 'entry(%input: <5 x 7 x f32>):
-    %0.0 = literal 0: f32
-    %0.1 = reduceWindow %input: <5 x 7 x f32> by add init 0.0: f32 dims 2, 3 strides 2, 3 padding half
-    return %0.1: <3 x 3 x f32>
+    %0.0 = reduceWindow %input: <5 x 7 x f32> by add init 0: f32 dims 2, 3 strides 2, 3 padding half
+    return %0.0: <3 x 3 x f32>
 }
