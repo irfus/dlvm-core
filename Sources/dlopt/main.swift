@@ -24,12 +24,12 @@ import Foundation
 import Basic
 import Utility
 
-class OptToolOptions : ToolOptions {
+class OptimizerToolOptions : ToolOptions {
     /// Bypass verification
     var noVerify = false
 }
 
-class DLOptTool : DLVMTool<OptToolOptions> {
+class OptimizerTool : CommandLineTool<OptimizerToolOptions> {
     public convenience init(args: [String]) {
         self.init(
             toolName: "dlopt",
@@ -82,7 +82,7 @@ class DLOptTool : DLVMTool<OptToolOptions> {
         }
     }
 
-    override class func defineArguments(parser: ArgumentParser, binder: ArgumentBinder<OptToolOptions>) {
+    override class func defineArguments(parser: ArgumentParser, binder: ArgumentBinder<OptimizerToolOptions>) {
         binder.bind(
             option: parser.add(option: "--no-verify", kind: Bool.self,
                        usage: "Bypass verification after applying transforms"),
@@ -90,5 +90,5 @@ class DLOptTool : DLVMTool<OptToolOptions> {
     }
 }
 
-let tool = DLOptTool(args: Array(CommandLine.arguments.dropFirst()))
+let tool = OptimizerTool(args: Array(CommandLine.arguments.dropFirst()))
 tool.run()

@@ -38,7 +38,8 @@ public extension DataFlowGraph {
     }
 
     /// Returns a set of users within the basic block
-    func successors(of def: Definition, in basicBlock: BasicBlock) -> Set<Instruction> {
+    func successors(of def: Definition,
+                    in basicBlock: BasicBlock) -> Set<Instruction> {
         var users = successors(of: def)
         for user in users where user.parent != basicBlock {
             users.remove(user)
@@ -55,7 +56,7 @@ public extension DataFlowGraph {
 public extension DataFlowGraph {
     func breadthFirst<C>(from definitions: C)
         -> AnyIterator<(depth: Int, user: Instruction)>
-        where C : Collection, C.Iterator.Element == Definition
+        where C : Collection, C.Element == Definition
     {
         var depth = 1
         var queue: ArraySlice<Instruction?> = []

@@ -155,8 +155,8 @@ import class Foundation.NSRegularExpression
 import struct Foundation.NSRange
 import class Foundation.NSString
 
-private extension ArraySlice where Iterator.Element == UTF8.CodeUnit {
-    static func ~= (pattern: String, value: ArraySlice<Iterator.Element>) -> Bool {
+private extension ArraySlice where Element == UTF8.CodeUnit {
+    static func ~= (pattern: String, value: ArraySlice<Element>) -> Bool {
         return pattern.utf8.elementsEqual(value)
     }
 
@@ -182,7 +182,7 @@ private extension ArraySlice where Iterator.Element == UTF8.CodeUnit {
     }
 }
 
-private extension RangeReplaceableCollection where Iterator.Element == UTF8.CodeUnit {
+private extension RangeReplaceableCollection where Element == UTF8.CodeUnit {
     mutating func append(_ string: StaticString) {
         string.withUTF8Buffer { buf in
             self.append(contentsOf: buf)

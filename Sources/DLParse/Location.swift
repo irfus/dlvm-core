@@ -56,7 +56,7 @@ public extension TextLocation {
     }
 
     func advanced<S: Sequence>(byScanning prefix: S) -> Self
-        where S.Iterator.Element == UnicodeScalar
+        where S.Element == UnicodeScalar
     {
         var new = self
         for char in prefix {

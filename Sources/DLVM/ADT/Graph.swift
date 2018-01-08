@@ -208,13 +208,11 @@ public extension DirectedGraph {
     func isLeaf(_ node: Node) -> Bool {
         return successors(of: node).isEmpty
     }
-    
 }
 
 /// Initializer from source nodes that store successors
 public extension DirectedGraph where Node : ForwardGraphNode {
-
-    init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
+    init<S : Sequence>(nodes: S) where S.Element == Node {
         for node in nodes {
             for succ in node.successors {
                 insertEdge(from: node, to: succ)
@@ -222,7 +220,7 @@ public extension DirectedGraph where Node : ForwardGraphNode {
         }
     }
 
-    init<S : Sequence>(sources: S) where S.Iterator.Element == Node {
+    init<S : Sequence>(sources: S) where S.Element == Node {
         for source in sources {
             insertAll(fromSource: source)
         }
@@ -247,8 +245,7 @@ public extension DirectedGraph where Node : ForwardGraphNode {
 
 /// Initializer from leaves that store predecessors
 public extension DirectedGraph where Node : BackwardGraphNode {
-
-    init<S : Sequence>(nodes: S) where S.Iterator.Element == Node {
+    init<S : Sequence>(nodes: S) where S.Element == Node {
         for node in nodes {
             for pred in node.predecessors {
                 insertEdge(from: pred, to: node)
@@ -256,7 +253,7 @@ public extension DirectedGraph where Node : BackwardGraphNode {
         }
     }
 
-    init<S : Sequence>(leaves: S) where S.Iterator.Element == Node {
+    init<S : Sequence>(leaves: S) where S.Element == Node {
         for leaf in leaves {
             insertAll(fromLeaf: leaf)
         }
@@ -277,5 +274,4 @@ public extension DirectedGraph where Node : BackwardGraphNode {
         }
         insertAll(fromLeaf: node)
     }
-    
 }

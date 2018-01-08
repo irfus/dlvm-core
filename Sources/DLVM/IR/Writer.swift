@@ -416,7 +416,7 @@ extension String {
 extension Module : TextOutputStreamable {
     func write<C, T>(_ elements: C, to target: inout T)
         where C : Collection, T : TextOutputStream,
-              C.Iterator.Element : TextOutputStreamable
+              C.Element : TextOutputStreamable
     {
         for element in elements {
             target.write("\n")

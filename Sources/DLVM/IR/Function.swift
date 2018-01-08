@@ -26,16 +26,23 @@ public final class Function : Named, IRCollection, IRUnit {
     public enum DeclarationKind {
         /// Externally defined
         case external
-        /// Mark the function as the gradient of another with given configuration. To be
-        /// materialized as a normally defined function by AD.
+        /// Mark the function as the gradient of another with given
+        /// configuration. To be materialized as a normally defined function by
+        /// AD.
         /// - Parameters:
-        ///   - from: index of tuple element to differentiate, when the return type is
-        ///           a tuple; otherwise must be 0
-        ///   - wrt: indices of arguments to differentiate the function with respect to
-        ///   - keeping: indices of return values to kept in the gradient function, when
-        ///              the return type is a tuple; otherwise can be [0] or []
-        /// - Note: The type of the function must match that given by the configuration
-        case gradient(of: Function, from: Int?, wrt: [Int]?, keeping: [Int], seedable: Bool)
+        ///   - from: index of tuple element to differentiate, when the return
+        ///           type is a tuple; otherwise must be 0.
+        ///   - wrt: indices of arguments to differentiate the function with
+        ///          respect to.
+        ///   - keeping: indices of return values to kept in the gradient
+        ///              function, when the return type is a tuple; otherwise
+        ///              can be [0] or [].
+        ///   - seedable: whether the gradient function can take back-propagated
+        ///               gradient as the seed for reverse-mode AD.
+        /// - Note: The type of the function must match that given by the
+        ///         configuration.
+        case gradient(of: Function,
+            from: Int?, wrt: [Int]?, keeping: [Int], seedable: Bool)
     }
 
     public typealias Base = OrderedSet<BasicBlock>
@@ -114,7 +121,9 @@ extension Function : Value {
 }
 
 public extension Function {
-    func acceptsArguments<C : Collection>(_ types: C) -> Bool where C.Iterator.Element == Type {
+    func acceptsArguments<C : Collection>(_ types: C) -> Bool
+        where C.Element == Type
+    {
         guard types.count == argumentTypes.count else { return false }
         return zip(types, argumentTypes).forAll { actual, formal in
             actual.conforms(to: formal)
@@ -143,10 +152,8 @@ public extension Function {
             let bbIndex = oldInstruction.parent.indexInParent
             let instIndex = oldInstruction.indexInParent
             for bb in suffix(from: bbIndex) {
-                for inst in bb {
-                    if bb == oldInstruction.parent, inst.indexInParent < instIndex {
-                        continue
-                    }
+                for inst in bb where bb == oldInstruction.parent &&
+                    inst.indexInParent < instIndex {
                     inst.substitute(newUse, for: %oldInstruction)
                 }
             }
@@ -177,8 +184,10 @@ public extension Function {
                 /// Element must be differentiable
                 elementTypes[diffIndex].isDifferentiable,
                 /// Indices of the outputs to keep must be in bounds
-                let someOutputs = elementTypes.subcollection(atIndices: outputIndices),
-                /// Indices of the outputs to keep must not contain any duplicate
+                let someOutputs = elementTypes
+                    .subcollection(atIndices: outputIndices),
+                /// Indices of the outputs to keep must not contain any
+                /// duplicate
                 !outputIndices.containsDuplicate
                 else { return nil }
             diffSourceType = elementTypes[diffIndex]
@@ -203,11 +212,14 @@ public extension Function {
             /// All diff variables must be diff'able arguments
             diffVars.forAll({$0.isDifferentiable})
             else { return nil }
-        /// Result of differentiation has the same input types but different output types
-        /// Output type is `(k1, ..., kn, d1, ..., dn)` where `k1...kn` are outputs of the 
-        /// original function to keep, `d1...dn` are derivatives of the output at `diffIndex`
-        /// with respect to arguments at indices `varIndices`, respectively.
-        return .function(isSeedable ? argumentTypes + [diffSourceType] : argumentTypes,
-                         .tuple(diffVars + keptOutputs))
+        /// Result of differentiation has the same input types but different
+        /// output types Output type is `(k1, ..., kn, d1, ..., dn)` where
+        /// `k1...kn` are outputs of the original function to keep, `d1...dn`
+        /// are derivatives of the output at `diffIndex` with respect to
+        /// arguments at indices `varIndices`, respectively.
+        return .function(
+            isSeedable ? argumentTypes + [diffSourceType] : argumentTypes,
+            .tuple(diffVars + keptOutputs)
+        )
     }
 }

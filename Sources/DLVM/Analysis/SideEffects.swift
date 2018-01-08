@@ -62,8 +62,8 @@ open class SideEffectAnalysis : AnalysisPass {
         var result = SideEffectInfo()
         var sameModuleCalls: [(Function, Function)] = []
 
-        /// Find instructions that definitely have side-effects, and collect callers and
-        /// callees of functions
+        /// Find instructions that definitely have side-effects, and collect
+        /// callers and callees of functions
         for function in body {
             var props: SideEffectProperties = []
             for inst in function.instructions {
@@ -92,7 +92,8 @@ open class SideEffectAnalysis : AnalysisPass {
         /// For each function call, union caller's properties with callee's
         var propChanged = false
         repeat {
-            for (caller, callee) in sameModuleCalls where result[caller] != result[callee] {
+            for (caller, callee) in sameModuleCalls
+                where result[caller] != result[callee] {
                 result[caller].formUnion(result[callee])
                 propChanged = true
             }

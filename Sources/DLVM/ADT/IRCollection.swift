@@ -18,7 +18,8 @@
 //
 
 /// IRCollection
-public protocol IRCollection : AnyObject, RandomAccessCollection, Verifiable, PassResultCache
+public protocol IRCollection
+    : AnyObject, RandomAccessCollection, Verifiable, PassResultCache
     where Index == Int, Element : Hashable
 {
     typealias Base = OrderedSet<Element>

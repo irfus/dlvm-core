@@ -45,7 +45,7 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
     public internal(set) var passManager: PassManager<BasicBlock> = PassManager()
 
     internal init<C: Collection>(name: String, arguments: C, parent: Function)
-        where C.Iterator.Element == Argument
+        where C.Element == Argument
     {
         self.name = name
         self.arguments.append(contentsOf: arguments)
@@ -57,7 +57,7 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
     }
 
     public convenience init<C: Collection>(name: String, arguments: C, parent: Function)
-        where C.Iterator.Element == (String, Type)
+        where C.Element == (String, Type)
     {
         self.init(name: name, arguments: [] as [Argument], parent: parent)
         for (name, type) in arguments {
@@ -109,7 +109,6 @@ public extension BasicBlock {
 }
 
 public extension BasicBlock {
-
     /// Whether there exists a terminator instruction
     /// - Note: a branching instruction in the middle of the basic block
     /// is not considered a terminator
@@ -144,7 +143,6 @@ public extension BasicBlock {
     var isEntry: Bool {
         return name == "entry"
     }
-
 }
 
 public extension BasicBlock {

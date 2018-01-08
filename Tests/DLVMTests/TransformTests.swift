@@ -26,21 +26,29 @@ class TransformTests: XCTestCase {
     
     /// - TODO: Fix bug in dominance analysis that causes crash
     func testDCE() throws {
-        let fun = builder.buildFunction(named: "bar",
-                                        argumentTypes: [.scalar(.float(.single)), .scalar(.float(.single))],
-                                        returnType: .int(32))
+        let fun = builder.buildFunction(
+            named: "bar",
+            argumentTypes: [.scalar(.float(.single)), .scalar(.float(.single))],
+            returnType: .int(32))
         builder.move(to: builder.buildEntry(argumentNames: ["x", "y"], in: fun))
-        let mult = builder.multiply(.literal(.int(32), 5), .literal(.int(32), 8))
-        let dead1 = builder.buildInstruction(.numericBinary(.multiply,
-                                                            .literal(.int(32), 10000), .literal(.int(32), 20000)),
-                                             name: "dead1")
-        builder.buildInstruction(.numericBinary(.add, %dead1, 20000 ~ Type.int(32)),
-                                 name: "dead2")
+        let mult = builder.multiply(
+            .literal(.int(32), 5), .literal(.int(32), 8))
+        let dead1 = builder.buildInstruction(
+            .numericBinary(.multiply,
+                           .literal(.int(32), 10000),
+                           .literal(.int(32), 20000)), name: "dead1")
+        builder.buildInstruction(
+            .numericBinary(.add, %dead1, 20000 ~ Type.int(32)),
+            name: "dead2")
         let cmp = builder.compare(.equal, %mult, .literal(.int(32), 1))
-        let thenBB = builder.buildBasicBlock(named: "then", arguments: ["a" : .int(32)], in: fun)
-        let elseBB = builder.buildBasicBlock(named: "else", arguments: ["b" : .int(32)], in: fun)
-        let contBB = builder.buildBasicBlock(named: "cont", arguments: ["c" : .int(32)], in: fun)
-        builder.conditional(%cmp, then: thenBB, arguments: [.literal(.int(32), 0)],
+        let thenBB = builder.buildBasicBlock(
+            named: "then", arguments: ["a" : .int(32)], in: fun)
+        let elseBB = builder.buildBasicBlock(
+            named: "else", arguments: ["b" : .int(32)], in: fun)
+        let contBB = builder.buildBasicBlock(
+            named: "cont", arguments: ["c" : .int(32)], in: fun)
+        builder.conditional(%cmp,
+                            then: thenBB, arguments: [.literal(.int(32), 0)],
                             else: elseBB, arguments: [.literal(.int(32), 1)])
         builder.move(to: thenBB)
         builder.branch(contBB, [ %thenBB.arguments[0] ])
@@ -100,16 +108,22 @@ class TransformTests: XCTestCase {
         let common5 = builder.add(.literal(.int(32), 3), %common3)
         let common6 = builder.add(.literal(.int(32), 3), %common4)
         let cmp = builder.compare(.equal, %common5, %common6)
-        let thenBB = builder.buildBasicBlock(named: "then", arguments: ["a" : .int(32)], in: fun)
-        let elseBB = builder.buildBasicBlock(named: "else", arguments: ["b" : .int(32)], in: fun)
-        let contBB = builder.buildBasicBlock(named: "cont", arguments: ["c" : .int(32)], in: fun)
-        builder.conditional(%cmp, then: thenBB, arguments: [.literal(.int(32), 0)],
+        let thenBB = builder.buildBasicBlock(
+            named: "then", arguments: ["a" : .int(32)], in: fun)
+        let elseBB = builder.buildBasicBlock(
+            named: "else", arguments: ["b" : .int(32)], in: fun)
+        let contBB = builder.buildBasicBlock(
+            named: "cont", arguments: ["c" : .int(32)], in: fun)
+        builder.conditional(%cmp,
+                            then: thenBB, arguments: [.literal(.int(32), 0)],
                             else: elseBB, arguments: [.literal(.int(32), 1)])
         builder.move(to: thenBB)
-        let notCommon1 = builder.add(.literal(.int(32), 3), .literal(.int(32), 7))
+        let notCommon1 = builder.add(
+            .literal(.int(32), 3), .literal(.int(32), 7))
         builder.branch(contBB, [%notCommon1])
         builder.move(to: elseBB)
-        let notCommon2 = builder.add(.literal(.int(32), 3), .literal(.int(32), 7))
+        let notCommon2 = builder.add(
+            .literal(.int(32), 3), .literal(.int(32), 7))
         builder.branch(contBB, [%notCommon2])
         builder.move(to: contBB)
         let common7 = builder.add(.literal(.int(32), 3), %common3)

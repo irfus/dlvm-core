@@ -19,7 +19,7 @@
 
 public extension Sequence {
     /// Returns true if all elements satisfy the predicate
-    func forAll(_ predicate: (Iterator.Element) throws -> Bool) rethrows -> Bool {
+    func forAll(_ predicate: (Element) throws -> Bool) rethrows -> Bool {
         return try first(where: { try !predicate($0) }) == nil
     }
 
@@ -34,7 +34,7 @@ public extension Sequence {
     }
     
     /// `mapM`
-    func liftedMap<Result>(_ transform: (Iterator.Element) -> Result?) -> [Result]? {
+    func liftedMap<Result>(_ transform: (Element) -> Result?) -> [Result]? {
         var result: [Result] = []
         for x in self {
             guard let new = transform(x) else { return nil }
@@ -56,9 +56,9 @@ public extension Optional {
 }
 
 public extension Collection where Index == Int {
-    func subcollection(atIndices indices: [Int]) -> [Iterator.Element]? {
+    func subcollection(atIndices indices: [Int]) -> [Element]? {
         guard indices.count <= count else { return nil }
-        var result: [Iterator.Element] = []
+        var result: [Element] = []
         for index in indices {
             if index > count { return nil }
             result.append(self[index])
@@ -67,9 +67,9 @@ public extension Collection where Index == Int {
     }
 }
 
-public extension Sequence where Iterator.Element : Hashable {
+public extension Sequence where Element : Hashable {
     var containsDuplicate: Bool {
-        var set: Set<Iterator.Element> = []
+        var set: Set<Element> = []
         for element in self {
             if set.contains(element) { return true }
             set.insert(element)
@@ -78,8 +78,8 @@ public extension Sequence where Iterator.Element : Hashable {
     }
 }
 
-public extension Sequence where Iterator.Element : Equatable {
-    func except(_ exception: Iterator.Element) -> LazyFilterSequence<Self> {
+public extension Sequence where Element : Equatable {
+    func except(_ exception: Element) -> LazyFilterSequence<Self> {
         return lazy.filter { $0 != exception }
     }
 }

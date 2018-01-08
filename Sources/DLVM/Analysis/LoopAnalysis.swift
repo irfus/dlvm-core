@@ -49,8 +49,8 @@ public extension Loop {
     }
     
     /// Return all blocks inside the loop that have successors outside of the
-    /// loop. These are the blocks _inside of the current loop_ which branch out.
-    /// The returned list is always unique.
+    /// loop. These are the blocks _inside of the current loop_ which branch
+    /// out. The returned list is always unique.
     var exitingBlocks: [BasicBlock] {
         var exiting: [BasicBlock] = []
         for bb in blocks {
@@ -84,7 +84,9 @@ public extension Loop {
             if let out = out, out != pred { return nil }
             out = pred
         }
-        precondition(out != nil, "Header of loop has no predecessors from outside loop")
+        precondition(out != nil, """
+            Header of loop has no predecessors from outside loop
+            """)
         return out
     }
 
@@ -131,7 +133,7 @@ public extension Loop {
                 return false
             }
         }
-        return !exits.lazy.flatMap(cfg.predecessors).contains { !self.contains($0) }
+        return !exits.lazy.flatMap(cfg.predecessors).contains { !contains($0) }
     }
     
     var uniqueExits: [BasicBlock] {
@@ -174,27 +176,32 @@ open class LoopAnalysis : AnalysisPass {
             var backEdges: [BasicBlock] = []
             /// Check each predecessor of the potential loop header.
             for pred in cfg.predecessors(of: header) {
-                if domTree.contains(pred) && header.dominates(pred, in: domTree) {
+                if domTree.contains(pred) &&
+                    header.dominates(pred, in: domTree) {
                     backEdges.append(pred)
                 }
             }
             if !backEdges.isEmpty {
                 let loop = Loop(header: header)
-                /// Discover a subloop with the specified backedges such that: All blocks within
-                /// this loop are mapped to this loop or a subloop. And all subloops within this
-                /// loop have their parent loop set to this loop or a subloop.
-                discoverAndMapSubloop(for: loop, backEdges: backEdges, info: &info, controlFlow: cfg, dominance: domTree)
+                /// Discover a subloop with the specified backedges such that:
+                /// All blocks within this loop are mapped to this loop or a
+                /// subloop. And all subloops within this loop have their parent
+                /// loop set to this loop or a subloop.
+                discoverAndMapSubloop(for: loop, backEdges: backEdges,
+                                      info: &info, controlFlow: cfg,
+                                      dominance: domTree)
             }
         }
-        /// Perform a single forward CFG traversal to populate block and subloop vectors for all loops.
+        /// Perform a single forward CFG traversal to populate block and subloop
+        /// vectors for all loops.
         populateLoops(from: domTree.root, into: &info)
         return info
     }
 
     private static func discoverAndMapSubloop(
         for loop: Loop, backEdges: [BasicBlock], info: inout LoopInfo,
-        controlFlow cfg: ControlFlowGraphAnalysis.Result, dominance domTree: DominatorTree<BasicBlock>)
-    {
+        controlFlow cfg: ControlFlowGraphAnalysis.Result,
+        dominance domTree: DominatorTree<BasicBlock>) {
         /// Perform a backward CFG traversal using a worklist.
         var workList = backEdges
         while !workList.isEmpty {
@@ -216,16 +223,17 @@ open class LoopAnalysis : AnalysisPass {
             while let parent = subloop.parent {
                 subloop = parent
             }
-            /// If it is already discovered to be a subloop of this loop, continue.
+            /// If it is already discovered to be a subloop of this loop,
+            /// continue.
             if subloop == loop {
                 continue
             }
             /// Discover a subloop of this loop.
             subloop.parent = loop
-            /// Continue traversal along predecessors that are not loop-back edges from
-            /// within this subloop tree itself. Note that a predecessor may directly
-            /// reach another subloop that is not yet discovered to be a subloop of
-            /// this loop, which we must traverse.
+            /// Continue traversal along predecessors that are not loop-back
+            /// edges from within this subloop tree itself. Note that a
+            /// predecessor may directly reach another subloop that is not yet
+            /// discovered to be a subloop of this loop, which we must traverse.
             for pred in cfg.predecessors(of: block) {
                 if info.innerMostLoops[pred] != subloop {
                     workList.append(pred)
@@ -234,7 +242,8 @@ open class LoopAnalysis : AnalysisPass {
         }
     }
 
-    private static func populateLoops(from header: BasicBlock, into info: inout LoopInfo) {
+    private static func populateLoops(from header: BasicBlock,
+                                      into info: inout LoopInfo) {
         for bb in header.postorder {
             /// Add a single block to its ancestor loops in postorder. If the
             /// block is a subloop header, add the subloop to its parent in
@@ -249,9 +258,9 @@ open class LoopAnalysis : AnalysisPass {
                 } else {
                     info.topLevelLoops.append(subloop)
                 }
-                /// For convenience, blocks and subloops are inserted in postorder.
-                /// Reverse the lists, except for the loop header, which is always
-                /// at the beginning.
+                /// For convenience, blocks and subloops are inserted in
+                /// postorder. Reverse the lists, except for the loop header,
+                /// which is always at the beginning.
                 subloop.blocks[1...].reverse()
                 subloop.subloops.reverse()
                 guard let parent = subloop.parent else {
