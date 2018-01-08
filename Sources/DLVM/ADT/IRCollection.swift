@@ -33,7 +33,6 @@ public protocol IRCollection
 }
 
 public extension IRCollection {
-
     func makeIterator() -> Base.Iterator {
         return elements.makeIterator()
     }
@@ -65,12 +64,13 @@ public extension IRCollection {
     subscript(bounds: Range<Base.Index>) -> Base.SubSequence {
         return elements[bounds]
     }
+    
+    func index(of element: Element) -> Int? {
+        return elements.index(of: element)
+    }
 }
 
-/// - Note: This is a workaround for a type checker bug in Swift 4
-/*
 public extension IRCollection where Element : IRUnit {
-
     func remove(_ element: Element) {
         elements.remove(element)
         invalidatePassResults()
@@ -81,8 +81,8 @@ public extension IRCollection where Element : IRUnit {
     }
 }
 
+/*
 public extension IRCollection where Element : IRUnit, Element.Parent == Self {
-
     func append(_ newElement: Element) {
         elements.append(newElement)
         newElement.parent = self
@@ -106,6 +106,5 @@ public extension IRCollection where Element : IRUnit, Element.Parent == Self {
         newElement.parent = self
         invalidatePassResults()
     }
-
 }
 */

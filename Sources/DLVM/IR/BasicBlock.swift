@@ -74,15 +74,6 @@ public final class BasicBlock : IRCollection, IRUnit, Named {
 
 /// - Note: This is a workaround for a type checker bug in Swift 4
 public extension BasicBlock {
-    func remove(_ element: Element) {
-        elements.remove(element)
-        invalidatePassResults()
-    }
-
-    func contains(_ element: Element) -> Bool {
-        return elements.contains(element)
-    }
-
     func append(_ newElement: Element) {
         elements.append(newElement)
         newElement.parent = self
