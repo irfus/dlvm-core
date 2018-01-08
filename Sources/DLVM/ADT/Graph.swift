@@ -133,7 +133,9 @@ public extension DirectedGraph {
 
     /// Remove edge from the graph, if it exists
     mutating func removeEdge(from src: Node, to dest: Node) {
-        if !contains(src) || !contains(dest) || !containsEdge(from: src, to: dest) { return }
+        guard containsEdge(from: src, to: dest) else {
+            preconditionFailure("Edge does not exist")
+        }
         entries[src]!.successors.remove(dest)
         entries[dest]!.predecessors.remove(src)
     }
