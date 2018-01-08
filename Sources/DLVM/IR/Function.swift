@@ -143,8 +143,8 @@ public extension Function {
             let bbIndex = oldInstruction.parent.indexInParent
             let instIndex = oldInstruction.indexInParent
             for bb in suffix(from: bbIndex) {
-                for inst in bb where bb == oldInstruction.parent &&
-                    inst.indexInParent < instIndex {
+                for inst in bb where bb != oldInstruction.parent ||
+                    inst.indexInParent >= instIndex {
                     inst.substitute(newUse, for: %oldInstruction)
                 }
             }
