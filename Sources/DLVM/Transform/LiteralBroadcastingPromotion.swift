@@ -23,6 +23,11 @@ open class LiteralBroadcastingPromotion : TransformPass {
     open class func run(on body: BasicBlock) -> Bool {
         var changed = false
         for inst in body {
+            /// Instruction must be broadcastable
+            /// (currently only includes elementwise arithmetic ops)
+            guard inst.kind.isElementwiseArithmetic else {
+                continue
+            }
             for var operand in inst.operands {
                 /// Operand must have tensor type
                 guard case let .tensor(_, dt) = operand.type else {
@@ -35,11 +40,12 @@ open class LiteralBroadcastingPromotion : TransformPass {
                     operand.type = .scalar(dt)
                     inst.substitute(operand, for: operand)
                 case .instruction(_, let i):
-                    guard case let .literal(lit, ty) = i.kind, ty.isTensor else {
-                        break
+                    guard case let .literal(lit, ty) = i.kind,
+                        case let .tensor(_, dt) = ty else {
+                            break
                     }
                     changed = true
-                    inst.substitute(.literal(ty, lit), for: operand)
+                    inst.substitute(.literal(.scalar(dt), lit), for: operand)
                 default:
                     break
                 }
