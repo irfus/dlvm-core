@@ -177,7 +177,7 @@ extension LexicalError : CustomStringConvertible {
             desc += "expecting identifier name"
         case .invalidAnonymousLocalIdentifier(_):
             desc += """
-                invalid anonymous loacl identifier. It should look like \
+                invalid anonymous local identifier. It should look like \
                 %<bb_index>.<inst_index>, e.g. %0.1
                 """
         case .invalidBasicBlockIndex(_):
