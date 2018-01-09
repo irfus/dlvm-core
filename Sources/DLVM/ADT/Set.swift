@@ -26,7 +26,7 @@ internal protocol SetImplementation {
 import protocol Foundation.NSMutableCopying
 import class Foundation.NSObject
 
-internal extension SetImplementation where Set : NSObject, Set : NSMutableCopying {
+internal extension SetImplementation where Set : NSObject & NSMutableCopying {
     var mutatingElements: Set {
         mutating get {
             if !isKnownUniquelyReferenced(&elements) {
@@ -37,7 +37,9 @@ internal extension SetImplementation where Set : NSObject, Set : NSMutableCopyin
     }
 }
 
-public struct ObjectSet<Element : HashableByReference> : ExpressibleByArrayLiteral, SetImplementation {
+public struct ObjectSet<Element : HashableByReference>
+    : ExpressibleByArrayLiteral, SetImplementation
+{
     internal var elements: Set<Element> = []
 
     public init() {}
@@ -46,7 +48,7 @@ public struct ObjectSet<Element : HashableByReference> : ExpressibleByArrayLiter
         self.elements = elements
     }
 
-    public init<S: Sequence>(_ elements: S) where S.Iterator.Element == Element {
+    public init<S: Sequence>(_ elements: S) where S.Element == Element {
         self.init(Set(elements))
     }
 
@@ -61,7 +63,6 @@ public struct ObjectSet<Element : HashableByReference> : ExpressibleByArrayLiter
 }
 
 extension ObjectSet : Collection {
-
     public typealias Index = Set<Element>.Index
 
     public func index(after i: Set<Element>.Index) -> Set<Element>.Index {
@@ -83,26 +84,27 @@ extension ObjectSet : Collection {
     public subscript(bounds: Range<Index>) -> Slice<ObjectSet<Element>> {
         return Slice(base: self, bounds: bounds)
     }
-
 }
 
 extension ObjectSet : Equatable {
-    public static func == (lhs: ObjectSet<Element>, rhs: ObjectSet<Element>) -> Bool {
+    public static func == (lhs: ObjectSet<Element>,
+                           rhs: ObjectSet<Element>) -> Bool {
         return lhs.elements == rhs.elements
     }
 }
 
 extension ObjectSet : SetAlgebra {
-
     public func union(_ other: ObjectSet<Element>) -> ObjectSet<Element> {
         return ObjectSet(elements.union(other.elements))
     }
 
-    public func intersection(_ other: ObjectSet<Element>) -> ObjectSet<Element> {
+    public func intersection(
+        _ other: ObjectSet<Element>) -> ObjectSet<Element> {
         return ObjectSet(elements.intersection(other.elements))
     }
 
-    public func symmetricDifference(_ other: ObjectSet<Element>) -> ObjectSet<Element> {
+    public func symmetricDifference(
+        _ other: ObjectSet<Element>) -> ObjectSet<Element> {
         return ObjectSet(elements.symmetricDifference(other.elements))
     }
 
@@ -117,7 +119,8 @@ extension ObjectSet : SetAlgebra {
     }
 
     @discardableResult
-    public mutating func insert(_ newMember: Element) -> (inserted: Bool, memberAfterInsert: Element) {
+    public mutating func insert(
+        _ newMember: Element) -> (inserted: Bool, memberAfterInsert: Element) {
         let (inserted, member) = elements.insert(newMember)
         return (inserted, member)
     }
@@ -166,5 +169,4 @@ extension ObjectSet : SetAlgebra {
     public mutating func subtract(_ other: ObjectSet<Element>) {
         elements.subtract(other.elements)
     }
-
 }

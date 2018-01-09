@@ -68,7 +68,9 @@ public extension IRBuilder {
 extension IRBuilder {
 
     @discardableResult
-    open func buildStruct(named name: String, fields: DictionaryLiteral<String, Type>) -> StructType {
+    open func buildStruct(
+        named name: String,
+        fields: DictionaryLiteral<String, Type>) -> StructType {
         let structTy = StructType(name: name, fields: fields.map{$0})
         module.structs.append(structTy)
         return structTy
@@ -90,11 +92,12 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildFunction(named name: String,
-                            argumentTypes: [Type],
-                            returnType: Type = .void,
-                            attributes: Set<Function.Attribute> = [],
-                            declarationKind: Function.DeclarationKind? = nil) -> Function {
+    open func buildFunction(
+        named name: String,
+        argumentTypes: [Type],
+        returnType: Type = .void,
+        attributes: Set<Function.Attribute> = [],
+        declarationKind: Function.DeclarationKind? = nil) -> Function {
         let fun = Function(name: name,
                            argumentTypes: argumentTypes,
                            returnType: returnType,
@@ -117,16 +120,20 @@ extension IRBuilder {
     }
 
     @discardableResult
-    open func buildEntry(argumentNames: [String], in function: Function) -> BasicBlock {
-        let entry = BasicBlock(name: "entry",
-                               arguments: Array(zip(argumentNames, function.argumentTypes)),
-                               parent: function)
+    open func buildEntry(argumentNames: [String],
+                         in function: Function) -> BasicBlock {
+        let entry = BasicBlock(
+            name: "entry",
+            arguments: Array(zip(argumentNames, function.argumentTypes)),
+            parent: function
+        )
         function.insert(entry, at: 0)
         return entry
     }
 
     @discardableResult
-    open func buildInstruction(_ kind: InstructionKind, name: String? = nil) -> Instruction {
+    open func buildInstruction(_ kind: InstructionKind,
+                               name: String? = nil) -> Instruction {
         guard let block = currentBlock else {
             preconditionFailure("Builder isn't positioned at a basic block")
         }
@@ -197,7 +204,8 @@ public extension IRBuilder {
         return buildInstruction(.literal(literal, type))
     }
 
-    func compare(_ operator: ComparisonOp, _ lhs: Use, _ rhs: Use) -> Instruction {
+    func compare(_ operator: ComparisonOp,
+                 _ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.compare(`operator`, lhs, rhs))
     }
     
@@ -225,11 +233,13 @@ public extension IRBuilder {
         return buildInstruction(.numericUnary(operation, use))
     }
     
-    func numeric(_ operation: NumericBinaryOp, _ lhs: Use, _ rhs: Use) -> Instruction {
+    func numeric(_ operation: NumericBinaryOp,
+                 _ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.numericBinary(operation, lhs, rhs))
     }
     
-    func boolean(_ operation: BooleanBinaryOp, _ lhs: Use, _ rhs: Use) -> Instruction {
+    func boolean(_ operation: BooleanBinaryOp,
+                 _ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.booleanBinary(operation, lhs, rhs))
     }
 
@@ -253,11 +263,13 @@ public extension IRBuilder {
         return buildInstruction(.extract(from: source, at: indices))
     }
 
-    func insert(_ source: Use, to destination: Use, at indices: [ElementKey]) -> Instruction {
+    func insert(_ source: Use, to destination: Use,
+                at indices: [ElementKey]) -> Instruction {
         return buildInstruction(.insert(source, to: destination, at: indices))
     }
 
-    func elementPointer(from source: Use, at indices: [ElementKey]) -> Instruction {
+    func elementPointer(from source: Use,
+                        at indices: [ElementKey]) -> Instruction {
         return buildInstruction(.elementPointer(source, indices))
     }
 
@@ -277,7 +289,8 @@ public extension IRBuilder {
         return buildInstruction(.shapeCast(source, targetShape))
     }
 
-    func dataTypeCast(_ source: Use, to targetDataType: DataType) -> Instruction {
+    func dataTypeCast(_ source: Use,
+                      to targetDataType: DataType) -> Instruction {
         return buildInstruction(.dataTypeCast(source, targetDataType))
     }
 

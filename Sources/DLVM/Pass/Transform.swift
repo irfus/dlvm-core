@@ -22,8 +22,8 @@ public extension IRCollection {
     ///
     /// - Returns: whether changes are made
     @discardableResult
-    func applyTransform<P : TransformPass>(_: P.Type,
-                                           bypassingVerification noVerify: Bool = false) -> Bool
+    func applyTransform<P : TransformPass>(
+        _: P.Type, bypassingVerification noVerify: Bool = false) -> Bool
         where P.Body == Self
     {
         guard canApplyTransforms else { return false }
@@ -38,8 +38,9 @@ public extension IRCollection {
             }
             catch {
                 fatalError("""
-                    Malformed IR after transform \(P.name). This could be caused
-                    by not running verification beforehand, or a bug in \(P.name).
+                    Malformed IR after transform \(P.name). This could be \
+                    caused by not running verification beforehand, or a bug in \
+                    \(P.name).
                     Verification error:
                     \(error)
                     """)
@@ -52,24 +53,28 @@ public extension IRCollection {
 public extension IRCollection {
     @discardableResult
     func mapTransform<Transform : TransformPass>(
-        _ transform: Transform.Type, bypassingVerification noVerify: Bool = false) -> Bool
+        _ transform: Transform.Type,
+        bypassingVerification noVerify: Bool = false) -> Bool
         where Transform.Body == Element
     {
         var changed = false
         for element in self {
-            changed = element.applyTransform(transform, bypassingVerification: noVerify) || changed
+            changed = element.applyTransform(
+                transform, bypassingVerification: noVerify) || changed
         }
         return changed
     }
     
     @discardableResult
     func mapTransform<Transform : TransformPass>(
-        _ transform: Transform.Type, bypassingVerification noVerify: Bool = false) -> Bool
+        _ transform: Transform.Type,
+        bypassingVerification noVerify: Bool = false) -> Bool
         where Element : IRCollection, Transform.Body == Element.Element
     {
         var changed = false
         for element in self {
-            changed = element.mapTransform(transform, bypassingVerification: noVerify) || changed
+            changed = element.mapTransform(
+                transform, bypassingVerification: noVerify) || changed
         }
         return changed
     }

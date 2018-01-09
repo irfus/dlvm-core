@@ -48,15 +48,6 @@ public final class Module : IRCollection {
 /// - Note: This is a workaround for a type checker bug in Swift 4
 public extension Module {
     typealias SubSequence = Slice<Module>
-    
-    func remove(_ element: Element) {
-        elements.remove(element)
-        invalidatePassResults()
-    }
-
-    func contains(_ element: Element) -> Bool {
-        return elements.contains(element)
-    }
 
     func append(_ newElement: Element) {
         elements.append(newElement)

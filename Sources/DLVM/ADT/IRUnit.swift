@@ -40,7 +40,9 @@ public protocol IRUnit : HashableByReference, Verifiable {
 public extension IRUnit {
     var indexInParent: Int {
         guard let index = parent.index(of: self) else {
-            preconditionFailure("Self does not exist in parent \(String(describing: Parent.self))")
+            preconditionFailure("""
+                Self does not exist in parent \(String(describing: Parent.self))
+                """)
         }
         return index
     }

@@ -26,7 +26,7 @@
 import Basic
 import Utility
 
-open class DLVMTool<Options : ToolOptions> {
+open class CommandLineTool<Options : ToolOptions> {
     /// The options of this tool.
     public let options: Options
 
@@ -83,7 +83,7 @@ open class DLVMTool<Options : ToolOptions> {
             self.options = options
         } catch {
             handle(error: error)
-            DLVMTool.exit(with: .failure)
+            CommandLineTool.exit(with: .failure)
         }
     }
 
@@ -101,7 +101,7 @@ open class DLVMTool<Options : ToolOptions> {
             executionStatus = .failure
             handle(error: error)
         }
-        DLVMTool.exit(with: executionStatus)
+        CommandLineTool.exit(with: executionStatus)
     }
 
     /// Run method implementation to be overridden by subclasses.

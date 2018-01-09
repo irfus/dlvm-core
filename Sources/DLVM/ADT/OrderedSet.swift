@@ -61,7 +61,8 @@ public extension OrderedSet {
         return inserted
     }
 
-    mutating func append<S: Sequence>(contentsOf elements: S) where S.Element == Element {
+    mutating func append<S: Sequence>(contentsOf elements: S)
+        where S.Element == Element {
         for element in elements {
             append(element)
         }
@@ -118,7 +119,8 @@ extension OrderedSet : Sequence {
     }
 }
 
-extension OrderedSet : RangeReplaceableCollection, BidirectionalCollection, MutableCollection {
+extension OrderedSet
+    : RangeReplaceableCollection, BidirectionalCollection, MutableCollection {
     public func index(after i: Int) -> Int {
         return array.index(after: i)
     }
