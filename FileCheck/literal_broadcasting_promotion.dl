@@ -1,4 +1,4 @@
-// RUN: dlopt %s -p LBP DCE --print-ir | FileCheck %s
+// RUN: dlopt %s -p LBP --print-ir | FileCheck %s
 
 // CHECK: LBP: changed
 
@@ -14,10 +14,10 @@ func @scalar_tests: (i32) -> i32 {
 }
 
 // CHECK: func @scalar_tests: (i32) -> i32
-// CHECK: %0.0 = add %x: i32, 1: i32
-// CHECK: %0.1 = multiply 1: i32, %0.0: i32
+// CHECK: %0.1 = add %x: i32, 1: i32
+// CHECK: %0.2 = multiply 1: i32, %0.1: i32
 
-func @broadcasting_tests: (<1 x 10 x f32>) -> <1 x 10 x f32> {
+func @numeric_binary_tests: (<1 x 10 x f32>) -> <1 x 10 x f32> {
 'entry(%x: <1 x 10 x f32>):
     %0.0 = literal 1: <1 x 10 x f32>
     %0.1 = add %x: <1 x 10 x f32>, %0.0: <1 x 10 x f32>
@@ -25,9 +25,33 @@ func @broadcasting_tests: (<1 x 10 x f32>) -> <1 x 10 x f32> {
     return %0.2: <1 x 10 x f32>
 }
 
-// CHECK: func @broadcasting_tests: (<1 x 10 x f32>) -> <1 x 10 x f32>
-// CHECK: %0.0 = add %x: <1 x 10 x f32>, 1: f32
-// CHECK: %0.1 = multiply 1: f32, %0.0: <1 x 10 x f32>
+// CHECK: func @numeric_binary_tests: (<1 x 10 x f32>) -> <1 x 10 x f32>
+// CHECK: %0.1 = add %x: <1 x 10 x f32>, 1: f32
+// CHECK: %0.2 = multiply 1: f32, %0.1: <1 x 10 x f32>
+
+func @boolean_binary_tests: (<1 x 10 x bool>) -> <1 x 10 x bool> {
+'entry(%x: <1 x 10 x bool>):
+    %0.0 = literal true: <1 x 10 x bool>
+    %0.1 = and %x: <1 x 10 x bool>, %0.0: <1 x 10 x bool>
+    %0.2 = or %0.0: <1 x 10 x bool>, %0.1: <1 x 10 x bool>
+    return %0.2: <1 x 10 x bool>
+}
+
+// CHECK: func @boolean_binary_tests: (<1 x 10 x bool>) -> <1 x 10 x bool>
+// CHECK: %0.1 = and %x: <1 x 10 x bool>, true: bool
+// CHECK: %0.2 = or true: bool, %0.1: <1 x 10 x bool>
+
+func @compare_tests: (<1 x 10 x f32>) -> <1 x 10 x bool> {
+'entry(%x: <1 x 10 x f32>):
+    %0.0 = literal 0: <1 x 10 x f32>
+    %0.1 = lessThan %x: <1 x 10 x f32>, %0.0: <1 x 10 x f32>
+    %0.2 = greaterThanOrEqual %0.0: <1 x 10 x f32>, %x: <1 x 10 x f32>
+    return %0.1: <1 x 10 x bool>
+}
+
+// CHECK: func @compare_tests: (<1 x 10 x f32>) -> <1 x 10 x bool>
+// CHECK: %0.1 = lessThan %x: <1 x 10 x f32>, 0: f32
+// CHECK: %0.2 = greaterThanOrEqual 0: f32, %x: <1 x 10 x f32>
 
 func @unchanged_tests: (<4 x 6 x f32>) -> <2 x 2 x f32> {
 'entry(%input: <4 x 6 x f32>):

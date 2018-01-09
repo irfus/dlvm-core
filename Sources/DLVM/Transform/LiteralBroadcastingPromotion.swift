@@ -24,9 +24,9 @@ open class LiteralBroadcastingPromotion : TransformPass {
         var changed = false
         for inst in body {
             /// Instruction must be broadcastable
-            /// (currently only includes elementwise arithmetic ops)
-            guard inst.kind.isElementwiseArithmetic else {
-                continue
+            switch inst.kind {
+            case .numericBinary, .booleanBinary, .compare: break
+            default: continue
             }
             for var operand in inst.operands {
                 /// Operand must have tensor type
