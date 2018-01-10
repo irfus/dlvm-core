@@ -8,7 +8,11 @@ test:
 	swift test
 
 check: all
-	lit FileCheck
+	lit FileCheck -v
+
+testall:
+	swift test
+	lit FileCheck -v
 
 update:
 	swift package update
