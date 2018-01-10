@@ -20,8 +20,7 @@
 import XCTest
 @testable import struct DLVM.OrderedSet
 
-class ADTTests: XCTestCase {
-
+class ADTTests : XCTestCase {
     func testOrderedSet() {
         /// Test CoW
         var set = OrderedSet<Int>()
@@ -59,10 +58,9 @@ class ADTTests: XCTestCase {
         }
     }
 
-    static var allTests : [(String, (ADTTests) -> () throws -> Void)] {
+    static var allTests: [(String, (ADTTests) -> () throws -> Void)] {
         return [
             ("testOrderedSet", testOrderedSet)
         ]
     }
-
 }

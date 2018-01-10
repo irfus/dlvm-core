@@ -20,8 +20,7 @@
 import XCTest
 @testable import DLVM
 
-class TransformTests: XCTestCase {
-    
+class TransformTests : XCTestCase {
     let builder = IRBuilder(moduleName: "TransformTest")
     
     /// - TODO: Fix bug in dominance analysis that causes crash
@@ -231,12 +230,11 @@ class TransformTests: XCTestCase {
         XCTAssertFalse(module.mapTransform(AlgebraSimplification.self))
     }
     
-    static var allTests : [(String, (TransformTests) -> () throws -> Void)] {
+    static var allTests: [(String, (TransformTests) -> () throws -> Void)] {
         return [
             ("testDCE", testDCE),
             ("testCSE", testCSE),
             ("testAlgebraSimplification", testAlgebraSimplification),
         ]
     }
-    
 }

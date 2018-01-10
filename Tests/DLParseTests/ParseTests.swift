@@ -20,7 +20,7 @@
 import XCTest
 @testable import DLParse
 
-class ParseTests: XCTestCase {
+class ParseTests : XCTestCase {
     func testType() throws {
         let types = [
             "f32",
@@ -78,8 +78,11 @@ class ParseTests: XCTestCase {
         }
     }
     
-    static var allTests : [(String, (ParseTests) -> () throws -> Void)] {
+    static var allTests: [(String, (ParseTests) -> () throws -> Void)] {
         return [
+            ("testType", testType),
+            ("testUse", testUse),
+            ("testInstructionKind", testInstructionKind)
         ]
     }
 }

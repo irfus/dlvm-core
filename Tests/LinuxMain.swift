@@ -3,6 +3,13 @@ import XCTest
 @testable import DLParseTests
 
 XCTMain([
-     testCase(DLVMTests.allTests),
-     testCase(DLParseTests.allTests),
+     // DLVMTests
+     testCase(ADTTests.allTests),
+     testCase(AnalysisTests.allTests),
+     testCase(GraphTests.allTests),
+     testCase(IRTests.allTests),
+     testCase(TransformTests.allTests),
+     // DLParseTests
+     testCase(LexTests.allTests),
+     testCase(ParseTests.allTests)
 ])

@@ -112,7 +112,7 @@ public struct TransposeGraphNodeIterator<Node : BackwardGraphNode>
     }
 }
 
-public extension ForwardGraphNode  {
+public extension ForwardGraphNode {
     func traversed(
         in order: TraversalOrder) -> IteratorSequence<GraphNodeIterator<Self>> {
         return IteratorSequence(GraphNodeIterator(root: self, order: order))

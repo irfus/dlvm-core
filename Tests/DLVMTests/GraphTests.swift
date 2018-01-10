@@ -20,7 +20,7 @@
 import XCTest
 @testable import DLVM
 
-class GraphTests: XCTestCase {
+class GraphTests : XCTestCase {
     func testTraversal() {
         let tree = TreeNode<Int>(value: 1, successors: [
             TreeNode(value: 3, successors: [
@@ -41,7 +41,7 @@ class GraphTests: XCTestCase {
         XCTAssertEqual(tree.breadthFirst.map{$0.value}, [1, 3, 5, 2, 4, 10, 11, 100, 110, 120])
     }
 
-    static var allTests : [(String, (GraphTests) -> () throws -> Void)] {
+    static var allTests: [(String, (GraphTests) -> () throws -> Void)] {
         return [
             ("testTraversal", testTraversal)
         ]

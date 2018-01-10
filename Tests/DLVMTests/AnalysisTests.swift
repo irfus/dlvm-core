@@ -20,7 +20,7 @@
 import XCTest
 @testable import DLVM
 
-class AnalysisTests: XCTestCase {
+class AnalysisTests : XCTestCase {
     let builder = IRBuilder(moduleName: "AnalysisTest")
 
     func testLoop() {
@@ -171,7 +171,7 @@ class AnalysisTests: XCTestCase {
         }
     }
 
-    static var allTests : [(String, (AnalysisTests) -> () throws -> Void)] {
+    static var allTests: [(String, (AnalysisTests) -> () throws -> Void)] {
         return [
             ("testLoop", testLoop),
             ("testNestedLoop", testNestedLoop)

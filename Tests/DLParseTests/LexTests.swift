@@ -21,7 +21,6 @@ import XCTest
 @testable import DLParse
 
 class LexTests : XCTestCase {
-
     func testBasicLexing() throws {
         do {
             let code = """
@@ -100,12 +99,12 @@ class LexTests : XCTestCase {
         }
     }
 
-    static var allTests : [(String, (LexTests) -> () throws -> Void)] {
+    static var allTests: [(String, (LexTests) -> () throws -> Void)] {
         return [
             ("testBasicLexing", testBasicLexing),
             ("testStringLiteralLexing", testStringLiteralLexing),
-            ("testFunctionLexing", testFunctionLexing),
             ("testStructLexing", testStructLexing),
+            ("testFunctionLexing", testFunctionLexing)
         ]
     }
 }
