@@ -32,7 +32,7 @@ open class CommandLineTool<Options : ToolOptions> {
         case success
         case failure
     }
-    
+
     /// The options of this tool.
     public let options: Options
 
@@ -113,7 +113,7 @@ open class CommandLineTool<Options : ToolOptions> {
     open func run() throws {
         fatalError("Must be implemented by subclasses")
     }
-    
+
     /// Exit the tool with the given execution status.
     static func exit(with status: ExecutionStatus) -> Never {
         switch status {

@@ -21,14 +21,14 @@ import struct CoreTensor.TensorShape
 
 open class MatrixMultiplicationReordering : TransformPass {
     public typealias Body = Function
-    
+
     private typealias Chain = [(operand: Use, shape: TensorShape)]
 
     private indirect enum Expression {
         case matrix(operand: Use)
         case dot(Expression, Expression)
     }
-    
+
     private static func optimizedExpression(
         for chain: Chain) -> (Int, Expression) {
         /// Lay out dimensions
@@ -65,7 +65,7 @@ open class MatrixMultiplicationReordering : TransformPass {
         let expr = makeExpression(1, chain.count)
         return (cost[1][chain.count], expr)
     }
-    
+
     open class func run(on body: Function) -> Bool {
         let dfg = body.analysis(from: DataFlowGraphAnalysis.self)
         let builder = IRBuilder(function: body)

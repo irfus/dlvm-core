@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-/// This file contains a hand-written LL parser with reasonably fine-tuned 
+/// This file contains a hand-written LL parser with reasonably fine-tuned
 /// diagnostics. The parser entry is `Parser.parseModule`.
 
 import CoreTensor
@@ -125,7 +125,7 @@ private extension Parser {
         }
         return result
     }
-    
+
     @discardableResult
     func peekOrDiagnose(_ expected: String) throws -> Token {
         guard let tok = currentToken else {
@@ -375,7 +375,7 @@ extension Parser {
             try consumeWrappablePunctuation(.comma)
         })
     }
-    
+
     /// Parse a shape
     func parseShape() throws -> TensorShape {
         return try withPeekedToken("""
@@ -392,7 +392,7 @@ extension Parser {
             }
         })
     }
-    
+
     func parseReductionCombinator(in basicBlock: BasicBlock?) throws -> ReductionCombinator {
         return try withPeekedToken("""
             a function or an associative operator
@@ -612,7 +612,7 @@ extension Parser {
                                             unless: { $0.kind == .punctuation(.rightParenthesis) })
             try consume(.punctuation(.rightParenthesis))
             return .conditional(cond, thenBB, thenArgs, elseBB, elseArgs)
-            
+
         /// 'return' <val>?
         case .return:
             if case .newLine? = currentToken?.kind {
@@ -626,7 +626,7 @@ extension Parser {
             try consume(.keyword(.to))
             let (dtype, _) = try parseDataType()
             return .dataTypeCast(srcVal, dtype)
-            
+
         /// 'scan' <val> 'by' <func|assoc_op> 'along' <num> (',' <num>)*
         case .scan:
             let (val, _) = try parseUse(in: basicBlock)
@@ -672,7 +672,7 @@ extension Parser {
             try consumeWrappablePunctuation(.comma)
             let (rhs, _) = try parseUse(in: basicBlock)
             return .dot(lhs, rhs)
-            
+
         /// 'concatenate' <val> (',' <val>)* along <num>
         case .concatenate:
             let vals = try parseUseList(in: basicBlock)
@@ -756,14 +756,14 @@ extension Parser {
             try consume(.keyword(.to))
             let shape = try parseShape()
             return .shapeCast(val, shape)
-            
+
         /// 'bitCast' <val> 'to' <type>
         case .bitCast:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.to))
             let (type, _) = try parseType()
             return .bitCast(val, type)
-            
+
         /// 'extract' <num|key|val> (',' <num|key|val>)* 'from' <val>
         case .extract:
             let keys: [ElementKey] = try parseMany({
@@ -824,14 +824,14 @@ extension Parser {
             try consume(.keyword(.count))
             let (count, _) = try parseInteger()
             return .allocateStack(type, count)
-            
+
         /// 'allocateHeap' <type> 'count' <val>
         case .allocateHeap:
             let (type, _) = try parseType()
             try consume(.keyword(.count))
             let (count, _) = try parseUse(in: basicBlock)
             return .allocateHeap(type, count: count)
-            
+
         /// 'allocateBox' <type>
         case .allocateBox:
             return try .allocateBox(parseType().0)
@@ -885,7 +885,7 @@ extension Parser {
             try consume(.keyword(.to))
             let (dest, _) = try parseUse(in: basicBlock)
             return .store(src, to: dest)
-            
+
         /// 'elementPointer' <val> 'at' <num|key|val> (<num|key|val> ',')*
         case .elementPointer:
             let (base, _) = try parseUse(in: basicBlock)
@@ -906,39 +906,39 @@ extension Parser {
             try consume(.keyword(.count))
             let (count, _) = try parseUse(in: basicBlock)
             return .copy(from: src, to: dest, count: count)
-            
+
         /// 'trap'
         case .trap:
             return .trap
-            
+
         /// <numeric_binary_op> <val>, <val>
         case let .numericBinaryOp(op):
             let (lhs, _) = try parseUse(in: basicBlock)
             try consumeWrappablePunctuation(.comma)
             let (rhs, _) = try parseUse(in: basicBlock)
             return .numericBinary(op, lhs, rhs)
-            
+
         /// <boolean_binary_op> <val>, <val>
         case let .booleanBinaryOp(op):
             let (lhs, _) = try parseUse(in: basicBlock)
             try consumeWrappablePunctuation(.comma)
             let (rhs, _) = try parseUse(in: basicBlock)
             return .booleanBinary(op, lhs, rhs)
-            
+
         /// <comparison_op> <val>, <val>
         case let .compare(op):
             let (lhs, _) = try parseUse(in: basicBlock)
             try consumeWrappablePunctuation(.comma)
             let (rhs, _) = try parseUse(in: basicBlock)
             return .compare(op, lhs, rhs)
-            
+
         /// <numeric_unary_op> <val>
         case let .numericUnaryOp(op):
             return try .numericUnary(op, parseUse(in: basicBlock).0)
-        
+
         case .not:
             return try .not(parseUse(in: basicBlock).0)
-        
+
         /// 'random' <shape> 'from' <val> 'upto' <val>
         case .random:
             let shape = try parseShape()
@@ -947,7 +947,7 @@ extension Parser {
             try consume(.keyword(.upto))
             let (hi, _) = try parseUse(in: basicBlock)
             return .random(shape, from: lo, upTo: hi)
-            
+
         /// 'select' <val>, <val> 'by' <val>
         case .select:
             let (left, _) = try parseUse(in: basicBlock)
@@ -988,7 +988,7 @@ extension Parser {
         case let .anonymousIdentifier(bbIndex, instIndex):
             /// Check BB index and instruction index
             /// - BB index must equal the current BB index
-            /// - Instruction index must equal the next instruction index, 
+            /// - Instruction index must equal the next instruction index,
             ///   i.e. the current instruction count
             guard bbIndex == basicBlock.parent.count, // BB hasn't been added to function
                 instIndex == basicBlock.endIndex // Inst hasn't been added to BB
@@ -1096,7 +1096,7 @@ extension Parser {
                     isSeedable = true
                 }
                 return .gradient(of: fn, from: from, wrt: wrt, keeping: keeping, seedable: isSeedable)
-                
+
             case .keyword(.extern):
                 consumeToken()
                 return .external
@@ -1105,7 +1105,7 @@ extension Parser {
             }
         })
     }
-    
+
     func parseFunction(in module: Module) throws -> Function {
         /// Parse attributes
         var attributes: Set<Function.Attribute> = []
@@ -1294,7 +1294,7 @@ public extension Parser {
             case .keyword(.var):
                 let variable = try parseVariable(in: module)
                 module.variables.append(variable)
-                
+
             default:
                 throw ParseError.unexpectedToken(
                     expected: "a type alias, a struct or a function", tok

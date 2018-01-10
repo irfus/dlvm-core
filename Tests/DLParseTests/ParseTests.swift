@@ -77,7 +77,7 @@ class ParseTests : XCTestCase {
             }
         }
     }
-    
+
     static var allTests: [(String, (ParseTests) -> () throws -> Void)] {
         return [
             ("testType", testType),

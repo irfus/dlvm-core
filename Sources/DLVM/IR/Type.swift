@@ -58,7 +58,7 @@ public extension StructType {
     static prefix func ^ (type: StructType) -> Type {
         return .struct(type)
     }
-    
+
     func field(named name: String) -> Field? {
         return fields.first(where: {$0.name == name})
     }
@@ -136,7 +136,7 @@ public extension Type {
     static var void: Type {
         return .tuple([])
     }
-    
+
     static func int(_ size: UInt) -> Type {
         return .scalar(.int(size))
     }
@@ -148,7 +148,7 @@ public extension Type {
     static var bool: Type {
         return .scalar(.bool)
     }
-    
+
     static func scalar(_ dataType: DataType) -> Type {
         return .tensor(.scalar, dataType)
     }
@@ -164,7 +164,7 @@ public extension Type {
     static func * (count: Int, elementType: Type) -> Type {
         return .array(count, elementType)
     }
-    
+
     var tensorType: TensorType? {
         guard case let .tensor(s, dt) = canonical else { return nil }
         return (s, dt)
@@ -178,7 +178,7 @@ public extension Type {
         default: return false
         }
     }
-    
+
     var isTensor: Bool {
         switch canonical {
         case .tensor: return true
@@ -246,7 +246,7 @@ public extension Type {
             return nil
         }
     }
-    
+
     func elementType(at keys: [ElementKey]) -> Type? {
         return keys.reduce(self, { acc, key in
             acc.flatMap { $0.elementType(at: key) }

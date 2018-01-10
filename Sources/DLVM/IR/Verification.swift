@@ -122,7 +122,7 @@ extension Module : Verifiable {
         try declaration.performVerification()
         namespace.insert(declaration.name)
     }
-    
+
     public func performVerification() throws {
         try verifyIdentifier(name, in: self)
         /// Verify types and values
@@ -173,12 +173,12 @@ extension LiteralValue : Verifiable {
             throw VerificationError.unexpectedType(use, elementType, self)
         }
     }
-    
+
     public func performVerification() throws {
         switch (type.canonical, literal) {
 
         /* Simple literals */
-            
+
         /// Anything can be undefined
         case (_, .undefined): break
         /// Any tensor can be zero initialized
@@ -208,7 +208,7 @@ extension LiteralValue : Verifiable {
             for use in elements {
                 try verifyUse(use, elementType)
             }
-            
+
         case let (.struct(structTy), .struct(fields)) where structTy.fields.count == fields.count:
             for ((name: fmlName, type: fmlType), (name, val)) in zip(structTy.fields, fields) {
                 guard fmlName == name else {
@@ -365,7 +365,7 @@ extension Instruction : Verifiable {
 
         /// Visit kind
         try kind.performVerification(in: self)
-        
+
         /// Check type
         switch type {
         case .void where name != nil:
@@ -451,7 +451,7 @@ extension InstructionKind {
             guard s1.isCompatible(with: s2) else {
                 throw VerificationError.unbroadcastableMismatch([lhs, rhs], instruction)
             }
-            
+
         case let .booleanBinary(_, lhs, rhs):
             guard case let .tensor(s1, dt1) = lhs.type.unaliased else {
                 throw VerificationError.notTensor(lhs, instruction)
@@ -471,7 +471,7 @@ extension InstructionKind {
             guard s1.isCompatible(with: s2) else {
                 throw VerificationError.unbroadcastableMismatch([lhs, rhs], instruction)
             }
-            
+
         case let .compare(_, lhs, rhs):
             guard case let .tensor(s1, dt1) = lhs.type.unaliased else {
                 throw VerificationError.notTensor(lhs, instruction)
@@ -485,7 +485,7 @@ extension InstructionKind {
             guard s1.isCompatible(with: s2) else {
                 throw VerificationError.unbroadcastableMismatch([lhs, rhs], instruction)
             }
-            
+
         case let .not(v):
             guard case let .tensor(_, dt1) = v.type.unaliased else {
                 throw VerificationError.notTensor(v, instruction)
@@ -523,7 +523,7 @@ extension InstructionKind {
             guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank }), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
-            
+
         case let .scan(.boolean(_), v1, dims):
             guard case let .tensor(s1, .bool) = v1.type.unaliased else {
                 throw VerificationError.unexpectedDataType(v1, .bool, instruction)
@@ -543,7 +543,7 @@ extension InstructionKind {
             guard dims.count <= s1.rank, dims.forAll({ 0 <= $0 && $0 < s1.rank}), !dims.containsDuplicate else {
                 throw VerificationError.invalidReductionDimensions(dims, v1, instruction)
             }
-            
+
         case let .reduce(.numeric(_), v1, initial, dims):
             guard case let .tensor(s1, t1) = v1.type.unaliased, t1.isNumeric else {
                 throw VerificationError.dataTypeNotNumeric(v1, instruction)
@@ -555,7 +555,7 @@ extension InstructionKind {
             guard case .scalar(t1) = initial.type.canonical else {
                 throw VerificationError.unexpectedShape(initial, .scalar, instruction)
             }
-            
+
         case let .reduce(.boolean(_), v1, initial, dims):
             guard case let .tensor(s1, .bool) = v1.type.unaliased else {
                 throw VerificationError.unexpectedDataType(v1, .bool, instruction)
@@ -847,7 +847,7 @@ extension InstructionKind {
             guard dt1.isNumeric else {
                 throw VerificationError.dataTypeNotNumeric(lo, instruction)
             }
-        
+
         case let .select(left, right, by: flags):
             guard case let .tensor(s1, dt1) = left.type.unaliased else {
                 throw VerificationError.notTensor(left, instruction)
@@ -867,7 +867,7 @@ extension InstructionKind {
             guard dt3.isBool else {
                 throw VerificationError.unexpectedDataType(flags, .bool, instruction)
             }
-            
+
         case .trap, .allocateBox: break
         }
     }
@@ -902,7 +902,7 @@ extension Use : Verifiable {
 public enum Verifier<Unit : IRCollection> : VerificationPass {
     public typealias Body = Unit
     public typealias Result = Void
-    
+
     public static func run(on body: Body) throws {
         try body.performVerification()
     }

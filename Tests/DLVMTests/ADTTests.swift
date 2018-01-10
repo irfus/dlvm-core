@@ -31,7 +31,7 @@ class ADTTests : XCTestCase {
         XCTAssertFalse(set.contains(2))
         XCTAssertTrue(setCopy.contains(1))
         XCTAssertTrue(setCopy.contains(2))
-        
+
         /// Test range replacement
         var set0: OrderedSet<Int> = [1, 2, 3, 4]
         set0[1...3] = Slice([0, 5, 6])
@@ -44,7 +44,7 @@ class ADTTests : XCTestCase {
         XCTAssertEqual(set1, [3, 2, 1])
         set1[1...].reverse()
         XCTAssertEqual(set1, [3, 1, 2])
-        
+
         /// Test swap
         var set2: OrderedSet<Int> = [1, 2, 3, 4, 5]
         set2.swapAt(1, 3)

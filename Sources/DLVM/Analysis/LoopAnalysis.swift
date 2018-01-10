@@ -43,11 +43,11 @@ public extension Loop {
         guard let first = blocks.first else { DLImpossible() }
         return first
     }
-    
+
     var function: Function {
         return header.parent
     }
-    
+
     /// Return all blocks inside the loop that have successors outside of the
     /// loop. These are the blocks _inside of the current loop_ which branch
     /// out. The returned list is always unique.
@@ -60,19 +60,19 @@ public extension Loop {
         }
         return exiting
     }
-    
+
     /// Return all of the successor blocks of this loop. These are the blocks
     /// _outside of the current loop_ which are branched to.
     var exits: [BasicBlock] {
         return blocks.lazy.flatMap{$0.successors}.filter{!contains($0)}
     }
-    
+
     var exitEdges: [(source: BasicBlock, destination: BasicBlock)] {
         return blocks.lazy
             .flatMap { bb in bb.successors.map { (bb, $0) } }
             .filter { !contains($0.1) }
     }
-    
+
     /// If the given loop's header has exactly one unique predecessor outside
     /// the loop, return it. Otherwise return null. This is less strict that the
     /// loop "preheader" concept, which requires the predecessor to have exactly
@@ -107,7 +107,7 @@ public extension Loop {
     func contains(_ block: BasicBlock) -> Bool {
         return blocks.contains(block)
     }
-    
+
     func contains(_ inst: Instruction) -> Bool {
         return contains(inst.parent)
     }
@@ -115,15 +115,15 @@ public extension Loop {
     func isLoopInvariant(_ inst: Instruction) -> Bool {
         return !contains(inst)
     }
-    
+
     func isLoopInvariant(_ v: Value) -> Bool {
         return (v as? Instruction).map { !contains($0) } ?? true
     }
-    
+
     func hasLoopInvariantOperands(_ inst: Instruction) -> Bool {
         return inst.operands.forAll { isLoopInvariant($0.value) }
     }
-    
+
     var hasDedicatedExits: Bool {
         let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
         // Each predecessor of each exit block of a normal loop is contained
@@ -135,11 +135,11 @@ public extension Loop {
         }
         return !exits.lazy.flatMap(cfg.predecessors).contains { !contains($0) }
     }
-    
+
     var uniqueExits: [BasicBlock] {
         DLUnimplemented()
     }
-    
+
     var canonicalInductionVariable: Set<Argument> {
         DLUnimplemented()
     }
@@ -166,7 +166,7 @@ public struct LoopInfo {
 open class LoopAnalysis : AnalysisPass {
     public typealias Body = Function
     public typealias Result = LoopInfo
-    
+
     public static func run(on body: Function) -> LoopInfo {
         var info = LoopInfo()
         let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)

@@ -24,7 +24,7 @@
 /// produces the gradient
 open class Differentiation: TransformPass {
     public typealias Body = Module
-    
+
     open class func run(on module: Module) -> Bool {
         var changed = false
 
@@ -63,7 +63,7 @@ open class Differentiation: TransformPass {
 
             }
         }
-        
+
         module.stage = .optimizable
         return changed
     }
@@ -178,15 +178,15 @@ fileprivate extension Differentiation {
         for (block, returnInst) in exits {
             let retVal: Use = returnInst.operands[diffIndex ?? 0]
             let seed: Use
-            if !isSeedable {
-                builder.move(to: block, index: 0)
-                seed = retVal.makeLiteral(1, using: builder).makeUse()
-                builder.move(to: block)
-            } else {
+            if isSeedable {
                 guard let seedArg = function[0].arguments.last else {
                     fatalError("No seed argument")
                 }
                 seed = %seedArg
+            } else {
+                builder.move(to: block, index: 0)
+                seed = retVal.makeLiteral(1, using: builder).makeUse()
+                builder.move(to: block)
             }
             /// Differentiate
             for inst in block.reversed().dropFirst() {

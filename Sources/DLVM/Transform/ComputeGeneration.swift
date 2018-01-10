@@ -19,7 +19,7 @@
 
 open class ComputeGeneration : TransformPass {
     public typealias Body = Module
-    
+
     open class func run(on body: Module) -> Bool {
         DLUnimplemented()
         // body.stage = .compute

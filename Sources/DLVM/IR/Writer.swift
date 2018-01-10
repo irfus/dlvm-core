@@ -262,7 +262,7 @@ extension Instruction : TextOutputStreamable {
     public var printedName: String? {
         return name ?? (type.isVoid ? nil : "\(parent.indexInParent).\(indexInParent)")
     }
-    
+
     public func write<Target : TextOutputStream>(to target: inout Target) {
         if let name = printedName {
             target.write("%\(name) = ")

@@ -22,7 +22,7 @@ import XCTest
 
 class TransformTests : XCTestCase {
     let builder = IRBuilder(moduleName: "TransformTest")
-    
+
     /// - TODO: Fix bug in dominance analysis that causes crash
     func testDCE() throws {
         let fun = builder.buildFunction(
@@ -55,7 +55,7 @@ class TransformTests : XCTestCase {
         builder.branch(contBB, [ %elseBB.arguments[0] ])
         builder.move(to: contBB)
         builder.return(%contBB.arguments[0])
-        
+
         /// Original:
         /// func @bar: (f32, f32) -> i32 {
         /// 'entry(%x: f32, %y : f32):
@@ -186,7 +186,7 @@ class TransformTests : XCTestCase {
                                         returnType: .int(32))
         let entry = builder.buildEntry(argumentNames: ["x"], in: fun)
         builder.move(to: entry)
-        
+
         /// Arithmetics
         /// Neutral/absorbing expressions
         let x = %entry.arguments[0]
@@ -229,7 +229,7 @@ class TransformTests : XCTestCase {
         /// Reapplying shouldn't mutate the function
         XCTAssertFalse(module.mapTransform(AlgebraSimplification.self))
     }
-    
+
     static var allTests: [(String, (TransformTests) -> () throws -> Void)] {
         return [
             ("testDCE", testDCE),

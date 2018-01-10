@@ -27,7 +27,7 @@ open class LinearAlgebraFusion : TransformPass {
     private static func performFusion() {
         DLUnimplemented()
     }
-    
+
     open class func run(on body: Function) -> Bool {
         DLUnimplemented()
     }

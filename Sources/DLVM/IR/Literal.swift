@@ -246,7 +246,7 @@ public extension Literal {
             return false
         }
     }
-    
+
     static func ~= (pattern: FloatLiteralType, literal: Literal) -> Bool {
         switch (pattern, literal) {
         case (0.0, .zero): return true
@@ -268,7 +268,7 @@ public extension Use {
             return nil
         }
     }
-    
+
     static func ~= (pattern: IntegerLiteralType, use: Use) -> Bool {
         guard let lit = anyLiteral(from: use) else { return false }
         return pattern ~= lit

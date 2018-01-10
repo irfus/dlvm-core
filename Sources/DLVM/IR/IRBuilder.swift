@@ -172,7 +172,7 @@ public extension IRBuilder {
 }
 
 // MARK: - Convenient builders
-/// - Note: This extension is only providing limited sugar functions 
+/// - Note: This extension is only providing limited sugar functions
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
@@ -208,7 +208,7 @@ public extension IRBuilder {
                  _ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.compare(`operator`, lhs, rhs))
     }
-    
+
     func not(_ operand: Use) -> Instruction {
         return buildInstruction(.not(operand))
     }
@@ -232,12 +232,12 @@ public extension IRBuilder {
     func numeric(_ operation: NumericUnaryOp, _ use: Use) -> Instruction {
         return buildInstruction(.numericUnary(operation, use))
     }
-    
+
     func numeric(_ operation: NumericBinaryOp,
                  _ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.numericBinary(operation, lhs, rhs))
     }
-    
+
     func boolean(_ operation: BooleanBinaryOp,
                  _ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.booleanBinary(operation, lhs, rhs))

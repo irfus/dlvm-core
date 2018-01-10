@@ -54,7 +54,7 @@ public extension Use {
             }
         }
     }
-    
+
     var tensorType: TensorType? {
         return type.tensorType
     }

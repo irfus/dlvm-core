@@ -57,7 +57,7 @@ public struct SideEffectInfo {
 open class SideEffectAnalysis : AnalysisPass {
     public typealias Body = Module
     public typealias Result = SideEffectInfo
-    
+
     open class func run(on body: Module) -> SideEffectInfo {
         var result = SideEffectInfo()
         var sameModuleCalls: [(Function, Function)] = []

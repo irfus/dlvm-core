@@ -32,7 +32,7 @@ public extension Sequence {
     func description(joinedBy separator: String) -> String {
         return map{"\($0)"}.joined(separator: separator)
     }
-    
+
     /// `mapM`
     func liftedMap<Result>(_ transform: (Element) -> Result?) -> [Result]? {
         var result: [Result] = []

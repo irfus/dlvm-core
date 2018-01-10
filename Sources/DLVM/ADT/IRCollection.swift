@@ -64,7 +64,7 @@ public extension IRCollection {
     subscript(bounds: Range<Base.Index>) -> Base.SubSequence {
         return elements[bounds]
     }
-    
+
     func index(of element: Element) -> Int? {
         return elements.index(of: element)
     }

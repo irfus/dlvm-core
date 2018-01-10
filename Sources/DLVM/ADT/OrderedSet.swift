@@ -34,11 +34,11 @@ public extension OrderedSet {
         self.init()
         append(contentsOf: elements)
     }
-    
+
     var count: Int {
         return array.count
     }
-    
+
     var isEmpty: Bool {
         return array.isEmpty
     }
@@ -124,7 +124,7 @@ extension OrderedSet
     public func index(after i: Int) -> Int {
         return array.index(after: i)
     }
-    
+
     public func index(before i: Int) -> Int {
         return array.index(before: i)
     }
@@ -132,15 +132,15 @@ extension OrderedSet
     public var startIndex: Int {
         return array.startIndex
     }
-    
+
     public var endIndex: Int {
         return array.endIndex
     }
-    
+
     public var indices: CountableRange<Int> {
         return array.indices
     }
-    
+
     public subscript(index: Int) -> Element {
         get {
             return array[index]

@@ -20,7 +20,7 @@
 /// Promotes box/heap allocations to stack
 open class StackPromotion : TransformPass {
     public typealias Body = Function
-    
+
     open class func run(on body: Function) -> Bool {
         DLUnimplemented()
     }

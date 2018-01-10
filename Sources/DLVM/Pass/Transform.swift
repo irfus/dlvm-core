@@ -64,7 +64,7 @@ public extension IRCollection {
         }
         return changed
     }
-    
+
     @discardableResult
     func mapTransform<Transform : TransformPass>(
         _ transform: Transform.Type,

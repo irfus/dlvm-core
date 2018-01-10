@@ -263,21 +263,21 @@ public extension InstructionKind {
                     NumericBinaryOp.resultType(for: (v1Ty, v2Ty))
                 }
             }.map(Type.tensor) ?? .invalid
-            
+
         case let .compare(_, v1, v2):
             return v1.tensorType.flatMap { v1Ty in
                 v2.tensorType.flatMap { v2Ty in
                     ComparisonOp.resultType(for: (v1Ty, v2Ty))
                 }
             }.map(Type.tensor) ?? .invalid
-            
+
         case let .booleanBinary(_, v1, v2):
             return v1.tensorType.flatMap { v1Ty in
                 v2.tensorType.flatMap { v2Ty in
                     BooleanBinaryOp.resultType(for: (v1Ty, v2Ty))
                 }
             }.map(Type.tensor) ?? .invalid
-            
+
         case let .not(v1):
             return v1.tensorType.flatMap { v1Ty in
                 NegationOp.resultType(for: (v1Ty))
@@ -359,19 +359,19 @@ public extension InstructionKind {
             guard dims.count <= s1.rank && dims.forAll({ 0 <= $0 && $0 < s1.rank })
                 else { return .invalid }
             return .tensor(s1, t1)
-        
+
         case let .slice(v, at: range):
             return v.type.tensorType.flatMap { tensorTy in
                 SliceOp.resultType(for: (tensorTy, range))
             }.map(Type.tensor) ?? .invalid
-            
+
         case let .random(shape, from: lo, upTo: hi):
             return lo.type.tensorType.flatMap { loTy in
                 hi.type.tensorType.flatMap { hiTy in
                     RandomOp.resultType(for: (shape, loTy, hiTy))
                 }
             }.map(Type.tensor) ?? .invalid
-            
+
         case let .select(left, right, by: flags):
             return left.type.tensorType.flatMap { leftTy in
                 right.type.tensorType.flatMap { rightTy in
@@ -763,7 +763,7 @@ public extension Instruction {
 
 public extension InstructionKind {
     /// Substitutes new use for old use
-    /// - Note: The current implementation is a vanilla tedious switch 
+    /// - Note: The current implementation is a vanilla tedious switch
     /// matching all the permutations (a.k.a. very bad).
     func substituting(_ new: Use, for old: Use) -> InstructionKind {
         let condSubst = {$0 == old ? new : $0}

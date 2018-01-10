@@ -157,7 +157,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet>
         }
         self.order = order
     }
-    
+
     public mutating func next() -> Base.Node? {
         switch order {
         case .breadthFirst:
@@ -168,7 +168,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet>
             }
             visited.insert(node)
             return node
-            
+
         case .preorder:
             guard let node = pre.popLast() else { return nil }
             for child in base.successors(of: node).reversed()
@@ -177,7 +177,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet>
             }
             visited.insert(node)
             return node
-            
+
         case .postorder:
             guard let node = pre.popLast() else { return post.popLast() }
             for child in base.successors(of: node)
@@ -188,7 +188,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet>
             visited.insert(node)
             return next()
         }
-        
+
     }
 }
 
