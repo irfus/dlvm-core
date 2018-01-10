@@ -26,7 +26,7 @@
 import Basic
 import Utility
 
-open class DLVMTool<Options : ToolOptions> {
+open class CommandLineTool<Options : ToolOptions> {
     /// The options of this tool.
     public let options: Options
 
@@ -39,27 +39,32 @@ open class DLVMTool<Options : ToolOptions> {
     /// Create an instance of this tool.
     ///
     /// - parameter args: The command line arguments to be passed to this tool.
-    public init(toolName: String, usage: String, overview: String, args: [String], seeAlso: String? = nil) {
+    public init(name: String, usage: String, overview: String,
+                arguments: [String], seeAlso: String? = nil) {
         // Create the parser.
         parser = ArgumentParser(
-            commandName: "\(toolName)",
+            commandName: "\(name)",
             usage: usage,
             overview: overview,
-            seeAlso: seeAlso)
+            seeAlso: seeAlso
+        )
 
         // Create the binder.
         let binder = ArgumentBinder<Options>()
 
         // Bind the common options.
         binder.bindArray(
-            positional: parser.add(positional: "input files", kind: [PathArgument].self,
+            positional: parser.add(positional: "input files",
+                                   kind: [PathArgument].self,
                                    usage: "DLVM IR input files"),
             to: { $0.inputFiles = $1.lazy.map({ $0.path }) })
 
         binder.bindArray(
-            parser.add(option: "--passes", shortName: "-p", kind: [TransformPass].self,
+            parser.add(option: "--passes", shortName: "-p",
+                       kind: [TransformPass].self,
                        usage: "Transform passes"),
-            parser.add(option: "--outputs", shortName: "-o", kind: [PathArgument].self,
+            parser.add(option: "--outputs", shortName: "-o",
+                       kind: [PathArgument].self,
                        usage: "Output paths"),
             to: {
                 if !$1.isEmpty { $0.passes = $1 }
@@ -68,44 +73,48 @@ open class DLVMTool<Options : ToolOptions> {
 
         binder.bind(
             option: parser.add(option: "--print-ir", kind: Bool.self,
-                               usage: "Print IR after transformations instead of writing to files"),
+                               usage: """
+                                   Print IR after transformations instead of \
+                                   writing to files
+                                   """),
             to: { $0.shouldPrintIR = $1 })
 
         // Let subclasses bind arguments.
-        type(of: self).defineArguments(parser: parser, binder: binder)
+        type(of: self).setUp(parser: parser, binder: binder)
 
         do {
             // Parse the result.
-            let result = try parser.parse(args)
+            let result = try parser.parse(arguments)
             // Fill and set options.
             var options = Options()
             binder.fill(result, into: &options)
             self.options = options
         } catch {
             handle(error: error)
-            DLVMTool.exit(with: .failure)
+            CommandLineTool.exit(with: .failure)
         }
     }
 
-    open class func defineArguments(parser: ArgumentParser, binder: ArgumentBinder<Options>) {
+    open class func setUp(parser: ArgumentParser,
+                          binder: ArgumentBinder<Options>) {
         fatalError("Must be implemented by subclasses")
     }
 
     /// Execute the tool.
-    public func run() {
+    public final func runAndDiagnose() {
         do {
             // Call the implementation.
-            try runImpl()
+            try run()
         } catch {
             // Set execution status to failure in case of errors.
             executionStatus = .failure
             handle(error: error)
         }
-        DLVMTool.exit(with: executionStatus)
+        CommandLineTool.exit(with: executionStatus)
     }
 
     /// Run method implementation to be overridden by subclasses.
-    open func runImpl() throws {
+    open func run() throws {
         fatalError("Must be implemented by subclasses")
     }
 

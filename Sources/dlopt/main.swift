@@ -29,17 +29,17 @@ class OptToolOptions : ToolOptions {
     var noVerify = false
 }
 
-class DLOptTool : DLVMTool<OptToolOptions> {
+class DLOptTool : CommandLineTool<OptToolOptions> {
     public convenience init(args: [String]) {
         self.init(
-            toolName: "dlopt",
+            name: "dlopt",
             usage: "<inputs> [options]",
             overview: "DLVM IR optimizer",
-            args: args
+            arguments: args
         )
     }
 
-    override func runImpl() throws {
+    override func run() throws {
         let outputPaths = options.outputPaths
         if let outputPaths = outputPaths {
             guard outputPaths.count == options.inputFiles.count else {
@@ -82,13 +82,13 @@ class DLOptTool : DLVMTool<OptToolOptions> {
         }
     }
 
-    override class func defineArguments(parser: ArgumentParser, binder: ArgumentBinder<OptToolOptions>) {
+    override class func setUp(parser: ArgumentParser, binder: ArgumentBinder<OptToolOptions>) {
         binder.bind(
             option: parser.add(option: "--no-verify", kind: Bool.self,
-                       usage: "Bypass verification after applying transforms"),
+                               usage: "Bypass verification after applying transforms"),
             to: { $0.noVerify = $1 })
     }
 }
 
 let tool = DLOptTool(args: Array(CommandLine.arguments.dropFirst()))
-tool.run()
+tool.runAndDiagnose()
