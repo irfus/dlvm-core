@@ -27,7 +27,7 @@ func @bar: (f32, f32, f32) -> f32 {
     branch 'bb0()
 'bb0():
     %lit = literal <%0.2: f32, %0.2: f32> : <2 x f32>
-    %1.1 = power %lit : <2 x f32>, 0: f32
+    %1.1 = power %lit: <2 x f32>, 0: f32
     %1.2 = extract 0 from %1.1: <2 x f32>
     %sin = sin 0: f32
     %1.4 = add %1.2: f32, %sin: f32
@@ -38,8 +38,9 @@ func @bar: (f32, f32, f32) -> f32 {
 // CHECK: %0.0 = cos 1: f32
 // CHECK-LABEL: 'bb0():
 // CHECK-NEXT: %lit = literal <1: f32, 1: f32>: <2 x f32>
-// CHECK-NEXT: %1.1 = extract 0 from 1: <2 x f32>
-// CHECK-NEXT: return %1.1: f32
+// CHECK-NEXT: %1.1 = literal 1: <2 x f32>
+// CHECK-NEXT: %1.2 = extract 0 from %1.1: <2 x f32>
+// CHECK-NEXT: return %1.2: f32
 
 func @assoc1: (<2 x 3 x f32>, <2 x 3 x f32>, <2 x 3 x f32>, <2 x 3 x f32>) -> <2 x 3 x f32> {
 'entry(%x: <2 x 3 x f32>, %y: <2 x 3 x f32>, %z: <2 x 3 x f32>, %a: <2 x 3 x f32>):

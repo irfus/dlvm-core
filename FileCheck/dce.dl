@@ -14,12 +14,15 @@ func @inference: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 10 
 
 func @bar: (f32, f32) -> i32 {
 'entry(%x: f32, %y: f32):
-    %0.0 = multiply 5: i32, 8: i32
+    %i = literal 1: <1 x 784 x f32>
+    %j = literal 2: <784 x 10 x f32>
+    %k = literal 3: <1 x 10 x f32>
+    %0.3 = multiply 5: i32, 8: i32
     %dead1 = multiply 10000: i32, 20000: i32
     %dead2 = add %dead1: i32, 20000: i32
-    %dead3 = apply @inference(1: <1 x 784 x f32>, 2: <784 x 10 x f32>, 3: <1 x 10 x f32>): (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 10 x f32>
-    %0.4 = equal %0.0: i32, 1: i32
-    conditional %0.4: bool then 'then(0: i32) else 'else(1: i32)
+    %dead3 = apply @inference(%i: <1 x 784 x f32>, %j: <784 x 10 x f32>, %k: <1 x 10 x f32>): (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 10 x f32>
+    %0.7 = equal %0.3: i32, 1: i32
+    conditional %0.7: bool then 'then(0: i32) else 'else(1: i32)
 'then(%a: i32):
     branch 'cont(%a: i32)
 'else(%b: i32):
