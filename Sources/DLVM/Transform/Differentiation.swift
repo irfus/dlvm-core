@@ -173,35 +173,35 @@ fileprivate extension Differentiation {
                        from diffIndex: Int?, wrt varIndices: [Int],
                        keeping outputIndices: [Int], seedable isSeedable: Bool) {
         let builder = IRBuilder(module: function.parent)
-
         /// Seed on return instructions
         let exits = function.premise.exits
         for (block, returnInst) in exits {
             let retVal: Use = returnInst.operands[diffIndex ?? 0]
             let seed: Use
             if !isSeedable {
-                seed = %retVal.makeLiteral(1)
+                if retVal.type.isScalar {
+                    seed = %retVal.makeLiteral(1)
+                } else {
+                    builder.move(to: block, index: 0)
+                    seed = %builder.literal(.scalar(1), retVal.type)
+                }
             } else {
                 guard let seedArg = function[0].arguments.last else {
                     fatalError("No seed argument")
                 }
                 seed = %seedArg
             }
-
             /// Differentiate
             for inst in block.reversed().dropFirst() {
                 differentiate(inst, using: builder, in: context,
                               returnValue: retVal, returnSeed: seed)
             }
-
             /// Remove old return
             returnInst.removeFromParent()
-
             /// Build new return
             var newReturn: [Use] = []
             newReturn += varIndices.map { context.adjoint(for: %function[0].arguments[$0])! }
             newReturn += outputIndices.map { returnInst.operands[$0] }
-
             let tupleLit = builder.buildInstruction(.literal(.tuple(newReturn), function.returnType))
             builder.return(%tupleLit)
         }
@@ -213,16 +213,20 @@ fileprivate extension Differentiation {
                               returnValue: Use, returnSeed: Use) {
         /// Move builder
         bd.move(to: instruction.parent)
-
         /// Get adjoint for instruction
-        var adjoint = context.adjoint(for: instruction) ?? %instruction.makeLiteral(0)
+        var adjoint = context.adjoint(for: instruction) ??
+            (instruction.type.isScalar
+                ? %instruction.makeLiteral(0)
+                : %bd.literal(.scalar(0), instruction.type))
         if let returnInst = returnValue.instruction, instruction == returnInst {
             adjoint = returnSeed
         }
-
         /// Get adjoints for operands
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {
+        /* Literal value */
+        case .literal:
+            grad = []
         /* Basic arithmetic */
         case let .numericBinary(.add, lhs, rhs):
             grad = [
