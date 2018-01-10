@@ -49,7 +49,8 @@ class DLOptTool : CommandLineTool<OptToolOptions> {
 
         /// Verify input files
         // NOTE: To be removed when PathArgument init checks for invalid paths.
-        // Error should indicate raw string argument, not the corresponding path.
+        // Error should indicate raw string argument, not the corresponding
+        // path.
         if let invalidFile = options.inputFiles.first(where: { !isFile($0) }) {
             throw DLError.invalidInputFile(invalidFile)
         }
@@ -82,11 +83,15 @@ class DLOptTool : CommandLineTool<OptToolOptions> {
         }
     }
 
-    override class func setUp(parser: ArgumentParser, binder: ArgumentBinder<OptToolOptions>) {
+    override class func setUp(parser: ArgumentParser,
+                              binder: ArgumentBinder<OptToolOptions>) {
         binder.bind(
-            option: parser.add(option: "--no-verify", kind: Bool.self,
-                               usage: "Bypass verification after applying transforms"),
-            to: { $0.noVerify = $1 })
+            option: parser.add(
+                option: "--no-verify", kind: Bool.self,
+                usage: "Bypass verification after applying transforms"
+            ),
+            to: { $0.noVerify = $1 }
+        )
     }
 }
 

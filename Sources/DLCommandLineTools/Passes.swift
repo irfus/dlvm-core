@@ -52,13 +52,16 @@ public extension TransformPass {
         switch self {
         case .differentiation: return "differentiation"
         case .deadCodeElimination: return "dead code elimination"
-        case .commonSubexpressionElimination: return "common subexpression elimination"
+        case .commonSubexpressionElimination:
+            return "common subexpression elimination"
         case .algebraSimplification: return "algebra simplification"
         case .linearAlgebraFusion: return "linear algebra fusion"
         case .stackPromotion: return "stack promotion"
         case .valuePromotion: return "value promotion"
-        case .matrixMultiplicationReordering: return "matrix multiplication reordering"
-        case .literalBroadcastingPromotion: return "literal broadcasting promotion"
+        case .matrixMultiplicationReordering:
+            return "matrix multiplication reordering"
+        case .literalBroadcastingPromotion:
+            return "literal broadcasting promotion"
         }
     }
 
@@ -66,23 +69,32 @@ public extension TransformPass {
     init?(rawValue: String) {
         typealias T = TransformPass
         switch rawValue {
-        case T.differentiation.abbrevation, T.differentiation.rawValue:
+        case T.differentiation.abbrevation,
+             T.differentiation.rawValue:
             self = .differentiation
-        case T.deadCodeElimination.abbrevation, T.deadCodeElimination.rawValue:
+        case T.deadCodeElimination.abbrevation,
+             T.deadCodeElimination.rawValue:
             self = .deadCodeElimination
-        case T.commonSubexpressionElimination.abbrevation, T.commonSubexpressionElimination.rawValue:
+        case T.commonSubexpressionElimination.abbrevation,
+             T.commonSubexpressionElimination.rawValue:
             self = .commonSubexpressionElimination
-        case T.algebraSimplification.abbrevation, T.algebraSimplification.rawValue:
+        case T.algebraSimplification.abbrevation,
+             T.algebraSimplification.rawValue:
             self = .algebraSimplification
-        case T.linearAlgebraFusion.abbrevation, T.linearAlgebraFusion.rawValue:
+        case T.linearAlgebraFusion.abbrevation,
+             T.linearAlgebraFusion.rawValue:
             self = .linearAlgebraFusion
-        case T.stackPromotion.abbrevation, T.stackPromotion.rawValue:
+        case T.stackPromotion.abbrevation,
+             T.stackPromotion.rawValue:
             self = .stackPromotion
-        case T.valuePromotion.abbrevation, T.valuePromotion.rawValue:
+        case T.valuePromotion.abbrevation,
+             T.valuePromotion.rawValue:
             self = .valuePromotion
-        case T.matrixMultiplicationReordering.abbrevation, T.matrixMultiplicationReordering.rawValue:
+        case T.matrixMultiplicationReordering.abbrevation,
+             T.matrixMultiplicationReordering.rawValue:
             self = .matrixMultiplicationReordering
-        case T.literalBroadcastingPromotion.abbrevation, T.literalBroadcastingPromotion.rawValue:
+        case T.literalBroadcastingPromotion.abbrevation,
+             T.literalBroadcastingPromotion.rawValue:
             self = .literalBroadcastingPromotion
         default:
             return nil
@@ -94,15 +106,24 @@ extension TransformPass : StringEnumArgument {
     public static var completion: ShellCompletion {
         // NOTE: Can be shortened with enum iteration
         return .values([
-            (differentiation.abbrevation, differentiation.description),
-            (deadCodeElimination.abbrevation, deadCodeElimination.description),
-            (commonSubexpressionElimination.abbrevation, commonSubexpressionElimination.description),
-            (algebraSimplification.abbrevation, algebraSimplification.description),
-            (linearAlgebraFusion.abbrevation, linearAlgebraFusion.description),
-            (stackPromotion.abbrevation, stackPromotion.description),
-            (valuePromotion.abbrevation, valuePromotion.description),
-            (matrixMultiplicationReordering.abbrevation, matrixMultiplicationReordering.description),
-            (literalBroadcastingPromotion.abbrevation, literalBroadcastingPromotion.description)
+            (differentiation.abbrevation,
+             differentiation.description),
+            (deadCodeElimination.abbrevation,
+             deadCodeElimination.description),
+            (commonSubexpressionElimination.abbrevation,
+             commonSubexpressionElimination.description),
+            (algebraSimplification.abbrevation,
+             algebraSimplification.description),
+            (linearAlgebraFusion.abbrevation,
+             linearAlgebraFusion.description),
+            (stackPromotion.abbrevation,
+             stackPromotion.description),
+            (valuePromotion.abbrevation,
+             valuePromotion.description),
+            (matrixMultiplicationReordering.abbrevation,
+             matrixMultiplicationReordering.description),
+            (literalBroadcastingPromotion.abbrevation,
+             literalBroadcastingPromotion.description)
         ])
     }
 }
@@ -112,23 +133,32 @@ public func runPass(_ pass: TransformPass, on module: Module,
     var changed: Bool
     switch pass {
     case .differentiation:
-        changed = module.applyTransform(Differentiation.self, bypassingVerification: noVerify)
+        changed = module.applyTransform(Differentiation.self,
+                                        bypassingVerification: noVerify)
     case .deadCodeElimination:
-        changed = module.mapTransform(DeadCodeElimination.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(DeadCodeElimination.self,
+                                      bypassingVerification: noVerify)
     case .commonSubexpressionElimination:
-        changed = module.mapTransform(CommonSubexpressionElimination.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(CommonSubexpressionElimination.self,
+                                      bypassingVerification: noVerify)
     case .algebraSimplification:
-        changed = module.mapTransform(AlgebraSimplification.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(AlgebraSimplification.self,
+                                      bypassingVerification: noVerify)
     case .linearAlgebraFusion:
-        changed = module.mapTransform(LinearAlgebraFusion.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(LinearAlgebraFusion.self,
+                                      bypassingVerification: noVerify)
     case .stackPromotion:
-        changed = module.mapTransform(StackPromotion.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(StackPromotion.self,
+                                      bypassingVerification: noVerify)
     case .valuePromotion:
-        changed = module.mapTransform(ValuePromotion.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(ValuePromotion.self,
+                                      bypassingVerification: noVerify)
     case .matrixMultiplicationReordering:
-        changed = module.mapTransform(MatrixMultiplicationReordering.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(MatrixMultiplicationReordering.self,
+                                      bypassingVerification: noVerify)
     case .literalBroadcastingPromotion:
-        changed = module.mapTransform(LiteralBroadcastingPromotion.self, bypassingVerification: noVerify)
+        changed = module.mapTransform(LiteralBroadcastingPromotion.self,
+                                      bypassingVerification: noVerify)
     }
     print("\(pass.abbrevation):", changed ? "changed" : "unchanged")
 }

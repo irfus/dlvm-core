@@ -41,7 +41,8 @@ public extension Function {
             case .function, .variable:
                 return old
             case let .literal(ty, lit) where lit.isAggregate:
-                return .literal(ty, lit.substituting(newUse(from: old), for: old))
+                return .literal(
+                    ty, lit.substituting(newUse(from: old), for: old))
             case let .literal(ty, lit):
                 return .literal(ty, lit)
             case let .argument(_, arg):
@@ -53,9 +54,10 @@ public extension Function {
 
         /// Clone basic blocks
         for oldBB in self {
-            let newBB = BasicBlock(name: oldBB.name,
-                                   arguments: oldBB.arguments.map{($0.name, $0.type)},
-                                   parent: newFunc)
+            let newBB = BasicBlock(
+                name: oldBB.name,
+                arguments: oldBB.arguments.map{($0.name, $0.type)},
+                parent: newFunc)
             newFunc.append(newBB)
 
             /// Insert argument mappings
@@ -69,7 +71,8 @@ public extension Function {
         for oldBB in self {
             let newBB = newBlocks[oldBB]!
             for oldInst in oldBB {
-                let newInst = Instruction(name: oldInst.name, kind: oldInst.kind, parent: newBB)
+                let newInst = Instruction(name: oldInst.name,
+                                          kind: oldInst.kind, parent: newBB)
                 /// - Note: Slow but clean for now
                 for oldUse in newInst.operands {
                     newInst.substitute(newUse(from: oldUse), for: oldUse)
@@ -79,8 +82,9 @@ public extension Function {
                 case let .branch(dest, args):
                     newInst.kind = .branch(newBlocks[dest]!, args)
                 case let .conditional(cond, thenBB, thenArgs, elseBB, elseArgs):
-                    newInst.kind = .conditional(cond, newBlocks[thenBB]!, thenArgs,
-                                                newBlocks[elseBB]!, elseArgs)
+                    newInst.kind = .conditional(
+                        cond, newBlocks[thenBB]!, thenArgs,
+                        newBlocks[elseBB]!, elseArgs)
                 default: break
                 }
                 /// Insert instruction into mapping and new BB

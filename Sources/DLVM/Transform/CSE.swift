@@ -28,7 +28,9 @@ open class CommonSubexpressionElimination : TransformPass {
         var count = 0
         /// Iterate over the original function
         for inst in body.instructions {
-            changed = performCSE(on: inst, availableValues: &availableValues, count: &count) || changed
+            changed = performCSE(on: inst,
+                                 availableValues: &availableValues,
+                                 count: &count) || changed
         }
         return changed
     }
@@ -45,9 +47,10 @@ open class CommonSubexpressionElimination : TransformPass {
         guard sideEffectInfo[inst] == .none,
             !inst.kind.isTerminator else { return false }
 
-        /// If instruction does not match a dominating available value, add it to
-        /// available values
-        guard let available = availableValues.first(where: { $0.kind == inst.kind }),
+        /// If instruction does not match a dominating available value, add it
+        /// to available values
+        guard let available =
+            availableValues.first(where: { $0.kind == inst.kind }),
             domTree.properlyDominates(available, inst) else {
                 availableValues.insert(inst)
                 return false

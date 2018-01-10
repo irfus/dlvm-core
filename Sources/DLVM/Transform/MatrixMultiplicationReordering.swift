@@ -29,13 +29,16 @@ open class MatrixMultiplicationReordering : TransformPass {
         case dot(Expression, Expression)
     }
     
-    private static func optimizedExpression(for chain: Chain) -> (Int, Expression) {
+    private static func optimizedExpression(
+        for chain: Chain) -> (Int, Expression) {
         /// Lay out dimensions
         var dims: [Int] = []
         dims.append(chain[0].shape[0])
         dims.append(contentsOf: chain.map{$0.shape[1]})
         /// Compute cost matrix
-        var temp: [[Int]] = Array(repeating: Array(repeating: 0, count: dims.count), count: dims.count)
+        var temp: [[Int]] = Array(
+            repeating: Array(repeating: 0, count: dims.count),
+            count: dims.count)
         var cost = temp
         for l in 1 ..< chain.count {
             for i in 1 ..< dims.count - l {
@@ -55,7 +58,8 @@ open class MatrixMultiplicationReordering : TransformPass {
         func makeExpression(_ i: Int, _ j: Int) -> Expression {
             return i == j
                 ? .matrix(operand: chain[i-1].operand)
-                : .dot(makeExpression(i, temp[i][j]), makeExpression(temp[i][j] + 1, j))
+                : .dot(makeExpression(i, temp[i][j]),
+                       makeExpression(temp[i][j] + 1, j))
         }
         /// Return cost and expression
         let expr = makeExpression(1, chain.count)
@@ -83,7 +87,8 @@ open class MatrixMultiplicationReordering : TransformPass {
                     let users = dfg.successors(of: next)
                     guard users.count == 1 else { continue }
                     /// Get shapes
-                    guard case let (.tensor(s1, _), .tensor(s2, _)) = (lhs.type.canonical, rhs.type.canonical) else {
+                    guard case let (.tensor(s1, _), .tensor(s2, _)) =
+                        (lhs.type.canonical, rhs.type.canonical) else {
                         preconditionFailure("Ill-formed instruction \(inst)")
                     }
                     /// Append to chain if operands are non-dot
@@ -101,8 +106,8 @@ open class MatrixMultiplicationReordering : TransformPass {
         /// Run algorithm for each chain
         for (chain, insts) in chains {
             let (_, expr) = optimizedExpression(for: chain)
-            /// - TODO: Compare new expression with old expression. If they are equal,
-            /// then no modification is needed.
+            /// - TODO: Compare new expression with old expression. If they are
+            /// equal, then no modification is needed.
             /// Insert new instructions after insts
             let topInst = insts.last!
             builder.move(after: topInst)
@@ -116,7 +121,8 @@ open class MatrixMultiplicationReordering : TransformPass {
             }
             let newTop = insert(expr)
             guard case let .instruction(_, newTopInst) = newTop else {
-                preconditionFailure("\(newTop) must be an instruction. Something's wrong.")
+                preconditionFailure(
+                    "\(newTop) must be an instruction. Something's wrong.")
             }
             newTopInst.name = topInst.name
             body.replaceAllUses(of: topInst, with: newTop)

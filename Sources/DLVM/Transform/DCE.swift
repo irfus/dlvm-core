@@ -32,11 +32,15 @@ open class DeadCodeElimination : TransformPass {
         /// to pre-init the worklist with the entire function's worth of
         /// instructions.
         for inst in body.instructions where !workList.contains(inst) {
-            changed = performDCE(on: inst, workList: workList, count: &count) || changed
+            changed = performDCE(on: inst,
+                                 workList: workList,
+                                 count: &count) || changed
         }
         while let inst = workList.lastObject as? Instruction {
             workList.remove(inst)
-            changed = performDCE(on: inst, workList: workList, count: &count) || changed
+            changed = performDCE(on: inst,
+                                 workList: workList,
+                                 count: &count) || changed
         }
         /// TODO: Print count when DEBUG
         return changed

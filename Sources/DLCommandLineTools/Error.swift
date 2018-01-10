@@ -33,7 +33,7 @@ public enum DLError: Swift.Error {
     case inputOutputCountMismatch
 }
 
-extension DLError: CustomStringConvertible {
+extension DLError : CustomStringConvertible {
     public var description: String {
         switch self {
         case .noInputFiles:
@@ -46,20 +46,20 @@ extension DLError: CustomStringConvertible {
     }
 }
 
-public func print(error: Any) {
+public func printError(_ error: Any) {
     let writer = InteractiveWriter.stderr
-    writer.write("error: ", inColor: .red, bold: true)
+    writer.write("error: ", in: .red, bold: true)
     writer.write("\(error)")
     writer.write("\n")
 }
 
-public func handle(error: Any) {
+internal func handleError(_ error: Any) {
     switch error {
     case ArgumentParserError.expectedArguments(let parser, _):
-        print(error: error)
+        printError(error)
         parser.printUsage(on: stderrStream)
     default:
-        print(error: error)
+        printError(error)
     }
 }
 
@@ -68,7 +68,6 @@ public func handle(error: Any) {
 /// If underlying stream is a not tty, the string will be written in without any
 /// formatting.
 private final class InteractiveWriter {
-
     /// The standard error writer.
     static let stderr = InteractiveWriter(stream: stderrStream)
 
@@ -80,12 +79,15 @@ private final class InteractiveWriter {
 
     /// Create an instance with the given stream.
     init(stream: OutputByteStream) {
-        self.term = (stream as? LocalFileOutputByteStream).flatMap(TerminalController.init(stream:))
+        self.term = (stream as? LocalFileOutputByteStream)
+            .flatMap(TerminalController.init(stream:))
         self.stream = stream
     }
 
     /// Write the string to the contained terminal or stream.
-    func write(_ string: String, inColor color: TerminalController.Color = .noColor, bold: Bool = false) {
+    func write(_ string: String,
+               in color: TerminalController.Color = .noColor,
+               bold: Bool = false) {
         if let term = term {
             term.write(string, inColor: color, bold: bold)
         } else {

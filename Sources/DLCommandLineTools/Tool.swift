@@ -27,6 +27,12 @@ import Basic
 import Utility
 
 open class CommandLineTool<Options : ToolOptions> {
+    /// An enum indicating the execution status of run commands.
+    enum ExecutionStatus {
+        case success
+        case failure
+    }
+    
     /// The options of this tool.
     public let options: Options
 
@@ -57,7 +63,8 @@ open class CommandLineTool<Options : ToolOptions> {
             positional: parser.add(positional: "input files",
                                    kind: [PathArgument].self,
                                    usage: "DLVM IR input files"),
-            to: { $0.inputFiles = $1.lazy.map({ $0.path }) })
+            to: { $0.inputFiles = $1.lazy.map({ $0.path }) }
+        )
 
         binder.bindArray(
             parser.add(option: "--passes", shortName: "-p",
@@ -69,7 +76,8 @@ open class CommandLineTool<Options : ToolOptions> {
             to: {
                 if !$1.isEmpty { $0.passes = $1 }
                 if !$2.isEmpty { $0.outputPaths = $2.lazy.map({ $0.path }) }
-        })
+            }
+        )
 
         binder.bind(
             option: parser.add(option: "--print-ir", kind: Bool.self,
@@ -77,7 +85,8 @@ open class CommandLineTool<Options : ToolOptions> {
                                    Print IR after transformations instead of \
                                    writing to files
                                    """),
-            to: { $0.shouldPrintIR = $1 })
+            to: { $0.shouldPrintIR = $1 }
+        )
 
         // Let subclasses bind arguments.
         type(of: self).setUp(parser: parser, binder: binder)
@@ -90,7 +99,7 @@ open class CommandLineTool<Options : ToolOptions> {
             binder.fill(result, into: &options)
             self.options = options
         } catch {
-            handle(error: error)
+            handleError(error)
             CommandLineTool.exit(with: .failure)
         }
     }
@@ -100,40 +109,36 @@ open class CommandLineTool<Options : ToolOptions> {
         fatalError("Must be implemented by subclasses")
     }
 
+    /// Run method implementation to be overridden by subclasses.
+    open func run() throws {
+        fatalError("Must be implemented by subclasses")
+    }
+    
+    /// Exit the tool with the given execution status.
+    static func exit(with status: ExecutionStatus) -> Never {
+        switch status {
+            #if os(Linux)
+        case .success: Glibc.exit(EXIT_SUCCESS)
+        case .failure: Glibc.exit(EXIT_FAILURE)
+            #else
+        case .success: Darwin.exit(EXIT_SUCCESS)
+        case .failure: Darwin.exit(EXIT_FAILURE)
+            #endif
+        }
+    }
+}
+
+public extension CommandLineTool {
     /// Execute the tool.
-    public final func runAndDiagnose() {
+    final func runAndDiagnose() {
         do {
             // Call the implementation.
             try run()
         } catch {
             // Set execution status to failure in case of errors.
             executionStatus = .failure
-            handle(error: error)
+            handleError(error)
         }
         CommandLineTool.exit(with: executionStatus)
-    }
-
-    /// Run method implementation to be overridden by subclasses.
-    open func run() throws {
-        fatalError("Must be implemented by subclasses")
-    }
-
-    /// Exit the tool with the given execution status.
-    private static func exit(with status: ExecutionStatus) -> Never {
-        switch status {
-        #if os(Linux)
-        case .success: Glibc.exit(EXIT_SUCCESS)
-        case .failure: Glibc.exit(EXIT_FAILURE)
-        #else
-        case .success: Darwin.exit(EXIT_SUCCESS)
-        case .failure: Darwin.exit(EXIT_FAILURE)
-        #endif
-        }
-    }
-
-    /// An enum indicating the execution status of run commands.
-    enum ExecutionStatus {
-        case success
-        case failure
     }
 }
