@@ -30,12 +30,12 @@ class OptimizerToolOptions : ToolOptions {
 }
 
 class OptimizerTool : CommandLineTool<OptimizerToolOptions> {
-    public convenience init(args: [String]) {
+    convenience init(arguments: [String]) {
         self.init(
             toolName: "dlopt",
             usage: "<inputs> [options]",
             overview: "DLVM IR optimizer",
-            args: args
+            arguments: arguments
         )
     }
 
@@ -82,13 +82,13 @@ class OptimizerTool : CommandLineTool<OptimizerToolOptions> {
         }
     }
 
-    override class func defineArguments(parser: ArgumentParser, binder: ArgumentBinder<OptimizerToolOptions>) {
+    override class func setUp(parser: ArgumentParser, binder: ArgumentBinder<OptimizerToolOptions>) {
         binder.bind(
             option: parser.add(option: "--no-verify", kind: Bool.self,
-                       usage: "Bypass verification after applying transforms"),
+                               usage: "Bypass verification after applying transforms"),
             to: { $0.noVerify = $1 })
     }
 }
 
-let tool = OptimizerTool(args: Array(CommandLine.arguments.dropFirst()))
+let tool = OptimizerTool(arguments: Array(CommandLine.arguments.dropFirst()))
 tool.run()

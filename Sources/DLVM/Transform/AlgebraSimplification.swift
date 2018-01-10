@@ -70,12 +70,14 @@ open class AlgebraSimplification : TransformPass {
         /// x * 0 | 0 * x => 0
         case let .numericBinary(.multiply, x, 0, inst),
              let .numericBinary(.multiply, 0, x, inst):
-            let newVal = expr.makeLiteral(0, before: inst, using: builder)
+            builder.move(before: inst)
+            let newVal = expr.makeLiteral(0, using: builder)
             function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
         /// x^0 => 1
         case let .numericBinary(.power, x, 0, inst):
-            let newVal = expr.makeLiteral(1, before: inst, using: builder)
+            builder.move(before: inst)
+            let newVal = expr.makeLiteral(1, using: builder)
             function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
         /// x^1 => x
@@ -88,12 +90,14 @@ open class AlgebraSimplification : TransformPass {
         /// x - x => 0
         case let .numericBinary(.subtract, x, y, inst) where x == y,
              let .numericBinary(.modulo, x, y, inst) where x == y:
-            let newVal = expr.makeLiteral(0, before: inst, using: builder)
+            builder.move(before: inst)
+            let newVal = expr.makeLiteral(0, using: builder)
             function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
         /// x / x => 1
         case let .numericBinary(.divide, x, y, inst) where x == y:
-            let newVal = expr.makeLiteral(1, before: inst, using: builder)
+            builder.move(before: inst)
+            let newVal = expr.makeLiteral(1, using: builder)
             function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
 

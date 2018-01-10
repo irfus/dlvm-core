@@ -179,7 +179,9 @@ fileprivate extension Differentiation {
             let retVal: Use = returnInst.operands[diffIndex ?? 0]
             let seed: Use
             if !isSeedable {
-                seed = retVal.makeLiteral(1, in: block, at: 0, using: builder).makeUse()
+                builder.move(to: block, index: 0)
+                seed = retVal.makeLiteral(1, using: builder).makeUse()
+                builder.move(to: block)
             } else {
                 guard let seedArg = function[0].arguments.last else {
                     fatalError("No seed argument")

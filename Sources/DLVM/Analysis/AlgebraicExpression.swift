@@ -129,9 +129,8 @@ public extension AlgebraicExpression {
     }
 
     func makeLiteral(_ literal: Literal,
-                     before inst: Instruction,
                      using builder: IRBuilder) -> Value {
-        return value.makeLiteral(literal, before: inst, using: builder)
+        return value.makeLiteral(literal, using: builder)
     }
 
     func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {

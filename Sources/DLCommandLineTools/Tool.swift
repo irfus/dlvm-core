@@ -39,7 +39,7 @@ open class CommandLineTool<Options : ToolOptions> {
     /// Create an instance of this tool.
     ///
     /// - parameter args: The command line arguments to be passed to this tool.
-    public init(toolName: String, usage: String, overview: String, args: [String], seeAlso: String? = nil) {
+    public init(toolName: String, usage: String, overview: String, arguments: [String], seeAlso: String? = nil) {
         // Create the parser.
         parser = ArgumentParser(
             commandName: "\(toolName)",
@@ -72,11 +72,11 @@ open class CommandLineTool<Options : ToolOptions> {
             to: { $0.shouldPrintIR = $1 })
 
         // Let subclasses bind arguments.
-        type(of: self).defineArguments(parser: parser, binder: binder)
+        type(of: self).setUp(parser: parser, binder: binder)
 
         do {
             // Parse the result.
-            let result = try parser.parse(args)
+            let result = try parser.parse(arguments)
             // Fill and set options.
             var options = Options()
             binder.fill(result, into: &options)
@@ -87,7 +87,7 @@ open class CommandLineTool<Options : ToolOptions> {
         }
     }
 
-    open class func defineArguments(parser: ArgumentParser, binder: ArgumentBinder<Options>) {
+    open class func setUp(parser: ArgumentParser, binder: ArgumentBinder<Options>) {
         fatalError("Must be implemented by subclasses")
     }
 
