@@ -29,11 +29,11 @@ public struct DominatorTree<Node : IRUnit> {
 }
 
 extension DominatorTree : BidirectionalEdgeSet {
-    public func predecessors(of node: Node) -> ObjectSet<Node> {
+    public func predecessors(of node: Node) -> OrderedSet<Node> {
         return graph.predecessors(of: node)
     }
 
-    public func successors(of node: Node) -> ObjectSet<Node> {
+    public func successors(of node: Node) -> OrderedSet<Node> {
         return graph.successors(of: node)
     }
 }
@@ -56,7 +56,7 @@ public extension DominatorTree {
         return predecessors(of: node).first!
     }
 
-    func immediateDominatees(of node: Node) -> ObjectSet<Node> {
+    func immediateDominatees(of node: Node) -> OrderedSet<Node> {
         return successors(of: node)
     }
 
@@ -65,7 +65,7 @@ public extension DominatorTree {
         if dominates(b2, b1) { return b2 }
 
         /// Collect all b1's dominators
-        var b1Dominators: ObjectSet<Node> = []
+        var b1Dominators: Set<Node> = []
         b1Dominators.insert(root)
         var b1Dom = immediateDominator(of: b1)
         while b1Dom !== root {

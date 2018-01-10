@@ -72,13 +72,13 @@ public extension ForwardGraphNode where Self : BackwardGraphNode {
 /// Graph representation storing all forward edges
 public protocol ForwardEdgeSet {
     associatedtype Node : HashableByReference
-    func successors(of node: Node) -> ObjectSet<Node>
+    func successors(of node: Node) -> OrderedSet<Node>
 }
 
 /// Graph representation storing all backward edges
 public protocol BackwardEdgeSet {
     associatedtype Node : HashableByReference
-    func predecessors(of node: Node) -> ObjectSet<Node>
+    func predecessors(of node: Node) -> OrderedSet<Node>
 }
 
 /// Graph representation storing all forward and backward edges
@@ -96,11 +96,11 @@ public struct TransposeEdgeSet<Base : BidirectionalEdgeSet> : BidirectionalEdgeS
 
     public let base: Base
 
-    public func predecessors(of node: Node) -> ObjectSet<Node> {
+    public func predecessors(of node: Node) -> OrderedSet<Node> {
         return base.successors(of: node)
     }
 
-    public func successors(of node: Node) -> ObjectSet<Node> {
+    public func successors(of node: Node) -> OrderedSet<Node> {
         return base.predecessors(of: node)
     }
 }
@@ -108,8 +108,8 @@ public struct TransposeEdgeSet<Base : BidirectionalEdgeSet> : BidirectionalEdgeS
 /// Directed graph
 public struct DirectedGraph<Node : HashableByReference> : BidirectionalEdgeSet {
     public struct Entry {
-        public var successors: ObjectSet<Node> = []
-        public var predecessors: ObjectSet<Node> = []
+        public var successors: OrderedSet<Node> = []
+        public var predecessors: OrderedSet<Node> = []
     }
 
     fileprivate var entries: [Node : Entry] = [:]
@@ -126,9 +126,9 @@ public extension DirectedGraph {
     /// Insert edge to the graph
     mutating func insertEdge(from src: Node, to dest: Node) {
         insertNode(src)
-        entries[src]!.successors.insert(dest)
+        entries[src]!.successors.append(dest)
         insertNode(dest)
-        entries[dest]!.predecessors.insert(src)
+        entries[dest]!.predecessors.append(src)
     }
 
     /// Remove edge from the graph, if it exists
@@ -146,12 +146,12 @@ public extension DirectedGraph {
     }
 
     /// Predecessors of the node
-    func predecessors(of node: Node) -> ObjectSet<Node> {
+    func predecessors(of node: Node) -> OrderedSet<Node> {
         return self[node].predecessors
     }
 
     /// Successors of the node
-    func successors(of node: Node) -> ObjectSet<Node> {
+    func successors(of node: Node) -> OrderedSet<Node> {
         return self[node].successors
     }
 
