@@ -328,7 +328,7 @@ private extension Lexer {
                 return Token(kind: .anonymousIdentifier(bbIndex, instIndex),
                              range: startLoc..<location)
             }
-            /// Otherwise it's just a nonimal identifier
+            /// Otherwise it's just a nominal identifier
             return try lexIdentifier(ofKind: .temporary)
         case "$": return try lexIdentifier(ofKind: .type)
         case "'": return try lexIdentifier(ofKind: .basicBlock)
@@ -568,11 +568,13 @@ private extension Lexer {
         case "erfc": kind = .opcode(.numericUnaryOp(.erfc))
         case "rint": kind = .opcode(.numericUnaryOp(.rint))
         case "not": kind = .opcode(.not)
+        /// Type-related
         case "x": kind = .punctuation(.times)
         case "f16": kind = .dataType(.float(.half))
         case "f32": kind = .dataType(.float(.single))
         case "f64": kind = .dataType(.float(.double))
         case "bool": kind = .dataType(.bool)
+        case "stack": kind = .keyword(.stack)
         case _ where prefix.first == "i":
             let rest = prefix.dropFirst()
             guard rest.forAll({$0.isDigit}), let size = Int(rest.string) else {
