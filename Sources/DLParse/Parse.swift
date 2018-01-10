@@ -28,7 +28,7 @@ import DLVM
 private struct Environment {
     var locals: [String : Value] = [:]
     var globals: [String : Value] = [:]
-    var nominalTypes: [String : Type] = [:]
+    var nominalTypes: [String : Type] = ["stack" : .stack]
     var basicBlocks: [String : BasicBlock] = [:]
     var processedBasicBlocks: Set<BasicBlock> = []
     var processedFunctions: Set<Function> = []
