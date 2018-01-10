@@ -45,7 +45,6 @@ public extension PremiseHolder
 }
 
 extension BasicBlock : PremiseHolder {
-
     public struct Premise {
         public let first: Instruction
         public let terminator: Instruction
@@ -62,11 +61,9 @@ extension BasicBlock : PremiseHolder {
             return Premise(first: body[0], terminator: last)
         }
     }
-
 }
 
 extension Function : PremiseHolder {
-
     public struct Premise {
         public let entry: BasicBlock
         public let exits: [(BasicBlock, Instruction)]
@@ -95,5 +92,4 @@ extension Function : PremiseHolder {
             return Premise(entry: entry, exits: exits)
         }
     }
-    
 }

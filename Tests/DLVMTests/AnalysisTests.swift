@@ -20,7 +20,7 @@
 import XCTest
 @testable import DLVM
 
-class AnalysisTests: XCTestCase {
+class AnalysisTests : XCTestCase {
     let builder = IRBuilder(moduleName: "AnalysisTest")
 
     func testLoop() {
@@ -159,10 +159,10 @@ class AnalysisTests: XCTestCase {
             let loop = loopInfo.topLevelLoops[0]
             XCTAssertEqual(loop.header, outerBB)
             XCTAssertEqual(loop.subloops.count, 1)
-            let subloop = loop.subloops[0]
-            XCTAssertEqual(subloop.header, innerBB)
-            XCTAssertEqual(subloop.subloops, [])
-            XCTAssertEqual(subloop.blocks, [innerBB, iBodyBB])
+            let subloop = loop.subloops.first
+            XCTAssertEqual(subloop?.header, innerBB)
+            XCTAssertEqual(subloop?.subloops, [])
+            XCTAssertEqual(subloop?.blocks, [innerBB, iBodyBB])
             XCTAssert(loop.blocks == [outerBB, innerBB, iBodyBB, oBodyBB] ||
                 loop.blocks == [outerBB, innerBB, oBodyBB, iBodyBB])
             XCTAssertEqual(loopInfo.innerMostLoops,
@@ -171,7 +171,7 @@ class AnalysisTests: XCTestCase {
         }
     }
 
-    static var allTests : [(String, (AnalysisTests) -> () throws -> Void)] {
+    static var allTests: [(String, (AnalysisTests) -> () throws -> Void)] {
         return [
             ("testLoop", testLoop),
             ("testNestedLoop", testNestedLoop)

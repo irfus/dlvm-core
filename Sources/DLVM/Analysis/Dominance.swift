@@ -17,10 +17,10 @@
 //  limitations under the License.
 //
 
-/// This file contains an implementation of the Cooper-Harvey-Kennedy dominance algorithm
-///
-/// K. D. Cooper, T. J. Harvey, and K. Kennedy. A simple, fast dominance algorithm.
-/// Rice University, 2000.
+/// This file contains an implementation of the Cooper-Harvey-Kennedy dominance
+/// algorithm.
+/// K. D. Cooper, T. J. Harvey, and K. Kennedy. A simple, fast dominance
+/// algorithm. Rice University, 2000.
 
 
 public struct DominatorTree<Node : IRUnit> {
@@ -29,11 +29,11 @@ public struct DominatorTree<Node : IRUnit> {
 }
 
 extension DominatorTree : BidirectionalEdgeSet {
-    public func predecessors(of node: Node) -> ObjectSet<Node> {
+    public func predecessors(of node: Node) -> OrderedSet<Node> {
         return graph.predecessors(of: node)
     }
 
-    public func successors(of node: Node) -> ObjectSet<Node> {
+    public func successors(of node: Node) -> OrderedSet<Node> {
         return graph.successors(of: node)
     }
 }
@@ -56,7 +56,7 @@ public extension DominatorTree {
         return predecessors(of: node).first!
     }
 
-    func immediateDominatees(of node: Node) -> ObjectSet<Node> {
+    func immediateDominatees(of node: Node) -> OrderedSet<Node> {
         return successors(of: node)
     }
 
@@ -65,7 +65,7 @@ public extension DominatorTree {
         if dominates(b2, b1) { return b2 }
 
         /// Collect all b1's dominators
-        var b1Dominators: ObjectSet<Node> = []
+        var b1Dominators: Set<Node> = []
         b1Dominators.insert(root)
         var b1Dom = immediateDominator(of: b1)
         while b1Dom !== root {
@@ -131,20 +131,20 @@ public extension DominatorTree where Node == BasicBlock {
 }
 
 public extension IRUnit {
-    public func dominates(_ other: Self,
-                          in domTree: DominatorTree<Self>) -> Bool {
+    func dominates(_ other: Self,
+                   in domTree: DominatorTree<Self>) -> Bool {
         return domTree.dominates(self, other)
     }
 
-    public func properlyDominates(_ other: Self,
-                                  in domTree: DominatorTree<Self>) -> Bool {
+    func properlyDominates(_ other: Self,
+                           in domTree: DominatorTree<Self>) -> Bool {
         return domTree.properlyDominates(self, other)
     }
 }
 
 public extension Instruction {
-    public func properlyDominates(_ other: Instruction,
-                                  in domTree: DominatorTree<BasicBlock>) -> Bool {
+    func properlyDominates(_ other: Instruction,
+                           in domTree: DominatorTree<BasicBlock>) -> Bool {
         return domTree.properlyDominates(self, other)
     }
 }
@@ -166,14 +166,18 @@ open class DominanceAnalysis : AnalysisPass {
         repeat {
             changed = false
             for node in entry.postorder.reversed().dropFirst() {
-                let preds = cfg.predecessors(of: node).lazy.filter(domTree.contains)
+                let preds = cfg.predecessors(of: node)
+                    .lazy.filter(domTree.contains)
                 guard var newIDom = preds.first else {
-                    preconditionFailure("Successor node doesn't have any predecessor")
+                    preconditionFailure("""
+                        Successor node doesn't have any predecessor
+                        """)
                 }
                 for p in preds.dropFirst() {
                     newIDom = domTree.nearestCommonDominator(p, newIDom)
                 }
-                if !domTree.contains(node) || domTree.immediateDominator(of: node) !== newIDom {
+                if !domTree.contains(node) ||
+                    domTree.immediateDominator(of: node) !== newIDom {
                     domTree.updateImmediateDominator(newIDom, for: node)
                     changed = true
                 }
@@ -199,15 +203,20 @@ open class PostdominanceAnalysis : AnalysisPass {
             var changed = true
             repeat {
                 changed = false
-                for node in transposeCFG.traversed(from: exit, in: .postorder).reversed().dropFirst() {
+                let rpo = transposeCFG.traversed(from: exit,
+                                                 in: .postorder).reversed()
+                for node in rpo.dropFirst() {
                     let preds = transposeCFG.predecessors(of: node)
                     guard var newIDom = preds.first else {
-                        preconditionFailure("Successor node doesn't have any predecessor")
+                        preconditionFailure("""
+                            Successor node doesn't have any predecessor
+                            """)
                     }
                     for p in preds.dropFirst() where !domTree.contains(p) {
                         newIDom = domTree.nearestCommonDominator(p, newIDom)
                     }
-                    if !domTree.contains(node) || domTree.immediateDominator(of: node) !== newIDom {
+                    if !domTree.contains(node) ||
+                        domTree.immediateDominator(of: node) !== newIDom {
                         domTree.updateImmediateDominator(newIDom, for: node)
                         changed = true
                     }

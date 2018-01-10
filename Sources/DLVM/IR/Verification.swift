@@ -355,8 +355,8 @@ extension Instruction : Verifiable {
             try use.performVerification()
             /// Special case: nested literals can only be in a `literal`
             /// instruction
-            if opcode != .literal, case .literal(_, let lit) = use {
-                guard lit.isScalar else {
+            if opcode != .literal, case .literal(let ty, let lit) = use {
+                guard ty.isScalar else {
                     throw VerificationError
                         .nestedLiteralNotInLiteralInstruction(lit, self)
                 }

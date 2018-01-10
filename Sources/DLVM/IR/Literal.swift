@@ -282,8 +282,12 @@ public extension Use {
 
 public extension Value {
     /// Make a literal of the same type
-    func makeLiteral(_ literal: Literal) -> LiteralValue {
-        return LiteralValue(type: type, literal: literal)
+    func makeLiteral(_ literal: Literal,
+                     using builder: IRBuilder) -> Value {
+        if type.isScalar {
+            return LiteralValue(type: type, literal: literal)
+        }
+        return builder.literal(literal, type)
     }
 
     /// Make a scalar literal of the same type, unless
@@ -297,8 +301,9 @@ public extension Value {
 }
 
 public extension Use {
-    func makeLiteral(_ literal: Literal) -> LiteralValue {
-        return value.makeLiteral(literal)
+    func makeLiteral(_ literal: Literal,
+                     using builder: IRBuilder) -> Value {
+        return value.makeLiteral(literal, using: builder)
     }
 
     func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {

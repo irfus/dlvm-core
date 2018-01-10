@@ -113,7 +113,10 @@ extension ParseError : CustomStringConvertible {
         case let .unexpectedToken(expected: expected, tok):
             desc += "expected \(expected) but found \(tok)"
         case let .noDimensionsInTensorShape(tok):
-            desc += "no dimensions in tensor type at \(tok.startLocation). If you'd like it to be a scalar, use the data type (e.g. f32) directly."
+            desc += """
+                no dimensions in tensor type at \(tok.startLocation). If you'd \
+                like it to be a scalar, use the data type (e.g. f32) directly.
+                """
         case let .undefinedIdentifier(tok):
             desc += "undefined identifier \(tok)"
         case let .typeMismatch(expected: ty, range):
@@ -123,7 +126,10 @@ extension ParseError : CustomStringConvertible {
         case let .redefinedIdentifier(tok):
             desc += "identifier \(tok) is redefined"
         case let .anonymousIdentifierNotInLocal(tok):
-            desc += "anonymous identifier \(tok) is not in a local (basic block) context"
+            desc += """
+                anonymous identifier \(tok) is not in a local (basic block) \
+                context
+                """
         case let .invalidAnonymousIdentifierIndex(tok):
             desc += "anonymous identifier \(tok) has invalid index"
         case let .notFunctionType(range):
@@ -163,18 +169,25 @@ extension LexicalError : CustomStringConvertible {
             desc += "illegal number at \(range)"
         case .unexpectedToken(_):
             desc += "unexpected token"
-        case let .invalidEscapeCharacter(char, _):
-            desc += "invalid escape character '\(Character(UnicodeScalar(char)))'"
+        case let .invalidEscapeCharacter(ch, _):
+            desc += "invalid escape character '\(Character(UnicodeScalar(ch)))'"
         case let .unclosedStringLiteral(range):
             desc += "string literal at \(range) is not terminated"
         case .expectingIdentifierName(_):
             desc += "expecting identifier name"
         case .invalidAnonymousLocalIdentifier(_):
-            desc += "invalid anonymous loacl identifier. It should look like %<bb_index>.<inst_index>, e.g. %0.1"
+            desc += """
+                invalid anonymous local identifier. It should look like \
+                %<bb_index>.<inst_index>, e.g. %0.1
+                """
         case .invalidBasicBlockIndex(_):
-            desc += "invalid index for basic block in anonymous local identifier"
+            desc += """
+                invalid index for basic block in anonymous local identifier
+                """
         case .invalidInstructionIndex(_):
-            desc += "invalid index for instruction in anonymous local identifier"
+            desc += """
+                invalid index for instruction in anonymous local identifier
+                """
         case let .unknownAttribute(range):
             desc += "unknown attribute at \(range)"
         }

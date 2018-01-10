@@ -32,10 +32,49 @@ reference counting, etc.
 - Swift 4.1 dev
   - DEVELOPMENT-SNAPSHOT-2017-12-11 or above
 - LLVM
-  - `brew install llvm && brew link --force --overwrite llvm`
 - LLVM Integrated Tester
-  - `pip install lit`
 - Xcode Command Line Tools 9.0+ (for macOS only)
+
+### Mac Installation
+
+```sh
+# Install Command Line Tools
+xcode-select --install
+
+# Install Swift via swiftenv
+git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
+# Follow instructions to add swiftenv to path:
+# https://swiftenv.fuller.li/en/latest/installation.html
+swiftenv install DEVELOPMENT-SNAPSHOT-2017-12-12-a
+swiftenv global DEVELOPMENT-SNAPSHOT-2017-12-12-a
+
+# Install LLVM (for FileCheck)
+brew install llvm && brew link --force --overwrite llvm
+
+# Install LLVM Integrated Tester (lit)
+pip install lit
+```
+
+### Linux Installation
+
+```sh
+# Install Swift via swiftenv
+git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
+# Follow instructions to add swiftenv to path:
+# https://swiftenv.fuller.li/en/latest/installation.html
+swiftenv install DEVELOPMENT-SNAPSHOT-2017-12-12-a
+swiftenv global DEVELOPMENT-SNAPSHOT-2017-12-12-a
+
+# Install LLVM (for FileCheck)
+wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main"
+sudo apt-get update
+sudo apt-get install llvm-5.0
+
+# Install LLVM Integrated Tester (lit)
+sudo apt-get install python-pip
+pip install lit
+```
 
 ## Build Instructions
 

@@ -17,17 +17,20 @@
 //  limitations under the License.
 //
 
-/// AlgebraicExpression is designed to simplify pattern matching for *independent*
-/// math expressions in domain-specific optimizations such as Algebra Simplification,
-/// Linear Algebra Fusion and Matrix Chain Ordering
+/// AlgebraicExpression is designed to simplify pattern matching for
+/// *independent* math expressions in domain-specific optimizations such as
+/// Algebra Simplification, Linear Algebra Fusion and Matrix Multiplication
+/// Reordering.
 
 import CoreOp
 
 public indirect enum AlgebraicExpression {
     case atom(Use)
     case map(NumericUnaryOp, AlgebraicExpression, Instruction)
-    case numericBinary(NumericBinaryOp, AlgebraicExpression, AlgebraicExpression, Instruction)
-    case booleanBinary(BooleanBinaryOp, AlgebraicExpression, AlgebraicExpression, Instruction)
+    case numericBinary(NumericBinaryOp,
+        AlgebraicExpression, AlgebraicExpression, Instruction)
+    case booleanBinary(BooleanBinaryOp,
+        AlgebraicExpression, AlgebraicExpression, Instruction)
     case dot(AlgebraicExpression, AlgebraicExpression, Instruction)
     case transpose(AlgebraicExpression, Instruction)
 }
@@ -40,7 +43,10 @@ public struct AlgebraicRepresentation {
 public extension AlgebraicRepresentation {
     func expression(for instruction: Instruction) -> AlgebraicExpression {
         guard let expr = table[instruction] else {
-            preconditionFailure("Instruction \(instruction) does not belong to the basic block where the analysis is performed on")
+            preconditionFailure("""
+                Instruction \(instruction) does not belong to the basic block \
+                where the analysis is performed on
+                """)
         }
         return expr
     }
@@ -110,18 +116,21 @@ public extension AlgebraicExpression {
         return (%self).type
     }
 
-    static func ~= (pattern: IntegerLiteralType, expression: AlgebraicExpression) -> Bool {
+    static func ~= (pattern: IntegerLiteralType,
+                    expression: AlgebraicExpression) -> Bool {
         guard case let .atom(x) = expression else { return false }
         return pattern ~= x
     }
 
-    static func ~= (pattern: FloatLiteralType, expression: AlgebraicExpression) -> Bool {
+    static func ~= (pattern: FloatLiteralType,
+                    expression: AlgebraicExpression) -> Bool {
         guard case let .atom(x) = expression else { return false }
         return pattern ~= x
     }
 
-    func makeLiteral(_ literal: Literal) -> LiteralValue {
-        return value.makeLiteral(literal)
+    func makeLiteral(_ literal: Literal,
+                     using builder: IRBuilder) -> Value {
+        return value.makeLiteral(literal, using: builder)
     }
 
     func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {
@@ -160,7 +169,8 @@ extension AlgebraicExpression : BackwardGraphNode {
 }
 
 extension AlgebraicExpression : Equatable {
-    public static func == (lhs: AlgebraicExpression, rhs: AlgebraicExpression) -> Bool {
+    public static func == (lhs: AlgebraicExpression,
+                           rhs: AlgebraicExpression) -> Bool {
         switch (lhs, rhs) {
         case _ where lhs.topInstruction == rhs.topInstruction:
             return true
