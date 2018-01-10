@@ -135,7 +135,7 @@ public extension Function {
 }
 
 public extension Function {
-    /// Remove all uses of this value in the function
+    /// Replace all occurrences of an instruction with another use
     func replaceAllUses(of oldInstruction: Instruction, with newUse: Use) {
         /// If `instruction` exists in its parent BB in this function,
         /// we only search the area after `instruction`'s definition
@@ -145,7 +145,7 @@ public extension Function {
             for bb in suffix(from: bbIndex) {
                 for inst in bb where bb != oldInstruction.parent ||
                     inst.indexInParent >= instIndex {
-                    inst.substitute(newUse, for: %oldInstruction)
+                        inst.substitute(newUse, for: %oldInstruction)
                 }
             }
         }
@@ -153,6 +153,18 @@ public extension Function {
         else {
             for inst in instructions {
                 inst.substitute(newUse, for: %oldInstruction)
+            }
+        }
+    }
+
+    /// Replace all occurrences of a use with another use
+    func replaceAllUses(of oldUse: Use, with newUse: Use) {
+        switch oldUse {
+        case let .instruction(_, inst):
+            replaceAllUses(of: inst, with: newUse)
+        default:
+            for inst in instructions {
+                inst.substitute(newUse, for: oldUse)
             }
         }
     }

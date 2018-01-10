@@ -17,53 +17,47 @@
 //  limitations under the License.
 //
 
-/// WIP: Richard
-/// - TODO: Refactor bigly
-
-/// Replace every `gradient` instruction to a `call` to a function that
-/// produces the gradient
 open class Differentiation: TransformPass {
     public typealias Body = Module
 
     open class func run(on module: Module) -> Bool {
         var changed = false
-
-        for (i, function) in module.enumerated() {
-            if case let .gradient(funcToDiff,
-                                   from: diffIndex,
-                                   wrt: varIndices,
-                                   keeping: outputIndices,
-                                   seedable: isSeedable)? = function.declarationKind {
-                /// Clone function to diff
-                let newFunc = funcToDiff.makeClone(named: function.name)
-                /// Set return type and argument types
-                newFunc.returnType = function.returnType
-                if isSeedable {
-                    newFunc.argumentTypes = function.argumentTypes
-                    var seedArgName = "seed", count = 0
-                    while newFunc[0].arguments.contains(where: { $0.name == seedArgName }) {
-                        seedArgName = "seed\(count)"
-                        count += 1
-                    }
-                    newFunc[0].arguments.append(Argument(name: seedArgName,
-                                                         type: funcToDiff.returnType,
-                                                         parent: newFunc[0]))
-                }
-
-                /// Expand new function
-                let context = ADContext(forward: funcToDiff, gradient: function)
-                expand(newFunc, in: context,
-                       from: diffIndex, wrt: (varIndices ?? Array(0..<funcToDiff.argumentTypes.count)),
-                       keeping: outputIndices, seedable: isSeedable)
-
-                /// Insert new function
-                module.insert(newFunc, at: i)
-                function.removeFromParent()
-                changed = true
-
+        var workList: [Function] = Array(module)
+        var gradients: [Function : Function] = [:]
+        while !workList.isEmpty {
+            let function = workList.removeFirst()
+            guard case let .gradient(funcToDiff,
+                                     from: diffIndex,
+                                     wrt: varIndices,
+                                     keeping: outputIndices,
+                                     seedable: isSeedable)? = function.declarationKind
+                else { continue }
+            /// Clone function to diff
+            let newFunc = funcToDiff.makeClone(named: function.name)
+            /// Set return type and argument types
+            newFunc.returnType = function.returnType
+            if isSeedable {
+                newFunc.argumentTypes = function.argumentTypes
+                let seedArgName = makeFreshName("seed", in: newFunc[0].arguments)
+                let seedArg = Argument(name: seedArgName,
+                                      type: funcToDiff.returnType,
+                                      parent: newFunc[0])
+                newFunc[0].arguments.append(seedArg)
             }
+            /// Insert and expand new function
+            let context = ADContext(forward: funcToDiff, gradient: newFunc)
+            module.insert(newFunc, after: function)
+            expand(newFunc, in: context, from: diffIndex,
+                   wrt: (varIndices ?? Array(funcToDiff.argumentTypes.indices)),
+                   keeping: outputIndices, seedable: isSeedable,
+                   workList: &workList, gradients: &gradients)
+            /// Replace uses of old function with new function
+            function.removeFromParent()
+            module.replaceAllUses(of: %function, with: %newFunc)
+            /// Add function and its gradient to dictionary
+            gradients[funcToDiff] = newFunc
+            changed = true
         }
-
         module.stage = .optimizable
         return changed
     }
@@ -123,6 +117,26 @@ fileprivate extension Use {
     }
 }
 
+fileprivate extension Module {
+    func replaceAllUses(of oldUse: Use, with newUse: Use) {
+        for fn in self {
+            fn.replaceAllUses(of: oldUse, with: newUse)
+        }
+    }
+}
+
+fileprivate func makeFreshName<S : Sequence>(_ name: String, in names: S) -> String
+    where S.Element : Named
+{
+    var result = name
+    var count = 0
+    while names.contains(where: { $0.name == result }) {
+        result = "name\(count)"
+        count += 1
+    }
+    return result
+}
+
 fileprivate class ADContext {
     var blocks: [BasicBlock : BasicBlock] = [:]
     var adjoints: [AnyHashable : Use] = [:]
@@ -171,7 +185,9 @@ fileprivate class ADContext {
 fileprivate extension Differentiation {
     static func expand(_ function: Function, in context: ADContext,
                        from diffIndex: Int?, wrt varIndices: [Int],
-                       keeping outputIndices: [Int], seedable isSeedable: Bool) {
+                       keeping outputIndices: [Int], seedable isSeedable: Bool,
+                       workList: inout [Function],
+                       gradients: inout [Function : Function]) {
         let builder = IRBuilder(module: function.parent)
         /// Seed on return instructions
         let exits = function.premise.exits
@@ -191,7 +207,8 @@ fileprivate extension Differentiation {
             /// Differentiate
             for inst in block.reversed().dropFirst() {
                 differentiate(inst, using: builder, in: context,
-                              returnValue: retVal, returnSeed: seed)
+                              returnValue: retVal, returnSeed: seed,
+                              workList: &workList, gradients: &gradients)
             }
             /// Remove old return
             returnInst.removeFromParent()
@@ -207,21 +224,29 @@ fileprivate extension Differentiation {
     static func differentiate(_ instruction: Instruction,
                               using bd: IRBuilder,
                               in context: ADContext,
-                              returnValue: Use, returnSeed: Use) {
+                              returnValue: Use, returnSeed: Use,
+                              workList: inout [Function],
+                              gradients: inout [Function : Function]) {
         /// Move builder
         bd.move(to: instruction.parent)
         /// Get adjoint for instruction
-        var adjoint: Use = context.adjoint(for: instruction) ??
-            instruction.makeLiteral(0, using: bd).makeUse()
-        if let returnInst = returnValue.instruction, instruction == returnInst {
+        var adjoint: Use
+        if let oldAdjoint = context.adjoint(for: instruction) {
+            adjoint = oldAdjoint
+        } else if let returnInst = returnValue.instruction, instruction == returnInst {
             adjoint = returnSeed
+        } else {
+            adjoint = instruction.makeLiteral(0, using: bd).makeUse()
         }
         /// Get adjoints for operands
         var grad: [(operand: Use, derivative: Use)]
         switch instruction.kind {
         /* Literal value */
-        case .literal:
-            grad = []
+        case let .literal(lit, _):
+            grad = lit.operands.map({
+                ($0, $0.makeLiteral(0, using: bd).makeUse())
+            })
+
         /* Basic arithmetic */
         case let .numericBinary(.add, lhs, rhs):
             grad = [
@@ -352,6 +377,37 @@ fileprivate extension Differentiation {
             grad = [
                 (x, x.makeScalar(1))
             ]
+
+        /* Function application */
+        case let .apply(.function(_, fn), operands):
+            let gradientFn: Function
+            switch gradients[fn] {
+            case let f?: gradientFn = f
+            case nil:
+                guard let gradientType = fn.gradientType(fromOutput: nil,
+                                                         withRespectTo: nil,
+                                                         keepingOutputs: [],
+                                                         isSeedable: true),
+                    case let .function(argumentTypes, returnType) = gradientType else {
+                        fatalError("Function \(fn.name) is not differentiable")
+                }
+                let module = fn.parent
+                let gradientName = makeFreshName("\(fn.name)_grad", in: module)
+                let gradientDecl: Function.DeclarationKind = .gradient(
+                    of: fn, from: nil, wrt: nil, keeping: [], seedable: true
+                )
+                gradientFn = Function(name: gradientName,
+                                      argumentTypes: argumentTypes,
+                                      returnType: returnType,
+                                      declarationKind: gradientDecl,
+                                      parent: module)
+                module.insert(gradientFn, after: context.gradient)
+                workList.append(gradientFn)
+            }
+            let operandGradient = bd.apply(%gradientFn, operands + [adjoint])
+            grad = operands.enumerated().map { (i, operand) in
+                return (operand, %bd.extract(from: %operandGradient, at: [.index(i)]))
+            }
 
         default:
             /// - TODO: Implement all cases!

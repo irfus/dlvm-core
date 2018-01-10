@@ -100,3 +100,32 @@ func @tensor_simp_dwb_seedable: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f3
 // CHECK-NEXT: %0.1 = dot %0.0: <784 x 1 x f32>, %seed: <1 x 10 x f32>
 // CHECK-NEXT: %0.2 = literal (%0.1: <784 x 10 x f32>, %seed: <1 x 10 x f32>): (<784 x 10 x f32>, <1 x 10 x f32>)
 // CHECK-NEXT: return %0.2: (<784 x 10 x f32>, <1 x 10 x f32>)
+
+// Function call test
+
+func @f: (f32) -> f32 {
+'entry(%x: f32):
+    %0.0 = apply @mul(%x: f32, %x: f32): (f32, f32) -> f32
+    return %0.0: f32
+}
+
+// CHECK: func @f_grad: (f32) -> (f32)
+// CHECK: %0.0 = apply @mul_grad(%x: f32, %x: f32, 1: f32): (f32, f32, f32) -> (f32, f32)
+// CHECK-NEXT: %0.1 = extract 0 from %0.0: (f32, f32)
+// CHECK-NEXT: %0.2 = extract 1 from %0.0: (f32, f32)
+// CHECK-NEXT: %0.3 = add %0.1: f32, %0.2: f32
+// CHECK-NEXT: %0.4 = literal (%0.3: f32): (f32)
+// CHECK-NEXT: return %0.4: (f32)
+
+func @mul: (f32, f32) -> f32 {
+'entry(%x: f32, %y: f32):
+    %0.0 = multiply %x: f32, %y: f32
+    return %0.0: f32
+}
+
+// CHECK: func @mul_grad: (f32, f32, f32) -> (f32, f32)
+// CHECK: %0.0 = literal (%y: f32, %x: f32): (f32, f32)
+// CHECK-NEXT: return %0.0: (f32, f32)
+
+[gradient @f]
+func @f_grad: (f32) -> (f32)

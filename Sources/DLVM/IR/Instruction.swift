@@ -875,8 +875,9 @@ public extension InstructionKind {
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
             return .dataTypeCast(new, type)
-        case let .apply(f, uses):
-            return .apply(f, uses.map(condSubst))
+        case let .apply(fn, operands):
+            let newFn = fn == old ? new : fn
+            return .apply(newFn, operands.map(condSubst))
         case .extract(from: old, at: let i):
             return .extract(from: new, at: i)
         case .insert(old, to: old, at: let indices):
