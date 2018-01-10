@@ -70,25 +70,13 @@ open class AlgebraSimplification : TransformPass {
         /// x * 0 | 0 * x => 0
         case let .numericBinary(.multiply, x, 0, inst),
              let .numericBinary(.multiply, 0, x, inst):
-            let newUse: Use
-            if x.type.isScalar {
-                newUse = %expr.makeLiteral(0)
-            } else {
-                builder.move(before: inst)
-                newUse = %builder.literal(.scalar(0), x.type)
-            }
-            function.replaceAllUses(of: inst, with: newUse)
+            let newVal = expr.makeLiteral(0, before: inst, using: builder)
+            function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
         /// x^0 => 1
         case let .numericBinary(.power, x, 0, inst):
-            let newUse: Use
-            if x.type.isScalar {
-                newUse = %expr.makeLiteral(1)
-            } else {
-                builder.move(before: inst)
-                newUse = %builder.literal(.scalar(1), x.type)
-            }
-            function.replaceAllUses(of: inst, with: newUse)
+            let newVal = expr.makeLiteral(1, before: inst, using: builder)
+            function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
         /// x^1 => x
         case let .numericBinary(.power, x, 1, inst):
@@ -100,25 +88,13 @@ open class AlgebraSimplification : TransformPass {
         /// x - x => 0
         case let .numericBinary(.subtract, x, y, inst) where x == y,
              let .numericBinary(.modulo, x, y, inst) where x == y:
-            let newUse: Use
-            if x.type.isScalar {
-                newUse = %expr.makeLiteral(0)
-            } else {
-                builder.move(before: inst)
-                newUse = %builder.literal(.scalar(0), x.type)
-            }
-            function.replaceAllUses(of: inst, with: newUse)
+            let newVal = expr.makeLiteral(0, before: inst, using: builder)
+            function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
         /// x / x => 1
         case let .numericBinary(.divide, x, y, inst) where x == y:
-            let newUse: Use
-            if x.type.isScalar {
-                newUse = %expr.makeLiteral(1)
-            } else {
-                builder.move(before: inst)
-                newUse = %builder.literal(.scalar(1), x.type)
-            }
-            function.replaceAllUses(of: inst, with: newUse)
+            let newVal = expr.makeLiteral(1, before: inst, using: builder)
+            function.replaceAllUses(of: inst, with: newVal.makeUse())
             expr.removeIntermediates(upTo: x)
 
         // MARK: - 1.3 Strength reduction

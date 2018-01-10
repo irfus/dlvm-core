@@ -179,12 +179,7 @@ fileprivate extension Differentiation {
             let retVal: Use = returnInst.operands[diffIndex ?? 0]
             let seed: Use
             if !isSeedable {
-                if retVal.type.isScalar {
-                    seed = %retVal.makeLiteral(1)
-                } else {
-                    builder.move(to: block, index: 0)
-                    seed = %builder.literal(.scalar(1), retVal.type)
-                }
+                seed = retVal.makeLiteral(1, in: block, at: 0, using: builder).makeUse()
             } else {
                 guard let seedArg = function[0].arguments.last else {
                     fatalError("No seed argument")
@@ -214,10 +209,8 @@ fileprivate extension Differentiation {
         /// Move builder
         bd.move(to: instruction.parent)
         /// Get adjoint for instruction
-        var adjoint = context.adjoint(for: instruction) ??
-            (instruction.type.isScalar
-                ? %instruction.makeLiteral(0)
-                : %bd.literal(.scalar(0), instruction.type))
+        var adjoint: Use = context.adjoint(for: instruction) ??
+            instruction.makeLiteral(0, using: bd).makeUse()
         if let returnInst = returnValue.instruction, instruction == returnInst {
             adjoint = returnSeed
         }

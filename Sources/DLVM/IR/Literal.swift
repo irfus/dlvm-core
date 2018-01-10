@@ -282,8 +282,35 @@ public extension Use {
 
 public extension Value {
     /// Make a literal of the same type
-    func makeLiteral(_ literal: Literal) -> LiteralValue {
-        return LiteralValue(type: type, literal: literal)
+    func makeLiteral(_ literal: Literal,
+                     using builder: IRBuilder) -> Value {
+        if type.isScalar {
+            return LiteralValue(type: type, literal: literal)
+        }
+        return builder.literal(literal, type)
+    }
+
+    /// Make a literal of the same type
+    func makeLiteral(_ literal: Literal,
+                     before inst: Instruction,
+                     using builder: IRBuilder) -> Value {
+        if type.isScalar {
+            return LiteralValue(type: type, literal: literal)
+        }
+        builder.move(before: inst)
+        return builder.literal(literal, type)
+    }
+
+    /// Make a literal of the same type
+    func makeLiteral(_ literal: Literal,
+                     in block: BasicBlock,
+                     at index: Int? = nil,
+                     using builder: IRBuilder) -> Value {
+        if type.isScalar {
+            return LiteralValue(type: type, literal: literal)
+        }
+        builder.move(to: block, index: index)
+        return builder.literal(literal, type)
     }
 
     /// Make a scalar literal of the same type, unless
@@ -297,8 +324,22 @@ public extension Value {
 }
 
 public extension Use {
-    func makeLiteral(_ literal: Literal) -> LiteralValue {
-        return value.makeLiteral(literal)
+    func makeLiteral(_ literal: Literal,
+                     using builder: IRBuilder) -> Value {
+        return value.makeLiteral(literal, using: builder)
+    }
+
+    func makeLiteral(_ literal: Literal,
+                     before inst: Instruction,
+                     using builder: IRBuilder) -> Value {
+        return value.makeLiteral(literal, before: inst, using: builder)
+    }
+
+    func makeLiteral(_ literal: Literal,
+                     in block: BasicBlock,
+                     at index: Int? = nil,
+                     using builder: IRBuilder) -> Value {
+        return value.makeLiteral(literal, in: block, at: index, using: builder)
     }
 
     func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {
