@@ -205,10 +205,13 @@ fileprivate extension Differentiation {
                 builder.move(to: block)
             }
             /// Differentiate
-            for inst in block.reversed().dropFirst() {
+            var instructions: [Instruction] = Array(returnInst.predecessors)
+            while !instructions.isEmpty {
+                let inst = instructions.removeFirst()
                 differentiate(inst, using: builder, in: context,
                               returnValue: retVal, returnSeed: seed,
                               workList: &workList, gradients: &gradients)
+                instructions.append(contentsOf: inst.predecessors)
             }
             /// Remove old return
             returnInst.removeFromParent()
