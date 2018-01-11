@@ -21,16 +21,16 @@ import Foundation
 import Basic
 import Utility
 
-public enum DLError: Swift.Error {
+public enum DLError: Error {
     /// No input files were specified.
     case noInputFiles
-
     /// An input file is invalid.
     // NOTE: To be removed when PathArgument init checks for invalid paths.
     case invalidInputFile(AbsolutePath)
-
     /// The number of input files and output paths do not match.
     case inputOutputCountMismatch
+    /// There were fatal diagnostics during the operation.
+    case hasFatalDiagnostics
 }
 
 extension DLError : CustomStringConvertible {
@@ -42,6 +42,8 @@ extension DLError : CustomStringConvertible {
             return "invalid input path: \(path.prettyPath())"
         case .inputOutputCountMismatch:
             return "number of inputs and outputs do not match"
+        case .hasFatalDiagnostics:
+            return ""
         }
     }
 }
@@ -51,6 +53,33 @@ public func printError(_ error: Any) {
     writer.write("error: ", in: .red, bold: true)
     writer.write("\(error)")
     writer.write("\n")
+}
+
+func printDiagnostic(_ diagnostic: Diagnostic) {
+    let writer = InteractiveWriter.stderr
+    if !(diagnostic.location is UnknownLocation) {
+        writer.write(diagnostic.location.localizedDescription)
+        writer.write(": ")
+    }
+    switch diagnostic.behavior {
+    case .error:
+        writer.write("error: ", in: .red, bold: true)
+    case .warning:
+        writer.write("warning: ", in: .yellow, bold: true)
+    case .note:
+        writer.write("note: ", in: .white, bold: true)
+    case .ignored:
+        return
+    }
+    writer.write(diagnostic.localizedDescription)
+    writer.write("\n")
+}
+
+func printDiagnostic(_ data: DiagnosticData) {
+    printDiagnostic(Diagnostic(
+        location: UnknownLocation.location,
+        data: data
+    ))
 }
 
 internal func handleError(_ error: Any) {

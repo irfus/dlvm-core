@@ -1,5 +1,5 @@
 //
-//  Options.swift
+//  Diagnostics.swift
 //  DLCommandLineTools
 //
 //  Copyright 2016-2018 The DLVM Team.
@@ -17,18 +17,15 @@
 //  limitations under the License.
 //
 
-import struct Basic.AbsolutePath
-import struct DLVM.OrderedSet
+import Basic
 
-open class ToolOptions {
-    /// Input files
-    public var inputFiles: [AbsolutePath] = []
-    /// Output paths
-    public var outputPaths: [AbsolutePath]?
-    /// Transformation passes
-    public var passes: OrderedSet<TransformPass>?
-    /// Print IR
-    public var shouldPrintIR = true
-
-    public required init() {}
+public struct RedundantDifferentiationFlagDiagnostic : DiagnosticData {
+    public static var id = DiagnosticID(
+        type: RedundantDifferentiationFlagDiagnostic.self,
+        name: "org.dlvm.diags.redundant-ad-flag",
+        defaultBehavior: .warning,
+        description: {
+            $0 <<< "'AD' flag is redundant, differentiation is mandatory"
+    }
+    )
 }

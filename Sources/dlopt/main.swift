@@ -62,6 +62,8 @@ class DLOptTool : CommandLineTool<OptToolOptions> {
             let module = try Module.parsed(fromFile: inputFile.asString)
 
             /// Run passes
+            try runPass(.differentiation, on: module,
+                        bypassingVerification: options.noVerify)
             if let passes = options.passes {
                 for pass in passes {
                     try runPass(pass, on: module,

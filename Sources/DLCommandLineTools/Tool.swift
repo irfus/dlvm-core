@@ -25,6 +25,7 @@
 
 import Basic
 import Utility
+import struct DLVM.OrderedSet
 
 open class CommandLineTool<Options : ToolOptions> {
     /// An enum indicating the execution status of run commands.
@@ -49,7 +50,7 @@ open class CommandLineTool<Options : ToolOptions> {
                 arguments: [String], seeAlso: String? = nil) {
         // Create the parser.
         parser = ArgumentParser(
-            commandName: "\(name)",
+            commandName: name,
             usage: usage,
             overview: overview,
             seeAlso: seeAlso
@@ -74,7 +75,7 @@ open class CommandLineTool<Options : ToolOptions> {
                        kind: [PathArgument].self,
                        usage: "Output paths"),
             to: {
-                if !$1.isEmpty { $0.passes = $1 }
+                if !$1.isEmpty { $0.passes = DLVM.OrderedSet($1) }
                 if !$2.isEmpty { $0.outputPaths = $2.lazy.map({ $0.path }) }
             }
         )
@@ -97,6 +98,11 @@ open class CommandLineTool<Options : ToolOptions> {
             // Fill and set options.
             var options = Options()
             binder.fill(result, into: &options)
+            // Validate options.
+            if let passes = options.passes, passes.contains(.differentiation) {
+                printDiagnostic(RedundantDifferentiationFlagDiagnostic())
+                options.passes?.remove(.differentiation)
+            }
             self.options = options
         } catch {
             handleError(error)
