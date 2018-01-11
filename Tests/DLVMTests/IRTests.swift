@@ -39,20 +39,21 @@ class IRTests : XCTestCase {
             ("foo", 100000 ~ .int(32)),
             ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),
             ("baz", .undefined ~ .array(4, .array(3, .tensor([3], .int(32)))))
-            ])
+        ])
         let fun = builder.buildFunction(named: "initialize_struct1",
                                         argumentTypes: [],
                                         returnType: .void)
         builder.move(to: builder.buildEntry(argumentNames: [], in: fun))
-        builder.store(structLit ~ .struct(struct1), to: %struct1Global)
+        let structInst = builder.literal(structLit, .struct(struct1))
+        builder.store(%structInst, to: %struct1Global)
         builder.return()
         XCTAssertEqual(fun.description, """
             func @initialize_struct1: () -> () {
             'entry():
-                store {#foo = 100000: i32, \
+                %0.0 = literal {#foo = 100000: i32, \
             #bar = undefined: <1 x 3 x 4 x f64>, \
-            #baz = undefined: [4 x [3 x <3 x i32>]]}: $TestStruct1 \
-            to @struct1: *$TestStruct1
+            #baz = undefined: [4 x [3 x <3 x i32>]]}: $TestStruct1
+                store %0.0: $TestStruct1 to @struct1: *$TestStruct1
                 return
             }
             """)

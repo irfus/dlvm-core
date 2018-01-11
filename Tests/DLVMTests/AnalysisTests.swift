@@ -35,11 +35,11 @@ class AnalysisTests : XCTestCase {
         let nextBB = builder.buildBasicBlock(
             named: "next", arguments: [:], in: fun)
         let thenBB = builder.buildBasicBlock(
-            named: "then", arguments: ["a" : .int(32)], in: fun)
+            named: "then", arguments: ["a1" : .int(32)], in: fun)
         let elseBB = builder.buildBasicBlock(
-            named: "else", arguments: ["a" : .int(32), "b" : .int(32)], in: fun)
+            named: "else", arguments: ["a2" : .int(32), "b2" : .int(32)], in: fun)
         let contBB = builder.buildBasicBlock(
-            named: "cont", arguments: ["a" : .int(32)], in: fun)
+            named: "cont", arguments: ["a3" : .int(32)], in: fun)
         builder.branch(nextBB, [])
         builder.move(to: nextBB)
         builder.conditional(
@@ -59,13 +59,13 @@ class AnalysisTests : XCTestCase {
                 branch 'next()
             'next():
                 conditional %0.0: bool then 'then(%a: i32) else 'else(%a: i32, %b: i32)
-            'then(%a: i32):
-                branch 'cont(%a: i32)
-            'else(%a: i32, %b: i32):
-                %3.0 = modulo %a: i32, %b: i32
-                branch 'entry(%b: i32, %3.0: i32)
-            'cont(%a: i32):
-                return %a: i32
+            'then(%a1: i32):
+                branch 'cont(%a1: i32)
+            'else(%a2: i32, %b2: i32):
+                %3.0 = modulo %a2: i32, %b2: i32
+                branch 'entry(%b2: i32, %3.0: i32)
+            'cont(%a3: i32):
+                return %a3: i32
             }
             """)
         /// Test multiple times to account for nondeterminstic behavior
@@ -99,24 +99,22 @@ class AnalysisTests : XCTestCase {
             returnType: .int(32))
         let entry = builder.buildEntry(argumentNames: ["a", "b"], in: fun)
         builder.move(to: entry)
-        let i = builder.literal(0, .int(32))
-        let j = builder.literal(0, .int(32))
         let outerBB = builder.buildBasicBlock(
             named: "outer",
-            arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+            arguments: ["i1" : .int(32), "j1" : .int(32)], in: fun)
         let innerBB = builder.buildBasicBlock(
             named: "inner",
-            arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+            arguments: ["i2" : .int(32), "j2" : .int(32)], in: fun)
         let iBodyBB = builder.buildBasicBlock(
             named: "inner_body",
-            arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+            arguments: ["i3" : .int(32), "j3" : .int(32)], in: fun)
         let oBodyBB = builder.buildBasicBlock(
             named: "outer_body",
-            arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
+            arguments: ["i4" : .int(32), "j4" : .int(32)], in: fun)
         let contBB = builder.buildBasicBlock(
             named: "cont",
-            arguments: ["i" : .int(32), "j" : .int(32)], in: fun)
-        builder.branch(outerBB, [%i, %j])
+            arguments: ["i5" : .int(32), "j5" : .int(32)], in: fun)
+        builder.branch(outerBB, [.literal(.int(32), 0), .literal(.int(32), 0)])
         builder.move(to: outerBB)
         let outerArgs = outerBB.arguments.map { arg in %arg }
         let outerCond = builder.compare(.lessThan, outerArgs[0],
@@ -133,7 +131,7 @@ class AnalysisTests : XCTestCase {
         let jIncr = builder.add(%iBodyBB.arguments[1], .literal(.int(32), 1))
         builder.branch(innerBB, [%iBodyBB.arguments[0], %jIncr])
         builder.move(to: oBodyBB)
-        let iIncr = builder.add(%iBodyBB.arguments[0], .literal(.int(32), 1))
+        let iIncr = builder.add(%oBodyBB.arguments[0], .literal(.int(32), 1))
         builder.branch(outerBB, [%iIncr, %oBodyBB.arguments[1]])
         builder.move(to: contBB)
         let sum = builder.add(%contBB.arguments[0], %contBB.arguments[1])
@@ -141,23 +139,21 @@ class AnalysisTests : XCTestCase {
         XCTAssertEqual(fun.description, """
             func @double_loop: (i32, i32) -> i32 {
             'entry(%a: i32, %b: i32):
-                %0.0 = literal 0: i32
-                %0.1 = literal 0: i32
-                branch 'outer(%0.0: i32, %0.1: i32)
-            'outer(%i: i32, %j: i32):
-                %1.0 = lessThan %i: i32, %a: i32
-                conditional %1.0: bool then 'inner(%i: i32, %j: i32) else 'cont(%i: i32, %j: i32)
-            'inner(%i: i32, %j: i32):
-                %2.0 = lessThan %j: i32, %b: i32
-                conditional %2.0: bool then 'inner_body(%i: i32, %j: i32) else 'outer_body(%i: i32, %j: i32)
-            'inner_body(%i: i32, %j: i32):
-                %3.0 = add %j: i32, 1: i32
-                branch 'inner(%i: i32, %3.0: i32)
-            'outer_body(%i: i32, %j: i32):
-                %4.0 = add %i: i32, 1: i32
-                branch 'outer(%4.0: i32, %j: i32)
-            'cont(%i: i32, %j: i32):
-                %5.0 = add %i: i32, %j: i32
+                branch 'outer(0: i32, 0: i32)
+            'outer(%i1: i32, %j1: i32):
+                %1.0 = lessThan %i1: i32, %a: i32
+                conditional %1.0: bool then 'inner(%i1: i32, %j1: i32) else 'cont(%i1: i32, %j1: i32)
+            'inner(%i2: i32, %j2: i32):
+                %2.0 = lessThan %j2: i32, %b: i32
+                conditional %2.0: bool then 'inner_body(%i2: i32, %j2: i32) else 'outer_body(%i2: i32, %j2: i32)
+            'inner_body(%i3: i32, %j3: i32):
+                %3.0 = add %j3: i32, 1: i32
+                branch 'inner(%i3: i32, %3.0: i32)
+            'outer_body(%i4: i32, %j4: i32):
+                %4.0 = add %i4: i32, 1: i32
+                branch 'outer(%4.0: i32, %j4: i32)
+            'cont(%i5: i32, %j5: i32):
+                %5.0 = add %i5: i32, %j5: i32
                 return %5.0: i32
             }
             """)
