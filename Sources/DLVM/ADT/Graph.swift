@@ -231,7 +231,7 @@ public extension DirectedGraph where Node : ForwardGraphNode {
     ///
     /// - Parameter node: source vertex
     mutating func insertAll(fromSource node: Node) {
-        var visited: ObjectSet<Node> = []
+        var visited: Set<Node> = []
         func insertAll(fromSource node: Node) {
             for succ in node.successors where !visited.contains(succ) {
                 visited.insert(succ)
@@ -264,7 +264,7 @@ public extension DirectedGraph where Node : BackwardGraphNode {
     ///
     /// - Parameter node: leaf vertex
     mutating func insertAll(fromLeaf node: Node) {
-        var visited: ObjectSet<Node> = []
+        var visited: Set<Node> = []
         func insertAll(fromLeaf node: Node) {
             for pred in node.predecessors {
                 visited.insert(pred)

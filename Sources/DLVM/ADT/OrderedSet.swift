@@ -23,8 +23,8 @@ public struct OrderedSet<Element : Hashable> {
     public typealias Index = Int
     public typealias Indices = CountableRange<Int>
 
-    private var array: [Element] = []
-    private var set: Set<Element> = []
+    fileprivate var array: [Element] = []
+    fileprivate var set: Set<Element> = []
 
     public init() {}
 }
@@ -151,4 +151,18 @@ extension OrderedSet
             set.insert(newValue)
         }
     }
+}
+
+/// Efficient initializer on Set
+public extension Set {
+  init(_ elements: OrderedSet<Element>) {
+    self = elements.set
+  }
+}
+
+/// Efficient initializer on Array
+public extension Array where Element : Hashable {
+  init(_ elements: OrderedSet<Element>) {
+    self = elements.array
+  }
 }
