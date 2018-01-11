@@ -128,8 +128,7 @@ public extension AlgebraicExpression {
         return pattern ~= x
     }
 
-    func makeLiteral(_ literal: Literal,
-                     using builder: IRBuilder) -> Value {
+    func makeLiteral(_ literal: Literal, using builder: IRBuilder) -> Value {
         return value.makeLiteral(literal, using: builder)
     }
 

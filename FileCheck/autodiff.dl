@@ -109,6 +109,15 @@ func @f: (f32) -> f32 {
     return %0.0: f32
 }
 
+func @mul: (f32, f32) -> f32 {
+'entry(%x: f32, %y: f32):
+    %0.0 = multiply %x: f32, %y: f32
+    return %0.0: f32
+}
+
+[gradient @f]
+func @f_grad: (f32) -> (f32)
+
 // CHECK: func @f_grad: (f32) -> (f32)
 // CHECK: %0.0 = apply @mul_grad(%x: f32, %x: f32, 1: f32): (f32, f32, f32) -> (f32, f32)
 // CHECK-NEXT: %0.1 = extract 0 from %0.0: (f32, f32)
@@ -117,15 +126,6 @@ func @f: (f32) -> f32 {
 // CHECK-NEXT: %0.4 = literal (%0.3: f32): (f32)
 // CHECK-NEXT: return %0.4: (f32)
 
-func @mul: (f32, f32) -> f32 {
-'entry(%x: f32, %y: f32):
-    %0.0 = multiply %x: f32, %y: f32
-    return %0.0: f32
-}
-
 // CHECK: func @mul_grad: (f32, f32, f32) -> (f32, f32)
 // CHECK: %0.0 = literal (%y: f32, %x: f32): (f32, f32)
 // CHECK-NEXT: return %0.0: (f32, f32)
-
-[gradient @f]
-func @f_grad: (f32) -> (f32)
