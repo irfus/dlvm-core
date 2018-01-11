@@ -19,19 +19,22 @@
 
 open class Differentiation: TransformPass {
     public typealias Body = Module
+    public typealias GradientMapping =
+        [Function : [(config: GradientConfiguration, gradient: Function)]]
 
     open class func run(on module: Module) -> Bool {
         var changed = false
         var workList: [Function] = Array(module)
-        var gradients: [Function : Function] = [:]
+        var gradients: GradientMapping = [:]
         while !workList.isEmpty {
             let gradientFunc = workList.removeFirst()
-            guard case let .gradient(funcToDiff,
-                                     from: diffIndex,
-                                     wrt: varIndices,
-                                     keeping: outputIndices,
-                                     seedable: isSeedable)? = gradientFunc.declarationKind
+            guard case let .gradient(gradientConfig)? = gradientFunc.declarationKind
                 else { continue }
+            let funcToDiff = gradientConfig.forward
+            let diffIndex = gradientConfig.outputDiffIndex
+            let argIndices = gradientConfig.argumentDiffIndices
+            let keepingIndices = gradientConfig.keepingOutputIndices
+            let isSeedable = gradientConfig.isSeedable
             /// Copy contents of original function to gradient function
             funcToDiff.copyContents(to: gradientFunc)
             /// Add seed argument if necessary
@@ -45,13 +48,14 @@ open class Differentiation: TransformPass {
             /// Expand gradient function
             let context = ADContext(forward: funcToDiff, gradient: gradientFunc)
             expand(gradientFunc, in: context, from: diffIndex,
-                   wrt: (varIndices ?? Array(funcToDiff.argumentTypes.indices)),
-                   keeping: outputIndices, seedable: isSeedable,
+                   wrt: (argIndices ?? Array(funcToDiff.argumentTypes.indices)),
+                   keeping: keepingIndices, seedable: isSeedable,
                    workList: &workList, gradients: &gradients)
             /// Remove gradient declaration
             gradientFunc.declarationKind = nil
             /// Add original and gradient functions to dictionary
-            gradients[funcToDiff] = gradientFunc
+            let newGradients = (gradients[funcToDiff] ?? []) + [(gradientConfig, gradientFunc)]
+            gradients[funcToDiff] = newGradients
             changed = true
         }
         module.stage = .optimizable
@@ -183,7 +187,7 @@ fileprivate extension Differentiation {
                        from diffIndex: Int?, wrt varIndices: [Int],
                        keeping outputIndices: [Int], seedable isSeedable: Bool,
                        workList: inout [Function],
-                       gradients: inout [Function : Function]) {
+                       gradients: inout GradientMapping) {
         let builder = IRBuilder(module: function.parent)
         /// Seed on return instructions
         let exits = function.premise.exits
@@ -222,7 +226,7 @@ fileprivate extension Differentiation {
                               in context: ADContext,
                               returnValue: Use, returnSeed: Use,
                               workList: inout [Function],
-                              gradients: inout [Function : Function]) {
+                              gradients: inout GradientMapping) {
         /// Move builder
         bd.move(to: instruction.parent)
         /// Get adjoint for instruction
@@ -377,25 +381,26 @@ fileprivate extension Differentiation {
         /* Function application */
         case let .apply(.function(_, fn), operands):
             let gradientFn: Function
-            switch gradients[fn] {
-            case let f?: gradientFn = f
-            case nil:
-                guard let gradientType = fn.gradientType(fromOutput: nil,
-                                                         withRespectTo: nil,
-                                                         keepingOutputs: [],
-                                                         isSeedable: true),
+            let config = GradientConfiguration(
+                of: fn, from: nil, wrt: nil, keeping: [], seedable: true
+            )
+            if let funcGradients = gradients[fn],
+                let gradIndex = funcGradients.index(where: { $0.config == config }) {
+                gradientFn = funcGradients[gradIndex].gradient
+            } else {
+                guard let gradientType = fn.gradientType(from: nil,
+                                                         wrt: nil,
+                                                         keeping: [],
+                                                         seedable: true),
                     case let .function(argumentTypes, returnType) = gradientType else {
                         fatalError("Function \(fn.name) is not differentiable")
                 }
                 let module = fn.parent
                 let gradientName = makeFreshName("\(fn.name)_grad", in: module)
-                let gradientDecl: Function.DeclarationKind = .gradient(
-                    of: fn, from: nil, wrt: nil, keeping: [], seedable: true
-                )
                 gradientFn = Function(name: gradientName,
                                       argumentTypes: argumentTypes,
                                       returnType: returnType,
-                                      declarationKind: gradientDecl,
+                                      declarationKind: .gradient(config),
                                       parent: module)
                 module.insert(gradientFn, after: context.gradient)
                 workList.append(gradientFn)

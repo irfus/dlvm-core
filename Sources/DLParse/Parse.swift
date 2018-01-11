@@ -1064,26 +1064,26 @@ extension Parser {
                     throw ParseError.undefinedIdentifier(tok)
                 }
                 /// from
-                var from: Int?
+                var diffIndex: Int?
                 if case .keyword(.from)? = currentToken?.kind {
                     consumeToken()
-                    from = try parseInteger().0
+                    diffIndex = try parseInteger().0
                 }
                 /// wrt
-                var wrt: [Int]?
+                var argIndices: [Int]?
                 if case .keyword(.wrt)? = currentToken?.kind {
                     consumeToken()
-                    wrt = try parseMany({
+                    argIndices = try parseMany({
                         try parseInteger().0
                     }, separatedBy: {
                         try consume(.punctuation(.comma))
                     })
                 }
                 /// keeping
-                var keeping: [Int] = []
+                var keepingIndices: [Int] = []
                 if case .keyword(.keeping)? = currentToken?.kind {
                     consumeToken()
-                    keeping = try parseMany({
+                    keepingIndices = try parseMany({
                         try parseInteger().0
                     }, separatedBy: {
                         try consume(.punctuation(.comma))
@@ -1095,7 +1095,11 @@ extension Parser {
                     consumeToken()
                     isSeedable = true
                 }
-                return .gradient(of: fn, from: from, wrt: wrt, keeping: keeping, seedable: isSeedable)
+                let config = GradientConfiguration(
+                    of: fn, from: diffIndex, wrt: argIndices,
+                    keeping: keepingIndices, seedable: isSeedable
+                )
+                return .gradient(config)
 
             case .keyword(.extern):
                 consumeToken()

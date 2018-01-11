@@ -247,14 +247,20 @@ extension Function : Verifiable {
             }
             switch declarationKind {
             /// Verify gradient function's type signature
-            case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
-                               keeping: outputIndices, seedable: isSeedable):
+            // case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
+            //                    keeping: outputIndices, seedable: isSeedable):
+            case let .gradient(gradientConfig):
                 /// Check for type mismatch
-                guard let expectedType = antigrad.gradientType(fromOutput: diffIndex,
-                                                               withRespectTo: varIndices,
-                                                               keepingOutputs: outputIndices,
-                                                               isSeedable: isSeedable) else {
-                    throw VerificationError.gradientArgumentMismatch(antigrad, diffIndex, varIndices, self)
+                let forward = gradientConfig.forward
+                let diffIndex = gradientConfig.outputDiffIndex
+                let argIndices = gradientConfig.argumentDiffIndices
+                let keepingIndices = gradientConfig.keepingOutputIndices
+                let isSeedable = gradientConfig.isSeedable
+                guard let expectedType = forward.gradientType(from: diffIndex,
+                                                              wrt: argIndices,
+                                                              keeping: keepingIndices,
+                                                              seedable: isSeedable) else {
+                    throw VerificationError.gradientArgumentMismatch(forward, diffIndex, argIndices, self)
                 }
                 guard type == expectedType else {
                     throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
