@@ -267,8 +267,8 @@ extension Function : Verifiable {
         }
 
         let domTree = analysis(from: DominanceAnalysis.self)
-
         var bbNames: Set<String> = []
+
         /// Verify basic blocks
         for bb in self {
             /// Check for redeclaration/redefinition
@@ -282,7 +282,6 @@ extension Function : Verifiable {
             bbNames.insert(bb.name)
             /// Verify bb
             try bb.performVerification()
-
             /// Check return type
             let bbPremise = try bb.verifyPremise()
             if case let .return(retVal) = bbPremise.terminator.kind {
@@ -295,7 +294,6 @@ extension Function : Verifiable {
                     break
                 }
             }
-
             /// Check dominance
             for user in bb {
                 for use in user.operands {
@@ -305,7 +303,6 @@ extension Function : Verifiable {
                 }
             }
         }
-
     }
 }
 

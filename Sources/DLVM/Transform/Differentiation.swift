@@ -25,37 +25,33 @@ open class Differentiation: TransformPass {
         var workList: [Function] = Array(module)
         var gradients: [Function : Function] = [:]
         while !workList.isEmpty {
-            let function = workList.removeFirst()
+            let gradientFunc = workList.removeFirst()
             guard case let .gradient(funcToDiff,
                                      from: diffIndex,
                                      wrt: varIndices,
                                      keeping: outputIndices,
-                                     seedable: isSeedable)? = function.declarationKind
+                                     seedable: isSeedable)? = gradientFunc.declarationKind
                 else { continue }
-            /// Clone function to diff
-            let newFunc = funcToDiff.makeClone(named: function.name)
-            /// Set return type and argument types
-            newFunc.returnType = function.returnType
+            /// Copy contents of original function to gradient function
+            funcToDiff.copyContents(to: gradientFunc)
+            /// Add seed argument if necessary
             if isSeedable {
-                newFunc.argumentTypes = function.argumentTypes
-                let seedArgName = makeFreshName("seed", in: newFunc[0].arguments)
+                let seedArgName = makeFreshName("seed", in: gradientFunc[0].arguments)
                 let seedArg = Argument(name: seedArgName,
                                        type: funcToDiff.returnType,
-                                       parent: newFunc[0])
-                newFunc[0].arguments.append(seedArg)
+                                       parent: gradientFunc[0])
+                gradientFunc[0].arguments.append(seedArg)
             }
-            /// Insert and expand new function
-            let context = ADContext(forward: funcToDiff, gradient: newFunc)
-            module.insert(newFunc, after: function)
-            expand(newFunc, in: context, from: diffIndex,
+            /// Expand gradient function
+            let context = ADContext(forward: funcToDiff, gradient: gradientFunc)
+            expand(gradientFunc, in: context, from: diffIndex,
                    wrt: (varIndices ?? Array(funcToDiff.argumentTypes.indices)),
                    keeping: outputIndices, seedable: isSeedable,
                    workList: &workList, gradients: &gradients)
-            /// Replace uses of old function with new function
-            function.removeFromParent()
-            module.replaceAllUses(of: %function, with: %newFunc)
-            /// Add function and its gradient to dictionary
-            gradients[funcToDiff] = newFunc
+            /// Remove gradient declaration
+            gradientFunc.declarationKind = nil
+            /// Add original and gradient functions to dictionary
+            gradients[funcToDiff] = gradientFunc
             changed = true
         }
         module.stage = .optimizable

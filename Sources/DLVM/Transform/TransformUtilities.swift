@@ -27,7 +27,11 @@ public extension Function {
                                attributes: attributes,
                                declarationKind: declarationKind,
                                parent: parent)
+        copyContents(to: newFunc)
+        return newFunc
+    }
 
+    public func copyContents(to other: Function) {
         /// Mappings from old IR units to new IR units
         var newArgs: [Argument : Argument] = [:]
         var newBlocks: [BasicBlock : BasicBlock] = [:]
@@ -37,7 +41,7 @@ public extension Function {
             switch old {
             /// If recursion, change function to the new function
             case .function(_, self):
-                return %newFunc
+                return %other
             case .function, .variable:
                 return old
             case let .literal(ty, lit) where lit.isAggregate:
@@ -57,8 +61,8 @@ public extension Function {
             let newBB = BasicBlock(
                 name: oldBB.name,
                 arguments: oldBB.arguments.map{($0.name, $0.type)},
-                parent: newFunc)
-            newFunc.append(newBB)
+                parent: other)
+            other.append(newBB)
 
             /// Insert argument mappings
             for (oldArg, newArg) in zip(oldBB.arguments, newBB.arguments) {
@@ -92,7 +96,5 @@ public extension Function {
                 newBB.append(newInst)
             }
         }
-
-        return newFunc
     }
 }
