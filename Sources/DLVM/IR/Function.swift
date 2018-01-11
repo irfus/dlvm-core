@@ -19,15 +19,15 @@
 
 public struct GradientConfiguration : Equatable {
     /// Function to differentiate.
-    let forward: Function
+    let primal: Function
     /// Index of tuple element to differentiate, when the return type is a
     /// tuple; otherwise must be 0.
-    let outputDiffIndex: Int?
+    let sourceIndex: Int?
     /// Indices of arguments to differentiate the function with respect to.
-    let argumentDiffIndices: [Int]?
+    let argumentIndices: [Int]?
     /// Indices of return values to kept in the gradient function, when the
     /// return type is a tuple; otherwise can be [0] or [].
-    let keepingOutputIndices: [Int]
+    let keptIndices: [Int]
     /// Whether the gradient function can take a back-propagated gradient as the
     /// seed for reverse-mode AD.
     let isSeedable: Bool
@@ -35,15 +35,12 @@ public struct GradientConfiguration : Equatable {
     /// Create a gradient configuration.
     /// - Note: The type of the forward function must be consistent with the
     ///         configuration.
-    public init(of forward: Function,
-                from outputDiffIndex: Int? = nil,
-                wrt argumentDiffIndices: [Int]? = nil,
-                keeping keptOutputIndices: [Int] = [],
-                seedable isSeedable: Bool = false) {
-        self.forward = forward
-        self.outputDiffIndex = outputDiffIndex
-        self.argumentDiffIndices = argumentDiffIndices
-        self.keepingOutputIndices = keptOutputIndices
+    public init(primal: Function, sourceIndex: Int?, argumentIndices: [Int]?,
+                keptIndices: [Int], isSeedable: Bool) {
+        self.primal = primal
+        self.sourceIndex = sourceIndex
+        self.argumentIndices = argumentIndices
+        self.keptIndices = keptIndices
         self.isSeedable = isSeedable
     }
 }
@@ -189,38 +186,38 @@ public extension Function {
 }
 
 public extension Function {
-    func gradientType(from diffIndex: Int?,
+    func gradientType(from sourceIndex: Int?,
                       wrt argIndices: [Int]?,
-                      keeping keepingIndices: [Int],
+                      keeping keptIndices: [Int],
                       seedable isSeedable: Bool) -> Type? {
         var keptOutputs: [Type]
-        let diffSourceType: Type
+        let sourceType: Type
         /// Check output index
         switch returnType {
         /// Tuple output is treated as multiple-out
         case let .tuple(elementTypes):
-            guard let diffIndex = diffIndex,
-                /// Diff index must be in bounds
-                elementTypes.indices.contains(diffIndex),
+            guard let sourceIndex = sourceIndex,
+                /// Source index must be in bounds
+                elementTypes.indices.contains(sourceIndex),
                 /// Element must be differentiable
-                elementTypes[diffIndex].isDifferentiable,
+                elementTypes[sourceIndex].isDifferentiable,
                 /// Indices of the outputs to keep must be in bounds
                 let someOutputs = elementTypes
-                    .subcollection(atIndices: keepingIndices),
+                    .subcollection(atIndices: keptIndices),
                 /// Indices of the outputs to keep must not contain any
                 /// duplicate
-                !keepingIndices.containsDuplicate
+                !keptIndices.containsDuplicate
                 else { return nil }
-            diffSourceType = elementTypes[diffIndex]
+            sourceType = elementTypes[sourceIndex]
             keptOutputs = someOutputs
-        /// Other output is treated as single out
-        case _ where diffIndex == nil
+        /// Other output is treated as single-out
+        case _ where sourceIndex == nil
                 /// Result must be differentiable
                 && returnType.isDifferentiable
                 /// Indices of the outputs to keep must be either [] or [0]
-                && (keepingIndices.isEmpty || keepingIndices == [0]):
-            diffSourceType = returnType
-            keptOutputs = keepingIndices.isEmpty ? [] : [returnType]
+                && (keptIndices.isEmpty || keptIndices == [0]):
+            sourceType = returnType
+            keptOutputs = keptIndices.isEmpty ? [] : [returnType]
         /// Bad differentiation case
         default:
             return nil
@@ -231,15 +228,15 @@ public extension Function {
             /// Indices of diff variables must be in bounds
             let diffVars = argumentTypes.subcollection(atIndices: argIndices),
             /// All diff variables must be diff'able arguments
-            diffVars.forAll({$0.isDifferentiable})
+            diffVars.forAll({ $0.isDifferentiable })
             else { return nil }
         /// Result of differentiation has the same input types but different
         /// output types Output type is `(k1, ..., kn, d1, ..., dn)` where
         /// `k1...kn` are outputs of the original function to keep, `d1...dn`
-        /// are derivatives of the output at `diffIndex` with respect to
-        /// arguments at indices `varIndices`, respectively.
+        /// are derivatives of the output at `sourceIndex` with respect to
+        /// arguments at indices `argIndices`, respectively.
         return .function(
-            isSeedable ? argumentTypes + [diffSourceType] : argumentTypes,
+            isSeedable ? argumentTypes + [sourceType] : argumentTypes,
             .tuple(diffVars + keptOutputs)
         )
     }

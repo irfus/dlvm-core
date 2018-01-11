@@ -224,8 +224,8 @@ extension LiteralValue : Verifiable {
 }
 
 extension Function : Verifiable {
-    private func verifyDifferentiability(from diffIndex: Int?,
-                                         wrt varIndices: [Int]) throws {
+    private func verifyDifferentiability(from sourceIndex: Int?,
+                                         wrt argIndices: [Int]) throws {
         /// - TODO: Check along the differentiation flow
         /// let dfg = try analysis(from: DataFlowGraphAnalysis.self)
         /// All arguments have to be tensors or aggregate types of tensors
@@ -247,20 +247,18 @@ extension Function : Verifiable {
             }
             switch declarationKind {
             /// Verify gradient function's type signature
-            // case let .gradient(antigrad, from: diffIndex, wrt: varIndices,
-            //                    keeping: outputIndices, seedable: isSeedable):
-            case let .gradient(gradientConfig):
+            case let .gradient(config):
                 /// Check for type mismatch
-                let forward = gradientConfig.forward
-                let diffIndex = gradientConfig.outputDiffIndex
-                let argIndices = gradientConfig.argumentDiffIndices
-                let keepingIndices = gradientConfig.keepingOutputIndices
-                let isSeedable = gradientConfig.isSeedable
-                guard let expectedType = forward.gradientType(from: diffIndex,
-                                                              wrt: argIndices,
-                                                              keeping: keepingIndices,
-                                                              seedable: isSeedable) else {
-                    throw VerificationError.gradientArgumentMismatch(forward, diffIndex, argIndices, self)
+                guard let expectedType = config.primal.gradientType(
+                    from: config.sourceIndex,
+                    wrt: config.argumentIndices,
+                    keeping: config.keptIndices,
+                    seedable: config.isSeedable
+                ) else {
+                    throw VerificationError.gradientArgumentMismatch(
+                        config.primal, config.sourceIndex,
+                        config.argumentIndices, self
+                    )
                 }
                 guard type == expectedType else {
                     throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)

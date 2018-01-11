@@ -360,23 +360,18 @@ extension Function : TextOutputStreamable {
         switch declarationKind {
         case .external?:
             target.write("[extern]\n")
-        case let .gradient(gradientConfig)?:
-            let f = gradientConfig.forward
-            let diffIndex = gradientConfig.outputDiffIndex
-            let argIndices = gradientConfig.argumentDiffIndices
-            let keepingIndices = gradientConfig.keepingOutputIndices
-            let isSeedable = gradientConfig.isSeedable
-            target.write("[gradient @\(f.name)")
-            diffIndex.ifAny {
+        case let .gradient(config)?:
+            target.write("[gradient @\(config.primal.name)")
+            config.sourceIndex.ifAny {
                 target.write(" from \($0)")
             }
-            argIndices.ifAny {
+            config.argumentIndices.ifAny {
                 target.write(" wrt \($0.joinedDescription)")
             }
-            if !keepingIndices.isEmpty {
-                target.write(" keeping \(keepingIndices.joinedDescription)")
+            if !config.keptIndices.isEmpty {
+                target.write(" keeping \(config.keptIndices.joinedDescription)")
             }
-            if isSeedable {
+            if config.isSeedable {
                 target.write(" seedable")
             }
             target.write("]\n")

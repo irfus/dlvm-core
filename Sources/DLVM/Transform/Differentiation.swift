@@ -19,43 +19,38 @@
 
 open class Differentiation: TransformPass {
     public typealias Body = Module
-    public typealias GradientMapping =
-        [Function : [(config: GradientConfiguration, gradient: Function)]]
+    private typealias GradientMapping =
+        [Function : [(config: GradientConfiguration, adjoint: Function)]]
 
     open class func run(on module: Module) -> Bool {
         var changed = false
         var workList: [Function] = Array(module)
-        var gradients: GradientMapping = [:]
+        var adjoints: GradientMapping = [:]
         while !workList.isEmpty {
-            let gradientFunc = workList.removeFirst()
-            guard case let .gradient(gradientConfig)? = gradientFunc.declarationKind
+            let adjoint = workList.removeFirst()
+            guard case let .gradient(config)? = adjoint.declarationKind
                 else { continue }
-            let funcToDiff = gradientConfig.forward
-            let diffIndex = gradientConfig.outputDiffIndex
-            let argIndices = gradientConfig.argumentDiffIndices
-            let keepingIndices = gradientConfig.keepingOutputIndices
-            let isSeedable = gradientConfig.isSeedable
-            /// Copy contents of original function to gradient function
-            funcToDiff.copyContents(to: gradientFunc)
+            /// Copy contents of primal function to adjoint function
+            config.primal.copyContents(to: adjoint)
             /// Add seed argument if necessary
-            if isSeedable {
-                let seedArgName = makeFreshName("seed", in: gradientFunc[0].arguments)
+            if config.isSeedable {
+                let seedArgName = makeFreshName("seed", in: adjoint[0].arguments)
                 let seedArg = Argument(name: seedArgName,
-                                       type: funcToDiff.returnType,
-                                       parent: gradientFunc[0])
-                gradientFunc[0].arguments.append(seedArg)
+                                       type: config.primal.returnType,
+                                       parent: adjoint[0])
+                adjoint[0].arguments.append(seedArg)
             }
-            /// Expand gradient function
-            let context = ADContext(forward: funcToDiff, gradient: gradientFunc)
-            expand(gradientFunc, in: context, from: diffIndex,
-                   wrt: (argIndices ?? Array(funcToDiff.argumentTypes.indices)),
-                   keeping: keepingIndices, seedable: isSeedable,
-                   workList: &workList, gradients: &gradients)
+            /// Expand adjoint function
+            let context = ADContext(primal: config.primal, adjoint: adjoint)
+            expand(adjoint, in: context, from: config.sourceIndex,
+                   wrt: (config.argumentIndices ?? Array(config.primal.argumentTypes.indices)),
+                   keeping: config.keptIndices, seedable: config.isSeedable,
+                   workList: &workList, adjoints: &adjoints)
             /// Remove gradient declaration
-            gradientFunc.declarationKind = nil
-            /// Add original and gradient functions to dictionary
-            let newGradients = (gradients[funcToDiff] ?? []) + [(gradientConfig, gradientFunc)]
-            gradients[funcToDiff] = newGradients
+            adjoint.declarationKind = nil
+            /// Add primal and adjoint functions to mapping
+            let newAdjoints = (adjoints[config.primal] ?? []) + [(config, adjoint)]
+            adjoints[config.primal] = newAdjoints
             changed = true
         }
         module.stage = .optimizable
@@ -142,13 +137,13 @@ fileprivate class ADContext {
     var adjoints: [AnyHashable : Use] = [:]
     var clones: [AnyHashable : Use] = [:]
 
-    unowned let forward: Function
-    unowned let gradient: Function
-    lazy var builder: IRBuilder = IRBuilder(function: self.gradient)
+    unowned let primal: Function
+    unowned let adjoint: Function
+    lazy var builder: IRBuilder = IRBuilder(function: self.adjoint)
 
-    init(forward: Function, gradient: Function) {
-        self.forward = forward
-        self.gradient = gradient
+    init(primal: Function, adjoint: Function) {
+        self.primal = primal
+        self.adjoint = adjoint
     }
 
     func hasAdjoint(for key: Use) -> Bool {
@@ -183,16 +178,17 @@ fileprivate class ADContext {
 }
 
 fileprivate extension Differentiation {
-    static func expand(_ function: Function, in context: ADContext,
-                       from diffIndex: Int?, wrt varIndices: [Int],
-                       keeping outputIndices: [Int], seedable isSeedable: Bool,
-                       workList: inout [Function],
-                       gradients: inout GradientMapping) {
+    private static func expand(_ function: Function, in context: ADContext,
+                               from sourceIndex: Int?, wrt argIndices: [Int],
+                               keeping keptIndices: [Int],
+                               seedable isSeedable: Bool,
+                               workList: inout [Function],
+                               adjoints: inout GradientMapping) {
         let builder = IRBuilder(module: function.parent)
         /// Seed on return instructions
         let exits = function.premise.exits
         for (block, returnInst) in exits {
-            let retVal: Use = returnInst.operands[diffIndex ?? 0]
+            let retVal: Use = returnInst.operands[sourceIndex ?? 0]
             let seed: Use
             if isSeedable {
                 guard let seedArg = function[0].arguments.last else {
@@ -210,36 +206,36 @@ fileprivate extension Differentiation {
                 let inst = instructions.removeFirst()
                 differentiate(inst, using: builder, in: context,
                               returnValue: retVal, returnSeed: seed,
-                              workList: &workList, gradients: &gradients)
+                              workList: &workList, gradients: &adjoints)
                 instructions.append(contentsOf: inst.predecessors)
             }
             /// Remove old return
             returnInst.removeFromParent()
             /// Build new return
             var newReturn: [Use] = []
-            newReturn += varIndices.map { context.adjoint(for: %function[0].arguments[$0])! }
-            newReturn += outputIndices.map { returnInst.operands[$0] }
+            newReturn += argIndices.map { context.adjoint(for: %function[0].arguments[$0])! }
+            newReturn += keptIndices.map { returnInst.operands[$0] }
             let tupleLit = builder.buildInstruction(.literal(.tuple(newReturn), function.returnType))
             builder.return(%tupleLit)
         }
     }
 
-    static func differentiate(_ instruction: Instruction,
-                              using bd: IRBuilder,
-                              in context: ADContext,
-                              returnValue: Use, returnSeed: Use,
-                              workList: inout [Function],
-                              gradients: inout GradientMapping) {
+    private static func differentiate(_ instruction: Instruction,
+                                      using bd: IRBuilder,
+                                      in context: ADContext,
+                                      returnValue: Use, returnSeed: Use,
+                                      workList: inout [Function],
+                                      gradients: inout GradientMapping) {
         /// Move builder
         bd.move(to: instruction.parent)
         /// Get adjoint for instruction
-        var adjoint: Use
+        var instAdjoint: Use
         if let oldAdjoint = context.adjoint(for: instruction) {
-            adjoint = oldAdjoint
+            instAdjoint = oldAdjoint
         } else if let returnInst = returnValue.instruction, instruction == returnInst {
-            adjoint = returnSeed
+            instAdjoint = returnSeed
         } else {
-            adjoint = instruction.makeLiteral(0, using: bd).makeUse()
+            instAdjoint = instruction.makeLiteral(0, using: bd).makeUse()
         }
         /// Get adjoints for operands
         var grad: [(operand: Use, derivative: Use)]
@@ -254,16 +250,16 @@ fileprivate extension Differentiation {
         case let .numericBinary(.add, lhs, rhs):
             grad = [
                 /// ∂f/∂x = D
-                (lhs, adjoint),
+                (lhs, instAdjoint),
                 /// ∂f/∂y = D
-                (rhs, adjoint)
+                (rhs, instAdjoint)
             ]
         case let .numericBinary(.subtract, lhs, rhs):
             grad = [
                 /// ∂f/∂x = D
-                (lhs, adjoint),
+                (lhs, instAdjoint),
                 /// ∂f/∂y = -D
-                (rhs, %bd.numeric(.negate, adjoint))
+                (rhs, %bd.numeric(.negate, instAdjoint))
             ]
         case let .numericBinary(.multiply, lhs, rhs):
             grad = [
@@ -275,7 +271,7 @@ fileprivate extension Differentiation {
         case let .numericBinary(.divide, lhs, rhs):
             grad = [
                 /// ∂f/∂x = D/y
-                (lhs, %bd.divide(adjoint, rhs)),
+                (lhs, %bd.divide(instAdjoint, rhs)),
                 /// ∂f/∂y = -x/y^2
                 (rhs, %bd.numeric(.negate, %bd.divide(lhs, %bd.multiply(rhs, rhs))))
             ]
@@ -284,95 +280,95 @@ fileprivate extension Differentiation {
         case let .dot(lhs, rhs):
             grad = [
                 /// ∂f/∂x = D • y^T
-                (lhs, %bd.dot(adjoint, %bd.transpose(rhs))),
+                (lhs, %bd.dot(instAdjoint, %bd.transpose(rhs))),
                 /// ∂f/∂y = x^T • D
-                (rhs, %bd.dot(%bd.transpose(lhs), adjoint))
+                (rhs, %bd.dot(%bd.transpose(lhs), instAdjoint))
             ]
 
         /* Transpose */
         case let .transpose(x):
             grad = [
                 /// ∂f/∂x = D^T
-                (x, %bd.transpose(adjoint))
+                (x, %bd.transpose(instAdjoint))
             ]
 
         /* Unary elementwise transformations */
         case let .numericUnary(.log, x):
             grad = [
                 /// ∂f/∂x = D / x
-                (x, %bd.divide(adjoint, x))
+                (x, %bd.divide(instAdjoint, x))
             ]
 
         case let .numericUnary(.cos, x):
             grad = [
                 /// ∂f/∂x = -D * sin(x)
-                (x, %bd.multiply(%bd.numeric(.negate, adjoint), %bd.numeric(.sin, x)))
+                (x, %bd.multiply(%bd.numeric(.negate, instAdjoint), %bd.numeric(.sin, x)))
             ]
 
         case let .numericUnary(.sin, x):
             grad = [
                 /// ∂f/∂x = D * cos(x)
-                (x, %bd.multiply(adjoint, %bd.numeric(.cos, x)))
+                (x, %bd.multiply(instAdjoint, %bd.numeric(.cos, x)))
             ]
 
         case let .numericUnary(.tan, x):
             let cosx = %bd.numeric(.cos, x)
             grad = [
                 /// ∂f/∂x = D / (cos(x) * cos(x))
-                (x, %bd.divide(adjoint, %bd.multiply(cosx, cosx)))
+                (x, %bd.divide(instAdjoint, %bd.multiply(cosx, cosx)))
             ]
 
         case let .numericUnary(.cosh, x):
             grad = [
                 /// ∂f/∂x = D * sinh(x)
-                (x, %bd.multiply(adjoint, %bd.numeric(.sinh, x)))
+                (x, %bd.multiply(instAdjoint, %bd.numeric(.sinh, x)))
             ]
 
         case let .numericUnary(.sinh, x):
             grad = [
                 /// ∂f/∂x = D * cosh(x)
-                (x, %bd.multiply(adjoint, %bd.numeric(.cosh, x)))
+                (x, %bd.multiply(instAdjoint, %bd.numeric(.cosh, x)))
             ]
 
         case let .numericUnary(.tanh, x):
             let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = D * (1 - (f * f))
-                (x, %bd.multiply(adjoint, %bd.subtract(x.makeScalar(1), %bd.multiply(cloned, cloned))))
+                (x, %bd.multiply(instAdjoint, %bd.subtract(x.makeScalar(1), %bd.multiply(cloned, cloned))))
             ]
 
         case let .numericUnary(.acos, x):
             grad = [
                 /// ∂f/∂x = -D / sqrt(1 - (x * x))
-                (x, %bd.divide(%bd.numeric(.negate, adjoint),
+                (x, %bd.divide(%bd.numeric(.negate, instAdjoint),
                                %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x)))))
             ]
 
         case let .numericUnary(.asin, x):
             grad = [
                 /// ∂f/∂x = D / sqrt(1 - (x * x))
-                (x, %bd.divide(adjoint,
+                (x, %bd.divide(instAdjoint,
                                %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x)))))
             ]
 
         case let .numericUnary(.atan, x):
             grad = [
                 /// ∂f/∂x = D / (1 + (x * x))
-                (x, %bd.divide(adjoint, %bd.add(x.makeScalar(1), %bd.multiply(x, x))))
+                (x, %bd.divide(instAdjoint, %bd.add(x.makeScalar(1), %bd.multiply(x, x))))
             ]
 
         case let .numericUnary(.exp, x):
             let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = f * D
-                (x, %bd.multiply(cloned, adjoint))
+                (x, %bd.multiply(cloned, instAdjoint))
             ]
 
         case let .numericUnary(.sqrt, x):
             let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = D / (2 * f)
-                (x, %bd.divide(adjoint, %bd.multiply(instruction.makeScalar(2), cloned)))
+                (x, %bd.divide(instAdjoint, %bd.multiply(instruction.makeScalar(2), cloned)))
             ]
 
         /* Element extraction */
@@ -383,13 +379,14 @@ fileprivate extension Differentiation {
 
         /* Function application */
         case let .apply(.function(_, fn), operands):
-            let gradientFn: Function
+            let adjoint: Function
             let config = GradientConfiguration(
-                of: fn, from: nil, wrt: nil, keeping: [], seedable: true
+                primal: fn, sourceIndex: nil, argumentIndices: nil,
+                keptIndices: [], isSeedable: true
             )
-            if let funcGradients = gradients[fn],
-                let gradIndex = funcGradients.index(where: { $0.config == config }) {
-                gradientFn = funcGradients[gradIndex].gradient
+            if let funcAdjoints = gradients[fn],
+                let gradIndex = funcAdjoints.index(where: { $0.config == config }) {
+                adjoint = funcAdjoints[gradIndex].adjoint
             } else {
                 guard let gradientType = fn.gradientType(from: nil,
                                                          wrt: nil,
@@ -399,18 +396,18 @@ fileprivate extension Differentiation {
                         fatalError("Function \(fn.name) is not differentiable")
                 }
                 let module = fn.parent
-                let gradientName = makeFreshName("\(fn.name)_grad", in: module)
-                gradientFn = Function(name: gradientName,
-                                      argumentTypes: argumentTypes,
-                                      returnType: returnType,
-                                      declarationKind: .gradient(config),
-                                      parent: module)
-                module.insert(gradientFn, after: context.gradient)
-                workList.append(gradientFn)
+                let adjointName = makeFreshName("\(fn.name)_grad", in: module)
+                adjoint = Function(name: adjointName,
+                                   argumentTypes: argumentTypes,
+                                   returnType: returnType,
+                                   declarationKind: .gradient(config),
+                                   parent: module)
+                module.insert(adjoint, after: context.adjoint)
+                workList.append(adjoint)
             }
-            let operandGradient = bd.apply(%gradientFn, operands + [adjoint])
+            let operandAdjoint = bd.apply(%adjoint, operands + [instAdjoint])
             grad = operands.enumerated().map { (i, operand) in
-                return (operand, %bd.extract(from: %operandGradient, at: [.index(i)]))
+                return (operand, %bd.extract(from: %operandAdjoint, at: [.index(i)]))
             }
 
         default:
@@ -419,11 +416,11 @@ fileprivate extension Differentiation {
         }
 
         /// Update operand adjoints
-        for (operand, derivative) in grad {
+        for (operand, newAdjoint) in grad {
             if let operandAdjoint = context.adjoint(for: operand) {
-                context.insertAdjoint(%bd.add(operandAdjoint, derivative), for: operand)
+                context.insertAdjoint(%bd.add(operandAdjoint, newAdjoint), for: operand)
             } else {
-                context.insertAdjoint(derivative, for: operand)
+                context.insertAdjoint(newAdjoint, for: operand)
             }
         }
     }
