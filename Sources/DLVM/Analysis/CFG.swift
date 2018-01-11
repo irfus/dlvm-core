@@ -18,13 +18,13 @@
 //
 
 extension BasicBlock : ForwardGraphNode {
-    public var successors: ObjectSet<BasicBlock> {
+    public var successors: Set<BasicBlock> {
         return terminator?.controlFlowSuccessors ?? []
     }
 }
 
 public extension Instruction {
-    var controlFlowSuccessors: ObjectSet<BasicBlock> {
+    var controlFlowSuccessors: Set<BasicBlock> {
         switch kind {
         case let .branch(bb, _):
             return [bb]
@@ -61,8 +61,8 @@ public extension Instruction {
 public extension Function {
     /// Compute and returns back edges in function
     func backEdges(fromEntry entry: BasicBlock) -> [(BasicBlock, BasicBlock)] {
-        var visited: ObjectSet<BasicBlock> = []
-        var inStack: ObjectSet<BasicBlock> = []
+        var visited: Set<BasicBlock> = []
+        var inStack: Set<BasicBlock> = []
         var result: [(BasicBlock, BasicBlock)] = []
 
         /// Define helper function

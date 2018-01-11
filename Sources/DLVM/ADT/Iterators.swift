@@ -146,7 +146,7 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet>
 
     private var pre: ArraySlice<Base.Node> = []
     private lazy var post: [Base.Node] = []
-    private var visited: ObjectSet<Base.Node> = []
+    private var visited: Set<Base.Node> = []
     public let order: TraversalOrder
     public let base: Base
 
