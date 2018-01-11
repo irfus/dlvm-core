@@ -101,6 +101,45 @@ func @tensor_simp_dwb_seedable: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f3
 // CHECK-NEXT: %0.2 = literal (%0.1: <784 x 10 x f32>, %seed: <1 x 10 x f32>): (<784 x 10 x f32>, <1 x 10 x f32>)
 // CHECK-NEXT: return %0.2: (<784 x 10 x f32>, <1 x 10 x f32>)
 
+// Differentiation source index test (`from` argument)
+
+func @tuple_func: (f32, f32) -> (f32, f32) {
+'entry(%x: f32, %y: f32):
+    %0.0 = multiply %x: f32, %y: f32
+    %0.1 = divide %x: f32, %y: f32
+    %0.2 = literal (%0.0: f32, %0.1: f32): (f32, f32)
+    return %0.2: (f32, f32)
+}
+
+[gradient @tuple_func from 0]
+func @tuple_func_grad_f0: (f32, f32) -> (f32, f32)
+
+// CHECK: func @tuple_func_grad_f0: (f32, f32) -> (f32, f32)
+// CHECK: %0.0 = literal (%y: f32, %x: f32): (f32, f32)
+// CHECK-NEXT: return %0.0: (f32, f32)
+
+[gradient @tuple_func from 1]
+func @tuple_func_grad_f1: (f32, f32) -> (f32, f32)
+
+// CHECK: func @tuple_func_grad_f1: (f32, f32) -> (f32, f32)
+// CHECK: %0.0 = divide 1: f32, %y: f32
+// CHECK-NEXT: %0.1 = multiply %y: f32, %y: f32
+// CHECK-NEXT: %0.2 = divide %x: f32, %0.1: f32
+// CHECK-NEXT: %0.3 = negate %0.2: f32
+// CHECK-NEXT: %0.4 = literal (%0.0: f32, %0.3: f32): (f32, f32)
+// CHECK-NEXT: return %0.4: (f32, f32)
+
+[gradient @tuple_func from 1 seedable]
+func @tuple_func_grad_f1_seedable: (f32, f32, f32) -> (f32, f32)
+
+// CHECK: func @tuple_func_grad_f1_seedable: (f32, f32, f32) -> (f32, f32)
+// CHECK: %0.0 = divide %seed: f32, %y: f32
+// CHECK-NEXT: %0.1 = multiply %y: f32, %y: f32
+// CHECK-NEXT: %0.2 = divide %x: f32, %0.1: f32
+// CHECK-NEXT: %0.3 = negate %0.2: f32
+// CHECK-NEXT: %0.4 = literal (%0.0: f32, %0.3: f32): (f32, f32)
+// CHECK-NEXT: return %0.4: (f32, f32)
+
 // Function call test
 
 func @f: (f32) -> f32 {

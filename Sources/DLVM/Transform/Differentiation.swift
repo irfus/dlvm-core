@@ -36,7 +36,7 @@ open class Differentiation: TransformPass {
             if config.isSeedable {
                 let seedArgName = makeFreshName("seed", in: adjoint[0].arguments)
                 let seedArg = Argument(name: seedArgName,
-                                       type: config.primal.returnType,
+                                       type: config.seedType,
                                        parent: adjoint[0])
                 adjoint[0].arguments.append(seedArg)
             }
@@ -55,28 +55,6 @@ open class Differentiation: TransformPass {
         }
         module.stage = .optimizable
         return changed
-    }
-}
-
-/// - Note: A new approach of adjoint code generation will be used.
-/// Function will first be cloned and then adjoint code gets generated in
-/// a real adjoint fasion
-
-fileprivate extension Type {
-    func makeLiteral(_ number: IntegerLiteralType) -> Use {
-        switch canonical {
-        case let .tensor(shape, type):
-            return .tensor(shape, type, repeating: number)
-        case let .tuple(elementTypes):
-            let sublits = elementTypes.map{$0.makeLiteral(number)}
-            return .literal(self, .tuple(sublits))
-        case let .array(i, elementType):
-            let sublit = elementType.makeLiteral(number)
-            let sublits = Array(repeating: sublit, count: i)
-            return .literal(self, .array(sublits))
-        case _:
-            fatalError()
-        }
     }
 }
 
@@ -109,6 +87,20 @@ fileprivate extension Use {
 
     func makeScalar(_ value: IntegerLiteralType) -> Use {
         return self.value.makeScalar(value)
+    }
+}
+
+fileprivate extension GradientConfiguration {
+    var seedType: Type {
+        if case let .tuple(elements) = primal.returnType {
+            guard let sourceIndex = sourceIndex,
+                elements.indices.contains(sourceIndex) else {
+                fatalError("Invalid source index for primal returning tuple")
+            }
+            return elements[sourceIndex]
+        } else {
+            return primal.returnType
+        }
     }
 }
 
@@ -188,7 +180,23 @@ fileprivate extension Differentiation {
         /// Seed on return instructions
         let exits = function.premise.exits
         for (block, returnInst) in exits {
-            let retVal: Use = returnInst.operands[sourceIndex ?? 0]
+            /// Get return value
+            let retVal: Use
+            if let sourceIndex = sourceIndex {
+                guard case let .instruction(ty, inst) = returnInst.operands[0],
+                    case .literal(let lit, ty) = inst.kind,
+                    case let .tuple(elements) = lit,
+                    elements.indices.contains(sourceIndex) else {
+                    fatalError("""
+                        Invalid return instruction \(returnInst) for source \
+                        index \(sourceIndex)
+                        """)
+                }
+                retVal = elements[sourceIndex]
+            } else {
+                retVal = returnInst.operands[0]
+            }
+            /// Get seed value and insert into context
             let seed: Use
             if isSeedable {
                 guard let seedArg = function[0].arguments.last else {
@@ -200,19 +208,30 @@ fileprivate extension Differentiation {
                 seed = retVal.makeLiteral(1, using: builder).makeUse()
                 builder.move(to: block)
             }
+            context.insertAdjoint(seed, for: retVal)
             /// Mark instructions to differentiate
-            var instsToDiff: Set<Instruction> = Set(returnInst.predecessors)
+            var instsToDiff: Set<Instruction>
+            if sourceIndex != nil {
+                switch retVal {
+                case let .instruction(_, inst):
+                    instsToDiff = Set(inst.predecessors).union([inst])
+                default:
+                    instsToDiff = []
+                }
+            } else {
+                instsToDiff = Set(returnInst.predecessors)
+            }
             func markInstruction(_ inst: Instruction) {
                 instsToDiff.insert(inst)
                 inst.predecessors.forEach(markInstruction)
             }
             instsToDiff.forEach(markInstruction)
             /// Iterate through instructions in reverse order and differentiate
-            for inst in function.instructions.lazy.reversed()
+            for inst in function.instructions.reversed()
                 where instsToDiff.contains(inst) {
-                    differentiate(inst, using: builder, in: context,
-                                  returnValue: retVal, returnSeed: seed,
-                                  workList: &workList, gradients: &adjoints)
+                differentiate(inst, using: builder, in: context,
+                              returnValue: retVal, workList: &workList,
+                              gradients: &adjoints)
             }
             /// Remove old return
             returnInst.removeFromParent()
@@ -228,7 +247,7 @@ fileprivate extension Differentiation {
     private static func differentiate(_ instruction: Instruction,
                                       using bd: IRBuilder,
                                       in context: ADContext,
-                                      returnValue: Use, returnSeed: Use,
+                                      returnValue: Use,
                                       workList: inout [Function],
                                       gradients: inout GradientMapping) {
         /// Move builder
@@ -237,10 +256,8 @@ fileprivate extension Differentiation {
         var instAdjoint: Use
         if let oldAdjoint = context.adjoint(for: instruction) {
             instAdjoint = oldAdjoint
-        } else if let returnInst = returnValue.instruction, instruction == returnInst {
-            instAdjoint = returnSeed
         } else {
-            instAdjoint = instruction.makeLiteral(0, using: bd).makeUse()
+            instAdjoint = returnValue.makeLiteral(0, using: bd).makeUse()
         }
         /// Get adjoints for operands
         var grad: [(operand: Use, derivative: Use)]
