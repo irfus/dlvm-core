@@ -172,9 +172,9 @@ extension AlgebraicExpression : Equatable {
     public static func == (lhs: AlgebraicExpression,
                            rhs: AlgebraicExpression) -> Bool {
         switch (lhs, rhs) {
+        case let (.atom(x), .atom(y)):
+            return x == y
         case _ where lhs.topInstruction == rhs.topInstruction:
-            return true
-        case let (.atom(x), .atom(y)) where x == y:
             return true
         default:
             return false
