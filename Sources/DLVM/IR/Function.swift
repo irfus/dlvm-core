@@ -145,7 +145,7 @@ public extension Function {
             for bb in suffix(from: bbIndex) {
                 for inst in bb where bb != oldInstruction.parent ||
                     inst.indexInParent >= instIndex {
-                        inst.substitute(newUse, for: %oldInstruction)
+                    inst.substitute(newUse, for: %oldInstruction)
                 }
             }
         }

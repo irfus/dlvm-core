@@ -40,8 +40,8 @@ open class Differentiation: TransformPass {
                 newFunc.argumentTypes = function.argumentTypes
                 let seedArgName = makeFreshName("seed", in: newFunc[0].arguments)
                 let seedArg = Argument(name: seedArgName,
-                                      type: funcToDiff.returnType,
-                                      parent: newFunc[0])
+                                       type: funcToDiff.returnType,
+                                       parent: newFunc[0])
                 newFunc[0].arguments.append(seedArg)
             }
             /// Insert and expand new function
@@ -243,9 +243,9 @@ fileprivate extension Differentiation {
         switch instruction.kind {
         /* Literal value */
         case let .literal(lit, _):
-            grad = lit.operands.map({
+            grad = lit.operands.map {
                 ($0, $0.makeLiteral(0, using: bd).makeUse())
-            })
+            }
 
         /* Basic arithmetic */
         case let .numericBinary(.add, lhs, rhs):
