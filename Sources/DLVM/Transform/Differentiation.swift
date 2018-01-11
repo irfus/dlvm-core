@@ -200,14 +200,19 @@ fileprivate extension Differentiation {
                 seed = retVal.makeLiteral(1, using: builder).makeUse()
                 builder.move(to: block)
             }
-            /// Differentiate
-            var instructions: [Instruction] = Array(returnInst.predecessors)
-            while !instructions.isEmpty {
-                let inst = instructions.removeFirst()
-                differentiate(inst, using: builder, in: context,
-                              returnValue: retVal, returnSeed: seed,
-                              workList: &workList, gradients: &adjoints)
-                instructions.append(contentsOf: inst.predecessors)
+            /// Mark instructions to differentiate
+            var instsToDiff: Set<Instruction> = Set(returnInst.predecessors)
+            func markInstruction(_ inst: Instruction) {
+                instsToDiff.insert(inst)
+                inst.predecessors.forEach(markInstruction)
+            }
+            instsToDiff.forEach(markInstruction)
+            /// Iterate through instructions in reverse order and differentiate
+            for inst in function.instructions.lazy.reversed()
+                where instsToDiff.contains(inst) {
+                    differentiate(inst, using: builder, in: context,
+                                  returnValue: retVal, returnSeed: seed,
+                                  workList: &workList, gradients: &adjoints)
             }
             /// Remove old return
             returnInst.removeFromParent()
