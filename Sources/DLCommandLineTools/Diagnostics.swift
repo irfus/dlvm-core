@@ -23,9 +23,9 @@ public struct RedundantDifferentiationFlagDiagnostic : DiagnosticData {
     public static var id = DiagnosticID(
         type: RedundantDifferentiationFlagDiagnostic.self,
         name: "org.dlvm.diags.redundant-ad-flag",
-        defaultBehavior: .warning,
+        defaultBehavior: .note,
         description: {
-            $0 <<< "'AD' flag is redundant, differentiation is mandatory"
-    }
+            $0 <<< "'AD' flag is redundant, differentiation pass is mandatory"
+        }
     )
 }
