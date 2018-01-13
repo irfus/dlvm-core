@@ -83,7 +83,7 @@ extension BooleanOp : TensorOp {
 /// Numeric associative op definition
 public enum NumericBinaryOp {
     case add, subtract, multiply, divide, min, max
-    case truncateDivide, floorDivide, modulo, power, mean
+    case truncateDivide, floorDivide, modulo, power
 }
 
 /// Numeric associative op type inference

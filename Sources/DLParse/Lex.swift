@@ -542,7 +542,6 @@ private extension Lexer {
         case "floorDivide": kind = .opcode(.numericBinaryOp(.floorDivide))
         case "modulo": kind = .opcode(.numericBinaryOp(.modulo))
         case "power": kind = .opcode(.numericBinaryOp(.power))
-        case "mean": kind = .opcode(.numericBinaryOp(.mean))
         case "sinh": kind = .opcode(.numericUnaryOp(.sinh))
         case "cosh": kind = .opcode(.numericUnaryOp(.cosh))
         case "tanh": kind = .opcode(.numericUnaryOp(.tanh))

@@ -32,6 +32,6 @@ func @bar: (i32) -> i32 {
 // CHECK-NEXT: %0.1 = multiply %0.0: i32, 2: i32
 // CHECK-NEXT: %0.2 = add 3: i32, %0.1: i32
 // CHECK-NEXT: %0.3 = equal %0.2: i32, %0.2: i32
-// CHECK:  %1.0 = add 3: i32, 7: i32
-// CHECK:  %2.0 = add 3: i32, 7: i32
-// CHECK:  %3.0 = add %0.2: i32, %c: i32
+// CHECK: %1.0 = add 3: i32, 7: i32
+// CHECK: %2.0 = add 3: i32, 7: i32
+// CHECK: %3.0 = add %0.2: i32, %c: i32
