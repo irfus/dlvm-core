@@ -229,6 +229,10 @@ public extension IRBuilder {
         return buildInstruction(.numericUnary(.exp, use))
     }
 
+    func log(_ use: Use) -> Instruction {
+        return buildInstruction(.numericUnary(.log, use))
+    }
+
     func numeric(_ operation: NumericUnaryOp, _ use: Use) -> Instruction {
         return buildInstruction(.numericUnary(operation, use))
     }

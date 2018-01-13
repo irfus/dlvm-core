@@ -34,7 +34,7 @@ open class Differentiation: TransformPass {
             config.primal.copyContents(to: adjoint)
             /// Add seed argument if necessary
             if config.isSeedable {
-                let seedArgName = makeFreshName("seed", in: adjoint[0].arguments)
+                let seedArgName = makeFreshName("seed", in: adjoint)
                 let seedArg = Argument(name: seedArgName,
                                        type: config.seedType,
                                        parent: adjoint[0])
@@ -112,12 +112,32 @@ fileprivate extension Module {
     }
 }
 
-fileprivate func makeFreshName<S : Sequence>(_ name: String, in names: S) -> String
-    where S.Element : Named
-{
+fileprivate extension BasicBlock {
+    var definedNames: Set<String> {
+        return Set([name]).union(arguments.map { $0.name })
+    }
+}
+
+fileprivate extension Function {
+    var definedNames: Set<String> {
+        return Set(elements.flatMap { $0.definedNames })
+    }
+}
+
+fileprivate func makeFreshName(_ name: String, in function: Function) -> String {
     var result = name
     var count = 0
-    while names.contains(where: { $0.name == result }) {
+    while function.definedNames.contains(result) {
+        result = "name\(count)"
+        count += 1
+    }
+    return result
+}
+
+fileprivate func makeFreshFunctionName(_ name: String, in module: Module) -> String {
+    var result = name
+    var count = 0
+    while module.elements.map({ $0.name }).contains(result) {
         result = "name\(count)"
         count += 1
     }
@@ -297,6 +317,16 @@ fileprivate extension Differentiation {
                 /// ∂f/∂y = -x/y^2
                 (rhs, %bd.numeric(.negate, %bd.divide(lhs, %bd.multiply(rhs, rhs))))
             ]
+        case let .numericBinary(.power, lhs, rhs):
+            grad = [
+                /// ∂f/∂x = y * x^(y - 1) * D
+                (lhs, %bd.multiply(
+                    %bd.multiply(rhs, %bd.power(lhs, %bd.subtract(rhs, rhs.makeScalar(1)))),
+                    instAdjoint)
+                ),
+                /// ∂f/∂y = ln(x) * f * D
+                (rhs, %bd.multiply(%bd.multiply(%bd.log(lhs), instAdjoint), instAdjoint))
+            ]
 
         /* Dot */
         case let .dot(lhs, rhs):
@@ -418,7 +448,7 @@ fileprivate extension Differentiation {
                         fatalError("Function \(fn.name) is not differentiable")
                 }
                 let module = fn.parent
-                let adjointName = makeFreshName("\(fn.name)_grad", in: module)
+                let adjointName = makeFreshFunctionName("\(fn.name)_grad", in: module)
                 adjoint = Function(name: adjointName,
                                    argumentTypes: argumentTypes,
                                    returnType: returnType,
@@ -439,6 +469,8 @@ fileprivate extension Differentiation {
 
         /// Update operand adjoints
         for (operand, newAdjoint) in grad {
+            /// Adjoints for immediate literals are never needed, do not store
+            if case .literal = operand { continue }
             if let operandAdjoint = context.adjoint(for: operand) {
                 context.insertAdjoint(%bd.add(operandAdjoint, newAdjoint), for: operand)
             } else {
