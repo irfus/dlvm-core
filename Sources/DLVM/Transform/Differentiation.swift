@@ -416,7 +416,26 @@ fileprivate extension Differentiation {
                 (x, %bd.divide(instAdjoint, %bd.multiply(instruction.makeScalar(2), cloned)))
             ]
 
-        /* Element extraction */
+        /** Cost-free casts **/
+        case let .padShape(x, at: dim):
+            let canType = x.value.type.canonical
+            guard case let .tensor(shape, dtype) = canType else {
+                preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
+            }
+            grad = [
+                /// ∂f/∂x = D * sum(f, along: dim)
+                (x, %bd.multiply(
+                    instAdjoint,
+                    %bd.reduce(
+                        .numeric(.add), x,
+                        initial: %bd.literal(
+                            0, .tensor(shape.droppingDimension(dim), dtype)),
+                        along: [dim])
+                    )
+                )
+            ]
+
+        /** Aggregate operations **/
         case let .extract(from: x, at: _):
             grad = [
                 (x, x.makeScalar(1))

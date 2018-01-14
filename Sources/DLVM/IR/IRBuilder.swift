@@ -21,7 +21,6 @@ import CoreTensor
 import CoreOp
 
 open class IRBuilder {
-
     open let module: Module
 
     /// Current basic block to insert instructions into
@@ -44,11 +43,9 @@ open class IRBuilder {
     public init(module: Module) {
         self.module = module
     }
-
 }
 
 public extension IRBuilder {
-
     convenience init(moduleName: String) {
         self.init(module: Module(name: moduleName))
     }
@@ -61,12 +58,10 @@ public extension IRBuilder {
         self.init(module: basicBlock.module)
         move(to: basicBlock)
     }
-
 }
 
 // MARK: - Main builder API
 extension IRBuilder {
-
     @discardableResult
     open func buildStruct(
         named name: String,
@@ -147,7 +142,6 @@ extension IRBuilder {
         }
         return inst
     }
-
 }
 
 // MARK: - Positioning
@@ -263,6 +257,12 @@ public extension IRBuilder {
                                       elseBB, elseArguments))
     }
 
+    func reduce(_ combinator: ReductionCombinator, _ use: Use, initial: Use,
+                along dims: [Int]) -> Instruction {
+        return buildInstruction(.reduce(combinator, use,
+                                        initial: initial, dims: dims))
+    }
+
     func extract(from source: Use, at indices: [ElementKey]) -> Instruction {
         return buildInstruction(.extract(from: source, at: indices))
     }
@@ -285,12 +285,16 @@ public extension IRBuilder {
         buildInstruction(.store(source, to: destination))
     }
 
-    func bitCast(_ source: Use, to targetType: Type) -> Instruction {
-        return buildInstruction(.bitCast(source, targetType))
+    func padShape(_ source: Use, at dimension: Int) -> Instruction {
+        return buildInstruction(.padShape(source, at: dimension))
     }
 
     func shapeCast(_ source: Use, to targetShape: TensorShape) -> Instruction {
         return buildInstruction(.shapeCast(source, targetShape))
+    }
+
+    func bitCast(_ source: Use, to targetType: Type) -> Instruction {
+        return buildInstruction(.bitCast(source, targetType))
     }
 
     func dataTypeCast(_ source: Use,
@@ -313,5 +317,4 @@ public extension IRBuilder {
     func deallocate(_ use: Use) {
         buildInstruction(.deallocate(use))
     }
-
 }

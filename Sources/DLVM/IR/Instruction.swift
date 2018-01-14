@@ -95,7 +95,7 @@ public enum InstructionKind {
     /// Bitcast
     case bitCast(Use, Type)
 
-    /** Aggregate operation **/
+    /** Aggregate operations **/
     /// Extract an element from tensor, tuple, or array
     case extract(from: Use, at: [ElementKey])
     /// Insert an element to tensor, tuple, or array
