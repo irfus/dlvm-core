@@ -20,11 +20,8 @@
 import Foundation
 
 public struct OrderedSet<Element : Hashable> {
-    public typealias Index = Int
-    public typealias Indices = CountableRange<Int>
-
-    fileprivate var array: [Element] = []
-    fileprivate var set: Set<Element> = []
+    var array: [Element] = []
+    var set: Set<Element> = []
 
     public init() {}
 }
@@ -128,6 +125,8 @@ extension OrderedSet : Sequence {
 
 extension OrderedSet
     : RangeReplaceableCollection, BidirectionalCollection, MutableCollection {
+    public typealias Index = Int
+    public typealias Indices = CountableRange<Int>
     public typealias SubSequence = OrderedSetSlice<Element>
 
     public func index(after i: Int) -> Int {
@@ -160,164 +159,60 @@ extension OrderedSet
             set.insert(newValue)
         }
     }
-
+    
     public subscript(bounds: Range<Int>) -> SubSequence {
         get {
-            precondition(
-                indices ~= bounds.lowerBound &&
-                    indices ~= bounds.upperBound - 1,
-                "Slice indices are out of bounds")
-            return OrderedSetSlice(base: self, bounds: CountableRange(bounds))
+            return OrderedSetSlice(base: self,
+                                   startIndex: bounds.lowerBound,
+                                   endIndex: bounds.upperBound)
         }
         set {
-            precondition(
-                indices ~= bounds.lowerBound &&
-                    indices ~= bounds.upperBound - 1,
-                "Slice indices are out of bounds")
-            array[bounds] = newValue.array
-            set = Set(array)
+            set.formUnion(newValue)
+            array.replaceSubrange(bounds, with: newValue)
         }
     }
 }
 
 /// Efficient initializer on Set
 public extension Set {
-  init(_ elements: OrderedSet<Element>) {
-    self = elements.set
-  }
+    init(_ elements: OrderedSet<Element>) {
+        self = elements.set
+    }
 }
 
 /// Efficient initializer on Array
 public extension Array where Element : Hashable {
-  init(_ elements: OrderedSet<Element>) {
-    self = elements.array
-  }
+    init(_ elements: OrderedSet<Element>) {
+        self = elements.array
+    }
 }
 
 /// Slice of an ordered set
 public struct OrderedSetSlice<Element : Hashable> {
-    public typealias Index = Int
-    public typealias Indices = CountableRange<Int>
-
-    public private(set) var base: OrderedSet<Element> = []
-    private var bounds: CountableRange<Int>
-
-    fileprivate var array: ArraySlice<Element> {
-        get {
-            return base.array[bounds]
-        }
-        set {
-            base.array[bounds] = newValue
-        }
-    }
-    fileprivate var set: Set<Element> {
-        get {
-            return Set(array)
-        }
-        set {
-            // This guy is complicated
-            base.set.subtract(set)
-            base.set.formUnion(newValue)
-        }
-    }
-
-    public init(base: OrderedSet<Element>, bounds: CountableRange<Int>) {
+    private var base: OrderedSet<Element>
+    public let startIndex, endIndex: Int
+    
+    public init(base: OrderedSet<Element>,
+         startIndex: Int, endIndex: Int) {
         self.base = base
-        self.bounds = base.indices
+        self.startIndex = startIndex
+        self.endIndex = endIndex
     }
 }
 
 public extension OrderedSetSlice {
     init() {
-        self.init([])
+        self.init(OrderedSet())
     }
 
     init(_ base: OrderedSet<Element>) {
-        self.init(base: base, bounds: base.indices)
+        self.init(base: base,
+                  startIndex: base.startIndex, endIndex: base.endIndex)
     }
 
-    init(_ base: OrderedSetSlice) {
-        self.init(base: base.base, bounds: base.indices)
-    }
-
-    init(base: OrderedSetSlice, bounds: CountableRange<Int>) {
-        self.init(base: base.base, bounds: bounds)
-    }
-
-    init<S : Sequence>(_ elements: S) where S.Element == Element {
-        self.init(OrderedSet(elements))
-    }
-
-    var count: Int {
-        return array.count
-    }
-
-    var isEmpty: Bool {
-        return array.isEmpty
-    }
-
-    func contains(_ member: Element) -> Bool {
-        return set.contains(member)
-    }
-
-    func index(of element: Element) -> Int? {
-        guard contains(element) else { return nil }
-        return array.index(of: element)
-    }
-
-    @discardableResult
-    mutating func append(_ element: Element) -> Bool {
-        let inserted = set.insert(element).inserted
-        if inserted {
-            array.append(element)
-        }
-        return inserted
-    }
-
-    mutating func append<S: Sequence>(contentsOf elements: S)
-        where S.Element == Element {
-            for element in elements {
-                append(element)
-            }
-    }
-
-    mutating func insert(_ element: Element, at index: Int) {
-        let inserted = set.insert(element).inserted
-        if inserted {
-            array.insert(element, at: index)
-        }
-    }
-
-    mutating func insert(_ element: Element, after other: Element) {
-        guard let previousIndex = index(of: other) else {
-            preconditionFailure("Element to insert after is not in the set")
-        }
-        insert(element, at: previousIndex + 1)
-    }
-
-    mutating func insert(_ element: Element, before other: Element) {
-        guard let index = index(of: other) else {
-            preconditionFailure("Element to insert before is not in the set")
-        }
-        insert(element, at: index)
-    }
-
-    mutating func remove(_ element: Element) {
-        guard let foundIndex = index(of: element) else { return }
-        set.remove(element)
-        array.remove(at: foundIndex)
-    }
-
-    mutating func removeAll(keepingCapacity keepCapacity: Bool) {
-        array.removeAll(keepingCapacity: keepCapacity)
-        set.removeAll(keepingCapacity: keepCapacity)
-    }
-
-    mutating func swapAt(_ i: Int, _ j: Int) {
-        guard i != j else { return }
-        let tmp = array[i]
-        array[i] = array[j]
-        array[j] = tmp
+    init(_ other: OrderedSetSlice) {
+        self.init(base: other.base,
+                  startIndex: other.startIndex, endIndex: other.endIndex)
     }
 }
 
@@ -329,79 +224,53 @@ extension OrderedSetSlice : ExpressibleByArrayLiteral {
 
 extension OrderedSetSlice : Equatable {
     public static func == (lhs: OrderedSetSlice, rhs: OrderedSetSlice) -> Bool {
-        return lhs.array == rhs.array
+        return lhs.elementsEqual(rhs)
     }
 }
 
 extension OrderedSetSlice : Sequence {
     public func makeIterator() -> IndexingIterator<ArraySlice<Element>> {
-        return array.makeIterator()
+        return base.array[indices].makeIterator()
     }
 }
 
 extension OrderedSetSlice
-: RangeReplaceableCollection, BidirectionalCollection, MutableCollection {
-    public typealias SubSequence = OrderedSetSlice<Element>
+    : RangeReplaceableCollection, BidirectionalCollection, MutableCollection {
+    public typealias Index = Int
+    public typealias Indices = CountableRange<Int>
+    public typealias SubSequence = OrderedSetSlice
+
+    public init<S : Sequence>(_ elements: S) where S.Element == Element {
+        self.init(OrderedSet(elements))
+    }
 
     public func index(after i: Int) -> Int {
-        return array.index(after: i)
+        return base.index(after: i)
     }
 
     public func index(before i: Int) -> Int {
-        return array.index(before: i)
-    }
-
-    public var startIndex: Int {
-        return array.startIndex
-    }
-
-    public var endIndex: Int {
-        return array.endIndex
+        return base.index(before: i)
     }
 
     public var indices: CountableRange<Int> {
-        return array.indices
+        return startIndex..<endIndex
     }
 
     public subscript(index: Int) -> Element {
         get {
-            return array[index]
+            return base.array[index]
         }
         set {
-            set.remove(array[index])
-            array[index] = newValue
-            set.insert(newValue)
+            base[index] = newValue
         }
     }
 
-    public subscript(bounds: Range<Int>) -> SubSequence {
+    public subscript(bounds: Range<Int>) -> OrderedSetSlice {
         get {
-            precondition(
-                indices ~= bounds.lowerBound &&
-                    indices ~= bounds.upperBound - 1,
-                "Slice indices are out of bounds")
-            return OrderedSetSlice(base: self, bounds: CountableRange(bounds))
+            return base[bounds]
         }
         set {
-            precondition(
-                indices ~= bounds.lowerBound &&
-                    indices ~= bounds.upperBound - 1,
-                "Slice indices are out of bounds")
             base[bounds] = newValue
         }
-    }
-}
-
-/// Efficient initializer on Set
-public extension Set {
-    init(_ elements: OrderedSetSlice<Element>) {
-        self = elements.set
-    }
-}
-
-/// Efficient initializer on Array
-public extension Array where Element : Hashable {
-    init(_ elements: OrderedSetSlice<Element>) {
-        self = Array(elements.array)
     }
 }
