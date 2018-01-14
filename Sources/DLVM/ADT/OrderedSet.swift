@@ -83,10 +83,10 @@ public extension OrderedSet {
     }
 
     mutating func insert(_ element: Element, before other: Element) {
-        guard let nextIndex = index(of: other) else {
+        guard let index = index(of: other) else {
             preconditionFailure("Element to insert before is not in the set")
         }
-        insert(element, at: nextIndex - 1)
+        insert(element, at: index)
     }
 
     mutating func remove(_ element: Element) {
@@ -98,6 +98,13 @@ public extension OrderedSet {
     mutating func removeAll(keepingCapacity keepCapacity: Bool) {
         array.removeAll(keepingCapacity: keepCapacity)
         set.removeAll(keepingCapacity: keepCapacity)
+    }
+
+    mutating func swapAt(_ i: Int, _ j: Int) {
+        guard i != j else { return }
+        let tmp = array[i]
+        array[i] = array[j]
+        array[j] = tmp
     }
 }
 

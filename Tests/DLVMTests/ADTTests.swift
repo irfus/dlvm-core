@@ -41,8 +41,10 @@ class ADTTests : XCTestCase {
         var set1: OrderedSet<Int> = [1, 2, 3]
         XCTAssertEqual(set1.reversed(), [3, 2, 1])
         set1.reverse()
+        XCTAssertEqual(set1.set, Set(set1.array))
         XCTAssertEqual(set1, [3, 2, 1])
         set1[1...].reverse()
+        XCTAssertEqual(set1.set, Set(set1.array))
         XCTAssertEqual(set1, [3, 1, 2])
 
         /// Test swap
