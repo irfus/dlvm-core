@@ -170,6 +170,47 @@ public extension IRBuilder {
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
+    func branch(_ destination: BasicBlock, _ arguments: [Use]) {
+        buildInstruction(.branch(destination, arguments))
+    }
+
+    func conditional(_ condition: Use,
+                     then thenBB: BasicBlock, arguments thenArguments: [Use],
+                     else elseBB: BasicBlock, arguments elseArguments: [Use]) {
+        buildInstruction(.conditional(condition,
+                                      thenBB, thenArguments,
+                                      elseBB, elseArguments))
+    }
+    func `return`(_ use: Use? = nil) {
+        buildInstruction(.return(use))
+    }
+
+    func literal(_ literal: Literal, _ type: Type) -> Instruction {
+        return buildInstruction(.literal(literal, type))
+    }
+
+    func numeric(_ operation: NumericUnaryOp, _ use: Use) -> Instruction {
+        return buildInstruction(.numericUnary(operation, use))
+    }
+
+    func numeric(_ operation: NumericBinaryOp,
+                 _ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.numericBinary(operation, lhs, rhs))
+    }
+
+    func boolean(_ operation: BooleanBinaryOp,
+                 _ lhs: Use, _ rhs: Use) -> Instruction {
+        return buildInstruction(.booleanBinary(operation, lhs, rhs))
+    }
+
+    func exp(_ use: Use) -> Instruction {
+        return buildInstruction(.numericUnary(.exp, use))
+    }
+
+    func log(_ use: Use) -> Instruction {
+        return buildInstruction(.numericUnary(.log, use))
+    }
+
     func add(_ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.numericBinary(.add, lhs, rhs))
     }
@@ -194,8 +235,8 @@ public extension IRBuilder {
         return buildInstruction(.numericBinary(.power, lhs, rhs))
     }
 
-    func literal(_ literal: Literal, _ type: Type) -> Instruction {
-        return buildInstruction(.literal(literal, type))
+    func not(_ operand: Use) -> Instruction {
+        return buildInstruction(.not(operand))
     }
 
     func compare(_ operator: ComparisonOp,
@@ -203,86 +244,66 @@ public extension IRBuilder {
         return buildInstruction(.compare(`operator`, lhs, rhs))
     }
 
-    func not(_ operand: Use) -> Instruction {
-        return buildInstruction(.not(operand))
+    func dataTypeCast(_ source: Use,
+                      to targetDataType: DataType) -> Instruction {
+        return buildInstruction(.dataTypeCast(source, targetDataType))
     }
 
-    func apply(_ function: Use, _ arguments: [Use]) -> Instruction {
-        return buildInstruction(.apply(function, arguments))
+    func scan(_ comb: ReductionCombinator, _ use: Use,
+              dims: [Int]) -> Instruction {
+        return buildInstruction(.scan(comb, use, dims: dims))
+    }
+
+    func reduce(_ comb: ReductionCombinator, _ use: Use, initial: Use,
+                dims: [Int]) -> Instruction {
+        return buildInstruction(
+            .reduce(comb, use, initial: initial, dims: dims))
     }
 
     func dot(_ lhs: Use, _ rhs: Use) -> Instruction {
         return buildInstruction(.dot(lhs, rhs))
     }
 
+    func concatenate(_ uses: [Use], axis: Int) -> Instruction {
+        return buildInstruction(.concatenate(uses, axis: axis))
+    }
+
     func transpose(_ use: Use) -> Instruction {
         return buildInstruction(.transpose(use))
     }
 
-    func exp(_ use: Use) -> Instruction {
-        return buildInstruction(.numericUnary(.exp, use))
+    func reverse(_ use: Use, dims: [Int]) -> Instruction {
+        return buildInstruction(.reverse(use, dims: dims))
     }
 
-    func log(_ use: Use) -> Instruction {
-        return buildInstruction(.numericUnary(.log, use))
+    func slice(_ use: Use,
+               at bounds: CountableClosedRange<Int>) -> Instruction {
+        return buildInstruction(.slice(use, at: bounds))
     }
 
-    func numeric(_ operation: NumericUnaryOp, _ use: Use) -> Instruction {
-        return buildInstruction(.numericUnary(operation, use))
+    func random(_ shape: TensorShape, from lo: Use,
+                upTo hi: Use) -> Instruction {
+        return buildInstruction(.random(shape, from: lo, upTo: hi))
     }
 
-    func numeric(_ operation: NumericBinaryOp,
-                 _ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.numericBinary(operation, lhs, rhs))
+    func select(_ lhs: Use, rhs: Use, by flags: Use) -> Instruction {
+        return buildInstruction(.select(lhs, rhs, by: flags))
     }
 
-    func boolean(_ operation: BooleanBinaryOp,
-                 _ lhs: Use, _ rhs: Use) -> Instruction {
-        return buildInstruction(.booleanBinary(operation, lhs, rhs))
+    func convolve(_ use: Use, kernel: Use, strides: [Int]?,
+                  padding: [(low: Int, high: Int)]?, leftDilation ld: [Int],
+                  rightDilation rd: [Int], groups: Int?) -> Instruction {
+        return buildInstruction(
+            .convolve(use, kernel: kernel, strides: strides, padding: padding,
+                      leftDilation: ld, rightDilation: rd, groups: groups))
     }
 
-    func `return`(_ use: Use? = nil) {
-        buildInstruction(.return(use))
-    }
-
-    func branch(_ destination: BasicBlock, _ arguments: [Use]) {
-        buildInstruction(.branch(destination, arguments))
-    }
-
-    func conditional(_ condition: Use,
-                     then thenBB: BasicBlock, arguments thenArguments: [Use],
-                     else elseBB: BasicBlock, arguments elseArguments: [Use]) {
-        buildInstruction(.conditional(condition,
-                                      thenBB, thenArguments,
-                                      elseBB, elseArguments))
-    }
-
-    func reduce(_ combinator: ReductionCombinator, _ use: Use, initial: Use,
-                along dims: [Int]) -> Instruction {
-        return buildInstruction(.reduce(combinator, use,
-                                        initial: initial, dims: dims))
-    }
-
-    func extract(from source: Use, at indices: [ElementKey]) -> Instruction {
-        return buildInstruction(.extract(from: source, at: indices))
-    }
-
-    func insert(_ source: Use, to destination: Use,
-                at indices: [ElementKey]) -> Instruction {
-        return buildInstruction(.insert(source, to: destination, at: indices))
-    }
-
-    func elementPointer(from source: Use,
-                        at indices: [ElementKey]) -> Instruction {
-        return buildInstruction(.elementPointer(source, indices))
-    }
-
-    func load(from source: Use) -> Instruction {
-        return buildInstruction(.load(source))
-    }
-
-    func store(_ source: Use, to destination: Use) {
-        buildInstruction(.store(source, to: destination))
+    func reduceWindow(_ comb: ReductionCombinator, _ use: Use, initial: Use,
+                      dims: [Int], strides: [Int],
+                      padding: Padding) -> Instruction {
+        return buildInstruction(
+            .reduceWindow(comb, use, initial: initial, dims: dims,
+                          strides: strides, padding: padding))
     }
 
     func padShape(_ source: Use, at dimension: Int) -> Instruction {
@@ -297,9 +318,33 @@ public extension IRBuilder {
         return buildInstruction(.bitCast(source, targetType))
     }
 
-    func dataTypeCast(_ source: Use,
-                      to targetDataType: DataType) -> Instruction {
-        return buildInstruction(.dataTypeCast(source, targetDataType))
+    func extract(from source: Use, at indices: [ElementKey]) -> Instruction {
+        return buildInstruction(.extract(from: source, at: indices))
+    }
+
+    func insert(_ source: Use, to destination: Use,
+                at indices: [ElementKey]) -> Instruction {
+        return buildInstruction(.insert(source, to: destination, at: indices))
+    }
+
+    func apply(_ function: Use, _ arguments: [Use]) -> Instruction {
+        return buildInstruction(.apply(function, arguments))
+    }
+
+    func createStack() -> Instruction {
+        return buildInstruction(.createStack)
+    }
+
+    func destroyStack(_ stack: Use) {
+        buildInstruction(.destroyStack(stack))
+    }
+
+    func push(_ use: Use, to stack: Use) -> Instruction {
+        return buildInstruction(.push(use, to: stack))
+    }
+
+    func pop(_ type: Type, from stack: Use) -> Instruction {
+        return buildInstruction(.pop(type, from: stack))
     }
 
     func allocateHeap(for type: Type, count: Use) -> Instruction {
@@ -316,5 +361,18 @@ public extension IRBuilder {
 
     func deallocate(_ use: Use) {
         buildInstruction(.deallocate(use))
+    }
+
+    func load(from source: Use) -> Instruction {
+        return buildInstruction(.load(source))
+    }
+
+    func store(_ source: Use, to destination: Use) {
+        buildInstruction(.store(source, to: destination))
+    }
+
+    func elementPointer(from source: Use,
+                        at indices: [ElementKey]) -> Instruction {
+        return buildInstruction(.elementPointer(source, indices))
     }
 }

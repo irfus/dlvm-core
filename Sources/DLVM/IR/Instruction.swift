@@ -47,7 +47,7 @@ public enum InstructionKind {
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
     /// Scan operation
-    case scan(ReductionCombinator, Use, [Int])
+    case scan(ReductionCombinator, Use, dims: [Int])
     /// Reduction operation
     case reduce(ReductionCombinator, Use, initial: Use, dims: [Int])
     /// Vector dot, matrix-vector multiplication and matrix-matrix multiplication
@@ -666,13 +666,13 @@ extension InstructionKind : Equatable {
         case let (.reduceWindow(op1, x1, initial: i1, dims: d1, strides: s1, padding: p1),
                   .reduceWindow(op2, x2, initial: i2, dims: d2, strides: s2, padding: p2)):
             return op1 == op2 && x1 == x2 && i1 == i2 && d1 == d2 && s1 == s2 && p1 == p2
-        case let (.scan(op1, x1, i1), .scan(op2, x2, i2)):
-            return op1 == op2 && x1 == x2 && i1 == i2
+        case let (.scan(op1, x1, d1), .scan(op2, x2, d2)):
+            return op1 == op2 && x1 == x2 && d1 == d2
         case let (.concatenate(vv1, axis1), .concatenate(vv2, axis2)):
             return vv1 == vv2 && axis1 == axis2
         case let (.transpose(x1), .transpose(x2)):
             return x1 == x2
-        case let (.reverse(x1, dims: d1), .reverse(x2, dims: d2)):
+        case let (.reverse(x1, d1), .reverse(x2, d2)):
             return x1 == x2 && d1 == d2
         case let (.slice(x1, at: range1), .slice(x2, at: range2)):
             return x1 == x2 && range1 == range2

@@ -430,10 +430,11 @@ fileprivate extension Differentiation {
                         .numeric(.add), x,
                         initial: %bd.literal(
                             0, .tensor(shape.droppingDimension(dim), dtype)),
-                        along: [dim])
+                        dims: [dim])
                     )
                 )
             ]
+
 
         /** Aggregate operations **/
         case let .extract(from: x, at: _):

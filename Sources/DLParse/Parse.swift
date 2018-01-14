@@ -634,7 +634,7 @@ extension Parser {
             let combinator = try parseReductionCombinator(in: basicBlock)
             try consume(.keyword(.along))
             let dims = try parseIntegerList()
-            return .scan(combinator, val, dims)
+            return .scan(combinator, val, dims: dims)
 
         /// 'reduce' <val> 'by' <func|assoc_op> 'init' <val> 'along' <num> (',' <num>)*
         case .reduce:
@@ -950,12 +950,12 @@ extension Parser {
 
         /// 'select' <val>, <val> 'by' <val>
         case .select:
-            let (left, _) = try parseUse(in: basicBlock)
+            let (lhs, _) = try parseUse(in: basicBlock)
             try consumeWrappablePunctuation(.comma)
-            let (right, _) = try parseUse(in: basicBlock)
+            let (rhs, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.by))
             let (flags, _) = try parseUse(in: basicBlock)
-            return .select(left, right, by: flags)
+            return .select(lhs, rhs, by: flags)
         }
     }
 
