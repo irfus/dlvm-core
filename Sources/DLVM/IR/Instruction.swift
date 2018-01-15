@@ -771,10 +771,14 @@ public extension Instruction {
     func substitute(_ newUse: Use, for use: Use) {
         kind = kind.substituting(newUse, for: use)
     }
+
+    func substituteBranches(to oldBB: BasicBlock, with newBB: BasicBlock) {
+        kind = kind.substitutingBranches(to: oldBB, with: newBB)
+    }
 }
 
 public extension InstructionKind {
-    /// Substitutes new use for old use
+    /// Substitutes a new use for an old use
     /// - Note: The current implementation is a vanilla tedious switch
     /// matching all the permutations (a.k.a. very bad).
     func substituting(_ new: Use, for old: Use) -> InstructionKind {
@@ -958,6 +962,23 @@ public extension InstructionKind {
             return .push(new, to: stack)
         case .pop(let ty, from: old):
             return .pop(ty, from: new)
+        default:
+            return self
+        }
+    }
+
+    /// Substitutes branches to an old basic block with a new basic block
+    func substitutingBranches(to old: BasicBlock,
+                              with new: BasicBlock) -> InstructionKind {
+        switch self {
+        case .branch(old, let args):
+            return .branch(new, args)
+        case .conditional(let cond, old, let thenArgs, old, let elseArgs):
+            return .conditional(cond, new, thenArgs, new, elseArgs)
+        case .conditional(let cond, let thenBB, let thenArgs, old, let elseArgs):
+            return .conditional(cond, thenBB, thenArgs, new, elseArgs)
+        case .conditional(let cond, old, let thenArgs, let elseBB, let elseArgs):
+            return .conditional(cond, new, thenArgs, elseBB, elseArgs)
         default:
             return self
         }

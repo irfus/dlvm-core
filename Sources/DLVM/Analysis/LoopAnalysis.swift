@@ -27,10 +27,10 @@
 /// contained entirely within the loop and the basic blocks that make up the
 /// loop.
 
-public class Loop : EquatableByReference {
-    public fileprivate(set) weak var parent: Loop?
-    public fileprivate(set) var subloops: [Loop] = []
-    public fileprivate(set) var blocks: OrderedSet<BasicBlock>
+public class Loop : HashableByReference {
+    public internal(set) weak var parent: Loop?
+    public internal(set) var subloops: [Loop] = []
+    public internal(set) var blocks: OrderedSet<BasicBlock>
 
     public init(parent: Loop? = nil, header: BasicBlock) {
         self.parent = parent
@@ -73,8 +73,20 @@ public extension Loop {
             .filter { !contains($0.1) }
     }
 
+    /// If there is a preheader for this loop, return it. Otherwise, return nil.
+    /// A loop has a preheader if there is only one edge to the header of the
+    /// loop from outside of the loop and it is legal to hoist instructions into
+    /// the predecessor. If this is the case, the block branching to the header
+    /// of the loop is the preheader node.
+    var preheader: BasicBlock? {
+        guard let predecessor = predecessor, predecessor.successors.count == 1 else {
+            return nil
+        }
+        return predecessor
+    }
+
     /// If the given loop's header has exactly one unique predecessor outside
-    /// the loop, return it. Otherwise return null. This is less strict that the
+    /// the loop, return it. Otherwise, return nil. This is less strict than the
     /// loop "preheader" concept, which requires the predecessor to have exactly
     /// one successor.
     var predecessor: BasicBlock? {
@@ -146,8 +158,8 @@ public extension Loop {
 }
 
 public struct LoopInfo {
-    public fileprivate(set) var innerMostLoops: [BasicBlock : Loop] = [:]
-    public fileprivate(set) var topLevelLoops: [Loop] = []
+    public internal(set) var innerMostLoops: [BasicBlock : Loop] = [:]
+    public internal(set) var topLevelLoops: [Loop] = []
 }
 
 /// Analyze LoopInfo discovers loops during a postorder DominatorTree traversal
@@ -172,7 +184,9 @@ open class LoopAnalysis : AnalysisPass {
         let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         let domTree = body.analysis(from: DominanceAnalysis.self)
 
-        for header in domTree.traversed(from: domTree.root, in: .postorder) {
+        for header in domTree.traversed(from: domTree.root, in: .postorder)
+            where cfg.contains(header)
+        {
             var backEdges: [BasicBlock] = []
             /// Check each predecessor of the potential loop header.
             for pred in cfg.predecessors(of: header) {
