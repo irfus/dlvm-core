@@ -140,7 +140,7 @@ extension Module : Verifiable {
     }
 }
 
-extension Variable: Verifiable {
+extension Variable : Verifiable {
     public func performVerification() throws {}
 }
 
@@ -186,7 +186,6 @@ extension EnumType : Verifiable {
 }
 
 extension LiteralValue : Verifiable {
-
     private func verifyUse(_ use: Use, _ elementType: Type) throws {
         try use.performVerification()
         guard use.type == elementType else {
@@ -382,7 +381,7 @@ extension Instruction : Verifiable {
             try verifyIdentifier(name, in: self)
         }
         /// Use type must match usee type
-        for use in operands where use != %parent.parent {
+        for use in operands {
             try use.performVerification()
             /// Special case: nested literals can only be in a `literal`
             /// instruction
@@ -804,7 +803,7 @@ extension InstructionKind {
                 throw VerificationError.notEnum(v1, instruction)
             }
             for (name, bb) in branches {
-                guard let enumCase = e1.enumCase(named: name) else {
+                guard let enumCase = e1.case(named: name) else {
                     throw VerificationError.invalidEnumCase(e1, name, instruction)
                 }
                 guard enumCase.associatedTypes == bb.arguments.map({$0.type}) else {
@@ -927,7 +926,11 @@ extension InstructionKind {
 
 extension Use : Verifiable {
     public func performVerification() throws {
-        try value.performVerification()
+        /// Verify value if not function
+        switch self {
+        case .function: break
+        default: try value.performVerification()
+        }
         /// Type must be valid
         guard type.isValid else {
             throw VerificationError.invalidType(self)
@@ -944,7 +947,9 @@ extension Use : Verifiable {
             try verify(ty, def.type)
         case let .variable(ty, gv):
             try verify(ty, gv.type.pointer)
-        case .literal, .function:
+        case let .function(ty, fun):
+            try verify(ty, fun.type)
+        case .literal:
             break
         }
     }

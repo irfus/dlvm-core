@@ -100,7 +100,7 @@ public extension EnumType {
         return .enum(type)
     }
 
-    func enumCase(named name: String) -> Case? {
+    func `case`(named name: String) -> Case? {
         return cases.first(where: {$0.name == name})
     }
 

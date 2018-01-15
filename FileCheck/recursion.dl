@@ -1,0 +1,48 @@
+// RUN: dlopt %s --print-ir | FileCheck %s
+
+// CHECK: AD: unchanged
+
+module "recursion"
+stage raw
+
+// Direct recursion example
+
+func @gcd: (i32, i32) -> i32 {
+'entry(%a: i32, %b: i32):
+    %0.0 = equal %b: i32, 0: i32
+    conditional %0.0: bool then 'then() else 'else()
+'then():
+    branch 'cont(%a: i32)
+'else():
+    %2.0 = modulo %a: i32, %b: i32
+    %2.1 = apply @gcd(%b: i32, %2.0: i32): (i32, i32) -> i32
+    branch 'cont(%2.1: i32)
+'cont(%x: i32):
+    return %x: i32
+}
+
+// Indirect recursion example
+
+func @is_even: (i32) -> bool {
+'entry(%x: i32):
+    %0.0 = equal %x: i32, 0: i32
+    conditional %0.0: bool then 'then() else 'else()
+'then():
+    return true: bool
+'else():
+    %2.0 = subtract %x: i32, 1: i32
+    %2.1 = apply @is_odd(%2.0: i32): (i32) -> bool
+    return %2.1: bool
+}
+
+func @is_odd: (i32) -> bool {
+'entry(%x: i32):
+    %0.0 = equal %x: i32, 0: i32
+    conditional %0.0: bool then 'then() else 'else()
+'then():
+    return false: bool
+'else():
+    %2.0 = subtract %x: i32, 1: i32
+    %2.1 = apply @is_even(%2.0: i32): (i32) -> bool
+    return %2.1: bool
+}
