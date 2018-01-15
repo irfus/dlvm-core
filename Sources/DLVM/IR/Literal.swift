@@ -187,7 +187,7 @@ public extension Literal {
 
     var isAggregate: Bool {
         switch self {
-        case .array, .tensor, .tuple, .struct:
+        case .array, .tensor, .tuple, .struct, .enumCase:
             return true
         default:
             return false
