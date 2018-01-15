@@ -104,11 +104,7 @@ public extension EnumType {
         return cases.first(where: {$0.name == name})
     }
 
-    func associatedTypes(named name: String) -> [Type]? {
-        return enumCase(named: name)?.associatedTypes
-    }
-
-    func appendCase(_ enumCase: Case) {
+    func append(_ enumCase: Case) {
         cases.append(enumCase)
     }
 

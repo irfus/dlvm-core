@@ -23,7 +23,7 @@ import XCTest
 class IRTests : XCTestCase {
     let builder = IRBuilder(moduleName: "IRTest")
 
-    lazy var struct1 = self.builder.buildStruct(
+    lazy var struct1 = builder.buildStruct(
         named: "TestStruct1", fields: [
             "foo" : .int(32),
             "bar" : .tensor([1, 3, 4], .float(.double)),
@@ -31,22 +31,18 @@ class IRTests : XCTestCase {
         ])
 
     lazy var struct1Global =
-        self.builder.buildGlobalValue(named: "struct1",
-                                      type: self.struct1.type)
+        builder.buildGlobalValue(named: "struct1", type: struct1.type)
 
     var enum1: EnumType {
-        let tmp = self.builder.buildEnum(
-        named: "TestEnum1", cases: [
-            "foo" : [.int(32), .float(.single)],
-            "bar" : []
-        ])
+        let tmp = builder.buildEnum(
+            named: "TestEnum1",
+            cases: ["foo" : [.int(32), .float(.single)], "bar" : []])
         tmp.appendCase("baz", with: [.enum(tmp), .tensor([1, 3, 4], .float(.double)), .enum(tmp)])
         return tmp
     }
 
     lazy var enum1Global: Variable =
-        self.builder.buildGlobalValue(named: "enum1",
-                                      type: self.enum1.type)
+        builder.buildGlobalValue(named: "enum1", type: enum1.type)
 
     func testInitializeStruct() {
         let structLit: Literal = .struct([
@@ -86,9 +82,7 @@ class IRTests : XCTestCase {
         let enumInst2 = builder.literal(.enumCase("bar", []), .enum(enum1))
         let enumInst3 = builder.literal(
             .enumCase("baz", [
-                %enumInst1,
-                %undefined,
-                %enumInst2
+                %enumInst1, %undefined, %enumInst2
             ]), .enum(enum1))
         builder.store(%enumInst3, to: %enum1Global)
         builder.return()

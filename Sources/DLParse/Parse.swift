@@ -1293,7 +1293,7 @@ extension Parser {
         }, separatedBy: {
             try consumeWrappablePunctuation(.comma)
         })
-        cases.forEach{enumTy.appendCase($0)}
+        cases.forEach{enumTy.append($0)}
         consumeAnyNewLines()
         try consume(.punctuation(.rightCurlyBracket))
         return enumTy
