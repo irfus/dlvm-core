@@ -210,7 +210,15 @@ fileprivate extension Differentiation {
             returnInst.removeFromParent()
             /// Build new return
             var newReturn: [Use] = []
-            newReturn += argIndices.map { context.adjoint(for: %function[0].arguments[$0])! }
+            newReturn += argIndices.map { i in
+                guard let argAdjoint = context.adjoint(for: %function[0].arguments[i]) else {
+                    fatalError("""
+                        Adjoint not found for argument \(function[0].arguments[i]) \
+                        in function \(function.name)
+                        """)
+                }
+                return argAdjoint
+            }
             newReturn += keptIndices.map { returnInst.operands[$0] }
             let tupleLit = builder.buildInstruction(.literal(.tuple(newReturn), function.returnType))
             builder.return(%tupleLit)
