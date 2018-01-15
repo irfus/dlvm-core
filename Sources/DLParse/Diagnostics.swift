@@ -281,7 +281,8 @@ extension TokenKind : CustomStringConvertible {
             switch kind {
             case .basicBlock: kindDesc = "'"
             case .global: kindDesc = "@"
-            case .key: kindDesc = "#"
+            case .structKey: kindDesc = "#"
+            case .enumCase: kindDesc = "?"
             case .temporary: kindDesc = "%"
             case .type: kindDesc = "$"
             }

@@ -27,7 +27,7 @@ import class DLVM.Function
 public enum Keyword {
     case module
     case stage, raw, optimizable, compute, scheduled, canonical
-    case `struct`, `func`, `var`, stack
+    case `struct`, `enum`, `func`, `var`, stack
     case type, opaque
     case at, to, from, by, upto
     case kernel, strides, leftDilation, rightDilation, groups
@@ -66,7 +66,8 @@ public enum IdentifierKind {
     case temporary
     case type
     case global
-    case key
+    case structKey
+    case enumCase
 }
 
 public enum TokenKind : Equatable {
@@ -291,7 +292,8 @@ private extension Lexer {
         case ",": kind = .punctuation(.comma)
         case "x": kind = .punctuation(.times)
         case "*": kind = .punctuation(.star)
-        case "#": return try lexIdentifier(ofKind: .key)
+        case "#": return try lexIdentifier(ofKind: .structKey)
+        case "?": return try lexIdentifier(ofKind: .enumCase)
         case "!":
             let prefix = characters.prefix(while: {
                 !($0.isWhitespace || $0.isNewLine || $0.isPunctuation)
@@ -449,6 +451,7 @@ private extension Lexer {
         case "canonical": kind = .keyword(.canonical)
         case "func": kind = .keyword(.func)
         case "struct": kind = .keyword(.struct)
+        case "enum": kind = .keyword(.enum)
         case "var": kind = .keyword(.var)
         case "type": kind = .keyword(.type)
         case "opaque": kind = .keyword(.opaque)

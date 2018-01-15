@@ -209,12 +209,22 @@ extension LiteralValue : Verifiable {
                 try verifyUse(use, elementType)
             }
 
+        /// Struct literal
         case let (.struct(structTy), .struct(fields)) where structTy.fields.count == fields.count:
             for ((name: fmlName, type: fmlType), (name, val)) in zip(structTy.fields, fields) {
                 guard fmlName == name else {
                     throw VerificationError.structFieldNameMismatch(structTy, val, self)
                 }
                 try verifyUse(val, fmlType)
+            }
+
+        /// Enum literal
+        case let (.enum(enumTy), .enumCase(name, uses)):
+            guard let enumCase = enumTy.cases.first(where: { $0.name == name }) else {
+                throw VerificationError.invalidLiteral(type, literal, self)
+            }
+            for (use, type) in zip(uses, enumCase.associatedTypes) {
+                try verifyUse(use, type)
             }
 
         default:

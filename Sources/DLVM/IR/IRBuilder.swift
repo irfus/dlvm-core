@@ -72,6 +72,15 @@ extension IRBuilder {
     }
 
     @discardableResult
+    open func buildEnum(
+        named name: String,
+        cases: DictionaryLiteral<String, [Type]>) -> EnumType {
+        let enumTy = EnumType(name: name, cases: cases.map{$0})
+        module.enums.append(enumTy)
+        return enumTy
+    }
+
+    @discardableResult
     open func buildAlias(named name: String, for type: Type? = nil) -> Type {
         let alias = TypeAlias(name: name, type: type)
         module.typeAliases.append(alias)

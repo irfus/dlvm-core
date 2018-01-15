@@ -32,6 +32,7 @@ public final class Module : IRCollection {
     public var elements: OrderedSet<Function> = []
     public var variables: OrderedSet<Variable> = []
     public var structs: OrderedSet<StructType> = []
+    public var enums: OrderedSet<EnumType> = []
     public var typeAliases: OrderedSet<TypeAlias> = []
     public let passManager: PassManager<Module> = PassManager()
 
@@ -93,6 +94,10 @@ public extension Module {
 
     func `struct`(named name: String) -> StructType? {
         return structs.first(where: { $0.name == name })
+    }
+
+    func `enum`(named name: String) -> EnumType? {
+        return enums.first(where: { $0.name == name })
     }
 
     func typeAlias(named name: String) -> TypeAlias? {

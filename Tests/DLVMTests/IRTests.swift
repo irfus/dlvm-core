@@ -23,18 +23,32 @@ import XCTest
 class IRTests : XCTestCase {
     let builder = IRBuilder(moduleName: "IRTest")
 
-    lazy var struct1: StructType = self.builder.buildStruct(
+    lazy var struct1 = self.builder.buildStruct(
         named: "TestStruct1", fields: [
             "foo" : .int(32),
             "bar" : .tensor([1, 3, 4], .float(.double)),
             "baz" : .array(4, .array(3, .tensor([3], .int(32))))
         ])
 
-    lazy var struct1Global: Variable =
+    lazy var struct1Global =
         self.builder.buildGlobalValue(named: "struct1",
                                       type: self.struct1.type)
 
-    func testInitializeGlobal() {
+    var enum1: EnumType {
+        let tmp = self.builder.buildEnum(
+        named: "TestEnum1", cases: [
+            "foo" : [.int(32), .float(.single)],
+            "bar" : []
+        ])
+        tmp.appendCase("baz", with: [.enum(tmp), .tensor([1, 3, 4], .float(.double)), .enum(tmp)])
+        return tmp
+    }
+
+    lazy var enum1Global: Variable =
+        self.builder.buildGlobalValue(named: "enum1",
+                                      type: self.enum1.type)
+
+    func testInitializeStruct() {
         let structLit: Literal = .struct([
             ("foo", 100000 ~ .int(32)),
             ("bar", .undefined ~ .tensor([1, 3, 4], .float(.double))),
@@ -59,6 +73,39 @@ class IRTests : XCTestCase {
             """)
     }
 
+    func testInitializeEnum() {
+        let fun = builder.buildFunction(named: "initialize_enum1",
+                                        argumentTypes: [],
+                                        returnType: .void)
+        builder.move(to: builder.buildEntry(argumentNames: [], in: fun))
+        let enumInst1 = builder.literal(
+            .enumCase("foo", [
+                .literal(.int(32), 123), .literal(.float(.single), 3.14)
+            ]), .enum(enum1))
+        let undefined = builder.literal(.undefined, .tensor([1, 3, 4], .float(.double)))
+        let enumInst2 = builder.literal(.enumCase("bar", []), .enum(enum1))
+        let enumInst3 = builder.literal(
+            .enumCase("baz", [
+                %enumInst1,
+                %undefined,
+                %enumInst2
+            ]), .enum(enum1))
+        builder.store(%enumInst3, to: %enum1Global)
+        builder.return()
+        XCTAssertEqual(fun.description, """
+            func @initialize_enum1: () -> () {
+            'entry():
+                %0.0 = literal ?foo(123: i32, 3.14: f32): $TestEnum1
+                %0.1 = literal undefined: <1 x 3 x 4 x f64>
+                %0.2 = literal ?bar(): $TestEnum1
+                %0.3 = literal ?baz(%0.0: $TestEnum1, \
+            %0.1: <1 x 3 x 4 x f64>, %0.2: $TestEnum1): $TestEnum1
+                store %0.3: $TestEnum1 to @enum1: *$TestEnum1
+                return
+            }
+            """)
+    }
+
     func testWriteGlobal() {
         let val1 = builder.buildGlobalValue(named: "one", type: .int(32))
         XCTAssertEqual("\(val1)", "var @one: i32")
@@ -71,10 +118,21 @@ class IRTests : XCTestCase {
             struct $TestStruct1 {
                 #foo: i32,
                 #bar: <1 x 3 x 4 x f64>,
-                #baz: [4 x [3 x <3 x i32>]],
+                #baz: [4 x [3 x <3 x i32>]]
             }
             """)
         XCTAssertEqual("\(struct1Global)", "var @struct1: $TestStruct1")
+    }
+
+    func testWriteEnum() {
+        XCTAssertEqual(enum1.description, """
+            enum $TestEnum1 {
+                ?foo(i32, f32),
+                ?bar(),
+                ?baz($TestEnum1, <1 x 3 x 4 x f64>, $TestEnum1)
+            }
+            """)
+        XCTAssertEqual("\(enum1Global)", "var @enum1: $TestEnum1")
     }
 
     func testWriteSimpleFunction() {
@@ -130,9 +188,11 @@ class IRTests : XCTestCase {
 
     static var allTests: [(String, (IRTests) -> () throws -> Void)] {
         return [
-            ("testInitializeGlobal", testInitializeGlobal),
+            ("testInitializeStruct", testInitializeStruct),
+            ("testInitializeEnum", testInitializeEnum),
             ("testWriteGlobal", testWriteGlobal),
             ("testWriteStruct", testWriteStruct),
+            ("testWriteEnum", testWriteEnum),
             ("testWriteSimpleFunction", testWriteSimpleFunction),
             ("testWriteMultiBBFunction", testWriteMultiBBFunction)
         ]

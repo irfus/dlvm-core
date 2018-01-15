@@ -91,6 +91,32 @@ public class EnumType : Named, HashableByReference {
     }
 }
 
+public extension EnumType {
+    var type: Type {
+        return .enum(self)
+    }
+
+    static prefix func ^ (type: EnumType) -> Type {
+        return .enum(type)
+    }
+
+    func enumCase(named name: String) -> Case? {
+        return cases.first(where: {$0.name == name})
+    }
+
+    func associatedTypes(named name: String) -> [Type]? {
+        return enumCase(named: name)?.associatedTypes
+    }
+
+    func appendCase(_ enumCase: Case) {
+        cases.append(enumCase)
+    }
+
+    func appendCase(_ name: String, with types: [Type]) {
+        cases.append((name: name, associatedTypes: types))
+    }
+}
+
 /// Type alias
 public class TypeAlias : Named, HashableByReference {
     public var name: String
@@ -336,7 +362,7 @@ public extension StructType {
 
 public extension EnumType {
     var isValid: Bool {
-        return cases.forAll { $0.associatedTypes.forAll { $0.isValid } }
+        return cases.forAll { $0.associatedTypes.forAll { $0 == ^self || $0.isValid } }
     }
 }
 

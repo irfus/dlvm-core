@@ -49,6 +49,8 @@ extension Literal : TextOutputStreamable {
             target.write("[\(vals.joinedDescription)]")
         case let .struct(fields):
             target.write("{\(fields.map{"#\($0.0) = \($0.1)"}.joined(separator: ", "))}")
+        case let .enumCase(name, associatedTypes):
+            target.write("?\(name)(\(associatedTypes.joinedDescription))")
         case .zero:
             target.write("zero")
         case .undefined:
@@ -76,10 +78,22 @@ extension TensorIndex : TextOutputStreamable {
 extension StructType : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("struct $\(name) {\n")
-        for (name, type) in fields {
-            target.write("    #\(name): \(type),\n")
-        }
-        target.write("}")
+        let fieldsDescription = fields
+            .map { (name, type) in "    #\(name): \(type)" }
+            .description(joinedBy: ",\n")
+        target.write(fieldsDescription)
+        target.write("\n}")
+    }
+}
+
+extension EnumType : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write("enum $\(name) {\n")
+        let casesDescription = cases
+            .map { (name, assocTypes) in "    ?\(name)(\(assocTypes.joinedDescription))" }
+            .description(joinedBy: ",\n")
+        target.write(casesDescription)
+        target.write("\n}")
     }
 }
 
@@ -432,6 +446,7 @@ extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \"\(name.literal)\"\n")
         target.write("stage \(stage)\n")
+        write(enums, to: &target)
         write(structs, to: &target)
         write(typeAliases, to: &target)
         write(variables, to: &target)
