@@ -108,6 +108,9 @@ extension Type : TextOutputStreamable {
         case let .struct(structTy):
             target.write("$")
             structTy.name.write(to: &target)
+        case let .enum(enumTy):
+            target.write("$")
+            enumTy.name.write(to: &target)
         case .stack:
             target.write("stack")
         }
