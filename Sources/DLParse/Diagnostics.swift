@@ -239,6 +239,7 @@ extension Opcode : CustomStringConvertible {
         case .bitCast: return "bitCast"
         case .extract: return "extract"
         case .insert: return "insert"
+        case .branchEnum: return "branchEnum"
         case .apply: return "apply"
         case .allocateStack: return "allocateStack"
         case .allocateHeap: return "allocateHeap"

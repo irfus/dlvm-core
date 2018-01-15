@@ -815,6 +815,23 @@ extension Parser {
             })
             return .insert(srcVal, to: destVal, at: keys)
 
+        /// 'branchEnum' <val> ('case' <enum_case> <bb>)*
+        case .branchEnum:
+            let (enumCase, _) = try parseUse(in: basicBlock)
+            let branches: [(String, BasicBlock)] = try parseMany({
+                if currentToken?.kind == .newLine {
+                    return nil
+                }
+                try consume(.keyword(.case))
+                let caseName = try parseIdentifier(ofKind: .enumCase).0
+                let (bbName, bbTok) = try parseIdentifier(ofKind: .basicBlock)
+                guard let bb = environment.basicBlocks[bbName] else {
+                    throw ParseError.undefinedIdentifier(bbTok)
+                }
+                return (caseName, bb)
+            })
+            return .branchEnum(enumCase, branches)
+
         /// 'apply' <val> '(' <val>+ ')'
         case .apply:
             return try withPeekedToken("a function identifier") { tok in

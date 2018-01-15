@@ -102,6 +102,8 @@ public enum InstructionKind {
     case extract(from: Use, at: [ElementKey])
     /// Insert an element to tensor, tuple, or array
     case insert(Use, to: Use, at: [ElementKey])
+    /// Branch based on enum case
+    case branchEnum(Use, [(caseName: String, basicBlock: BasicBlock)])
 
     /** Function application **/
     case apply(Use, [Use])
@@ -170,10 +172,10 @@ extension Instruction : Value {
 // MARK: - Predicates
 public extension InstructionKind {
     /// Returns true iff the instruction is a terminator:
-    /// `branch`, `conditional` or `return`
+    /// `branch`, `branchEnum`, `conditional` or `return`
     var isTerminator: Bool {
         switch self {
-        case .branch, .conditional, .return:
+        case .branch, .branchEnum, .conditional, .return:
             return true
         default:
             return false
@@ -572,8 +574,8 @@ public extension InstructionKind {
             guard case .stack = stack.type else { return .invalid }
             return t
 
-        case .store, .copy, .deallocate, .destroyStack,
-             .branch, .conditional, .return, .retain, .release, .trap:
+        case .branch, .conditional, .return, .branchEnum, .store, .copy,
+             .deallocate, .destroyStack, .retain, .release, .trap:
             return .void
         }
     }
@@ -607,8 +609,8 @@ extension InstructionKind {
              let .transpose(op), let .reverse(op, dims: _), let .slice(op, at: _),
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _),
              let .return(op?), let .padShape(op, at: _), let .squeezeShape(op, at: _),
-             let .extract(from: op, at: _), let .store(op, _), let .load(op),
-             let .elementPointer(op, _), let .deallocate(op),
+             let .extract(from: op, at: _), let .branchEnum(op, _), let .store(op, _),
+             let .load(op), let .elementPointer(op, _), let .deallocate(op),
              let .allocateHeap(_, count: op), let .projectBox(op),
              let .release(op), let .retain(op), let .destroyStack(op),
              let .pop(_, from: op):
@@ -644,8 +646,10 @@ public extension Literal {
         switch self {
         case let .array(ops), let .tensor(ops), let .tuple(ops):
             return ops.flatMap(literalOperands(in:))
-        case let .struct(tups):
-            return tups.map{$1}.flatMap(literalOperands(in:))
+        case let .struct(fields):
+            return fields.map{$1}.flatMap(literalOperands(in:))
+        case let .enumCase(values):
+            return values.1.flatMap(literalOperands(in:))
         default:
             return []
         }
@@ -729,6 +733,8 @@ extension InstructionKind : Equatable {
             return v1 == v2 && i1 == i2
         case let (.insert(s1, to: d1, at: i1), .insert(s2, to: d2, at: i2)):
             return s1 == s2 && d1 == d2 && i1 == i2
+        case let (.branchEnum(e1, b1), .branchEnum(e2, b2)):
+            return e1 == e2 && b1 == b2
         case let (.allocateStack(t1, n1), .allocateStack(t2, n2)):
             return t1 == t2 && n1 == n2
         case let (.load(x1), .load(x2)):
@@ -900,6 +906,9 @@ public extension InstructionKind {
             return .insert(new, to: use1, at: indices)
         case .insert(let use1, to: old, at: let indices):
             return .insert(use1, to: new, at: indices)
+        case .branchEnum(let use, let branches):
+            let newUse = use == old ? new : use
+            return .branchEnum(newUse, branches)
         case .bitCast(old, let targetT):
             return .bitCast(new, targetT)
         case .elementPointer(old, let indices):
@@ -987,6 +996,7 @@ public enum Opcode : Equatable {
     case bitCast
     case extract
     case insert
+    case branchEnum
     case apply
     case allocateStack
     case allocateHeap
@@ -1044,6 +1054,7 @@ public extension InstructionKind {
         case .bitCast: return .bitCast
         case .extract: return .extract
         case .insert: return .insert
+        case .branchEnum: return .branchEnum
         case .apply: return .apply
         case .allocateStack: return .allocateStack
         case .allocateHeap: return .allocateHeap

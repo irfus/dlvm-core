@@ -27,7 +27,7 @@ import class DLVM.Function
 public enum Keyword {
     case module
     case stage, raw, optimizable, compute, scheduled, canonical
-    case `struct`, `enum`, `func`, `var`, stack
+    case `struct`, `enum`, `case`, `func`, `var`, stack
     case type, opaque
     case at, to, from, by, upto
     case kernel, strides, leftDilation, rightDilation, groups
@@ -452,6 +452,7 @@ private extension Lexer {
         case "func": kind = .keyword(.func)
         case "struct": kind = .keyword(.struct)
         case "enum": kind = .keyword(.enum)
+        case "case": kind = .keyword(.case)
         case "var": kind = .keyword(.var)
         case "type": kind = .keyword(.type)
         case "opaque": kind = .keyword(.opaque)
@@ -509,6 +510,7 @@ private extension Lexer {
         case "bitCast": kind = .opcode(.bitCast)
         case "extract": kind = .opcode(.extract)
         case "insert": kind = .opcode(.insert)
+        case "branchEnum": kind = .opcode(.branchEnum)
         case "apply": kind = .opcode(.apply)
         case "createStack": kind = .opcode(.createStack)
         case "destroyStack": kind = .opcode(.destroyStack)

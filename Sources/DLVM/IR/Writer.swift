@@ -241,6 +241,11 @@ extension InstructionKind : TextOutputStreamable {
             target.write("extract \(indices.joinedDescription) from \(use)")
         case let .insert(src, to: dest, at: indices):
             target.write("insert \(src) to \(dest) at \(indices.joinedDescription)")
+        case let .branchEnum(e1, branches):
+            target.write("branchEnum \(e1)")
+            for (name, bb) in branches {
+                target.write(" case ?\(name) '\(bb.name)")
+            }
         case let .allocateStack(t, n):
             target.write("allocateStack \(t) count \(n)")
         case let .store(v, p):
