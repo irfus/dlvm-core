@@ -419,7 +419,12 @@ fileprivate extension Differentiation {
         /** Cost-free casts **/
         case let .padShape(x, at: i):
             grad = [
-                (x, %bd.squeezeShape(instAdjoint, at: i))
+                /// ∂f/∂x = sum(f, along: i)
+                // NOTE: can be optimized to `squeezeShape` when dimension i is
+                // known to be 1, to be implemented in simplification pass
+                (x, %bd.reduce(.numeric(.add), instAdjoint,
+                               initial: x.makeScalar(0),
+                               dims: [i]))
             ]
         case let .squeezeShape(x, at: i):
             grad = [
