@@ -58,22 +58,6 @@ open class Differentiation: TransformPass {
     }
 }
 
-fileprivate extension Value {
-    func makeScalar(_ value: IntegerLiteralType) -> Use {
-        let canType = type.canonical
-        guard case let .tensor(_, dtype) = canType else {
-            preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
-        }
-        return .literal(.scalar(dtype), .scalar(.int(value)))
-    }
-}
-
-fileprivate extension Use {
-    func makeScalar(_ value: IntegerLiteralType) -> Use {
-        return self.value.makeScalar(value)
-    }
-}
-
 fileprivate extension GradientConfiguration {
     var seedType: Type {
         if case let .tuple(elements) = primal.returnType {
@@ -282,7 +266,7 @@ fileprivate extension Differentiation {
             grad = [
                 /// ∂f/∂x = y * x^(y - 1) * D
                 (lhs, %bd.multiply(
-                    %bd.multiply(rhs, %bd.power(lhs, %bd.subtract(rhs, rhs.makeScalar(1)))),
+                    %bd.multiply(rhs, %bd.power(lhs, %bd.subtract(rhs, %rhs.makeScalar(1)))),
                     instAdjoint)
                 ),
                 /// ∂f/∂y = ln(x) * f * D
@@ -340,14 +324,14 @@ fileprivate extension Differentiation {
         case let .numericUnary(.tanh, x):
             grad = [
                 /// ∂f/∂x = D * (1 - (f * f))
-                (x, %bd.multiply(instAdjoint, %bd.subtract(x.makeScalar(1), %bd.multiply(%inst, %inst))))
+                (x, %bd.multiply(instAdjoint, %bd.subtract(%x.makeScalar(1), %bd.multiply(%inst, %inst))))
             ]
         case let .numericUnary(.acos, x):
             grad = [
                 /// ∂f/∂x = -D / sqrt(1 - (x * x))
                 (x, %bd.divide(
                     %bd.numeric(.negate, instAdjoint),
-                    %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x))))
+                    %bd.numeric(.sqrt, %bd.subtract(%x.makeScalar(1), %bd.multiply(x, x))))
                 )
             ]
         case let .numericUnary(.asin, x):
@@ -355,13 +339,13 @@ fileprivate extension Differentiation {
                 /// ∂f/∂x = D / sqrt(1 - (x * x))
                 (x, %bd.divide(
                     instAdjoint,
-                    %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x))))
+                    %bd.numeric(.sqrt, %bd.subtract(%x.makeScalar(1), %bd.multiply(x, x))))
                 )
             ]
         case let .numericUnary(.atan, x):
             grad = [
                 /// ∂f/∂x = D / (1 + (x * x))
-                (x, %bd.divide(instAdjoint, %bd.add(x.makeScalar(1), %bd.multiply(x, x))))
+                (x, %bd.divide(instAdjoint, %bd.add(%x.makeScalar(1), %bd.multiply(x, x))))
             ]
         case let .numericUnary(.exp, x):
             grad = [
@@ -371,7 +355,7 @@ fileprivate extension Differentiation {
         case let .numericUnary(.sqrt, x):
             grad = [
                 /// ∂f/∂x = D / (2 * f)
-                (x, %bd.divide(instAdjoint, %bd.multiply(inst.makeScalar(2), %inst)))
+                (x, %bd.divide(instAdjoint, %bd.multiply(%x.makeScalar(2), %inst)))
             ]
 
         /** Cost-free casts **/
@@ -381,7 +365,7 @@ fileprivate extension Differentiation {
                 // NOTE: can be optimized to `squeezeShape` when dimension i is
                 // known to be 1, to be implemented in simplification pass
                 (x, %bd.reduce(.numeric(.add), instAdjoint,
-                               initial: x.makeScalar(0),
+                               initial: %x.makeScalar(0),
                                dims: [i]))
             ]
         case let .squeezeShape(x, at: i):

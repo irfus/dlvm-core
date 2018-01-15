@@ -267,7 +267,7 @@ public extension Value {
         return builder.literal(literal, type)
     }
 
-    /// Make a scalar literal of the same type, unless
+    /// Make a scalar literal of scalar type
     /// - Precondition: value type is tensor
     func makeScalar(_ scalar: Literal.Scalar) -> LiteralValue {
         guard case let .tensor(_, dtype) = type.canonical else {

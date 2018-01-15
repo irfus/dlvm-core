@@ -51,8 +51,8 @@ internal func makeFreshFunctionName(_ name: String, in module: Module) -> String
 }
 
 // MARK: - Function cloning
-/// - Note: Big, ugly, not-so-safe, imperative code written in 4 minutes
 public extension Function {
+    /// Create clone of function
     public func makeClone(named name: String) -> Function {
         let newFunc = Function(name: name,
                                argumentTypes: argumentTypes,
@@ -64,7 +64,16 @@ public extension Function {
         return newFunc
     }
 
+    /// Copy basic blocks to an empty function
     public func copyContents(to other: Function) {
+        /// Other function must be empty (has no basic blocks)
+        guard other.isEmpty else {
+            fatalError("""
+                Could not copy contents to \(other.name) because it is not \
+                empty
+                """)
+        }
+
         /// Mappings from old IR units to new IR units
         var newArgs: [Argument : Argument] = [:]
         var newBlocks: [BasicBlock : BasicBlock] = [:]
@@ -72,7 +81,7 @@ public extension Function {
 
         func newUse(from old: Use) -> Use {
             switch old {
-            /// If recursion, change function to the new function
+            /// If recursion, replace function with new function
             case .function(_, self):
                 return %other
             case .function, .variable:
@@ -96,25 +105,23 @@ public extension Function {
                 arguments: oldBB.arguments.map{($0.name, $0.type)},
                 parent: other)
             other.append(newBB)
-
-            /// Insert argument mappings
+            /// Insert arguments into mapping
             for (oldArg, newArg) in zip(oldBB.arguments, newBB.arguments) {
                 newArgs[oldArg] = newArg
             }
             newBlocks[oldBB] = newBB
         }
-
         /// Clone instructions
         for oldBB in self {
             let newBB = newBlocks[oldBB]!
             for oldInst in oldBB {
                 let newInst = Instruction(name: oldInst.name,
                                           kind: oldInst.kind, parent: newBB)
-                /// - Note: Slow but clean for now
+                /// Replace operands with new uses
                 for oldUse in newInst.operands {
                     newInst.substitute(newUse(from: oldUse), for: oldUse)
                 }
-                /// If branching, switch old BBs to new BBs
+                /// If instruction branches, replace old BBs with new BBs
                 switch newInst.kind {
                 case let .branch(dest, args):
                     newInst.kind = .branch(newBlocks[dest]!, args)
