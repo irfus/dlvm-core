@@ -711,7 +711,7 @@ extension InstructionKind {
                 throw VerificationError.notTensor(v1, instruction)
             }
             if let index = index {
-                guard s1.indices.contains(index) || s1.endIndex == index else {
+                guard s1.indices.contains(index) else {
                     throw VerificationError.invalidIndex(v1, index, instruction)
                 }
             }
