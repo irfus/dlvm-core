@@ -710,10 +710,8 @@ extension InstructionKind {
             guard case let .tensor(s1, _) = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
-            if let index = index {
-                guard s1.indices.contains(index) else {
-                    throw VerificationError.invalidIndex(v1, index, instruction)
-                }
+            guard s1.indices.contains(index), s1[index] == 1 else {
+                throw VerificationError.invalidIndex(v1, index, instruction)
             }
 
         case let .shapeCast(v1, target):

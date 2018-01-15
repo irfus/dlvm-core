@@ -209,10 +209,7 @@ extension InstructionKind : TextOutputStreamable {
         case let .padShape(op, at: index):
             target.write("padShape \(op) at \(index)")
         case let .squeezeShape(op, at: index):
-            target.write("squeezeShape \(op)")
-            if let index = index {
-                target.write(" at \(index)")
-            }
+            target.write("squeezeShape \(op) at \(index)")
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):

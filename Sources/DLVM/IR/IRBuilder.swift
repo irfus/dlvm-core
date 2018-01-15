@@ -310,7 +310,7 @@ public extension IRBuilder {
         return buildInstruction(.padShape(source, at: dimension))
     }
 
-    func squeezeShape(_ source: Use, at dimension: Int?) -> Instruction {
+    func squeezeShape(_ source: Use, at dimension: Int) -> Instruction {
         return buildInstruction(.squeezeShape(source, at: dimension))
     }
 

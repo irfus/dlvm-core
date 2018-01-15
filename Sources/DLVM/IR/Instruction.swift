@@ -90,8 +90,8 @@ public enum InstructionKind {
     /** Cost-free casts **/
     /// Pad shape with dimension of 1
     case padShape(Use, at: Int)
-    /// Drop dimension(s) of 1 from shape
-    case squeezeShape(Use, at: Int?)
+    /// Drop dimension of 1 from shape
+    case squeezeShape(Use, at: Int)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
     /// Bitcast
@@ -288,7 +288,7 @@ public extension InstructionKind {
                 v2.tensorType.flatMap { v2Ty in
                     ComparisonOp.resultType(for: (v1Ty, v2Ty))
                 }
-                }.map(Type.tensor) ?? .invalid
+            }.map(Type.tensor) ?? .invalid
 
         case let .dot(v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
@@ -511,12 +511,8 @@ public extension InstructionKind {
 
         case let .squeezeShape(v1, at: index):
             switch v1.type.unaliased {
-            case let .tensor(s1, t1):
-                if let index = index {
-                    guard s1.indices.contains(index) else { return .invalid }
-                    return .tensor(s1.droppingDimension(index), t1)
-                }
-                return .tensor(s1.droppingPaddings(), t1)
+            case let .tensor(s1, t1) where s1.indices.contains(index) && s1[index] == 1:
+                return .tensor(s1.droppingDimension(index), t1)
             default: return .invalid
             }
 

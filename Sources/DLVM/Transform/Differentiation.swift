@@ -421,11 +421,15 @@ fileprivate extension Differentiation {
             grad = [
                 (x, %bd.squeezeShape(instAdjoint, at: i))
             ]
+        case let .squeezeShape(x, at: i):
+            grad = [
+                (x, %bd.padShape(instAdjoint, at: i))
+            ]
 
         /** Aggregate operations **/
-        case let .extract(from: x, at: _):
+        case let .extract(from: x, at: i):
             grad = [
-                (x, x.makeScalar(1))
+                (x, %bd.extract(from: instAdjoint, at: i))
             ]
 
         /* Function application */

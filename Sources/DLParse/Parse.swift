@@ -743,22 +743,19 @@ extension Parser {
             return .convolve(val, kernel: kernel, strides: strides, padding: padding,
                              leftDilation: ld, rightDilation: rd, groups: groups)
 
-        /// 'squeezeShape' <val> ('at' <num>)?
-        case .squeezeShape:
-            let (val, _) = try parseUse(in: basicBlock)
-            var index: Int?
-            if case .keyword(.at)? = currentToken?.kind {
-                consumeToken()
-                index = try parseInteger().0
-            }
-            return .squeezeShape(val, at: index)
-
         /// 'padShape' <val> 'at' <num>
         case .padShape:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.at))
             let (index, _) = try parseInteger()
             return .padShape(val, at: index)
+
+        /// 'squeezeShape' <val> 'at' <num>
+        case .squeezeShape:
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.at))
+            let (index, _) = try parseInteger()
+            return .squeezeShape(val, at: index)
 
         /// 'shapeCast' <val> 'to' <shape>
         case .shapeCast:
