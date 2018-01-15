@@ -259,17 +259,15 @@ public extension InstructionKind {
         case let .literal(_, ty):
             return ty
 
+        case let .numericUnary(_, v1):
+            return v1.tensorType.flatMap { v1Ty in
+                NumericUnaryOp.resultType(for: (v1Ty))
+                }.map(Type.tensor) ?? .invalid
+
         case let .numericBinary(_, v1, v2):
             return v1.tensorType.flatMap { v1Ty in
                 v2.tensorType.flatMap { v2Ty in
                     NumericBinaryOp.resultType(for: (v1Ty, v2Ty))
-                }
-            }.map(Type.tensor) ?? .invalid
-
-        case let .compare(_, v1, v2):
-            return v1.tensorType.flatMap { v1Ty in
-                v2.tensorType.flatMap { v2Ty in
-                    ComparisonOp.resultType(for: (v1Ty, v2Ty))
                 }
             }.map(Type.tensor) ?? .invalid
 
@@ -285,6 +283,13 @@ public extension InstructionKind {
                 NegationOp.resultType(for: (v1Ty))
             }.map(Type.tensor) ?? .invalid
 
+        case let .compare(_, v1, v2):
+            return v1.tensorType.flatMap { v1Ty in
+                v2.tensorType.flatMap { v2Ty in
+                    ComparisonOp.resultType(for: (v1Ty, v2Ty))
+                }
+                }.map(Type.tensor) ?? .invalid
+
         case let .dot(v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
@@ -298,11 +303,6 @@ public extension InstructionKind {
                 return .scalar(t1)
             }
             return .invalid
-
-        case let .numericUnary(_, v1):
-            return v1.tensorType.flatMap { v1Ty in
-                NumericUnaryOp.resultType(for: (v1Ty))
-            }.map(Type.tensor) ?? .invalid
 
         case let .reduce(op, v1, initial, dims):
             let dtype: DataType
@@ -524,7 +524,7 @@ public extension InstructionKind {
             switch f.type.unaliased {
             case let .pointer(.function(actual, ret)),
                  let .function(actual, ret):
-                guard actual == vv.map({$0.type}) else { fallthrough }
+                guard actual == vv.map({$0.type}) else { return .invalid }
                 return ret
             default:
                 return .invalid

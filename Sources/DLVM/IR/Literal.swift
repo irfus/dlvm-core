@@ -151,28 +151,6 @@ extension LiteralValue : Equatable {
     }
 }
 
-public extension Use {
-    static func tensor(_ shape: TensorShape, _ dataType: DataType,
-                       repeating item: Int) -> Use {
-        let scalLit: Literal.Scalar
-        switch dataType.base {
-        case .int: scalLit = .int(item)
-        case .float: scalLit = .float(Double(item))
-        case .bool: scalLit = .bool(item == 0 ? false : true)
-        }
-        let lit: Literal = .scalar(scalLit)
-        let type: Type = .tensor(shape, dataType)
-
-        if shape.isScalar {
-            return .literal(type, lit)
-        } else {
-            let subtensor = Use.tensor(shape.dropFirst(), dataType, repeating: item)
-            let subtensors = Array(repeating: subtensor, count: shape[0])
-            return .literal(type, .tensor(subtensors))
-        }
-    }
-}
-
 public extension DataType {
     func isExpressible(as scalar: Literal.Scalar) -> Bool {
         /// - TODO: Currently we are only checking type base,

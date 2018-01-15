@@ -61,12 +61,14 @@ open class Differentiation: TransformPass {
 /// Integer literal builder based on the unsafe (but convenient)
 /// assumption that the value is a tensor
 fileprivate extension Value {
-    func makeTensor(repeating repeatedValue: IntegerLiteralType) -> Use {
+    func makeTensor(repeating repeatedValue: IntegerLiteralType,
+                    using builder: IRBuilder) -> Use {
         let canType = type.canonical
         guard case let .tensor(shape, dtype) = canType else {
             preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
         }
-        return .tensor(shape, dtype, repeating: repeatedValue)
+        return %builder.literal(.scalar(.int(repeatedValue)),
+                                .tensor(shape, dtype))
     }
 
     func makeScalar(_ value: IntegerLiteralType) -> Use {
@@ -74,15 +76,16 @@ fileprivate extension Value {
         guard case let .tensor(_, dtype) = canType else {
             preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
         }
-        return .tensor(.scalar, dtype, repeating: value)
+        return .literal(.scalar(dtype), .scalar(.int(value)))
     }
 }
 
 /// Integer literal builder based on the unsafe (but convenient)
 /// assumption that the value is a tensor
 fileprivate extension Use {
-    func makeTensor(repeating repeatedValue: IntegerLiteralType) -> Use {
-        return value.makeTensor(repeating: repeatedValue)
+    func makeTensor(repeating repeatedValue: IntegerLiteralType,
+                    using builder: IRBuilder) -> Use {
+        return value.makeTensor(repeating: repeatedValue, using: builder)
     }
 
     func makeScalar(_ value: IntegerLiteralType) -> Use {
@@ -264,24 +267,24 @@ fileprivate extension Differentiation {
         }
     }
 
-    private static func differentiate(_ instruction: Instruction,
+    private static func differentiate(_ inst: Instruction,
                                       using bd: IRBuilder,
                                       in context: ADContext,
                                       returnValue: Use,
                                       workList: inout [Function],
                                       gradients: inout GradientMapping) {
         /// Move builder
-        bd.move(to: instruction.parent)
+        bd.move(to: inst.parent)
         /// Get adjoint for instruction
         var instAdjoint: Use
-        if let oldAdjoint = context.adjoint(for: instruction) {
+        if let oldAdjoint = context.adjoint(for: inst) {
             instAdjoint = oldAdjoint
         } else {
             instAdjoint = returnValue.makeLiteral(0, using: bd).makeUse()
         }
         /// Get adjoints for operands
         var grad: [(operand: Use, derivative: Use)]
-        switch instruction.kind {
+        switch inst.kind {
         /* Literal value */
         case let .literal(lit, _):
             grad = lit.operands.map {
@@ -377,10 +380,9 @@ fileprivate extension Differentiation {
                 (x, %bd.multiply(instAdjoint, %bd.numeric(.cosh, x)))
             ]
         case let .numericUnary(.tanh, x):
-            let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = D * (1 - (f * f))
-                (x, %bd.multiply(instAdjoint, %bd.subtract(x.makeScalar(1), %bd.multiply(cloned, cloned))))
+                (x, %bd.multiply(instAdjoint, %bd.subtract(x.makeScalar(1), %bd.multiply(%inst, %inst))))
             ]
         case let .numericUnary(.acos, x):
             grad = [
@@ -404,16 +406,14 @@ fileprivate extension Differentiation {
                 (x, %bd.divide(instAdjoint, %bd.add(x.makeScalar(1), %bd.multiply(x, x))))
             ]
         case let .numericUnary(.exp, x):
-            let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = f * D
-                (x, %bd.multiply(cloned, instAdjoint))
+                (x, %bd.multiply(%inst, instAdjoint))
             ]
         case let .numericUnary(.sqrt, x):
-            let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = D / (2 * f)
-                (x, %bd.divide(instAdjoint, %bd.multiply(instruction.makeScalar(2), cloned)))
+                (x, %bd.divide(instAdjoint, %bd.multiply(inst.makeScalar(2), %inst)))
             ]
 
         /** Cost-free casts **/
@@ -463,7 +463,7 @@ fileprivate extension Differentiation {
 
         default:
             /// - TODO: Implement all cases!
-            fatalError("Unimplemented \(instruction)")
+            fatalError("Unimplemented \(inst)")
         }
 
         /// Update operand adjoints
