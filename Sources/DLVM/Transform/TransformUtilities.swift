@@ -17,6 +17,39 @@
 //  limitations under the License.
 //
 
+// MARK: - Fresh name generators
+fileprivate extension BasicBlock {
+    var definedNames: Set<String> {
+        return Set([name]).union(arguments.map { $0.name })
+    }
+}
+
+fileprivate extension Function {
+    var definedNames: Set<String> {
+        return Set(elements.flatMap { $0.definedNames })
+    }
+}
+
+internal func makeFreshName(_ name: String, in function: Function) -> String {
+    var result = name
+    var count = 0
+    while function.definedNames.contains(result) {
+        result = "name\(count)"
+        count += 1
+    }
+    return result
+}
+
+internal func makeFreshFunctionName(_ name: String, in module: Module) -> String {
+    var result = name
+    var count = 0
+    while module.elements.map({ $0.name }).contains(result) {
+        result = "name\(count)"
+        count += 1
+    }
+    return result
+}
+
 // MARK: - Function cloning
 /// - Note: Big, ugly, not-so-safe, imperative code written in 4 minutes
 public extension Function {

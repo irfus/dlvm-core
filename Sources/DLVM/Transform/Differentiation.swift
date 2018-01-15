@@ -58,19 +58,7 @@ open class Differentiation: TransformPass {
     }
 }
 
-/// Integer literal builder based on the unsafe (but convenient)
-/// assumption that the value is a tensor
 fileprivate extension Value {
-    func makeTensor(repeating repeatedValue: IntegerLiteralType,
-                    using builder: IRBuilder) -> Use {
-        let canType = type.canonical
-        guard case let .tensor(shape, dtype) = canType else {
-            preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
-        }
-        return %builder.literal(.scalar(.int(repeatedValue)),
-                                .tensor(shape, dtype))
-    }
-
     func makeScalar(_ value: IntegerLiteralType) -> Use {
         let canType = type.canonical
         guard case let .tensor(_, dtype) = canType else {
@@ -80,14 +68,7 @@ fileprivate extension Value {
     }
 }
 
-/// Integer literal builder based on the unsafe (but convenient)
-/// assumption that the value is a tensor
 fileprivate extension Use {
-    func makeTensor(repeating repeatedValue: IntegerLiteralType,
-                    using builder: IRBuilder) -> Use {
-        return value.makeTensor(repeating: repeatedValue, using: builder)
-    }
-
     func makeScalar(_ value: IntegerLiteralType) -> Use {
         return self.value.makeScalar(value)
     }
@@ -115,37 +96,6 @@ fileprivate extension Module {
     }
 }
 
-fileprivate extension BasicBlock {
-    var definedNames: Set<String> {
-        return Set([name]).union(arguments.map { $0.name })
-    }
-}
-
-fileprivate extension Function {
-    var definedNames: Set<String> {
-        return Set(elements.flatMap { $0.definedNames })
-    }
-}
-
-fileprivate func makeFreshName(_ name: String, in function: Function) -> String {
-    var result = name
-    var count = 0
-    while function.definedNames.contains(result) {
-        result = "name\(count)"
-        count += 1
-    }
-    return result
-}
-
-fileprivate func makeFreshFunctionName(_ name: String, in module: Module) -> String {
-    var result = name
-    var count = 0
-    while module.elements.map({ $0.name }).contains(result) {
-        result = "name\(count)"
-        count += 1
-    }
-    return result
-}
 
 fileprivate class ADContext {
     var blocks: [BasicBlock : BasicBlock] = [:]
