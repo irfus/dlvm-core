@@ -382,7 +382,7 @@ extension Instruction : Verifiable {
             try verifyIdentifier(name, in: self)
         }
         /// Use type must match usee type
-        for use in operands {
+        for use in operands where use != %parent.parent {
             try use.performVerification()
             /// Special case: nested literals can only be in a `literal`
             /// instruction
