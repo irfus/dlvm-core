@@ -706,6 +706,16 @@ extension InstructionKind {
                 throw VerificationError.invalidIndex(v1, index, instruction)
             }
 
+        case let .squeezeShape(v1, at: index):
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+            if let index = index {
+                guard s1.indices.contains(index) || s1.endIndex == index else {
+                    throw VerificationError.invalidIndex(v1, index, instruction)
+                }
+            }
+
         case let .shapeCast(v1, target):
             guard case let .tensor(s1, _) = v1.type.unaliased,
                   target.contiguousSize == s1.contiguousSize else {

@@ -501,6 +501,7 @@ private extension Lexer {
         case "slice": kind = .opcode(.slice)
         case "convolve": kind = .opcode(.convolve)
         case "padShape": kind = .opcode(.padShape)
+        case "squeezeShape": kind = .opcode(.squeezeShape)
         case "shapeCast": kind = .opcode(.shapeCast)
         case "bitCast": kind = .opcode(.bitCast)
         case "extract": kind = .opcode(.extract)

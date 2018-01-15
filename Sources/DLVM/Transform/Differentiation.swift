@@ -417,24 +417,10 @@ fileprivate extension Differentiation {
             ]
 
         /** Cost-free casts **/
-        case let .padShape(x, at: dim):
-            let canType = x.value.type.canonical
-            guard case let .tensor(shape, dtype) = canType else {
-                preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
-            }
+        case let .padShape(x, at: i):
             grad = [
-                /// ∂f/∂x = D * sum(f, along: dim)
-                (x, %bd.multiply(
-                    instAdjoint,
-                    %bd.reduce(
-                        .numeric(.add), x,
-                        initial: %bd.literal(
-                            0, .tensor(shape.droppingDimension(dim), dtype)),
-                        dims: [dim])
-                    )
-                )
+                (x, %bd.squeezeShape(instAdjoint, at: i))
             ]
-
 
         /** Aggregate operations **/
         case let .extract(from: x, at: _):

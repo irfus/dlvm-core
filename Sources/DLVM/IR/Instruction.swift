@@ -90,6 +90,8 @@ public enum InstructionKind {
     /** Cost-free casts **/
     /// Pad shape with dimension of 1
     case padShape(Use, at: Int)
+    /// Drop dimension(s) of 1 from shape
+    case squeezeShape(Use, at: Int?)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
     /// Bitcast
@@ -507,6 +509,17 @@ public extension InstructionKind {
             default: return .invalid
             }
 
+        case let .squeezeShape(v1, at: index):
+            switch v1.type.unaliased {
+            case let .tensor(s1, t1):
+                if let index = index {
+                    guard s1.indices.contains(index) else { return .invalid }
+                    return .tensor(s1.droppingDimension(index), t1)
+                }
+                return .tensor(s1.droppingPaddings(), t1)
+            default: return .invalid
+            }
+
         case let .apply(f, vv):
             switch f.type.unaliased {
             case let .pointer(.function(actual, ret)),
@@ -597,11 +610,12 @@ extension InstructionKind {
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .reverse(op, dims: _), let .slice(op, at: _),
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _),
-             let .return(op?), let .padShape(op, at: _), let .extract(from: op, at: _),
-             let .store(op, _), let .load(op), let .elementPointer(op, _),
-             let .deallocate(op), let .allocateHeap(_, count: op),
-             let .projectBox(op), let .release(op), let .retain(op),
-             let .destroyStack(op), let .pop(_, from: op):
+             let .return(op?), let .padShape(op, at: _), let .squeezeShape(op, at: _),
+             let .extract(from: op, at: _), let .store(op, _), let .load(op),
+             let .elementPointer(op, _), let .deallocate(op),
+             let .allocateHeap(_, count: op), let .projectBox(op),
+             let .release(op), let .retain(op), let .destroyStack(op),
+             let .pop(_, from: op):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -698,6 +712,8 @@ extension InstructionKind : Equatable {
         case let (.dataTypeCast(x1, dt1), .dataTypeCast(x2, dt2)):
             return x1 == x2 && dt1 == dt2
         case let (.padShape(x1, at: i1), .padShape(x2, at: i2)):
+            return x1 == x2 && i1 == i2
+        case let (.squeezeShape(x1, at: i1), .squeezeShape(x2, at: i2)):
             return x1 == x2 && i1 == i2
         case let (.shapeCast(x1, s1), .shapeCast(x2, s2)):
             return x1 == x2 && s1 == s2
@@ -871,6 +887,8 @@ public extension InstructionKind {
             return .dot(new, new)
         case .padShape(old, at: let i):
             return .padShape(new, at: i)
+        case .squeezeShape(old, at: let i):
+            return .squeezeShape(new, at: i)
         case .shapeCast(old, let shape):
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
@@ -968,6 +986,7 @@ public enum Opcode : Equatable {
     case slice
     case convolve
     case padShape
+    case squeezeShape
     case shapeCast
     case bitCast
     case extract
@@ -1024,6 +1043,7 @@ public extension InstructionKind {
         case .slice: return .slice
         case .convolve: return .convolve
         case .padShape: return .padShape
+        case .squeezeShape: return .squeezeShape
         case .shapeCast: return .shapeCast
         case .bitCast: return .bitCast
         case .extract: return .extract

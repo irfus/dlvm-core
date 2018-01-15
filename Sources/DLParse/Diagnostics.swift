@@ -234,6 +234,7 @@ extension Opcode : CustomStringConvertible {
         case .slice: return "slice"
         case .convolve: return "convolve"
         case .padShape: return "padShape"
+        case .squeezeShape: return "squeezeShape"
         case .shapeCast: return "shapeCast"
         case .bitCast: return "bitCast"
         case .extract: return "extract"
