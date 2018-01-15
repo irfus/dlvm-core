@@ -110,8 +110,8 @@ class IRTests : XCTestCase {
     func testWriteStruct() {
         XCTAssertEqual(struct1.description, """
             struct $TestStruct1 {
-                #foo: i32,
-                #bar: <1 x 3 x 4 x f64>,
+                #foo: i32
+                #bar: <1 x 3 x 4 x f64>
                 #baz: [4 x [3 x <3 x i32>]]
             }
             """)
@@ -121,8 +121,8 @@ class IRTests : XCTestCase {
     func testWriteEnum() {
         XCTAssertEqual(enum1.description, """
             enum $TestEnum1 {
-                ?foo(i32, f32),
-                ?bar(),
+                ?foo(i32, f32)
+                ?bar()
                 ?baz($TestEnum1, <1 x 3 x 4 x f64>, $TestEnum1)
             }
             """)

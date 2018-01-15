@@ -1251,7 +1251,6 @@ extension Parser {
         let (name, _) = try parseIdentifier(ofKind: .type, isDefinition: true)
         try consumeWrappablePunctuation(.leftCurlyBracket)
         let fields: [StructType.Field] = try parseMany({
-            /// If '}' follows the last comma, accept (backtrack)
             if currentToken?.kind == .punctuation(.rightCurlyBracket) {
                 return nil
             }
@@ -1259,7 +1258,7 @@ extension Parser {
             let (type, _) = try parseTypeSignature()
             return (name: name, type: type)
         }, separatedBy: {
-            try consumeWrappablePunctuation(.comma)
+            try consumeOneOrMore(.newLine)
         })
         consumeAnyNewLines()
         try consume(.punctuation(.rightCurlyBracket))
@@ -1275,27 +1274,26 @@ extension Parser {
         environment.nominalTypes[name] = .enum(enumTy)
         try consumeWrappablePunctuation(.leftCurlyBracket)
         let cases: [EnumType.Case] = try parseMany({
-            /// If '}' follows the last comma, accept (backtrack)
             if currentToken?.kind == .punctuation(.rightCurlyBracket) {
                 return nil
             }
             let (name, _) = try parseIdentifier(ofKind: .enumCase)
-            try consumeWrappablePunctuation(.leftParenthesis)
+            try consume(.punctuation(.leftParenthesis))
             let types = try parseMany({
                 try parseType().0
             }, unless: {
                 $0.kind == .punctuation(.rightParenthesis)
             }, separatedBy: {
-                try consumeWrappablePunctuation(.comma)
+                try consume(.punctuation(.comma))
             })
-            try consumeWrappablePunctuation(.rightParenthesis)
+            try consume(.punctuation(.rightParenthesis))
             return (name: name, associatedTypes: types)
         }, separatedBy: {
-            try consumeWrappablePunctuation(.comma)
+            try consumeOneOrMore(.newLine)
         })
-        cases.forEach{enumTy.append($0)}
         consumeAnyNewLines()
         try consume(.punctuation(.rightCurlyBracket))
+        cases.forEach{enumTy.append($0)}
         return enumTy
     }
 }

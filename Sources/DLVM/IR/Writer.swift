@@ -78,22 +78,20 @@ extension TensorIndex : TextOutputStreamable {
 extension StructType : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("struct $\(name) {\n")
-        let fieldsDescription = fields
-            .map { (name, type) in "    #\(name): \(type)" }
-            .description(joinedBy: ",\n")
-        target.write(fieldsDescription)
-        target.write("\n}")
+        for (name, type) in fields {
+            target.write("    #\(name): \(type)\n")
+        }
+        target.write("}")
     }
 }
 
 extension EnumType : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("enum $\(name) {\n")
-        let casesDescription = cases
-            .map { (name, assocTypes) in "    ?\(name)(\(assocTypes.joinedDescription))" }
-            .description(joinedBy: ",\n")
-        target.write(casesDescription)
-        target.write("\n}")
+        for (name, assocTypes) in cases {
+            target.write("    ?\(name)(\(assocTypes.joinedDescription))\n")
+        }
+        target.write("}")
     }
 }
 

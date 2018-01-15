@@ -77,6 +77,22 @@ class LexTests : XCTestCase {
         }
     }
 
+    func testEnumLexing() throws {
+        do {
+            let code = """
+                enum $TestEnum1 {
+                    ?foo: [],
+                    ?bar: [(i32, $TestEnum1), <1 x 3 x 4 x f64>, bool, $TestEnum1],
+                    ?baz: [4 x [3 x <3 x $TestEnum1>]]
+                }
+                """
+            let lexer = Lexer(text: code)
+            _ = try lexer.performLexing()
+        } catch {
+            XCTFail(String(describing: error))
+        }
+    }
+
     func testFunctionLexing() throws {
         do {
             let code = """
@@ -104,6 +120,7 @@ class LexTests : XCTestCase {
             ("testBasicLexing", testBasicLexing),
             ("testStringLiteralLexing", testStringLiteralLexing),
             ("testStructLexing", testStructLexing),
+            ("testEnumLexing", testEnumLexing),
             ("testFunctionLexing", testFunctionLexing)
         ]
     }

@@ -6,8 +6,8 @@ module "mnist"
 stage raw
 
 struct $MNIST {
-    #w: <784 x 10 x f32>,
-    #b: <1 x 10 x f32>,
+    #w: <784 x 10 x f32>
+    #b: <1 x 10 x f32>
 }
 
 type $MyMnist = $MNIST
