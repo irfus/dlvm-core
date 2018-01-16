@@ -55,10 +55,13 @@ extension BasicBlock : PremiseHolder {
         public typealias Result = Premise
 
         public static func run(on body: BasicBlock) throws -> Premise {
-            guard let last = body.last, last.kind.isTerminator else {
+            guard let index = body.index(where: { $0.kind.isTerminator }) else {
                 throw VerificationError.missingTerminator(body)
             }
-            return Premise(first: body[0], terminator: last)
+            guard index == body.count - 1 else {
+                throw VerificationError.terminatorNotLast(body)
+            }
+            return Premise(first: body[0], terminator: body[index])
         }
     }
 }

@@ -85,6 +85,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case redeclared(Node)
     case returnTypeMismatch(Instruction, Node)
     case structFieldNameMismatch(StructType, Use, Node)
+    case terminatorNotLast(Node)
     case typeMismatch(Use, Use, Node)
     case unbroadcastableMismatch([Use], Node)
     case unexpectedBasicBlockType(BasicBlock, Node)
