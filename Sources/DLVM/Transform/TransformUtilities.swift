@@ -20,7 +20,9 @@
 // MARK: - Fresh name generators
 fileprivate extension BasicBlock {
     var definedNames: Set<String> {
-        return Set([name]).union(arguments.map { $0.name })
+        return Set([name])
+            .union(arguments.map { $0.name })
+            .union(elements.flatMap { $0.name })
     }
 }
 
@@ -34,7 +36,7 @@ internal func makeFreshName(_ name: String, in function: Function) -> String {
     var result = name
     var count = 0
     while function.definedNames.contains(result) {
-        result = "name\(count)"
+        result = "\(name)\(count)"
         count += 1
     }
     return result
@@ -44,7 +46,7 @@ internal func makeFreshFunctionName(_ name: String, in module: Module) -> String
     var result = name
     var count = 0
     while module.elements.map({ $0.name }).contains(result) {
-        result = "name\(count)"
+        result = "\(name)\(count)"
         count += 1
     }
     return result
