@@ -30,6 +30,8 @@ open class Differentiation: TransformPass {
             let adjoint = workList.removeFirst()
             guard case let .gradient(config)? = adjoint.declarationKind
                 else { continue }
+            /// Remove gradient declaration
+            adjoint.declarationKind = nil
             /// Copy contents of primal function to adjoint function
             config.primal.copyContents(to: adjoint)
             /// Add seed argument if necessary
@@ -46,8 +48,6 @@ open class Differentiation: TransformPass {
                    wrt: (config.argumentIndices ?? Array(config.primal.argumentTypes.indices)),
                    keeping: config.keptIndices, seedable: config.isSeedable,
                    workList: &workList, adjoints: &adjoints)
-            /// Remove gradient declaration
-            adjoint.declarationKind = nil
             /// Add primal and adjoint functions to mapping
             let newAdjoints = (adjoints[config.primal] ?? []) + [(config, adjoint)]
             adjoints[config.primal] = newAdjoints
@@ -79,7 +79,6 @@ fileprivate extension Module {
         }
     }
 }
-
 
 fileprivate class ADContext {
     var blocks: [BasicBlock : BasicBlock] = [:]
@@ -134,6 +133,38 @@ fileprivate extension Differentiation {
                                workList: inout [Function],
                                adjoints: inout GradientMapping) {
         let builder = IRBuilder(module: function.parent)
+        /// Canonicalize loops
+        let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
+        var loopInfo = function.analysis(from: LoopAnalysis.self)
+        let loops = Set(loopInfo.innerMostLoops.values)
+        for loop in loops {
+            /// Create a unique loop preheader
+            if loop.preheader == nil {
+                /// Gather original predecessors of header
+                let preds = cfg.predecessors(of: loop.header)
+                    .filter { !loop.contains($0) }
+                /// Create preheader and connect it with header
+                let preheader = BasicBlock(
+                    name: makeFreshName("preheader", in: function),
+                    arguments: loop.header.arguments.map{
+                        (makeFreshName($0.name, in: function), $0.type)
+                    },
+                    parent: function)
+                function.insert(preheader, before: loop.header)
+                builder.move(to: preheader)
+                builder.branch(loop.header, preheader.arguments.map(%))
+                /// Change all original predecessors to branch to preheader
+                preds.forEach { pred in
+                    guard let terminator = pred.terminator else { return }
+                    terminator.substituteBranches(to: loop.header, with: preheader)
+                }
+                /// Make the preheader a part of the parent loop if it exists
+                if let parent = loop.parent {
+                    loopInfo.innerMostLoops[preheader] = parent
+                    parent.blocks.insert(preheader, before: loop.header)
+                }
+            }
+        }
         /// Seed on return instructions
         let exits = function.premise.exits
         for (block, returnInst) in exits {
