@@ -63,8 +63,8 @@ public extension Loop {
 
     /// Return all of the successor blocks of this loop. These are the blocks
     /// _outside of the current loop_ which are branched to.
-    var exits: [BasicBlock] {
-        return blocks.lazy.flatMap{$0.successors}.filter{!contains($0)}
+    var exits: Set<BasicBlock> {
+        return Set(blocks.lazy.flatMap{$0.successors}.filter{!self.contains($0)})
     }
 
     var exitEdges: [(source: BasicBlock, destination: BasicBlock)] {
@@ -79,10 +79,10 @@ public extension Loop {
     /// the predecessor. If this is the case, the block branching to the header
     /// of the loop is the preheader node.
     var preheader: BasicBlock? {
-        guard let predecessor = predecessor, predecessor.successors.count == 1 else {
+        guard let pred = predecessor, pred.successors.count == 1 else {
             return nil
         }
-        return predecessor
+        return pred
     }
 
     /// If the given loop's header has exactly one unique predecessor outside
@@ -97,7 +97,7 @@ public extension Loop {
             out = pred
         }
         precondition(out != nil, """
-            Header of loop has no predecessors from outside loop
+            Loop header has no predecessors from outside loop
             """)
         return out
     }
@@ -138,8 +138,8 @@ public extension Loop {
 
     var hasDedicatedExits: Bool {
         let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
-        // Each predecessor of each exit block of a normal loop is contained
-        // within the loop.
+        /// Each predecessor of each exit block of a normal loop is contained
+        /// within the loop.
         for bb in exits {
             for pred in cfg.predecessors(of: bb) where !contains(pred) {
                 return false
@@ -148,18 +148,68 @@ public extension Loop {
         return !exits.lazy.flatMap(cfg.predecessors).contains { !contains($0) }
     }
 
-    var uniqueExits: [BasicBlock] {
-        DLUnimplemented()
-    }
-
-    var canonicalInductionVariable: Set<Argument> {
-        DLUnimplemented()
+    var canonicalInductionVariable: Argument? {
+        let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
+        let predecessors = cfg.predecessors(of: header)
+        precondition(predecessors.count == 2, """
+            Loop header should have two predecessors: entry and latch
+            """)
+        let entry: BasicBlock, latch: BasicBlock
+        if contains(predecessors[0]) {
+            entry = predecessors[1]
+            latch = predecessors[0]
+        } else {
+            entry = predecessors[0]
+            latch = predecessors[1]
+        }
+        for argument in header.arguments {
+            let entryVal = argument.incomingValue(for: entry)
+            let latchVal = argument.incomingValue(for: latch)
+            guard case let .literal(indVar, t1)? = entryVal.instruction?.kind,
+                t1.isScalar, indVar.isZero else {
+                continue
+            }
+            guard case .numericBinary(.add, entryVal, let incrVal)? = latchVal.instruction?.kind,
+                case let .literal(t2, incr) = incrVal, t2.isScalar, incr.isOne else {
+                continue
+            }
+            return argument
+        }
+        return nil
     }
 }
 
 public struct LoopInfo {
     public internal(set) var innerMostLoops: [BasicBlock : Loop] = [:]
     public internal(set) var topLevelLoops: [Loop] = []
+}
+
+fileprivate extension Argument {
+    func incomingValue(for bb: BasicBlock) -> Use {
+        guard let index = parent.arguments.index(of: self) else {
+            fatalError("\(self) is not an argument of its parent \(bb.name)")
+        }
+        guard let terminator = parent.terminator else {
+            preconditionFailure("""
+                Basic block \(bb.name) does not branch to argument parent
+                """)
+        }
+        switch terminator.kind {
+        case .branch(parent, let args),
+             .conditional(_, parent, let args, _, _),
+             .conditional(_, _, _, parent, let args):
+            return args[index]
+        case .branchEnum(let enumCase, _):
+            // FIXME: should not return enum directly but rather the
+            // corresponding associated value
+            return enumCase
+        default:
+            preconditionFailure("""
+                Basic block \(bb.name) does not branch to argument parent \
+                \(parent.name)
+                """)
+        }
+    }
 }
 
 /// Analyze LoopInfo discovers loops during a postorder DominatorTree traversal
