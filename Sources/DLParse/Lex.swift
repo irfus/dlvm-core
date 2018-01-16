@@ -27,7 +27,7 @@ import class DLVM.Function
 public enum Keyword {
     case module
     case stage, raw, optimizable, compute, scheduled, canonical
-    case `struct`, `func`, `var`, stack
+    case `struct`, `enum`, `case`, `func`, `var`, stack
     case type, opaque
     case at, to, from, by, upto
     case kernel, strides, leftDilation, rightDilation, groups
@@ -66,7 +66,8 @@ public enum IdentifierKind {
     case temporary
     case type
     case global
-    case key
+    case structKey
+    case enumCase
 }
 
 public enum TokenKind : Equatable {
@@ -291,7 +292,8 @@ private extension Lexer {
         case ",": kind = .punctuation(.comma)
         case "x": kind = .punctuation(.times)
         case "*": kind = .punctuation(.star)
-        case "#": return try lexIdentifier(ofKind: .key)
+        case "#": return try lexIdentifier(ofKind: .structKey)
+        case "?": return try lexIdentifier(ofKind: .enumCase)
         case "!":
             let prefix = characters.prefix(while: {
                 !($0.isWhitespace || $0.isNewLine || $0.isPunctuation)
@@ -449,6 +451,8 @@ private extension Lexer {
         case "canonical": kind = .keyword(.canonical)
         case "func": kind = .keyword(.func)
         case "struct": kind = .keyword(.struct)
+        case "enum": kind = .keyword(.enum)
+        case "case": kind = .keyword(.case)
         case "var": kind = .keyword(.var)
         case "type": kind = .keyword(.type)
         case "opaque": kind = .keyword(.opaque)
@@ -506,6 +510,7 @@ private extension Lexer {
         case "bitCast": kind = .opcode(.bitCast)
         case "extract": kind = .opcode(.extract)
         case "insert": kind = .opcode(.insert)
+        case "branchEnum": kind = .opcode(.branchEnum)
         case "apply": kind = .opcode(.apply)
         case "createStack": kind = .opcode(.createStack)
         case "destroyStack": kind = .opcode(.destroyStack)

@@ -34,7 +34,7 @@ public enum ElementKey : Equatable {
     case value(Use)
 }
 
-/// Nominal type
+/// Struct type
 public class StructType : Named, HashableByReference {
     public typealias Field = (name: String, type: Type)
     public var name: String
@@ -45,8 +45,6 @@ public class StructType : Named, HashableByReference {
         self.fields = fields
     }
 }
-
-/// - TODO: add enum type
 
 prefix operator ^
 
@@ -78,6 +76,40 @@ public extension StructType {
 
     func indexOfField(named name: String) -> Int? {
         return fields.index(where: { $0.name == name })
+    }
+}
+
+/// Enum type
+public class EnumType : Named, HashableByReference {
+    public typealias Case = (name: String, associatedTypes: [Type])
+    public var name: String
+    public var cases: [Case]
+
+    public init(name: String, cases: [Case]) {
+        self.name = name
+        self.cases = cases
+    }
+}
+
+public extension EnumType {
+    var type: Type {
+        return .enum(self)
+    }
+
+    static prefix func ^ (type: EnumType) -> Type {
+        return .enum(type)
+    }
+
+    func `case`(named name: String) -> Case? {
+        return cases.first(where: {$0.name == name})
+    }
+
+    func append(_ enumCase: Case) {
+        cases.append(enumCase)
+    }
+
+    func appendCase(_ name: String, with types: [Type]) {
+        cases.append((name: name, associatedTypes: types))
     }
 }
 
@@ -115,6 +147,8 @@ public indirect enum Type {
     case tuple([Type])
     /// Struct, corresponding to LLVM struct type
     case `struct`(StructType)
+    /// Enum type
+    case `enum`(EnumType)
     /// Pointer
     case pointer(Type)
     /// Reference counted box
@@ -263,7 +297,7 @@ public extension Type {
         case let .box(t): return .box(t.canonical)
         case let .function(tt, t): return .function(tt.map{$0.canonical}, t.canonical)
         case let .alias(alias): return alias.type?.canonical ?? self
-        case .tensor, .struct, .stack, .invalid: return self
+        case .tensor, .struct, .enum, .stack, .invalid: return self
         }
     }
 
@@ -296,6 +330,8 @@ extension Type : Equatable {
             return ts1 == ts2
         case let (.struct(s1), .struct(s2)):
             return s1 === s2
+        case let (.enum(s1), .enum(s2)):
+            return s1 === s2
         case let (.array(t1, n1), .array(t2, n2)):
             return t1 == t2 && n1 == n2
         case let (.pointer(t1), .pointer(t2)):
@@ -320,6 +356,12 @@ public extension StructType {
     }
 }
 
+public extension EnumType {
+    var isValid: Bool {
+        return cases.forAll { $0.associatedTypes.forAll { $0 == ^self || $0.isValid } }
+    }
+}
+
 public extension Type {
     public var isValid: Bool {
         switch self {
@@ -335,6 +377,8 @@ public extension Type {
             return elementTypes.forAll { $0.isValid }
         case let .struct(structTy):
             return structTy.isValid
+        case let .enum(enumTy):
+            return enumTy.isValid
         case let .function(args, ret):
             return args.forAll { $0.isValid } && ret.isValid
         case let .alias(a):

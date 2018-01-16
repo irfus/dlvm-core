@@ -1,0 +1,59 @@
+// RUN: dlopt %s -p DCE --print-ir | FileCheck %s
+
+// CHECK: AD: unchanged
+
+module "enum"
+stage raw
+
+enum $TestEnum1 {
+    ?foo(i32, f32)
+    ?bar()
+    ?baz($TestEnum1, <1 x 3 x 4 x f64>, $TestEnum1)
+}
+
+var @enum1: $TestEnum1
+
+func @initialize_enum1: () -> () {
+'entry():
+    %0.0 = literal undefined: <1 x 3 x 4 x f64>
+    %0.1 = literal ?foo(123: i32, 3.14: f32): $TestEnum1
+    %0.2 = literal ?bar(): $TestEnum1
+    %0.3 = literal ?baz(%0.1: $TestEnum1, %0.0: <1 x 3 x 4 x f64>, %0.2: $TestEnum1): $TestEnum1
+    store %0.3: $TestEnum1 to @enum1: *$TestEnum1
+    return
+}
+
+enum $Tree {
+    ?word(<1 x f32>)
+    ?combine($Tree, <2 x f32>, $Tree)
+}
+
+struct $Classifier {
+    #w1: <4 x 2 x f32>
+    #w2: <1 x 2 x f32>
+    #b1: <1 x f32>
+    #b2: <1 x f32>
+}
+
+func @prediction: ($Classifier, $Tree) -> <1 x 2 x f32> {
+'entry(%self: $Classifier, %tree: $Tree):
+    branchEnum %tree: $Tree case ?combine 'bb0 case ?word 'bb1
+'bb0(%left: $Tree, %v1: <2 x f32>, %right: $Tree):
+    %1.0 = apply @prediction(%self: $Classifier, %left: $Tree): ($Classifier, $Tree) -> <1 x 2 x f32>
+    %1.1 = apply @prediction(%self: $Classifier, %right: $Tree): ($Classifier, $Tree) -> <1 x 2 x f32>
+    %1.2 = concatenate %1.0: <1 x 2 x f32>, %1.1: <1 x 2 x f32> along 1
+    %w1 = extract #w1 from %self: $Classifier
+    %1.4 = dot %1.2: <1 x 4 x f32>, %w1: <4 x 2 x f32>
+    %b1 = extract #b1 from %self: $Classifier
+    %1.6 = padShape %b1: <1 x f32> at 0
+    %1.7 = add %1.4: <1 x 2 x f32>, %1.6: <1 x 1 x f32>
+    return %1.7: <1 x 2 x f32>
+'bb1(%v2: <1 x f32>):
+    %w2 = extract #w2 from %self: $Classifier
+    %2.1 = padShape %v2: <1 x f32> at 0
+    %2.2 = dot %2.1: <1 x 1 x f32>, %w2: <1 x 2 x f32>
+    %b2 = extract #b2 from %self: $Classifier
+    %2.4 = padShape %b2: <1 x f32> at 0
+    %2.5 = add %2.2: <1 x 2 x f32>, %2.4: <1 x 1 x f32>
+    return %2.5: <1 x 2 x f32>
+}

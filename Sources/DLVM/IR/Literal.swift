@@ -37,6 +37,7 @@ public indirect enum Literal {
     case tuple([Use])
     case array([Use])
     case `struct`([(String, Use)])
+    case enumCase(String, [Use])
 }
 
 extension Literal : Equatable {
@@ -56,6 +57,8 @@ extension Literal : Equatable {
             return tt1 == tt2
         case let (.struct(ss1), .struct(ss2)):
             return ss1.elementsEqual(ss2, by: { $0 == $1 })
+        case let (.enumCase(n1, tt1), .enumCase(n2, tt2)):
+            return n1 == n2 && tt1.elementsEqual(tt2, by: { $0 == $1 })
         default: return false
         }
     }
@@ -176,13 +179,15 @@ public extension Literal {
         case .tuple(let vv): return .tuple(vv.map(condSubst))
         case .struct(let fields):
             return .struct(Array(fields.map{($0.0, condSubst($0.1))}))
+        case let .enumCase(name, associatedTypes):
+            return .enumCase(name, associatedTypes.map(condSubst))
         case .null, .undefined, .zero, .scalar: return self
         }
     }
 
     var isAggregate: Bool {
         switch self {
-        case .array, .tensor, .tuple, .struct:
+        case .array, .tensor, .tuple, .struct, .enumCase:
             return true
         default:
             return false
