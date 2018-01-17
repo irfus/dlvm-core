@@ -318,7 +318,7 @@ extension Parser {
         /// Struct
         case .punctuation(.leftCurlyBracket):
             let fields: [(String, Use)] = try parseMany({
-                let (key, _) = try parseIdentifier(ofKind: .key)
+                let (key, _) = try parseIdentifier(ofKind: .structKey)
                 try consumeWrappablePunctuation(.equal)
                 let (val, _) = try parseUse(in: basicBlock)
                 return (key, val)
@@ -329,6 +329,15 @@ extension Parser {
             })
             let rightBkt = try consumeWrappablePunctuation(.rightCurlyBracket)
             return (.struct(fields), tok.startLocation..<rightBkt.endLocation)
+        /// Enum
+        case .identifier(.enumCase, let name):
+            try consumeWrappablePunctuation(.leftParenthesis)
+            let associatedValues: [Use] = try parseUseList(
+                in: basicBlock,
+                unless: { $0.kind == .punctuation(.rightParenthesis)}
+            )
+            let rightPrn = try consumeWrappablePunctuation(.rightParenthesis)
+            return (.enumCase(name, associatedValues), tok.startLocation..<rightPrn.endLocation)
         default:
             throw ParseError.unexpectedToken(expected: "a literal", tok)
         }
@@ -418,7 +427,7 @@ extension Parser {
             switch tok.kind {
             case let .integer(i):
                 return (.index(i), tok.range)
-            case let .identifier(.key, nameKey):
+            case let .identifier(.structKey, nameKey):
                 return (.name(nameKey), tok.range)
             default:
                 let (val, range) = try parseUse(in: basicBlock)
@@ -462,13 +471,13 @@ extension Parser {
             }, separatedBy: {
                 try self.consumeWrappablePunctuation(.comma)
             })
-            let rightBkt = try consume(.punctuation(.rightParenthesis))
+            let rightPrn = try consume(.punctuation(.rightParenthesis))
             /// Check for any hint of function type
             if let tok = withBacktracking({try? consumeWrappablePunctuation(.rightArrow)}) {
                 let (retType, retRange) = try parseType()
                 return (.function(elementTypes, retType), tok.startLocation..<retRange.upperBound)
             }
-            return (.tuple(elementTypes), tok.startLocation..<rightBkt.endLocation)
+            return (.tuple(elementTypes), tok.startLocation..<rightPrn.endLocation)
         /// Nominal type
         case .identifier(.type, let typeName):
             guard let type = environment.nominalTypes[typeName] else {
@@ -482,6 +491,18 @@ extension Parser {
         default:
             throw ParseError.unexpectedToken(expected: "a type", tok)
         }
+    }
+
+    func parseTypeList() throws -> [Type] {
+        try consume(.punctuation(.leftParenthesis))
+        return try parseMany({
+            let (type, _) = try parseType()
+            return type
+        }, unless: { tok in
+            tok.kind == .punctuation(.rightParenthesis)
+        }, separatedBy: {
+            try self.consumeWrappablePunctuation(.comma)
+        })
     }
 
     func parseTypeSignature() throws -> (Type, SourceRange) {
@@ -634,7 +655,7 @@ extension Parser {
             let combinator = try parseReductionCombinator(in: basicBlock)
             try consume(.keyword(.along))
             let dims = try parseIntegerList()
-            return .scan(combinator, val, dims)
+            return .scan(combinator, val, dims: dims)
 
         /// 'reduce' <val> 'by' <func|assoc_op> 'init' <val> 'along' <num> (',' <num>)*
         case .reduce:
@@ -750,6 +771,13 @@ extension Parser {
             let (index, _) = try parseInteger()
             return .padShape(val, at: index)
 
+        /// 'squeezeShape' <val> 'at' <num>
+        case .squeezeShape:
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.at))
+            let (index, _) = try parseInteger()
+            return .squeezeShape(val, at: index)
+
         /// 'shapeCast' <val> 'to' <shape>
         case .shapeCast:
             let (val, _) = try parseUse(in: basicBlock)
@@ -786,6 +814,23 @@ extension Parser {
                 try consumeWrappablePunctuation(.comma)
             })
             return .insert(srcVal, to: destVal, at: keys)
+
+        /// 'branchEnum' <val> ('case' <enum_case> <bb>)*
+        case .branchEnum:
+            let (enumCase, _) = try parseUse(in: basicBlock)
+            let branches: [(String, BasicBlock)] = try parseMany({
+                if currentToken?.kind == .newLine {
+                    return nil
+                }
+                try consume(.keyword(.case))
+                let caseName = try parseIdentifier(ofKind: .enumCase).0
+                let (bbName, bbTok) = try parseIdentifier(ofKind: .basicBlock)
+                guard let bb = environment.basicBlocks[bbName] else {
+                    throw ParseError.undefinedIdentifier(bbTok)
+                }
+                return (caseName, bb)
+            })
+            return .branchEnum(enumCase, branches)
 
         /// 'apply' <val> '(' <val>+ ')'
         case .apply:
@@ -950,12 +995,12 @@ extension Parser {
 
         /// 'select' <val>, <val> 'by' <val>
         case .select:
-            let (left, _) = try parseUse(in: basicBlock)
+            let (lhs, _) = try parseUse(in: basicBlock)
             try consumeWrappablePunctuation(.comma)
-            let (right, _) = try parseUse(in: basicBlock)
+            let (rhs, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.by))
             let (flags, _) = try parseUse(in: basicBlock)
-            return .select(left, right, by: flags)
+            return .select(lhs, rhs, by: flags)
         }
     }
 
@@ -1223,21 +1268,50 @@ extension Parser {
         let (name, _) = try parseIdentifier(ofKind: .type, isDefinition: true)
         try consumeWrappablePunctuation(.leftCurlyBracket)
         let fields: [StructType.Field] = try parseMany({
-            /// If '}' follows the last comma, accept (backtrack)
             if currentToken?.kind == .punctuation(.rightCurlyBracket) {
                 return nil
             }
-            let (name, _) = try parseIdentifier(ofKind: .key)
+            let (name, _) = try parseIdentifier(ofKind: .structKey)
             let (type, _) = try parseTypeSignature()
             return (name: name, type: type)
         }, separatedBy: {
-            try consumeWrappablePunctuation(.comma)
+            try consumeOneOrMore(.newLine)
         })
         consumeAnyNewLines()
         try consume(.punctuation(.rightCurlyBracket))
         let structTy = StructType(name: name, fields: fields)
         environment.nominalTypes[name] = .struct(structTy)
         return structTy
+    }
+
+    func parseEnum(in module: Module) throws -> EnumType {
+        try consume(.keyword(.enum))
+        let (name, _) = try parseIdentifier(ofKind: .type, isDefinition: true)
+        let enumTy = EnumType(name: name, cases: [])
+        environment.nominalTypes[name] = .enum(enumTy)
+        try consumeWrappablePunctuation(.leftCurlyBracket)
+        let cases: [EnumType.Case] = try parseMany({
+            if currentToken?.kind == .punctuation(.rightCurlyBracket) {
+                return nil
+            }
+            let (name, _) = try parseIdentifier(ofKind: .enumCase)
+            try consume(.punctuation(.leftParenthesis))
+            let types = try parseMany({
+                try parseType().0
+            }, unless: {
+                $0.kind == .punctuation(.rightParenthesis)
+            }, separatedBy: {
+                try consume(.punctuation(.comma))
+            })
+            try consume(.punctuation(.rightParenthesis))
+            return (name: name, associatedTypes: types)
+        }, separatedBy: {
+            try consumeOneOrMore(.newLine)
+        })
+        consumeAnyNewLines()
+        try consume(.punctuation(.rightCurlyBracket))
+        cases.forEach{enumTy.append($0)}
+        return enumTy
     }
 }
 
@@ -1292,6 +1366,10 @@ public extension Parser {
                 let structure = try parseStruct(in: module)
                 module.structs.append(structure)
 
+            case .keyword(.enum):
+                let enumeration = try parseEnum(in: module)
+                module.enums.append(enumeration)
+
             case .keyword(.func), .attribute(_), .punctuation(.leftSquareBracket):
                 let fn = try parseFunction(in: module)
                 module.append(fn)
@@ -1302,7 +1380,7 @@ public extension Parser {
 
             default:
                 throw ParseError.unexpectedToken(
-                    expected: "a type alias, a struct or a function", tok
+                    expected: "a type alias, a struct, an enum, or a function", tok
                 )
             }
             if isEOF { break }

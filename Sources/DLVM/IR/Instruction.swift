@@ -47,7 +47,7 @@ public enum InstructionKind {
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
     /// Scan operation
-    case scan(ReductionCombinator, Use, [Int])
+    case scan(ReductionCombinator, Use, dims: [Int])
     /// Reduction operation
     case reduce(ReductionCombinator, Use, initial: Use, dims: [Int])
     /// Vector dot, matrix-vector multiplication and matrix-matrix multiplication
@@ -90,16 +90,20 @@ public enum InstructionKind {
     /** Cost-free casts **/
     /// Pad shape with dimension of 1
     case padShape(Use, at: Int)
+    /// Drop dimension of 1 from shape
+    case squeezeShape(Use, at: Int)
     /// Shape cast operation
     case shapeCast(Use, TensorShape)
     /// Bitcast
     case bitCast(Use, Type)
 
-    /** Aggregate operation **/
+    /** Aggregate operations **/
     /// Extract an element from tensor, tuple, or array
     case extract(from: Use, at: [ElementKey])
     /// Insert an element to tensor, tuple, or array
     case insert(Use, to: Use, at: [ElementKey])
+    /// Branch based on enum case
+    case branchEnum(Use, [(caseName: String, basicBlock: BasicBlock)])
 
     /** Function application **/
     case apply(Use, [Use])
@@ -168,10 +172,10 @@ extension Instruction : Value {
 // MARK: - Predicates
 public extension InstructionKind {
     /// Returns true iff the instruction is a terminator:
-    /// `branch`, `conditional` or `return`
+    /// `branch`, `branchEnum`, `conditional` or `return`
     var isTerminator: Bool {
         switch self {
-        case .branch, .conditional, .return:
+        case .branch, .branchEnum, .conditional, .return:
             return true
         default:
             return false
@@ -257,17 +261,15 @@ public extension InstructionKind {
         case let .literal(_, ty):
             return ty
 
+        case let .numericUnary(_, v1):
+            return v1.tensorType.flatMap { v1Ty in
+                NumericUnaryOp.resultType(for: (v1Ty))
+                }.map(Type.tensor) ?? .invalid
+
         case let .numericBinary(_, v1, v2):
             return v1.tensorType.flatMap { v1Ty in
                 v2.tensorType.flatMap { v2Ty in
                     NumericBinaryOp.resultType(for: (v1Ty, v2Ty))
-                }
-            }.map(Type.tensor) ?? .invalid
-
-        case let .compare(_, v1, v2):
-            return v1.tensorType.flatMap { v1Ty in
-                v2.tensorType.flatMap { v2Ty in
-                    ComparisonOp.resultType(for: (v1Ty, v2Ty))
                 }
             }.map(Type.tensor) ?? .invalid
 
@@ -283,6 +285,13 @@ public extension InstructionKind {
                 NegationOp.resultType(for: (v1Ty))
             }.map(Type.tensor) ?? .invalid
 
+        case let .compare(_, v1, v2):
+            return v1.tensorType.flatMap { v1Ty in
+                v2.tensorType.flatMap { v2Ty in
+                    ComparisonOp.resultType(for: (v1Ty, v2Ty))
+                }
+            }.map(Type.tensor) ?? .invalid
+
         case let .dot(v1, v2):
             guard case let .tensor(s1, t1) = v1.type.unaliased,
                   case let .tensor(s2, t2) = v2.type.unaliased,
@@ -296,11 +305,6 @@ public extension InstructionKind {
                 return .scalar(t1)
             }
             return .invalid
-
-        case let .numericUnary(_, v1):
-            return v1.tensorType.flatMap { v1Ty in
-                NumericUnaryOp.resultType(for: (v1Ty))
-            }.map(Type.tensor) ?? .invalid
 
         case let .reduce(op, v1, initial, dims):
             let dtype: DataType
@@ -507,11 +511,18 @@ public extension InstructionKind {
             default: return .invalid
             }
 
+        case let .squeezeShape(v1, at: index):
+            switch v1.type.unaliased {
+            case let .tensor(s1, t1) where s1.indices.contains(index) && s1[index] == 1:
+                return .tensor(s1.droppingDimension(index), t1)
+            default: return .invalid
+            }
+
         case let .apply(f, vv):
             switch f.type.unaliased {
             case let .pointer(.function(actual, ret)),
                  let .function(actual, ret):
-                guard actual == vv.map({$0.type}) else { fallthrough }
+                guard actual == vv.map({$0.type}) else { return .invalid }
                 return ret
             default:
                 return .invalid
@@ -563,8 +574,8 @@ public extension InstructionKind {
             guard case .stack = stack.type else { return .invalid }
             return t
 
-        case .store, .copy, .deallocate, .destroyStack,
-             .branch, .conditional, .return, .retain, .release, .trap:
+        case .branch, .conditional, .return, .branchEnum, .store, .copy,
+             .deallocate, .destroyStack, .retain, .release, .trap:
             return .void
         }
     }
@@ -597,11 +608,12 @@ extension InstructionKind {
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .reverse(op, dims: _), let .slice(op, at: _),
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _),
-             let .return(op?), let .padShape(op, at: _), let .extract(from: op, at: _),
-             let .store(op, _), let .load(op), let .elementPointer(op, _),
-             let .deallocate(op), let .allocateHeap(_, count: op),
-             let .projectBox(op), let .release(op), let .retain(op),
-             let .destroyStack(op), let .pop(_, from: op):
+             let .return(op?), let .padShape(op, at: _), let .squeezeShape(op, at: _),
+             let .extract(from: op, at: _), let .branchEnum(op, _), let .store(op, _),
+             let .load(op), let .elementPointer(op, _), let .deallocate(op),
+             let .allocateHeap(_, count: op), let .projectBox(op),
+             let .release(op), let .retain(op), let .destroyStack(op),
+             let .pop(_, from: op):
             return [op]
         case .concatenate(let ops, _),
              .branch(_, let ops):
@@ -634,8 +646,10 @@ public extension Literal {
         switch self {
         case let .array(ops), let .tensor(ops), let .tuple(ops):
             return ops.flatMap(literalOperands(in:))
-        case let .struct(tups):
-            return tups.map{$1}.flatMap(literalOperands(in:))
+        case let .struct(fields):
+            return fields.map{$1}.flatMap(literalOperands(in:))
+        case let .enumCase(values):
+            return values.1.flatMap(literalOperands(in:))
         default:
             return []
         }
@@ -666,13 +680,13 @@ extension InstructionKind : Equatable {
         case let (.reduceWindow(op1, x1, initial: i1, dims: d1, strides: s1, padding: p1),
                   .reduceWindow(op2, x2, initial: i2, dims: d2, strides: s2, padding: p2)):
             return op1 == op2 && x1 == x2 && i1 == i2 && d1 == d2 && s1 == s2 && p1 == p2
-        case let (.scan(op1, x1, i1), .scan(op2, x2, i2)):
-            return op1 == op2 && x1 == x2 && i1 == i2
+        case let (.scan(op1, x1, d1), .scan(op2, x2, d2)):
+            return op1 == op2 && x1 == x2 && d1 == d2
         case let (.concatenate(vv1, axis1), .concatenate(vv2, axis2)):
             return vv1 == vv2 && axis1 == axis2
         case let (.transpose(x1), .transpose(x2)):
             return x1 == x2
-        case let (.reverse(x1, dims: d1), .reverse(x2, dims: d2)):
+        case let (.reverse(x1, d1), .reverse(x2, d2)):
             return x1 == x2 && d1 == d2
         case let (.slice(x1, at: range1), .slice(x2, at: range2)):
             return x1 == x2 && range1 == range2
@@ -699,6 +713,8 @@ extension InstructionKind : Equatable {
             return x1 == x2 && dt1 == dt2
         case let (.padShape(x1, at: i1), .padShape(x2, at: i2)):
             return x1 == x2 && i1 == i2
+        case let (.squeezeShape(x1, at: i1), .squeezeShape(x2, at: i2)):
+            return x1 == x2 && i1 == i2
         case let (.shapeCast(x1, s1), .shapeCast(x2, s2)):
             return x1 == x2 && s1 == s2
         case let (.bitCast(x1, t1), .bitCast(x2, t2)):
@@ -717,6 +733,8 @@ extension InstructionKind : Equatable {
             return v1 == v2 && i1 == i2
         case let (.insert(s1, to: d1, at: i1), .insert(s2, to: d2, at: i2)):
             return s1 == s2 && d1 == d2 && i1 == i2
+        case let (.branchEnum(e1, b1), .branchEnum(e2, b2)):
+            return e1 == e2 && b1 == b2
         case let (.allocateStack(t1, n1), .allocateStack(t2, n2)):
             return t1 == t2 && n1 == n2
         case let (.load(x1), .load(x2)):
@@ -759,10 +777,14 @@ public extension Instruction {
     func substitute(_ newUse: Use, for use: Use) {
         kind = kind.substituting(newUse, for: use)
     }
+
+    func substituteBranches(to oldBB: BasicBlock, with newBB: BasicBlock) {
+        kind = kind.substitutingBranches(to: oldBB, with: newBB)
+    }
 }
 
 public extension InstructionKind {
-    /// Substitutes new use for old use
+    /// Substitutes a new use for an old use
     /// - Note: The current implementation is a vanilla tedious switch
     /// matching all the permutations (a.k.a. very bad).
     func substituting(_ new: Use, for old: Use) -> InstructionKind {
@@ -871,6 +893,8 @@ public extension InstructionKind {
             return .dot(new, new)
         case .padShape(old, at: let i):
             return .padShape(new, at: i)
+        case .squeezeShape(old, at: let i):
+            return .squeezeShape(new, at: i)
         case .shapeCast(old, let shape):
             return .shapeCast(new, shape)
         case .dataTypeCast(old, let type):
@@ -886,6 +910,9 @@ public extension InstructionKind {
             return .insert(new, to: use1, at: indices)
         case .insert(let use1, to: old, at: let indices):
             return .insert(use1, to: new, at: indices)
+        case .branchEnum(let use, let branches):
+            let newUse = use == old ? new : use
+            return .branchEnum(newUse, branches)
         case .bitCast(old, let targetT):
             return .bitCast(new, targetT)
         case .elementPointer(old, let indices):
@@ -948,6 +975,23 @@ public extension InstructionKind {
             return self
         }
     }
+
+    /// Substitutes branches to an old basic block with a new basic block
+    func substitutingBranches(to old: BasicBlock,
+                              with new: BasicBlock) -> InstructionKind {
+        switch self {
+        case .branch(old, let args):
+            return .branch(new, args)
+        case .conditional(let cond, old, let thenArgs, old, let elseArgs):
+            return .conditional(cond, new, thenArgs, new, elseArgs)
+        case .conditional(let cond, let thenBB, let thenArgs, old, let elseArgs):
+            return .conditional(cond, thenBB, thenArgs, new, elseArgs)
+        case .conditional(let cond, old, let thenArgs, let elseBB, let elseArgs):
+            return .conditional(cond, new, thenArgs, elseBB, elseArgs)
+        default:
+            return self
+        }
+    }
 }
 
 // MARK: - Opcode decomposition
@@ -968,10 +1012,12 @@ public enum Opcode : Equatable {
     case slice
     case convolve
     case padShape
+    case squeezeShape
     case shapeCast
     case bitCast
     case extract
     case insert
+    case branchEnum
     case apply
     case allocateStack
     case allocateHeap
@@ -1024,10 +1070,12 @@ public extension InstructionKind {
         case .slice: return .slice
         case .convolve: return .convolve
         case .padShape: return .padShape
+        case .squeezeShape: return .squeezeShape
         case .shapeCast: return .shapeCast
         case .bitCast: return .bitCast
         case .extract: return .extract
         case .insert: return .insert
+        case .branchEnum: return .branchEnum
         case .apply: return .apply
         case .allocateStack: return .allocateStack
         case .allocateHeap: return .allocateHeap

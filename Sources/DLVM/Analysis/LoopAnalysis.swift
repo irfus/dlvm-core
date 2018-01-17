@@ -51,11 +51,11 @@ public extension Loop {
     /// Return all blocks inside the loop that have successors outside of the
     /// loop. These are the blocks _inside of the current loop_ which branch
     /// out. The returned list is always unique.
-    var exitingBlocks: [BasicBlock] {
-        var exiting: [BasicBlock] = []
+    var exitingBlocks: Set<BasicBlock> {
+        var exiting: Set<BasicBlock> = []
         for bb in blocks {
             for succ in bb.successors where !contains(succ) {
-                exiting.append(bb)
+                exiting.insert(bb)
             }
         }
         return exiting
@@ -63,18 +63,32 @@ public extension Loop {
 
     /// Return all of the successor blocks of this loop. These are the blocks
     /// _outside of the current loop_ which are branched to.
-    var exits: [BasicBlock] {
-        return blocks.lazy.flatMap{$0.successors}.filter{!contains($0)}
+    var exits: Set<BasicBlock> {
+        return Set(blocks.lazy
+            .flatMap { $0.successors }.lazy
+            .filter { !self.contains($0) })
     }
 
     var exitEdges: [(source: BasicBlock, destination: BasicBlock)] {
         return blocks.lazy
-            .flatMap { bb in bb.successors.map { (bb, $0) } }
+            .flatMap { bb in bb.successors.map { (bb, $0) } }.lazy
             .filter { !contains($0.1) }
     }
 
+    /// If there is a preheader for this loop, return it. Otherwise, return nil.
+    /// A loop has a preheader if there is only one edge to the header of the
+    /// loop from outside of the loop and it is legal to hoist instructions into
+    /// the predecessor. If this is the case, the block branching to the header
+    /// of the loop is the preheader node.
+    var preheader: BasicBlock? {
+        guard let pred = predecessor, pred.successors.count == 1 else {
+            return nil
+        }
+        return pred
+    }
+
     /// If the given loop's header has exactly one unique predecessor outside
-    /// the loop, return it. Otherwise return null. This is less strict that the
+    /// the loop, return it. Otherwise, return nil. This is less strict than the
     /// loop "preheader" concept, which requires the predecessor to have exactly
     /// one successor.
     var predecessor: BasicBlock? {
@@ -85,7 +99,7 @@ public extension Loop {
             out = pred
         }
         precondition(out != nil, """
-            Header of loop has no predecessors from outside loop
+            Loop header has no predecessors from outside loop
             """)
         return out
     }
@@ -126,8 +140,8 @@ public extension Loop {
 
     var hasDedicatedExits: Bool {
         let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
-        // Each predecessor of each exit block of a normal loop is contained
-        // within the loop.
+        /// Each predecessor of each exit block of a normal loop is contained
+        /// within the loop.
         for bb in exits {
             for pred in cfg.predecessors(of: bb) where !contains(pred) {
                 return false
@@ -136,12 +150,34 @@ public extension Loop {
         return !exits.lazy.flatMap(cfg.predecessors).contains { !contains($0) }
     }
 
-    var uniqueExits: [BasicBlock] {
-        DLUnimplemented()
-    }
-
-    var canonicalInductionVariable: Set<Argument> {
-        DLUnimplemented()
+    var canonicalInductionVariable: Argument? {
+        let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
+        let predecessors = cfg.predecessors(of: header)
+        precondition(predecessors.count == 2, """
+            Loop header should have two predecessors: entry and latch
+            """)
+        let entry: BasicBlock, latch: BasicBlock
+        if contains(predecessors[0]) {
+            entry = predecessors[1]
+            latch = predecessors[0]
+        } else {
+            entry = predecessors[0]
+            latch = predecessors[1]
+        }
+        for argument in header.arguments {
+            let entryVal = argument.incomingValue(from: entry)
+            let latchVal = argument.incomingValue(from: latch)
+            guard case let .literal(indVar, t1)? = entryVal.instruction?.kind,
+                t1.isScalar, indVar.isZero else {
+                continue
+            }
+            guard case .numericBinary(.add, entryVal, let incrVal)? = latchVal.instruction?.kind,
+                case let .literal(t2, incr) = incrVal, t2.isScalar, incr.isOne else {
+                continue
+            }
+            return argument
+        }
+        return nil
     }
 }
 
@@ -153,6 +189,34 @@ public struct LoopInfo {
 public extension LoopInfo {
     var isEmpty: Bool {
         return topLevelLoops.isEmpty
+    }
+}
+
+fileprivate extension Argument {
+    func incomingValue(from bb: BasicBlock) -> Use {
+        guard let index = parent.arguments.index(of: self) else {
+            fatalError("\(self) is not an argument of its parent \(bb.name)")
+        }
+        guard let terminator = parent.terminator else {
+            preconditionFailure("""
+                Basic block \(bb.name) does not branch to argument parent
+                """)
+        }
+        switch terminator.kind {
+        case .branch(parent, let args),
+             .conditional(_, parent, let args, _, _),
+             .conditional(_, _, _, parent, let args):
+            return args[index]
+        case .branchEnum(let enumCase, _):
+            // FIXME: should not return enum directly but rather the
+            // corresponding associated value
+            return enumCase
+        default:
+            preconditionFailure("""
+                Basic block \(bb.name) does not branch to argument parent \
+                \(parent.name)
+                """)
+        }
     }
 }
 
@@ -178,7 +242,9 @@ open class LoopAnalysis : AnalysisPass {
         let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         let domTree = body.analysis(from: DominanceAnalysis.self)
 
-        for header in domTree.traversed(from: domTree.root, in: .postorder) {
+        for header in domTree.traversed(from: domTree.root, in: .postorder)
+            where cfg.contains(header)
+        {
             var backEdges: [BasicBlock] = []
             /// Check each predecessor of the potential loop header.
             for pred in cfg.predecessors(of: header) {

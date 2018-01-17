@@ -49,6 +49,8 @@ extension Literal : TextOutputStreamable {
             target.write("[\(vals.joinedDescription)]")
         case let .struct(fields):
             target.write("{\(fields.map{"#\($0.0) = \($0.1)"}.joined(separator: ", "))}")
+        case let .enumCase(name, associatedTypes):
+            target.write("?\(name)(\(associatedTypes.joinedDescription))")
         case .zero:
             target.write("zero")
         case .undefined:
@@ -77,7 +79,17 @@ extension StructType : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         target.write("struct $\(name) {\n")
         for (name, type) in fields {
-            target.write("    #\(name): \(type),\n")
+            target.write("    #\(name): \(type)\n")
+        }
+        target.write("}")
+    }
+}
+
+extension EnumType : TextOutputStreamable {
+    public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+        target.write("enum $\(name) {\n")
+        for (name, assocTypes) in cases {
+            target.write("    ?\(name)(\(assocTypes.joinedDescription))\n")
         }
         target.write("}")
     }
@@ -108,6 +120,9 @@ extension Type : TextOutputStreamable {
         case let .struct(structTy):
             target.write("$")
             structTy.name.write(to: &target)
+        case let .enum(enumTy):
+            target.write("$")
+            enumTy.name.write(to: &target)
         case .stack:
             target.write("stack")
         }
@@ -208,6 +223,8 @@ extension InstructionKind : TextOutputStreamable {
             target.write("dataTypeCast \(op) to \(t)")
         case let .padShape(op, at: index):
             target.write("padShape \(op) at \(index)")
+        case let .squeezeShape(op, at: index):
+            target.write("squeezeShape \(op) at \(index)")
         case let .shapeCast(op, s):
             target.write("shapeCast \(op) to \(s)")
         case let .apply(f, args):
@@ -224,6 +241,11 @@ extension InstructionKind : TextOutputStreamable {
             target.write("extract \(indices.joinedDescription) from \(use)")
         case let .insert(src, to: dest, at: indices):
             target.write("insert \(src) to \(dest) at \(indices.joinedDescription)")
+        case let .branchEnum(e1, branches):
+            target.write("branchEnum \(e1)")
+            for (name, bb) in branches {
+                target.write(" case ?\(name) '\(bb.name)")
+            }
         case let .allocateStack(t, n):
             target.write("allocateStack \(t) count \(n)")
         case let .store(v, p):
@@ -427,6 +449,7 @@ extension Module : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         target.write("module \"\(name.literal)\"\n")
         target.write("stage \(stage)\n")
+        write(enums, to: &target)
         write(structs, to: &target)
         write(typeAliases, to: &target)
         write(variables, to: &target)

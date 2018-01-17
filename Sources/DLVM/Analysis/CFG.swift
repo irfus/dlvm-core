@@ -42,7 +42,6 @@ public extension Instruction {
         }
     }
 
-
     /// Return true if the specified edge is a critical edge.
     /// Critical edges are edges from a block with multiple successors to a
     /// block with multiple predecessors.

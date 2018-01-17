@@ -190,13 +190,13 @@ open class DominanceAnalysis : AnalysisPass {
 /// Post-dominance analysis on a function
 open class PostdominanceAnalysis : AnalysisPass {
     public typealias Body = Function
-    public typealias Result = [DominatorTree<BasicBlock>]
+    public typealias Result = [BasicBlock : DominatorTree<BasicBlock>]
 
-    open class func run(on body: Function) -> [DominatorTree<BasicBlock>] {
+    open class func run(on body: Function) -> Result {
         let exits = body.premise.exits
         let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         let transposeCFG = cfg.transpose
-        var domTrees: [DominatorTree<BasicBlock>] = []
+        var domTrees: Result = [:]
         for (exit, _) in exits {
             var domTree = DominatorTree(root: exit)
             /// Iteratively build tree
@@ -222,7 +222,7 @@ open class PostdominanceAnalysis : AnalysisPass {
                     }
                 }
             } while changed
-            domTrees.append(domTree)
+            domTrees[exit] = domTree
         }
         return domTrees
     }

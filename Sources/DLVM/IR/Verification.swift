@@ -39,6 +39,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case declarationCannotHaveBody(Node)
     case definitionNotInBasicBlock(Use, BasicBlock, Node)
     case duplicateStructField(String, Node)
+    case duplicateEnumCase(String, Node)
     case functionArgumentMismatch([Use], Type, Node)
     case functionEntryArgumentMismatch(BasicBlock, Node)
     case gradientArgumentMismatch(Function, Int?, [Int]?, Node)
@@ -46,6 +47,8 @@ public enum VerificationError<Node : Verifiable> : Error {
     case illegalName(String, Node)
     case invalidAllocationSize(Node)
     case invalidCopyOperands(Use, Use, Node)
+    case invalidEnumCase(EnumType, String, Node)
+    case invalidEnumCaseBranch(EnumType, EnumType.Case, BasicBlock, Node)
     case invalidGradientArguments(Use, Node)
     case invalidIndex(Use, Int, Node)
     case invalidIndices(Use, [ElementKey], Node)
@@ -71,6 +74,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case notBox(Use, Node)
     case notConstantExpression(Node)
     case notDifferentiable(Node)
+    case notEnum(Use, Node)
     case notFunction(Use, Node)
     case notHeapObject(Use, Node)
     case notPointer(Use, Node)
@@ -81,6 +85,7 @@ public enum VerificationError<Node : Verifiable> : Error {
     case redeclared(Node)
     case returnTypeMismatch(Instruction, Node)
     case structFieldNameMismatch(StructType, Use, Node)
+    case terminatorNotLast(Node)
     case typeMismatch(Use, Use, Node)
     case unbroadcastableMismatch([Use], Node)
     case unexpectedBasicBlockType(BasicBlock, Node)
@@ -128,6 +133,7 @@ extension Module : Verifiable {
         /// Verify types and values
         var typeNameSet: Set<String> = []
         try typeAliases.forEach { try self.verify($0, namespace: &typeNameSet) }
+        try enums.forEach { try self.verify($0, namespace: &typeNameSet) }
         try structs.forEach { try self.verify($0, namespace: &typeNameSet) }
         var valueNameSet: Set<String> = []
         try elements.forEach { try self.verify($0, namespace: &valueNameSet) }
@@ -135,9 +141,8 @@ extension Module : Verifiable {
     }
 }
 
-extension Variable: Verifiable {
-    public func performVerification() throws {
-    }
+extension Variable : Verifiable {
+    public func performVerification() throws {}
 }
 
 extension TypeAlias : Verifiable {
@@ -165,8 +170,23 @@ extension StructType : Verifiable {
     }
 }
 
-extension LiteralValue : Verifiable {
+extension EnumType : Verifiable {
+    public func performVerification() throws {
+        var set: Set<String> = []
+        /// Verify enum cases' uniqueness and validity
+        for (name, types) in cases {
+            guard !set.contains(name) else {
+                throw VerificationError.duplicateEnumCase(name, self)
+            }
+            guard types.forAll({$0.isValid}) else {
+                throw VerificationError.invalidType(self)
+            }
+            set.insert(name)
+        }
+    }
+}
 
+extension LiteralValue : Verifiable {
     private func verifyUse(_ use: Use, _ elementType: Type) throws {
         try use.performVerification()
         guard use.type == elementType else {
@@ -209,12 +229,22 @@ extension LiteralValue : Verifiable {
                 try verifyUse(use, elementType)
             }
 
+        /// Struct literal
         case let (.struct(structTy), .struct(fields)) where structTy.fields.count == fields.count:
             for ((name: fmlName, type: fmlType), (name, val)) in zip(structTy.fields, fields) {
                 guard fmlName == name else {
                     throw VerificationError.structFieldNameMismatch(structTy, val, self)
                 }
                 try verifyUse(val, fmlType)
+            }
+
+        /// Enum literal
+        case let (.enum(enumTy), .enumCase(name, uses)):
+            guard let enumCase = enumTy.cases.first(where: { $0.name == name }) else {
+                throw VerificationError.invalidEnumCase(enumTy, name, self)
+            }
+            for (use, type) in zip(uses, enumCase.associatedTypes) {
+                try verifyUse(use, type)
             }
 
         default:
@@ -706,6 +736,14 @@ extension InstructionKind {
                 throw VerificationError.invalidIndex(v1, index, instruction)
             }
 
+        case let .squeezeShape(v1, at: index):
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
+            }
+            guard s1.indices.contains(index), s1[index] == 1 else {
+                throw VerificationError.invalidIndex(v1, index, instruction)
+            }
+
         case let .shapeCast(v1, target):
             guard case let .tensor(s1, _) = v1.type.unaliased,
                   target.contiguousSize == s1.contiguousSize else {
@@ -759,6 +797,19 @@ extension InstructionKind {
             }
             guard elementType == src.type else {
                 throw VerificationError.typeMismatch(src, dest, instruction)
+            }
+
+        case let .branchEnum(v1, branches):
+            guard case let .enum(e1) = v1.type else {
+                throw VerificationError.notEnum(v1, instruction)
+            }
+            for (name, bb) in branches {
+                guard let enumCase = e1.case(named: name) else {
+                    throw VerificationError.invalidEnumCase(e1, name, instruction)
+                }
+                guard enumCase.associatedTypes == bb.arguments.map({$0.type}) else {
+                    throw VerificationError.invalidEnumCaseBranch(e1, enumCase, bb, instruction)
+                }
             }
 
         case let .load(v1):
@@ -876,7 +927,11 @@ extension InstructionKind {
 
 extension Use : Verifiable {
     public func performVerification() throws {
-        try value.performVerification()
+        /// Verify value if not function
+        switch self {
+        case .function: break
+        default: try value.performVerification()
+        }
         /// Type must be valid
         guard type.isValid else {
             throw VerificationError.invalidType(self)
@@ -893,7 +948,9 @@ extension Use : Verifiable {
             try verify(ty, def.type)
         case let .variable(ty, gv):
             try verify(ty, gv.type.pointer)
-        case .literal, .function:
+        case let .function(ty, fun):
+            try verify(ty, fun.type)
+        case .literal:
             break
         }
     }

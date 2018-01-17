@@ -34,7 +34,7 @@ class ADTTests : XCTestCase {
 
         /// Test range replacement
         var set0: OrderedSet<Int> = [1, 2, 3, 4]
-        set0[1...3] = Slice([0, 5, 6])
+        set0[1...3] = [0, 5, 6]
         XCTAssertEqual(set0, [1, 0, 5, 6])
 
         /// Test reversal

@@ -30,6 +30,8 @@ open class Differentiation: TransformPass {
             let adjoint = workList.removeFirst()
             guard case let .gradient(config)? = adjoint.declarationKind
                 else { continue }
+            /// Remove gradient declaration
+            adjoint.declarationKind = nil
             /// Copy contents of primal function to adjoint function
             config.primal.copyContents(to: adjoint)
             /// Add seed argument if necessary
@@ -46,8 +48,6 @@ open class Differentiation: TransformPass {
                    wrt: (config.argumentIndices ?? Array(config.primal.argumentTypes.indices)),
                    keeping: config.keptIndices, seedable: config.isSeedable,
                    workList: &workList, adjoints: &adjoints)
-            /// Remove gradient declaration
-            adjoint.declarationKind = nil
             /// Add primal and adjoint functions to mapping
             let newAdjoints = (adjoints[config.primal] ?? []) + [(config, adjoint)]
             adjoints[config.primal] = newAdjoints
@@ -55,38 +55,6 @@ open class Differentiation: TransformPass {
         }
         module.stage = .optimizable
         return changed
-    }
-}
-
-/// Integer literal builder based on the unsafe (but convenient)
-/// assumption that the value is a tensor
-fileprivate extension Value {
-    func makeTensor(repeating repeatedValue: IntegerLiteralType) -> Use {
-        let canType = type.canonical
-        guard case let .tensor(shape, dtype) = canType else {
-            preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
-        }
-        return .tensor(shape, dtype, repeating: repeatedValue)
-    }
-
-    func makeScalar(_ value: IntegerLiteralType) -> Use {
-        let canType = type.canonical
-        guard case let .tensor(_, dtype) = canType else {
-            preconditionFailure("\(self), a.k.a. \(canType), is not tensor")
-        }
-        return .tensor(.scalar, dtype, repeating: value)
-    }
-}
-
-/// Integer literal builder based on the unsafe (but convenient)
-/// assumption that the value is a tensor
-fileprivate extension Use {
-    func makeTensor(repeating repeatedValue: IntegerLiteralType) -> Use {
-        return value.makeTensor(repeating: repeatedValue)
-    }
-
-    func makeScalar(_ value: IntegerLiteralType) -> Use {
-        return self.value.makeScalar(value)
     }
 }
 
@@ -110,38 +78,6 @@ fileprivate extension Module {
             fn.replaceAllUses(of: oldUse, with: newUse)
         }
     }
-}
-
-fileprivate extension BasicBlock {
-    var definedNames: Set<String> {
-        return Set([name]).union(arguments.map { $0.name })
-    }
-}
-
-fileprivate extension Function {
-    var definedNames: Set<String> {
-        return Set(elements.flatMap { $0.definedNames })
-    }
-}
-
-fileprivate func makeFreshName(_ name: String, in function: Function) -> String {
-    var result = name
-    var count = 0
-    while function.definedNames.contains(result) {
-        result = "name\(count)"
-        count += 1
-    }
-    return result
-}
-
-fileprivate func makeFreshFunctionName(_ name: String, in module: Module) -> String {
-    var result = name
-    var count = 0
-    while module.elements.map({ $0.name }).contains(result) {
-        result = "name\(count)"
-        count += 1
-    }
-    return result
 }
 
 fileprivate class ADContext {
@@ -197,6 +133,38 @@ fileprivate extension Differentiation {
                                workList: inout [Function],
                                adjoints: inout GradientMapping) {
         let builder = IRBuilder(module: function.parent)
+        /// Canonicalize loops
+        let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
+        var loopInfo = function.analysis(from: LoopAnalysis.self)
+        let loops = Set(loopInfo.innerMostLoops.values)
+        for loop in loops {
+            /// Create a unique loop preheader
+            if loop.preheader == nil {
+                /// Gather original predecessors of header
+                let preds = cfg.predecessors(of: loop.header)
+                    .filter { !loop.contains($0) }
+                /// Create preheader and connect it with header
+                let preheader = BasicBlock(
+                    name: makeFreshName("preheader", in: function),
+                    arguments: loop.header.arguments.map{
+                        (makeFreshName($0.name, in: function), $0.type)
+                    },
+                    parent: function)
+                function.insert(preheader, before: loop.header)
+                builder.move(to: preheader)
+                builder.branch(loop.header, preheader.arguments.map(%))
+                /// Change all original predecessors to branch to preheader
+                preds.forEach { pred in
+                    guard let terminator = pred.terminator else { return }
+                    terminator.substituteBranches(to: loop.header, with: preheader)
+                }
+                /// Make the preheader a part of the parent loop if it exists
+                if let parent = loop.parent {
+                    loopInfo.innerMostLoops[preheader] = parent
+                    parent.blocks.insert(preheader, before: loop.header)
+                }
+            }
+        }
         /// Seed on return instructions
         let exits = function.premise.exits
         for (block, returnInst) in exits {
@@ -257,31 +225,39 @@ fileprivate extension Differentiation {
             returnInst.removeFromParent()
             /// Build new return
             var newReturn: [Use] = []
-            newReturn += argIndices.map { context.adjoint(for: %function[0].arguments[$0])! }
+            newReturn += argIndices.map { i in
+                guard let argAdjoint = context.adjoint(for: %function[0].arguments[i]) else {
+                    fatalError("""
+                        Adjoint not found for argument \(function[0].arguments[i]) \
+                        in function \(function.name)
+                        """)
+                }
+                return argAdjoint
+            }
             newReturn += keptIndices.map { returnInst.operands[$0] }
             let tupleLit = builder.buildInstruction(.literal(.tuple(newReturn), function.returnType))
             builder.return(%tupleLit)
         }
     }
 
-    private static func differentiate(_ instruction: Instruction,
+    private static func differentiate(_ inst: Instruction,
                                       using bd: IRBuilder,
                                       in context: ADContext,
                                       returnValue: Use,
                                       workList: inout [Function],
                                       gradients: inout GradientMapping) {
         /// Move builder
-        bd.move(to: instruction.parent)
+        bd.move(to: inst.parent)
         /// Get adjoint for instruction
         var instAdjoint: Use
-        if let oldAdjoint = context.adjoint(for: instruction) {
+        if let oldAdjoint = context.adjoint(for: inst) {
             instAdjoint = oldAdjoint
         } else {
             instAdjoint = returnValue.makeLiteral(0, using: bd).makeUse()
         }
         /// Get adjoints for operands
         var grad: [(operand: Use, derivative: Use)]
-        switch instruction.kind {
+        switch inst.kind {
         /* Literal value */
         case let .literal(lit, _):
             grad = lit.operands.map {
@@ -321,7 +297,7 @@ fileprivate extension Differentiation {
             grad = [
                 /// ∂f/∂x = y * x^(y - 1) * D
                 (lhs, %bd.multiply(
-                    %bd.multiply(rhs, %bd.power(lhs, %bd.subtract(rhs, rhs.makeScalar(1)))),
+                    %bd.multiply(rhs, %bd.power(lhs, %bd.subtract(rhs, %rhs.makeScalar(1)))),
                     instAdjoint)
                 ),
                 /// ∂f/∂y = ln(x) * f * D
@@ -377,17 +353,16 @@ fileprivate extension Differentiation {
                 (x, %bd.multiply(instAdjoint, %bd.numeric(.cosh, x)))
             ]
         case let .numericUnary(.tanh, x):
-            let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = D * (1 - (f * f))
-                (x, %bd.multiply(instAdjoint, %bd.subtract(x.makeScalar(1), %bd.multiply(cloned, cloned))))
+                (x, %bd.multiply(instAdjoint, %bd.subtract(%x.makeScalar(1), %bd.multiply(%inst, %inst))))
             ]
         case let .numericUnary(.acos, x):
             grad = [
                 /// ∂f/∂x = -D / sqrt(1 - (x * x))
                 (x, %bd.divide(
                     %bd.numeric(.negate, instAdjoint),
-                    %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x))))
+                    %bd.numeric(.sqrt, %bd.subtract(%x.makeScalar(1), %bd.multiply(x, x))))
                 )
             ]
         case let .numericUnary(.asin, x):
@@ -395,31 +370,44 @@ fileprivate extension Differentiation {
                 /// ∂f/∂x = D / sqrt(1 - (x * x))
                 (x, %bd.divide(
                     instAdjoint,
-                    %bd.numeric(.sqrt, %bd.subtract(x.makeScalar(1), %bd.multiply(x, x))))
+                    %bd.numeric(.sqrt, %bd.subtract(%x.makeScalar(1), %bd.multiply(x, x))))
                 )
             ]
         case let .numericUnary(.atan, x):
             grad = [
                 /// ∂f/∂x = D / (1 + (x * x))
-                (x, %bd.divide(instAdjoint, %bd.add(x.makeScalar(1), %bd.multiply(x, x))))
+                (x, %bd.divide(instAdjoint, %bd.add(%x.makeScalar(1), %bd.multiply(x, x))))
             ]
         case let .numericUnary(.exp, x):
-            let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = f * D
-                (x, %bd.multiply(cloned, instAdjoint))
+                (x, %bd.multiply(%inst, instAdjoint))
             ]
         case let .numericUnary(.sqrt, x):
-            let cloned = instruction.makeUse()
             grad = [
                 /// ∂f/∂x = D / (2 * f)
-                (x, %bd.divide(instAdjoint, %bd.multiply(instruction.makeScalar(2), cloned)))
+                (x, %bd.divide(instAdjoint, %bd.multiply(%x.makeScalar(2), %inst)))
             ]
 
-        /* Element extraction */
-        case let .extract(from: x, at: _):
+        /** Cost-free casts **/
+        case let .padShape(x, at: i):
             grad = [
-                (x, x.makeScalar(1))
+                /// ∂f/∂x = sum(f, along: i)
+                // NOTE: can be optimized to `squeezeShape` when dimension i is
+                // known to be 1, to be implemented in simplification pass
+                (x, %bd.reduce(.numeric(.add), instAdjoint,
+                               initial: %x.makeScalar(0),
+                               dims: [i]))
+            ]
+        case let .squeezeShape(x, at: i):
+            grad = [
+                (x, %bd.padShape(instAdjoint, at: i))
+            ]
+
+        /** Aggregate operations **/
+        case let .extract(from: x, at: i):
+            grad = [
+                (x, %bd.extract(from: instAdjoint, at: i))
             ]
 
         /* Function application */
@@ -457,7 +445,7 @@ fileprivate extension Differentiation {
 
         default:
             /// - TODO: Implement all cases!
-            fatalError("Unimplemented \(instruction)")
+            fatalError("Unimplemented \(inst)")
         }
 
         /// Update operand adjoints

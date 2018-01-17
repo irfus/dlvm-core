@@ -107,7 +107,7 @@ extension ParseError : CustomStringConvertible {
         desc += ": "
         switch self {
         case let .unexpectedIdentifierKind(kind, tok):
-            desc += "identifier \(tok) has unexpected \(kind)"
+            desc += "identifier \(tok) has unexpected kind \(kind)"
         case let .unexpectedEndOfInput(expected: expected):
             desc += "expected \(expected) but reached the end of input"
         case let .unexpectedToken(expected: expected, tok):
@@ -234,10 +234,12 @@ extension Opcode : CustomStringConvertible {
         case .slice: return "slice"
         case .convolve: return "convolve"
         case .padShape: return "padShape"
+        case .squeezeShape: return "squeezeShape"
         case .shapeCast: return "shapeCast"
         case .bitCast: return "bitCast"
         case .extract: return "extract"
         case .insert: return "insert"
+        case .branchEnum: return "branchEnum"
         case .apply: return "apply"
         case .allocateStack: return "allocateStack"
         case .allocateHeap: return "allocateHeap"
@@ -280,7 +282,8 @@ extension TokenKind : CustomStringConvertible {
             switch kind {
             case .basicBlock: kindDesc = "'"
             case .global: kindDesc = "@"
-            case .key: kindDesc = "#"
+            case .structKey: kindDesc = "#"
+            case .enumCase: kindDesc = "?"
             case .temporary: kindDesc = "%"
             case .type: kindDesc = "$"
             }
