@@ -39,7 +39,6 @@ extension DominatorTree : BidirectionalEdgeSet {
 }
 
 public extension DominatorTree {
-
     init(root: Node) {
         self.root = root
         self.graph.insertEdge(from: root, to: root)
@@ -53,7 +52,10 @@ public extension DominatorTree {
     }
 
     func immediateDominator(of node: Node) -> Node {
-        return predecessors(of: node).first!
+        guard let idom = predecessors(of: node).first else {
+            fatalError("\(node) does not have an immediate dominator")
+        }
+        return idom
     }
 
     func immediateDominatees(of node: Node) -> OrderedSet<Node> {
@@ -207,6 +209,7 @@ open class PostdominanceAnalysis : AnalysisPass {
                                                  in: .postorder).reversed()
                 for node in rpo.dropFirst() {
                     let preds = transposeCFG.predecessors(of: node)
+                        .lazy.filter(domTree.contains)
                     guard var newIDom = preds.first else {
                         preconditionFailure("""
                             Successor node doesn't have any predecessor

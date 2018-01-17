@@ -352,8 +352,8 @@ public extension IRBuilder {
         buildInstruction(.destroyStack(stack))
     }
 
-    func push(_ use: Use, to stack: Use) -> Instruction {
-        return buildInstruction(.push(use, to: stack))
+    func push(_ use: Use, to stack: Use) {
+        buildInstruction(.push(use, to: stack))
     }
 
     func pop(_ type: Type, from stack: Use) -> Instruction {

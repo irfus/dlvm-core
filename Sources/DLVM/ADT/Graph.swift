@@ -214,6 +214,7 @@ public extension DirectedGraph {
 public extension DirectedGraph where Node : ForwardGraphNode {
     init<S : Sequence>(nodes: S) where S.Element == Node {
         for node in nodes {
+            insertNode(node)
             for succ in node.successors {
                 insertEdge(from: node, to: succ)
             }
@@ -231,7 +232,7 @@ public extension DirectedGraph where Node : ForwardGraphNode {
     ///
     /// - Parameter node: source vertex
     mutating func insertAll(fromSource node: Node) {
-        var visited: Set<Node> = []
+        var visited: Set<Node> = [node]
         func insertAll(fromSource node: Node) {
             for succ in node.successors where !visited.contains(succ) {
                 visited.insert(succ)
@@ -239,6 +240,7 @@ public extension DirectedGraph where Node : ForwardGraphNode {
                 insertAll(fromSource: succ)
             }
         }
+        insertNode(node)
         insertAll(fromSource: node)
     }
 }
@@ -247,6 +249,7 @@ public extension DirectedGraph where Node : ForwardGraphNode {
 public extension DirectedGraph where Node : BackwardGraphNode {
     init<S : Sequence>(nodes: S) where S.Element == Node {
         for node in nodes {
+            insertNode(node)
             for pred in node.predecessors {
                 insertEdge(from: pred, to: node)
             }
@@ -264,14 +267,15 @@ public extension DirectedGraph where Node : BackwardGraphNode {
     ///
     /// - Parameter node: leaf vertex
     mutating func insertAll(fromLeaf node: Node) {
-        var visited: Set<Node> = []
+        var visited: Set<Node> = [node]
         func insertAll(fromLeaf node: Node) {
             for pred in node.predecessors {
                 visited.insert(pred)
-                insertEdge(from: node, to: node)
+                insertEdge(from: pred, to: node)
                 insertAll(fromLeaf: pred)
             }
         }
+        insertNode(node)
         insertAll(fromLeaf: node)
     }
 }

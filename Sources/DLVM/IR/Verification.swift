@@ -416,8 +416,8 @@ extension InstructionKind {
     public func performVerification(in instruction: Instruction) throws {
         switch self {
         case let .conditional(use, thenBB, thenArgs, elseBB, elseArgs):
-            guard case let .tensor(s, t) = use.type.unaliased, s.isScalar, t.isBool else {
-                throw VerificationError.unexpectedType(use, .tensor(.scalar, .bool), instruction)
+            guard case .bool = use.type.unaliased else {
+                throw VerificationError.unexpectedType(use, .bool, instruction)
             }
             guard thenBB.arguments.count == thenArgs.count,
                   zip(thenBB.arguments, thenArgs).forAll({$0.1.type == $0.1.type}) else {
