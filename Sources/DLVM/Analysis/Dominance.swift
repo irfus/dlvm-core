@@ -215,7 +215,7 @@ open class PostdominanceAnalysis : AnalysisPass {
                             Successor node doesn't have any predecessor
                             """)
                     }
-                    for p in preds.dropFirst() where !domTree.contains(p) {
+                    for p in preds.dropFirst() {
                         newIDom = domTree.nearestCommonDominator(p, newIDom)
                     }
                     if !domTree.contains(node) ||
