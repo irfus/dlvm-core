@@ -58,7 +58,7 @@ extension BasicBlock : PremiseHolder {
             guard let index = body.index(where: { $0.kind.isTerminator }) else {
                 throw VerificationError.missingTerminator(body)
             }
-            guard index == body.count - 1 else {
+            guard index == body.endIndex - 1 else {
                 throw VerificationError.terminatorNotLast(body)
             }
             return Premise(first: body[0], terminator: body[index])

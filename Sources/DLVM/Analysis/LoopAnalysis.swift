@@ -51,11 +51,11 @@ public extension Loop {
     /// Return all blocks inside the loop that have successors outside of the
     /// loop. These are the blocks _inside of the current loop_ which branch
     /// out. The returned list is always unique.
-    var exitingBlocks: [BasicBlock] {
-        var exiting: [BasicBlock] = []
+    var exitingBlocks: Set<BasicBlock> {
+        var exiting: Set<BasicBlock> = []
         for bb in blocks {
             for succ in bb.successors where !contains(succ) {
-                exiting.append(bb)
+                exiting.insert(bb)
             }
         }
         return exiting
@@ -64,12 +64,14 @@ public extension Loop {
     /// Return all of the successor blocks of this loop. These are the blocks
     /// _outside of the current loop_ which are branched to.
     var exits: Set<BasicBlock> {
-        return Set(blocks.lazy.flatMap{$0.successors}.filter{!self.contains($0)})
+        return Set(blocks.lazy
+            .flatMap { $0.successors }.lazy
+            .filter { !self.contains($0) })
     }
 
     var exitEdges: [(source: BasicBlock, destination: BasicBlock)] {
         return blocks.lazy
-            .flatMap { bb in bb.successors.map { (bb, $0) } }
+            .flatMap { bb in bb.successors.map { (bb, $0) } }.lazy
             .filter { !contains($0.1) }
     }
 
@@ -163,8 +165,8 @@ public extension Loop {
             latch = predecessors[1]
         }
         for argument in header.arguments {
-            let entryVal = argument.incomingValue(for: entry)
-            let latchVal = argument.incomingValue(for: latch)
+            let entryVal = argument.incomingValue(from: entry)
+            let latchVal = argument.incomingValue(from: latch)
             guard case let .literal(indVar, t1)? = entryVal.instruction?.kind,
                 t1.isScalar, indVar.isZero else {
                 continue
@@ -182,10 +184,14 @@ public extension Loop {
 public struct LoopInfo {
     public internal(set) var innerMostLoops: [BasicBlock : Loop] = [:]
     public internal(set) var topLevelLoops: [Loop] = []
+
+    var loops: Set<Loop> {
+        return Set(innerMostLoops.values)
+    }
 }
 
 fileprivate extension Argument {
-    func incomingValue(for bb: BasicBlock) -> Use {
+    func incomingValue(from bb: BasicBlock) -> Use {
         guard let index = parent.arguments.index(of: self) else {
             fatalError("\(self) is not an argument of its parent \(bb.name)")
         }
