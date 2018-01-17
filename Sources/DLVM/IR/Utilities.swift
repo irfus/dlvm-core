@@ -19,10 +19,15 @@
 
 import Foundation
 
-func DLUnimplemented(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
-    fatalError("\(function) is not fully implemented. \(file):\(line)")
+func DLUnimplemented(_ function: String = #function,
+                     file: StaticString = #file,
+                     line: UInt = #line) -> Never {
+    fatalError("\(function) is not fully implemented.", file: file, line: line)
 }
 
-func DLImpossible(_ function: String = #function, file: StaticString = #file, line: UInt = #line) -> Never {
-    fatalError("Impossible case at \(function), \(file):\(line). Most likely a bug.")
+func DLImpossible(_ function: String = #function,
+                  file: StaticString = #file,
+                  line: UInt = #line) -> Never {
+    fatalError("Impossible case at \(function). Must be a compiler bug.",
+               file: file, line: line)
 }
