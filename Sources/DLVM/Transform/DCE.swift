@@ -24,7 +24,7 @@ open class DeadCodeElimination : TransformPass {
     public typealias Body = Function
 
     open class func run(on body: Function) -> Bool {
-        var changed: Bool = false
+        var changed = false
         let workList: NSMutableOrderedSet = []
         var count = 0
         /// Iterate over the original function, only adding instructions to the

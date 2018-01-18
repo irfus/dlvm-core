@@ -166,3 +166,29 @@ public extension Function {
         }
     }
 }
+
+public extension BasicBlock {
+    /// Creates a new basic block that unconditionally branches to self and
+    /// hoists some predecessors to the new block.
+    @discardableResult
+    public func hoistPredecessorsToNewBlock<S : Sequence>(
+        named name: String,
+        hoisting predecessors: S) -> BasicBlock
+        where S.Element == BasicBlock
+    {
+        let newBB = BasicBlock(
+            name: makeFreshName(name),
+            arguments: arguments.map{
+                (makeFreshName($0.name), $0.type)
+            },
+            parent: parent)
+        parent.insert(newBB, before: self)
+        let builder = IRBuilder(basicBlock: newBB)
+        builder.branch(self, newBB.arguments.map(%))
+        /// Change all predecessors to branch to new block
+        predecessors.forEach { pred in
+            pred.terminator?.substituteBranches(to: self, with: newBB)
+        }
+        return newBB
+    }
+}

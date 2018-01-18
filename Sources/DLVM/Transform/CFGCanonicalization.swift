@@ -17,10 +17,71 @@
 //  limitations under the License.
 //
 
+/// Canonicalizes control flow graph so that it becomes "reversible": its
+/// transpose is also a valid control flow graph.
+/// - All basic blocks have at most two predecessors.
+/// - There is exactly one exit basic block.
+
 open class CFGCanonicalization : TransformPass {
     public typealias Body = Function
     
     public static func run(on body: Function) -> Bool {
-        DLUnimplemented()
+        var changed = false
+        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+        var loopInfo = body.analysis(from: LoopAnalysis.self)
+        /// Canonicalize loops
+        for loop in loopInfo.uniqueLoops {
+            /// If loop doesn't have a preheader, insert one.
+            if loop.preheader == nil {
+                insertPreheader(for: loop, loopInfo: &loopInfo, controlFlow: cfg)
+                changed = true
+            }
+            /// Next, check to make sure that all exit nodes of the loop only
+            /// have predecessors that are inside of the loop. This check
+            /// guarantees that the loop preheader/header will dominate the
+            /// exit blocks. If the exit block has predecessors from outside of
+            /// the loop, split the edge now.
+            if !loop.hasDedicatedExits {
+                formDedicatedExits(for: loop, loopInfo: &loopInfo, controlFlow: cfg)
+                changed = true
+            }
+        }
+        return changed
+    }
+
+    public static func insertPreheader(
+        for loop: Loop,
+        loopInfo: inout LoopInfo, controlFlow cfg: DirectedGraph<BasicBlock>)
+    {
+        /// Gather original predecessors of header
+        let preds = cfg.predecessors(of: loop.header)
+            .lazy.filter { !loop.contains($0) }
+        /// Create preheader and hoist predecessors to it
+        let preheader = loop.header.hoistPredecessorsToNewBlock(
+            named: "preheader", hoisting: preds)
+        /// Make the preheader a part of the parent loop if it exists
+        if let parent = loop.parent {
+            loopInfo.innerMostLoops[preheader] = parent
+            parent.blocks.insert(preheader, before: loop.header)
+        }
+    }
+
+    public static func formDedicatedExits(
+        for loop: Loop,
+        loopInfo: inout LoopInfo, controlFlow cfg: DirectedGraph<BasicBlock>)
+    {
+        for exit in loop.exits {
+            /// Gather predecessors that are inside loop
+            let insidePreds = cfg.predecessors(of: exit)
+                .lazy.filter { loop.contains($0) }
+            /// Create new exit and hoist inside-predecessors to it
+            let newExit = exit.hoistPredecessorsToNewBlock(
+                named: "exit", hoisting: insidePreds)
+            /// Make the new exit a part of the parent loop if it exists
+            if let parent = loop.parent {
+                loopInfo.innerMostLoops[newExit] = parent
+                parent.blocks.insert(newExit, before: exit)
+            }
+        }
     }
 }

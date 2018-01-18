@@ -23,7 +23,7 @@ open class CommonSubexpressionElimination : TransformPass {
     public typealias Body = Function
 
     open class func run(on body: Function) -> Bool {
-        var changed: Bool = false
+        var changed = false
         var availableValues: Set<Instruction> = []
         var count = 0
         /// Iterate over the original function
