@@ -36,7 +36,7 @@ public enum TransformPass: String {
 }
 
 public extension TransformPass {
-    var abbrevation: String {
+    var abbreviation: String {
         switch self {
         case .algebraSimplification: return "AS"
         case .cfgCanonicalization: return "CFGCan"
@@ -75,37 +75,37 @@ public extension TransformPass {
     init?(rawValue: String) {
         typealias T = TransformPass
         switch rawValue {
-        case T.algebraSimplification.abbrevation,
+        case T.algebraSimplification.abbreviation,
              T.algebraSimplification.rawValue:
             self = .algebraSimplification
-        case T.cfgCanonicalization.abbrevation,
+        case T.cfgCanonicalization.abbreviation,
              T.cfgCanonicalization.rawValue:
             self = .cfgCanonicalization
-        case T.cfgSimplification.abbrevation,
+        case T.cfgSimplification.abbreviation,
              T.cfgSimplification.rawValue:
             self = .cfgSimplification
-        case T.commonSubexpressionElimination.abbrevation,
+        case T.commonSubexpressionElimination.abbreviation,
              T.commonSubexpressionElimination.rawValue:
             self = .commonSubexpressionElimination
-        case T.deadCodeElimination.abbrevation,
+        case T.deadCodeElimination.abbreviation,
              T.deadCodeElimination.rawValue:
             self = .deadCodeElimination
-        case T.differentiation.abbrevation,
+        case T.differentiation.abbreviation,
              T.differentiation.rawValue:
             self = .differentiation
-        case T.linearAlgebraFusion.abbrevation,
+        case T.linearAlgebraFusion.abbreviation,
              T.linearAlgebraFusion.rawValue:
             self = .linearAlgebraFusion
-        case T.literalBroadcastingPromotion.abbrevation,
+        case T.literalBroadcastingPromotion.abbreviation,
              T.literalBroadcastingPromotion.rawValue:
             self = .literalBroadcastingPromotion
-        case T.matrixMultiplicationReordering.abbrevation,
+        case T.matrixMultiplicationReordering.abbreviation,
              T.matrixMultiplicationReordering.rawValue:
             self = .matrixMultiplicationReordering
-        case T.stackPromotion.abbrevation,
+        case T.stackPromotion.abbreviation,
              T.stackPromotion.rawValue:
             self = .stackPromotion
-        case T.valuePromotion.abbrevation,
+        case T.valuePromotion.abbreviation,
              T.valuePromotion.rawValue:
             self = .valuePromotion
         default:
@@ -118,27 +118,27 @@ extension TransformPass : StringEnumArgument {
     public static var completion: ShellCompletion {
         // NOTE: Can be shortened with enum iteration
         return .values([
-            (algebraSimplification.abbrevation,
+            (algebraSimplification.abbreviation,
              algebraSimplification.description),
-            (cfgCanonicalization.abbrevation,
+            (cfgCanonicalization.abbreviation,
              cfgCanonicalization.description),
-            (CFGSimplification.abbrevation,
-             CFGSimplification.description),
-            (commonSubexpressionElimination.abbrevation,
+            (cfgSimplification.abbreviation,
+             cfgSimplification.description),
+            (commonSubexpressionElimination.abbreviation,
              commonSubexpressionElimination.description),
-            (deadCodeElimination.abbrevation,
+            (deadCodeElimination.abbreviation,
              deadCodeElimination.description),
-            (differentiation.abbrevation,
+            (differentiation.abbreviation,
              differentiation.description),
-            (linearAlgebraFusion.abbrevation,
+            (linearAlgebraFusion.abbreviation,
              linearAlgebraFusion.description),
-            (literalBroadcastingPromotion.abbrevation,
+            (literalBroadcastingPromotion.abbreviation,
              literalBroadcastingPromotion.description),
-            (matrixMultiplicationReordering.abbrevation,
+            (matrixMultiplicationReordering.abbreviation,
              matrixMultiplicationReordering.description),
-            (stackPromotion.abbrevation,
+            (stackPromotion.abbreviation,
              stackPromotion.description),
-            (valuePromotion.abbrevation,
+            (valuePromotion.abbreviation,
              valuePromotion.description)
         ])
     }
@@ -182,5 +182,5 @@ public func runPass(_ pass: TransformPass, on module: Module,
         changed = module.mapTransform(ValuePromotion.self,
                                       bypassingVerification: noVerify)
     }
-    print("\(pass.abbrevation):", changed ? "changed" : "unchanged")
+    print("\(pass.abbreviation):", changed ? "changed" : "unchanged")
 }
