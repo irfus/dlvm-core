@@ -29,7 +29,7 @@ open class CFGCanonicalization : TransformPass {
         var changed = false
         let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         var loopInfo = body.analysis(from: LoopAnalysis.self)
-        /// Canonicalize loops
+        /// Canonicalize loops.
         for loop in loopInfo.uniqueLoops {
             /// If loop doesn't have a preheader, insert one.
             if loop.preheader == nil {
@@ -42,17 +42,17 @@ open class CFGCanonicalization : TransformPass {
             /// exit blocks. If the exit block has predecessors from outside of
             /// the loop, split the edge now.
             if !loop.hasDedicatedExits {
-                formDedicatedExits(for: loop, loopInfo: &loopInfo, controlFlow: cfg)
-                changed = true
+                changed = changed || formDedicatedExits(
+                    for: loop, loopInfo: &loopInfo, controlFlow: cfg)
             }
         }
         return changed
     }
 
     public static func insertPreheader(
-        for loop: Loop,
-        loopInfo: inout LoopInfo, controlFlow cfg: DirectedGraph<BasicBlock>)
-    {
+        for loop: Loop, loopInfo: inout LoopInfo,
+        controlFlow cfg: DirectedGraph<BasicBlock>
+    ) {
         /// Gather original predecessors of header
         let preds = cfg.predecessors(of: loop.header)
             .lazy.filter { !loop.contains($0) }
@@ -67,13 +67,15 @@ open class CFGCanonicalization : TransformPass {
     }
 
     public static func formDedicatedExits(
-        for loop: Loop,
-        loopInfo: inout LoopInfo, controlFlow cfg: DirectedGraph<BasicBlock>)
-    {
+        for loop: Loop, loopInfo: inout LoopInfo,
+        controlFlow cfg: DirectedGraph<BasicBlock>
+    ) -> Bool {
+        var changed = false
         for exit in loop.exits {
             /// Gather predecessors that are inside loop
-            let insidePreds = cfg.predecessors(of: exit)
-                .lazy.filter { loop.contains($0) }
+            let preds = cfg.predecessors(of: exit)
+            let insidePreds = preds.lazy.filter { loop.contains($0) }
+            guard insidePreds.count < preds.count else { continue }
             /// Create new exit and hoist inside-predecessors to it
             let newExit = exit.hoistPredecessorsToNewBlock(
                 named: "exit", hoisting: insidePreds)
@@ -82,6 +84,8 @@ open class CFGCanonicalization : TransformPass {
                 loopInfo.innerMostLoops[newExit] = parent
                 parent.blocks.insert(newExit, before: exit)
             }
+            changed = true
         }
+        return changed
     }
 }
