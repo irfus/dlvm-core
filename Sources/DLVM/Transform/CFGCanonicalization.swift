@@ -100,36 +100,34 @@ open class CFGCanonicalization : TransformPass {
         postDominance: inout PostdominanceAnalysis.Result
     ) -> Bool {
         var changed = false
-        // If less than two successors, return
+        // If `bb` has less than two successors, return.
         if bb.successors.count < 2 { return false }
-        /// Otherwise, check post-dominators
-        guard case let .conditional(cond, _, _, _, _)? = bb.terminator?.kind
-            else { return false }
+        /// Otherwise, check post-dominators.
+        /// Precondition: `bb` must have at least 2 outgoing edges.
         let function = bb.parent
         for postDomTree in postDominance.values.filter({ $0.contains(bb) }) {
             let predDom = postDomTree.immediateDominator(of: predecessor)
             let bbDom = postDomTree.immediateDominator(of: bb)
-            /// If post-dominators of bb and predecessor are the same, then
-            /// create a join block
-            if predDom == bbDom {
-                let joinBlock = BasicBlock(
-                    name: function.makeFreshBasicBlockName("\(bb.name)_join"),
-                    arguments: predDom.arguments.map{(bb.makeFreshName($0.name), $0.type)},
-                    parent: function)
-                function.insert(joinBlock, before: predDom)
-                builder.move(to: joinBlock)
-                builder.branch(predDom, joinBlock.arguments.map(%))
-                /// Update branches
-                var visited: Set<BasicBlock> = []
-                func redirectToJoin(_ bb: BasicBlock) {
-                    if visited.contains(bb) || bb == joinBlock { return }
-                    visited.insert(bb)
-                    bb.terminator?.substituteBranches(to: bbDom, with: joinBlock)
-                    bb.successors.forEach(redirectToJoin)
-                }
-                redirectToJoin(bb)
-                changed = true
+            /// If post-dominators of `bb` and predecessor are the same, then
+            /// create a join block.
+            if predDom != bbDom { continue }
+            let joinBlock = BasicBlock(
+                name: function.makeFreshBasicBlockName("\(bb.name)_join"),
+                arguments: predDom.arguments.map{(bb.makeFreshName($0.name), $0.type)},
+                parent: function)
+            function.insert(joinBlock, before: predDom)
+            builder.move(to: joinBlock)
+            builder.branch(predDom, joinBlock.arguments.map(%))
+            /// Update branches.
+            var visited: Set<BasicBlock> = []
+            func redirectToJoinBlock(_ bb: BasicBlock) {
+                if visited.contains(bb) || bb == joinBlock { return }
+                visited.insert(bb)
+                bb.premise.terminator.substituteBranches(to: bbDom, with: joinBlock)
+                bb.successors.forEach(redirectToJoinBlock)
             }
+            redirectToJoinBlock(bb)
+            changed = true
         }
         return changed
     }
@@ -138,13 +136,13 @@ open class CFGCanonicalization : TransformPass {
         for loop: Loop, loopInfo: inout LoopInfo,
         controlFlow cfg: DirectedGraph<BasicBlock>
     ) {
-        /// Gather original predecessors of header
+        /// Gather original predecessors of header.
         let preds = cfg.predecessors(of: loop.header)
             .lazy.filter { !loop.contains($0) }
-        /// Create preheader and hoist predecessors to it
+        /// Create preheader and hoist predecessors to it.
         let preheader = loop.header.hoistPredecessorsToNewBlock(
             named: "preheader", hoisting: preds)
-        /// Make the preheader a part of the parent loop if it exists
+        /// Make the preheader a part of the parent loop if it exists.
         if let parent = loop.parent {
             loopInfo.innerMostLoops[preheader] = parent
             parent.blocks.insert(preheader, before: loop.header)
@@ -157,14 +155,14 @@ open class CFGCanonicalization : TransformPass {
     ) -> Bool {
         var changed = false
         for exit in loop.exits {
-            /// Gather predecessors that are inside loop
+            /// Gather predecessors that are inside loop.
             let preds = cfg.predecessors(of: exit)
             let insidePreds = preds.lazy.filter { loop.contains($0) }
             guard insidePreds.count < preds.count else { continue }
-            /// Create new exit and hoist inside-predecessors to it
+            /// Create new exit and hoist inside-predecessors to it.
             let newExit = exit.hoistPredecessorsToNewBlock(
                 named: "exit", hoisting: insidePreds)
-            /// Make the new exit a part of the parent loop if it exists
+            /// Make the new exit a part of the parent loop if it exists.
             if let parent = loop.parent {
                 loopInfo.innerMostLoops[newExit] = parent
                 parent.blocks.insert(newExit, before: exit)
