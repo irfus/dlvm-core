@@ -179,19 +179,25 @@ public extension IRBuilder {
 /// for common instructions. For full power, please use `buildInstruction`
 /// with the algebraic data type `InstructionKind`
 public extension IRBuilder {
-    func branch(_ destination: BasicBlock, _ arguments: [Use]) {
-        buildInstruction(.branch(destination, arguments))
+    @discardableResult
+    func branch(_ destination: BasicBlock, _ arguments: [Use]) -> Instruction {
+        return buildInstruction(.branch(destination, arguments))
     }
 
-    func conditional(_ condition: Use,
-                     then thenBB: BasicBlock, arguments thenArguments: [Use],
-                     else elseBB: BasicBlock, arguments elseArguments: [Use]) {
-        buildInstruction(.conditional(condition,
+    @discardableResult
+    func conditional(
+        _ condition: Use,
+        then thenBB: BasicBlock, arguments thenArguments: [Use],
+        else elseBB: BasicBlock, arguments elseArguments: [Use]
+    ) -> Instruction {
+        return buildInstruction(.conditional(condition,
                                       thenBB, thenArguments,
                                       elseBB, elseArguments))
     }
-    func `return`(_ use: Use? = nil) {
-        buildInstruction(.return(use))
+
+    @discardableResult
+    func `return`(_ use: Use? = nil) -> Instruction {
+        return buildInstruction(.return(use))
     }
 
     func literal(_ literal: Literal, _ type: Type) -> Instruction {
@@ -348,12 +354,14 @@ public extension IRBuilder {
         return buildInstruction(.createStack)
     }
 
-    func destroyStack(_ stack: Use) {
-        buildInstruction(.destroyStack(stack))
+    @discardableResult
+    func destroyStack(_ stack: Use) -> Instruction {
+        return buildInstruction(.destroyStack(stack))
     }
 
-    func push(_ use: Use, to stack: Use) {
-        buildInstruction(.push(use, to: stack))
+    @discardableResult
+    func push(_ use: Use, to stack: Use) -> Instruction {
+        return buildInstruction(.push(use, to: stack))
     }
 
     func pop(_ type: Type, from stack: Use) -> Instruction {
@@ -372,16 +380,18 @@ public extension IRBuilder {
         return buildInstruction(.projectBox(box))
     }
 
-    func deallocate(_ use: Use) {
-        buildInstruction(.deallocate(use))
+    @discardableResult
+    func deallocate(_ use: Use) -> Instruction {
+        return buildInstruction(.deallocate(use))
     }
 
     func load(from source: Use) -> Instruction {
         return buildInstruction(.load(source))
     }
 
-    func store(_ source: Use, to destination: Use) {
-        buildInstruction(.store(source, to: destination))
+    @discardableResult
+    func store(_ source: Use, to destination: Use) -> Instruction {
+        return buildInstruction(.store(source, to: destination))
     }
 
     func elementPointer(from source: Use,

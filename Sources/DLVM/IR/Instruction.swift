@@ -393,7 +393,7 @@ public extension InstructionKind {
             leftDilation: ld, // Dilation factor of rank n
             rightDilation: rd, // Dilation factor of rank n
             groups // Group count for grouped/depthwise convolutions
-            ):
+        ):
             guard case let .tensor(s1, t1) = lhs.type.unaliased,
                 case let .tensor(s2, t2) = kernel.type.unaliased,
                 /// Rank and datatypes must match, rank must be at least 3
@@ -445,7 +445,7 @@ public extension InstructionKind {
             dims, // Window dimensions
             strides, // Window strides
             padding // Padding type
-            ):
+        ):
             let resultType: Type
             /// Operand must be a tensor
             guard case let .tensor(s1, t1) = v1.type.unaliased else {
