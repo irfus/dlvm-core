@@ -33,20 +33,24 @@ open class CFGCanonicalization : TransformPass {
         /// Merge multiple exits.
         var cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         if body.premise.exits.count > 1 {
-            let newExitArg = (body.makeFreshName("exit_value"), body.returnType)
-            let newExit = BasicBlock(name: body.makeFreshBasicBlockName("exit"),
-                                     arguments: [newExitArg],
-                                     parent: body)
-            for (exit, returnInst) in body.premise.exits {
-                guard case let .return(use) = returnInst.kind else {
-                    fatalError("Invalid exit return instruction")
+            mergeMultipleExits(in: body, using: builder, controlFlow: &cfg)
+        }
+
+        /// Form join blocks, if necessary.
+        var postDomTrees = body.analysis(from: PostdominanceAnalysis.self)
+        guard postDomTrees.count == 1 else {
+            fatalError("Function \(body.name) has multiple exits after canonicalization")
+        }
+        var visited: Set<BasicBlock> = []
+        for bb in cfg.traversed(from: body[0], in: .breadthFirst) {
+            bb.successors.lazy
+                .filter { !visited.contains($0) }
+                .forEach {
+                    changed = formJoinBlock(
+                        for: $0, predecessor: bb, using: builder,
+                        postDominance: &postDomTrees) || changed
                 }
-                returnInst.kind = .branch(newExit, use.flatMap { [$0] } ?? [])
-                cfg.insertEdge(from: exit, to: newExit)
-            }
-            body.append(newExit)
-            builder.move(to: newExit)
-            builder.return(%newExit.arguments[0])
+            visited.insert(bb)
         }
 
         /// Canonicalize loops.
@@ -66,6 +70,65 @@ open class CFGCanonicalization : TransformPass {
             if !loop.hasDedicatedExits {
                 changed = formDedicatedExits(
                     for: loop, loopInfo: &loopInfo, controlFlow: cfg) || changed
+            }
+        }
+        return changed
+    }
+
+    public static func mergeMultipleExits(
+        in function: Function, using builder: IRBuilder,
+        controlFlow cfg: inout ControlFlowGraphAnalysis.Result
+    ) {
+        let newExitArg = (function.makeFreshName("exit_value"), function.returnType)
+        let newExit = BasicBlock(name: function.makeFreshBasicBlockName("exit"),
+                                 arguments: [newExitArg],
+                                 parent: function)
+        for (exit, returnInst) in function.premise.exits {
+            guard case let .return(use) = returnInst.kind else {
+                fatalError("Invalid exit return instruction")
+            }
+            returnInst.kind = .branch(newExit, use.flatMap { [$0] } ?? [])
+            cfg.insertEdge(from: exit, to: newExit)
+        }
+        function.append(newExit)
+        builder.move(to: newExit)
+        builder.return(%newExit.arguments[0])
+    }
+
+    public static func formJoinBlock(
+        for bb: BasicBlock, predecessor: BasicBlock, using builder: IRBuilder,
+        postDominance: inout PostdominanceAnalysis.Result
+    ) -> Bool {
+        var changed = false
+        // If less than two successors, return
+        if bb.successors.count < 2 { return false }
+        /// Otherwise, check post-dominators
+        guard case let .conditional(cond, _, _, _, _)? = bb.terminator?.kind
+            else { return false }
+        let function = bb.parent
+        for postDomTree in postDominance.values.filter({ $0.contains(bb) }) {
+            let predDom = postDomTree.immediateDominator(of: predecessor)
+            let bbDom = postDomTree.immediateDominator(of: bb)
+            /// If post-dominators of bb and predecessor are the same, then
+            /// create a join block
+            if predDom == bbDom {
+                let joinBlock = BasicBlock(
+                    name: function.makeFreshBasicBlockName("\(bb.name)_join"),
+                    arguments: predDom.arguments.map{(bb.makeFreshName($0.name), $0.type)},
+                    parent: function)
+                function.insert(joinBlock, before: predDom)
+                builder.move(to: joinBlock)
+                builder.branch(predDom, joinBlock.arguments.map(%))
+                /// Update branches
+                var visited: Set<BasicBlock> = []
+                func redirectToJoin(_ bb: BasicBlock) {
+                    if visited.contains(bb) || bb == joinBlock { return }
+                    visited.insert(bb)
+                    bb.terminator?.substituteBranches(to: bbDom, with: joinBlock)
+                    bb.successors.forEach(redirectToJoin)
+                }
+                redirectToJoin(bb)
+                changed = true
             }
         }
         return changed

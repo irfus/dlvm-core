@@ -231,24 +231,35 @@ class TransformTests : XCTestCase {
     }
 
     func testCFGCanonicalization() {
-        /// Test single exit canonicalization
+        /// Test merging multiple exits and forming join blocks
         let fun = builder.buildFunction(named: "foo",
                                         argumentTypes: [.scalar(.int(32))],
                                         returnType: .int(32))
         let entry = builder.buildEntry(argumentNames: ["x"], in: fun)
         builder.move(to: entry)
-        let cmp = builder.compare(.equal, %entry.arguments[0], .literal(.int(32), 0))
+        let cmp1 = builder.compare(.equal, %entry.arguments[0], .literal(.int(32), 0))
         let thenBB = builder.buildBasicBlock(
             named: "then", arguments: [:], in: fun)
         let elseBB = builder.buildBasicBlock(
             named: "else", arguments: [:], in: fun)
-        builder.conditional(%cmp,
+        builder.conditional(%cmp1,
                             then: thenBB, arguments: [],
                             else: elseBB, arguments: [])
         builder.move(to: thenBB)
+        let cmp2 = builder.compare(.greaterThan, %entry.arguments[0], .literal(.int(32), 0))
+        let nestedThenBB = builder.buildBasicBlock(
+            named: "nested_then", arguments: [:], in: fun)
+        let nestedElseBB = builder.buildBasicBlock(
+            named: "nested_else", arguments: [:], in: fun)
+        builder.conditional(%cmp2,
+                            then: nestedThenBB, arguments: [],
+                            else: nestedElseBB, arguments: [])
+        builder.move(to: nestedThenBB)
         builder.return(.literal(.int(32), 0))
-        builder.move(to: elseBB)
+        builder.move(to: nestedElseBB)
         builder.return(.literal(.int(32), 1))
+        builder.move(to: elseBB)
+        builder.return(.literal(.int(32), 2))
 
         fun.applyTransform(CFGCanonicalization.self)
         let after = """
@@ -257,9 +268,16 @@ class TransformTests : XCTestCase {
                 %0.0 = equal %x: i32, 0: i32
                 conditional %0.0: bool then 'then() else 'else()
             'then():
-                branch 'exit(0: i32)
+                %1.0 = greaterThan %x: i32, 0: i32
+                conditional %1.0: bool then 'nested_then() else 'nested_else()
             'else():
-                branch 'exit(1: i32)
+                branch 'exit(2: i32)
+            'nested_then():
+                branch 'then_join(0: i32)
+            'nested_else():
+                branch 'then_join(1: i32)
+            'then_join(%exit_value_0: i32):
+                branch 'exit(%exit_value_0: i32)
             'exit(%exit_value: i32):
                 return %exit_value: i32
             }
@@ -272,6 +290,7 @@ class TransformTests : XCTestCase {
             ("testDCE", testDCE),
             ("testCSE", testCSE),
             ("testAlgebraSimplification", testAlgebraSimplification),
+            ("testCFGCanonicalization", testCFGCanonicalization)
         ]
     }
 }
