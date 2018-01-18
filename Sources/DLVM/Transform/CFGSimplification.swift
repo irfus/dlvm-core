@@ -1,5 +1,5 @@
 //
-//  Utilities.swift
+//  CFGSimplification.swift
 //  DLVM
 //
 //  Copyright 2016-2018 The DLVM Team.
@@ -17,17 +17,10 @@
 //  limitations under the License.
 //
 
-import Foundation
-
-func DLUnimplemented(_ function: String = #function,
-                     file: StaticString = #file,
-                     line: UInt = #line) -> Never {
-    fatalError("\(function) is not fully implemented.", file: file, line: line)
-}
-
-func DLImpossible(_ function: String = #function,
-                  file: StaticString = #file,
-                  line: UInt = #line) -> Never {
-    fatalError("Impossible case at \(function). Must be a compiler bug.",
-               file: file, line: line)
+open class CFGSimplification : TransformPass {
+    public typealias Body = Function
+    
+    public static func run(on body: Function) -> Bool {
+        DLUnimplemented()
+    }
 }

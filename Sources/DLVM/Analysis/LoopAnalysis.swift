@@ -28,9 +28,9 @@
 /// loop.
 
 public class Loop : HashableByReference {
-    public internal(set) weak var parent: Loop?
-    public internal(set) var subloops: [Loop] = []
-    public internal(set) var blocks: OrderedSet<BasicBlock>
+    public weak var parent: Loop?
+    public var subloops: [Loop] = []
+    public var blocks: OrderedSet<BasicBlock>
 
     public init(parent: Loop? = nil, header: BasicBlock) {
         self.parent = parent
@@ -182,8 +182,14 @@ public extension Loop {
 }
 
 public struct LoopInfo {
-    public internal(set) var innerMostLoops: [BasicBlock : Loop] = [:]
-    public internal(set) var topLevelLoops: [Loop] = []
+    public var innerMostLoops: [BasicBlock : Loop] = [:]
+    public var topLevelLoops: [Loop] = []
+}
+
+public extension LoopInfo {
+    var isEmpty: Bool {
+        return topLevelLoops.isEmpty
+    }
 
     var loops: Dictionary<BasicBlock, Loop>.Values {
         return innerMostLoops.values
