@@ -200,34 +200,6 @@ public extension LoopInfo {
     }
 }
 
-fileprivate extension Argument {
-    func incomingValue(from bb: BasicBlock) -> Use {
-        guard let index = parent.arguments.index(of: self) else {
-            fatalError("\(self) is not an argument of its parent \(bb.name)")
-        }
-        guard let terminator = parent.terminator else {
-            preconditionFailure("""
-                Basic block \(bb.name) does not branch to argument parent
-                """)
-        }
-        switch terminator.kind {
-        case .branch(parent, let args),
-             .conditional(_, parent, let args, _, _),
-             .conditional(_, _, _, parent, let args):
-            return args[index]
-        case .branchEnum(let enumCase, _):
-            // FIXME: should not return enum directly but rather the
-            // corresponding associated value
-            return enumCase
-        default:
-            preconditionFailure("""
-                Basic block \(bb.name) does not branch to argument parent \
-                \(parent.name)
-                """)
-        }
-    }
-}
-
 /// Analyze LoopInfo discovers loops during a postorder DominatorTree traversal
 /// interleaved with backward CFG traversals within each subloop. The backward
 /// traversal skips inner subloops, so this part of the algorithm is linear in

@@ -19,8 +19,9 @@
 
 /// Canonicalizes control flow graph so that it becomes "reversible": its
 /// transpose is also a valid control flow graph.
-/// - All basic blocks have at most two predecessors.
-/// - There is exactly one exit basic block.
+/// Specifically:
+/// - Merges multiple exits into a single exit.
+/// - Adds "join" blocks so that each basic block has at most two predecessors.
 
 open class CFGCanonicalization : TransformPass {
     public typealias Body = Function
@@ -28,16 +29,16 @@ open class CFGCanonicalization : TransformPass {
     public static func run(on body: Function) -> Bool {
         var changed = false
         let builder = IRBuilder(function: body)
+        var cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+        var postDomTrees = body.analysis(from: PostdominanceAnalysis.self)
 
         /// Perform general CFG canonicalizations.
         /// Merge multiple exits.
-        var cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         if body.premise.exits.count > 1 {
             mergeMultipleExits(in: body, using: builder, controlFlow: &cfg)
         }
 
         /// Form join blocks, if necessary.
-        var postDomTrees = body.analysis(from: PostdominanceAnalysis.self)
         guard postDomTrees.count == 1 else {
             fatalError("Function \(body.name) has multiple exits after canonicalization")
         }
@@ -54,12 +55,11 @@ open class CFGCanonicalization : TransformPass {
         }
 
         /// Canonicalize loops.
-        cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         var loopInfo = body.analysis(from: LoopAnalysis.self)
         for loop in loopInfo.uniqueLoops {
             /// If loop doesn't have a preheader, insert one.
             if loop.preheader == nil {
-                insertPreheader(for: loop, loopInfo: &loopInfo, controlFlow: cfg)
+                insertPreheader(for: loop, loopInfo: &loopInfo, controlFlow: &cfg)
                 changed = true
             }
             /// Next, check to make sure that all exit nodes of the loop only
@@ -69,7 +69,7 @@ open class CFGCanonicalization : TransformPass {
             /// the loop, split the edge now.
             if !loop.hasDedicatedExits {
                 changed = formDedicatedExits(
-                    for: loop, loopInfo: &loopInfo, controlFlow: cfg) || changed
+                    for: loop, loopInfo: &loopInfo, controlFlow: &cfg) || changed
             }
         }
         return changed
@@ -134,14 +134,14 @@ open class CFGCanonicalization : TransformPass {
 
     public static func insertPreheader(
         for loop: Loop, loopInfo: inout LoopInfo,
-        controlFlow cfg: DirectedGraph<BasicBlock>
+        controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) {
         /// Gather original predecessors of header.
         let preds = cfg.predecessors(of: loop.header)
             .lazy.filter { !loop.contains($0) }
         /// Create preheader and hoist predecessors to it.
         let preheader = loop.header.hoistPredecessorsToNewBlock(
-            named: "preheader", hoisting: preds)
+            named: "preheader", hoisting: preds, controlFlow: &cfg)
         /// Make the preheader a part of the parent loop if it exists.
         if let parent = loop.parent {
             loopInfo.innerMostLoops[preheader] = parent
@@ -151,7 +151,7 @@ open class CFGCanonicalization : TransformPass {
 
     public static func formDedicatedExits(
         for loop: Loop, loopInfo: inout LoopInfo,
-        controlFlow cfg: DirectedGraph<BasicBlock>
+        controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) -> Bool {
         var changed = false
         for exit in loop.exits {
@@ -161,7 +161,7 @@ open class CFGCanonicalization : TransformPass {
             guard insidePreds.count < preds.count else { continue }
             /// Create new exit and hoist inside-predecessors to it.
             let newExit = exit.hoistPredecessorsToNewBlock(
-                named: "exit", hoisting: insidePreds)
+                named: "exit", hoisting: insidePreds, controlFlow: &cfg)
             /// Make the new exit a part of the parent loop if it exists.
             if let parent = loop.parent {
                 loopInfo.innerMostLoops[newExit] = parent

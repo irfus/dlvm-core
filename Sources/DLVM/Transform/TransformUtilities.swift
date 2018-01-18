@@ -76,6 +76,35 @@ internal extension BasicBlock {
     }
 }
 
+// MARK: - Basic block related utilities
+internal extension Argument {
+    func incomingValue(from bb: BasicBlock) -> Use {
+        guard let index = parent.arguments.index(of: self) else {
+            fatalError("\(self) is not an argument of its parent \(bb.name)")
+        }
+        guard let terminator = parent.terminator else {
+            preconditionFailure("""
+                Basic block \(bb.name) does not branch to argument parent
+                """)
+        }
+        switch terminator.kind {
+        case .branch(parent, let args),
+             .conditional(_, parent, let args, _, _),
+             .conditional(_, _, _, parent, let args):
+            return args[index]
+        case .branchEnum(let enumCase, _):
+            // FIXME: should not return enum directly but rather the
+            // corresponding associated value
+            return enumCase
+        default:
+            preconditionFailure("""
+                Basic block \(bb.name) does not branch to argument parent \
+                \(parent.name)
+                """)
+        }
+    }
+}
+
 // MARK: - Function cloning
 internal extension Function {
     /// Create clone of function
@@ -167,11 +196,13 @@ internal extension Function {
 
 internal extension BasicBlock {
     /// Creates a new basic block that unconditionally branches to self and
-    /// hoists some predecessors to the new block.
+    /// hoists some predecessors to the new block. Also, updates the CFG
+    /// accordingly.
     @discardableResult
     func hoistPredecessorsToNewBlock<C : Collection>(
         named name: String,
-        hoisting predecessors: C) -> BasicBlock
+        hoisting predecessors: C,
+        controlFlow cfg: inout DirectedGraph<BasicBlock>) -> BasicBlock
         where C.Element == BasicBlock
     {
         let newBB = BasicBlock(
@@ -183,9 +214,12 @@ internal extension BasicBlock {
         parent.insert(newBB, before: self)
         let builder = IRBuilder(basicBlock: newBB)
         builder.branch(self, newBB.arguments.map(%))
-        /// Change all predecessors to branch to new block
+        cfg.insertEdge(from: newBB, to: self)
+        /// Change all predecessors to branch to new block.
         predecessors.forEach { pred in
-            pred.terminator?.substituteBranches(to: self, with: newBB)
+            pred.premise.terminator.substituteBranches(to: self, with: newBB)
+            cfg.removeEdge(from: pred, to: self)
+            cfg.insertEdge(from: pred, to: newBB)
         }
         return newBB
     }

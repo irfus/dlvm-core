@@ -24,6 +24,7 @@ import enum Utility.ShellCompletion
 public enum TransformPass: String {
     case algebraSimplification = "AlgebraSimplification"
     case cfgCanonicalization = "CFGCanonicalization"
+    case cfgSimplification = "CFGSimpliciation"
     case commonSubexpressionElimination = "CommonSubexpressionElimination"
     case deadCodeElimination = "DeadCodeElimination"
     case differentiation = "Differentiation"
@@ -39,6 +40,7 @@ public extension TransformPass {
         switch self {
         case .algebraSimplification: return "AS"
         case .cfgCanonicalization: return "CFGCan"
+        case .cfgSimplification: return "CFGSimp"
         case .commonSubexpressionElimination: return "CSE"
         case .deadCodeElimination: return "DCE"
         case .differentiation: return "AD"
@@ -54,6 +56,7 @@ public extension TransformPass {
         switch self {
         case .algebraSimplification: return "algebra simplification"
         case .cfgCanonicalization: return "CFG canonicalization"
+        case .cfgSimplification: return "CFG simplification"
         case .commonSubexpressionElimination:
             return "common subexpression elimination"
         case .deadCodeElimination: return "dead code elimination"
@@ -78,6 +81,9 @@ public extension TransformPass {
         case T.cfgCanonicalization.abbrevation,
              T.cfgCanonicalization.rawValue:
             self = .cfgCanonicalization
+        case T.cfgSimplification.abbrevation,
+             T.cfgSimplification.rawValue:
+            self = .cfgSimplification
         case T.commonSubexpressionElimination.abbrevation,
              T.commonSubexpressionElimination.rawValue:
             self = .commonSubexpressionElimination
@@ -116,6 +122,8 @@ extension TransformPass : StringEnumArgument {
              algebraSimplification.description),
             (cfgCanonicalization.abbrevation,
              cfgCanonicalization.description),
+            (CFGSimplification.abbrevation,
+             CFGSimplification.description),
             (commonSubexpressionElimination.abbrevation,
              commonSubexpressionElimination.description),
             (deadCodeElimination.abbrevation,
@@ -145,6 +153,9 @@ public func runPass(_ pass: TransformPass, on module: Module,
                                       bypassingVerification: noVerify)
     case .cfgCanonicalization:
         changed = module.mapTransform(CFGCanonicalization.self,
+                                      bypassingVerification: noVerify)
+    case .cfgSimplification:
+        changed = module.mapTransform(CFGSimplification.self,
                                       bypassingVerification: noVerify)
     case .commonSubexpressionElimination:
         changed = module.mapTransform(CommonSubexpressionElimination.self,
