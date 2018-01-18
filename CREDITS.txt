@@ -11,24 +11,26 @@ beautification by scripts.  The fields are: name (N), email (E), web-address
 N: Vikram Adve
 E: vadve@illinois.edu
 W: http://vadve.cs.illinois.edu
-D: Provider of much wisdom, and motivator for DLVM
+D: Provider of much wisdom, and motivator for DLVM.
 
 N: Will Dietz
 E: w@wdtz.org
 W: https://wdtz.org
-D: ALLVM build support
+D: Early contributor via ALLVM build support on Linux.
 
 N: Lane Schwartz
 E: lanes@illinois.edu
 W: https://dowobeha.github.com
-D: Provider of much wisdom, and motivator for DLVM
+D: Provider of much wisdom, and motivator for DLVM.
 
 N: Richard Wei
 E: rxrwei@gmail.com
 W: http://rxwei.me
-D: Founder and primary architect
+D: Founder and primary architect.
 
 N: Dan Zheng
 E: zheng321@purdue.edu
 W: http://danzheng.me
-D: Contributor to testing infrastructure, transforms and DSLs
+D: Contributor to almost everything, including the infrastructure, IR,
+   transforms, command line tools and DSLs. Maintaining project website
+   dlvm.org.
