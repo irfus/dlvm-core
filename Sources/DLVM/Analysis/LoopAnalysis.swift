@@ -64,15 +64,15 @@ public extension Loop {
     /// Return all of the successor blocks of this loop. These are the blocks
     /// _outside of the current loop_ which are branched to.
     var exits: Set<BasicBlock> {
-        return Set(blocks.lazy
-            .flatMap { $0.successors }.lazy
-            .filter { !self.contains($0) })
+        return Set(blocks
+            .lazy.flatMap { $0.successors }
+            .lazy.filter { !self.contains($0) })
     }
 
     var exitEdges: [(source: BasicBlock, destination: BasicBlock)] {
-        return blocks.lazy
-            .flatMap { bb in bb.successors.map { (bb, $0) } }.lazy
-            .filter { !contains($0.1) }
+        return blocks
+            .lazy.flatMap { bb in bb.successors.map { (bb, $0) } }
+            .lazy.filter { !contains($0.1) }
     }
 
     /// If there is a preheader for this loop, return it. Otherwise, return nil.
@@ -189,6 +189,13 @@ public struct LoopInfo {
 public extension LoopInfo {
     var isEmpty: Bool {
         return topLevelLoops.isEmpty
+
+    var loops: Dictionary<BasicBlock, Loop>.Values {
+        return innerMostLoops.values
+    }
+
+    var uniqueLoops: Set<Loop> {
+        return Set(loops)
     }
 }
 
