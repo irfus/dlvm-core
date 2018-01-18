@@ -30,7 +30,6 @@ open class CFGCanonicalization : TransformPass {
         var changed = false
         let builder = IRBuilder(function: body)
         var cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
-        var postDomTrees = body.analysis(from: PostdominanceAnalysis.self)
 
         /// Perform general CFG canonicalizations.
         /// Merge multiple exits.
@@ -39,6 +38,7 @@ open class CFGCanonicalization : TransformPass {
         }
 
         /// Form join blocks, if necessary.
+        var postDomTrees = body.analysis(from: PostdominanceAnalysis.self)
         guard postDomTrees.count == 1 else {
             fatalError("Function \(body.name) has multiple exits after canonicalization")
         }
@@ -75,7 +75,7 @@ open class CFGCanonicalization : TransformPass {
         return changed
     }
 
-    public static func mergeMultipleExits(
+    private static func mergeMultipleExits(
         in function: Function, using builder: IRBuilder,
         controlFlow cfg: inout ControlFlowGraphAnalysis.Result
     ) {
@@ -95,7 +95,7 @@ open class CFGCanonicalization : TransformPass {
         builder.return(%newExit.arguments[0])
     }
 
-    public static func formJoinBlock(
+    private static func formJoinBlock(
         for bb: BasicBlock, predecessor: BasicBlock, using builder: IRBuilder,
         postDominance: inout PostdominanceAnalysis.Result
     ) -> Bool {
@@ -132,7 +132,7 @@ open class CFGCanonicalization : TransformPass {
         return changed
     }
 
-    public static func insertPreheader(
+    private static func insertPreheader(
         for loop: Loop, loopInfo: inout LoopInfo,
         controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) {
@@ -149,7 +149,7 @@ open class CFGCanonicalization : TransformPass {
         }
     }
 
-    public static func formDedicatedExits(
+    private static func formDedicatedExits(
         for loop: Loop, loopInfo: inout LoopInfo,
         controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) -> Bool {

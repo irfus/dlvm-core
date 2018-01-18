@@ -36,3 +36,47 @@ func @foo: (i32) -> i32 {
 // CHECK-NEXT:     branch 'exit(%exit_value_0: i32)
 // CHECK-NEXT: 'exit(%exit_value: i32):
 // CHECK-NEXT:     return %exit_value: i32
+
+// Test creating loop preheader
+// TODO: test forming dedicated exits
+
+func @double_loop: (i32, i32) -> i32 {
+'entry(%a: i32, %b: i32):
+    branch 'outer(0: i32, 0: i32)
+'outer(%i1: i32, %j1: i32):
+    %1.0 = lessThan %i1: i32, %a: i32
+    conditional %1.0: bool then 'inner(%i1: i32, %j1: i32) else 'cont(%i1: i32, %j1: i32)
+'inner(%i2: i32, %j2: i32):
+    %2.0 = lessThan %j2: i32, %b: i32
+    conditional %2.0: bool then 'inner_body(%i2: i32, %j2: i32) else 'outer_body(%i2: i32, %j2: i32)
+'inner_body(%i3: i32, %j3: i32):
+    %3.0 = add %j3: i32, 1: i32
+    branch 'inner(%i3: i32, %3.0: i32)
+'outer_body(%i4: i32, %j4: i32):
+    %4.0 = add %i4: i32, 1: i32
+    branch 'outer(%4.0: i32, %j4: i32)
+'cont(%i5: i32, %j5: i32):
+    %5.0 = add %i5: i32, %j5: i32
+    return %5.0: i32
+}
+
+// CHECK: func @double_loop: (i32, i32) -> i32
+// CHECK: 'entry(%a: i32, %b: i32):
+// CHECK-NEXT:     branch 'outer(0: i32, 0: i32)
+// CHECK-NEXT: 'outer(%i1: i32, %j1: i32):
+// CHECK-NEXT:     %1.0 = lessThan %i1: i32, %a: i32
+// CHECK-NEXT:     conditional %1.0: bool then 'preheader(%i1: i32, %j1: i32) else 'cont(%i1: i32, %j1: i32)
+// CHECK-NEXT: 'preheader(%i2_0: i32, %j2_0: i32):
+// CHECK-NEXT:     branch 'inner(%i2_0: i32, %j2_0: i32)
+// CHECK-NEXT: 'inner(%i2: i32, %j2: i32):
+// CHECK-NEXT:     %3.0 = lessThan %j2: i32, %b: i32
+// CHECK-NEXT:     conditional %3.0: bool then 'inner_body(%i2: i32, %j2: i32) else 'outer_body(%i2: i32, %j2: i32)
+// CHECK-NEXT: 'inner_body(%i3: i32, %j3: i32):
+// CHECK-NEXT:     %4.0 = add %j3: i32, 1: i32
+// CHECK-NEXT:     branch 'inner(%i3: i32, %4.0: i32)
+// CHECK-NEXT: 'outer_body(%i4: i32, %j4: i32):
+// CHECK-NEXT:     %5.0 = add %i4: i32, 1: i32
+// CHECK-NEXT:     branch 'outer(%5.0: i32, %j4: i32)
+// CHECK-NEXT: 'cont(%i5: i32, %j5: i32):
+// CHECK-NEXT:     %6.0 = add %i5: i32, %j5: i32
+// CHECK-NEXT:     return %6.0: i32

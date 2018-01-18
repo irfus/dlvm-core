@@ -38,7 +38,7 @@ open class CFGSimplification : TransformPass {
         changed = removeUnreachableBlocks(in: body, controlFlow: &cfg)
             || changed
 
-        /// Merge basic blocks into their predecessor if possible.
+        /// Merge basic blocks into their predecessor(s), if possible.
         changed = mergeBlocksIntoPredecessors(in: body, controlFlow: &cfg)
             || changed
 
@@ -49,7 +49,7 @@ open class CFGSimplification : TransformPass {
         return changed
     }
 
-    public static func removeUnreachableBlocks(
+    private static func removeUnreachableBlocks(
         in function: Function,
         controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) -> Bool {
@@ -73,7 +73,7 @@ open class CFGSimplification : TransformPass {
         return changed
     }
 
-    public static func mergeBlocksIntoPredecessors(
+    private static func mergeBlocksIntoPredecessors(
         in function: Function,
         controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) -> Bool {
@@ -120,7 +120,7 @@ open class CFGSimplification : TransformPass {
         return changed
     }
 
-    public static func removeBlockArgumentsIfUniquePredecessor(
+    private static func removeBlockArgumentsIfUniquePredecessor(
         in function: Function,
         controlFlow cfg: DirectedGraph<BasicBlock>
     ) -> Bool {
