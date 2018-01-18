@@ -1,0 +1,38 @@
+// RUN: dlopt %s -p CFGCan --print-ir | FileCheck %s
+
+// CHECK: CFGCan: changed
+
+module "cfg_canon"
+stage raw
+
+// Test merging multiple exits and forming join blocks
+
+func @foo: (i32) -> i32 {
+'entry(%x: i32):
+    %0.0 = equal %x: i32, 0: i32
+    conditional %0.0: bool then 'then() else 'else()
+'then():
+    %1.0 = greaterThan %x: i32, 0: i32
+    conditional %1.0: bool then 'nested_then() else 'nested_else()
+'else():
+    return 2: i32
+'nested_then():
+    return 0: i32
+'nested_else():
+    return 1: i32
+}
+
+// CHECK-LABEL: func @foo: (i32) -> i32
+// CHECK: 'then():
+// CHECK-NEXT:     %1.0 = greaterThan %x: i32, 0: i32
+// CHECK-NEXT:     conditional %1.0: bool then 'nested_then() else 'nested_else()
+// CHECK-NEXT: 'else():
+// CHECK-NEXT:     branch 'exit(2: i32)
+// CHECK-NEXT: 'nested_then():
+// CHECK-NEXT:     branch 'then_join(0: i32)
+// CHECK-NEXT: 'nested_else():
+// CHECK-NEXT:     branch 'then_join(1: i32)
+// CHECK-NEXT: 'then_join(%exit_value_0: i32):
+// CHECK-NEXT:     branch 'exit(%exit_value_0: i32)
+// CHECK-NEXT: 'exit(%exit_value: i32):
+// CHECK-NEXT:     return %exit_value: i32
