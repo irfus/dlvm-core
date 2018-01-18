@@ -230,6 +230,43 @@ class TransformTests : XCTestCase {
         XCTAssertFalse(module.mapTransform(AlgebraSimplification.self))
     }
 
+    func testCFGCanonicalization() {
+        /// Test single exit canonicalization
+        let fun = builder.buildFunction(named: "foo",
+                                        argumentTypes: [.scalar(.int(32))],
+                                        returnType: .int(32))
+        let entry = builder.buildEntry(argumentNames: ["x"], in: fun)
+        builder.move(to: entry)
+        let cmp = builder.compare(.equal, %entry.arguments[0], .literal(.int(32), 0))
+        let thenBB = builder.buildBasicBlock(
+            named: "then", arguments: [:], in: fun)
+        let elseBB = builder.buildBasicBlock(
+            named: "else", arguments: [:], in: fun)
+        builder.conditional(%cmp,
+                            then: thenBB, arguments: [],
+                            else: elseBB, arguments: [])
+        builder.move(to: thenBB)
+        builder.return(.literal(.int(32), 0))
+        builder.move(to: elseBB)
+        builder.return(.literal(.int(32), 1))
+
+        fun.applyTransform(CFGCanonicalization.self)
+        let after = """
+            func @foo: (i32) -> i32 {
+            'entry(%x: i32):
+                %0.0 = equal %x: i32, 0: i32
+                conditional %0.0: bool then 'then() else 'else()
+            'then():
+                branch 'exit(0: i32)
+            'else():
+                branch 'exit(1: i32)
+            'exit(%exit_value: i32):
+                return %exit_value: i32
+            }
+            """
+        XCTAssertEqual(fun.description, after)
+    }
+
     static var allTests: [(String, (TransformTests) -> () throws -> Void)] {
         return [
             ("testDCE", testDCE),

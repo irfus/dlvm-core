@@ -27,9 +27,33 @@ open class CFGCanonicalization : TransformPass {
     
     public static func run(on body: Function) -> Bool {
         var changed = false
-        let cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+        let builder = IRBuilder(function: body)
+
+        /// Perform general CFG canonicalizations.
+        var cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
         var loopInfo = body.analysis(from: LoopAnalysis.self)
+        if body.premise.exits.count > 1 {
+            let newExitArg = (body.makeFreshName("exit_value"), body.returnType)
+            let newExit = BasicBlock(name: body.makeFreshBasicBlockName("exit"),
+                                     arguments: [newExitArg],
+                                     parent: body)
+            for (_, returnInst) in body.premise.exits {
+                guard case let .return(use) = returnInst.kind else {
+                    fatalError("Invalid exit return instruction")
+                }
+                switch use {
+                case let use?: returnInst.kind = .branch(newExit, [use])
+                case nil: returnInst.kind = .branch(newExit, [])
+                }
+            }
+            body.append(newExit)
+            builder.move(to: newExit)
+            builder.return(%newExit.arguments[0])
+        }
+
         /// Canonicalize loops.
+        cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
+        loopInfo = body.analysis(from: LoopAnalysis.self)
         for loop in loopInfo.uniqueLoops {
             /// If loop doesn't have a preheader, insert one.
             if loop.preheader == nil {
@@ -42,8 +66,8 @@ open class CFGCanonicalization : TransformPass {
             /// exit blocks. If the exit block has predecessors from outside of
             /// the loop, split the edge now.
             if !loop.hasDedicatedExits {
-                changed = changed || formDedicatedExits(
-                    for: loop, loopInfo: &loopInfo, controlFlow: cfg)
+                changed = formDedicatedExits(
+                    for: loop, loopInfo: &loopInfo, controlFlow: cfg) || changed
             }
         }
         return changed

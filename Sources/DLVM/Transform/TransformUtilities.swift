@@ -63,6 +63,10 @@ internal func makeFreshFunctionName(_ name: String, in module: Module) -> String
 }
 
 internal extension Function {
+    func makeFreshName(_ name: String) -> String {
+        return DLVM.makeFreshName(name, in: self)
+    }
+
     func makeFreshBasicBlockName(_ name: String) -> String {
         return DLVM.makeFreshBasicBlockName(name, in: self)
     }
@@ -168,77 +172,6 @@ public extension Function {
 }
 
 public extension BasicBlock {
-    public func makeClone(named name: String,
-                          keepTerminators: Bool) -> BasicBlock {
-        let newBB = BasicBlock(
-            name: makeFreshName(name),
-            arguments: arguments.map{(makeFreshName($0.name), $0.type)},
-            parent: parent)
-        copyContents(to: newBB, keepTerminators: keepTerminators)
-        return newBB
-    }
-
-    /// Copy instructions to an empty basic block
-    public func copyContents(to other: BasicBlock, keepTerminators: Bool) {
-        /// Other BB must be empty (has no instructions)
-        guard other.isEmpty else {
-            fatalError("""
-                Could not copy contents to \(other.name) because it is not \
-                empty
-                """)
-        }
-        /// Other BB must be compatible
-        guard arguments.map({$0.type}) == other.arguments.map({$0.type}) else {
-            fatalError("\(self) and \(other) are not compatible")
-        }
-
-        /// Mappings from old IR units to new IR units
-        var newArgs: [Argument : Argument] = [:]
-        var newInsts: [Instruction : Instruction] = [:]
-
-        func newUse(from old: Use) -> Use {
-            switch old {
-            case let .literal(ty, lit) where lit.isAggregate:
-                return .literal(
-                    ty, lit.substituting(newUse(from: old), for: old))
-            case let .literal(ty, lit):
-                return .literal(ty, lit)
-            case let .argument(_, arg):
-                if let newArg = newArgs[arg] {
-                    return %newArg
-                }
-            case let .instruction(_, inst):
-                if let newInst = newInsts[inst] {
-                    return %newInst
-                }
-            default:
-                break
-            }
-            return old
-        }
-
-        /// Insert arguments into mapping
-        for (oldArg, newArg) in zip(arguments, other.arguments) {
-            newArgs[oldArg] = newArg
-        }
-        /// Clone instructions
-        for oldInst in self {
-            /// Skip if instruction is a terminator and not keeping terminators
-            if !keepTerminators && oldInst.kind.isTerminator { continue }
-            let newInst = Instruction(name: oldInst.name,
-                                      kind: oldInst.kind, parent: other)
-            /// Replace old uses with new uses (if they exist)
-            for oldUse in newInst.operands {
-                newInst.substitute(newUse(from: oldUse), for: oldUse)
-            }
-            /// If instruction branches, substitute self with other BB
-            newInst.kind = newInst.kind.substitutingBranches(to: self, with: other)
-            /// Insert instruction into mapping and other BB
-            newInsts[oldInst] = newInst
-            other.append(newInst)
-        }
-    }
-
     /// Creates a new basic block that unconditionally branches to self and
     /// hoists some predecessors to the new block.
     @discardableResult

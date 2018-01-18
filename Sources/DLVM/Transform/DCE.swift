@@ -17,15 +17,13 @@
 //  limitations under the License.
 //
 
-import class Foundation.NSMutableOrderedSet
-
 /// Dead code elimination (traditional algorithm)
 open class DeadCodeElimination : TransformPass {
     public typealias Body = Function
 
     open class func run(on body: Function) -> Bool {
         var changed = false
-        let workList: NSMutableOrderedSet = []
+        var workList: [Instruction] = []
         var count = 0
         /// Iterate over the original function, only adding instructions to the
         /// worklist if they actually need to be revisited. This avoids having
@@ -33,13 +31,13 @@ open class DeadCodeElimination : TransformPass {
         /// instructions.
         for inst in body.instructions where !workList.contains(inst) {
             changed = performDCE(on: inst,
-                                 workList: workList,
+                                 workList: &workList,
                                  count: &count) || changed
         }
-        while let inst = workList.lastObject as? Instruction {
-            workList.remove(inst)
+        while !workList.isEmpty {
+            let inst = workList.removeLast()
             changed = performDCE(on: inst,
-                                 workList: workList,
+                                 workList: &workList,
                                  count: &count) || changed
         }
         /// TODO: Print count when DEBUG
@@ -47,7 +45,7 @@ open class DeadCodeElimination : TransformPass {
     }
 
     private static func performDCE(on inst: Instruction,
-                                   workList: NSMutableOrderedSet,
+                                   workList: inout [Instruction],
                                    count: inout Int) -> Bool {
         let function = inst.parent.parent
         let module = function.parent
@@ -69,7 +67,7 @@ open class DeadCodeElimination : TransformPass {
             where dfg.successors(of: usee).isEmpty
                 && sideEffectInfo[usee] == .none
                 && !inst.kind.isTerminator {
-            workList.add(usee)
+            workList.append(usee)
         }
         return true
     }
