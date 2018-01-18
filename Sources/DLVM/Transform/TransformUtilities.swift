@@ -32,60 +32,54 @@ fileprivate extension Function {
     }
 }
 
-internal func makeFreshName(_ name: String, in function: Function) -> String {
-    var result = name
-    var count = 0
-    while function.definedNames.contains(result) {
-        result = "\(name)_\(count)"
-        count += 1
+internal extension Module {
+    func makeFreshFunctionName(_ name: String) -> String {
+        var result = name
+        var count = 0
+        while elements.map({ $0.name }).contains(result) {
+            result = "\(name)_\(count)"
+            count += 1
+        }
+        return result
     }
-    return result
-}
-
-internal func makeFreshBasicBlockName(_ name: String, in function: Function) -> String {
-    var result = name
-    var count = 0
-    while function.elements.contains(where: { $0.name == result }) {
-        result = "\(name)_\(count)"
-        count += 1
-    }
-    return result
-}
-
-internal func makeFreshFunctionName(_ name: String, in module: Module) -> String {
-    var result = name
-    var count = 0
-    while module.elements.map({ $0.name }).contains(result) {
-        result = "\(name)_\(count)"
-        count += 1
-    }
-    return result
 }
 
 internal extension Function {
     func makeFreshName(_ name: String) -> String {
-        return DLVM.makeFreshName(name, in: self)
+        var result = name
+        var count = 0
+        while definedNames.contains(result) {
+            result = "\(name)_\(count)"
+            count += 1
+        }
+        return result
     }
 
     func makeFreshBasicBlockName(_ name: String) -> String {
-        return DLVM.makeFreshBasicBlockName(name, in: self)
+        var result = name
+        var count = 0
+        while elements.contains(where: { $0.name == result }) {
+            result = "\(name)_\(count)"
+            count += 1
+        }
+        return result
     }
 }
 
 internal extension BasicBlock {
     func makeFreshName(_ name: String) -> String {
-        return DLVM.makeFreshName(name, in: parent)
+        return parent.makeFreshName(name)
     }
 
     func makeFreshBasicBlockName(_ name: String) -> String {
-        return DLVM.makeFreshBasicBlockName(name, in: parent)
+        return parent.makeFreshBasicBlockName(name)
     }
 }
 
 // MARK: - Function cloning
-public extension Function {
+internal extension Function {
     /// Create clone of function
-    public func makeClone(named name: String) -> Function {
+    func makeClone(named name: String) -> Function {
         let newFunc = Function(name: name,
                                argumentTypes: argumentTypes,
                                returnType: returnType,
@@ -97,7 +91,7 @@ public extension Function {
     }
 
     /// Copy basic blocks to an empty function
-    public func copyContents(to other: Function) {
+    func copyContents(to other: Function) {
         /// Other function must be empty (has no basic blocks)
         guard other.isEmpty else {
             fatalError("""
@@ -171,11 +165,11 @@ public extension Function {
     }
 }
 
-public extension BasicBlock {
+internal extension BasicBlock {
     /// Creates a new basic block that unconditionally branches to self and
     /// hoists some predecessors to the new block.
     @discardableResult
-    public func hoistPredecessorsToNewBlock<C : Collection>(
+    func hoistPredecessorsToNewBlock<C : Collection>(
         named name: String,
         hoisting predecessors: C) -> BasicBlock
         where C.Element == BasicBlock

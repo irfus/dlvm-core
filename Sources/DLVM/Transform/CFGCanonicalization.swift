@@ -30,21 +30,19 @@ open class CFGCanonicalization : TransformPass {
         let builder = IRBuilder(function: body)
 
         /// Perform general CFG canonicalizations.
+        /// Merge multiple exits.
         var cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
-        var loopInfo = body.analysis(from: LoopAnalysis.self)
         if body.premise.exits.count > 1 {
             let newExitArg = (body.makeFreshName("exit_value"), body.returnType)
             let newExit = BasicBlock(name: body.makeFreshBasicBlockName("exit"),
                                      arguments: [newExitArg],
                                      parent: body)
-            for (_, returnInst) in body.premise.exits {
+            for (exit, returnInst) in body.premise.exits {
                 guard case let .return(use) = returnInst.kind else {
                     fatalError("Invalid exit return instruction")
                 }
-                switch use {
-                case let use?: returnInst.kind = .branch(newExit, [use])
-                case nil: returnInst.kind = .branch(newExit, [])
-                }
+                returnInst.kind = .branch(newExit, use.flatMap { [$0] } ?? [])
+                cfg.insertEdge(from: exit, to: newExit)
             }
             body.append(newExit)
             builder.move(to: newExit)
@@ -53,7 +51,7 @@ open class CFGCanonicalization : TransformPass {
 
         /// Canonicalize loops.
         cfg = body.analysis(from: ControlFlowGraphAnalysis.self)
-        loopInfo = body.analysis(from: LoopAnalysis.self)
+        var loopInfo = body.analysis(from: LoopAnalysis.self)
         for loop in loopInfo.uniqueLoops {
             /// If loop doesn't have a preheader, insert one.
             if loop.preheader == nil {

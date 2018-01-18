@@ -34,8 +34,7 @@ open class DeadCodeElimination : TransformPass {
                                  workList: &workList,
                                  count: &count) || changed
         }
-        while !workList.isEmpty {
-            let inst = workList.removeLast()
+        while let inst = workList.popLast() {
             changed = performDCE(on: inst,
                                  workList: &workList,
                                  count: &count) || changed

@@ -36,7 +36,7 @@ open class Differentiation: TransformPass {
             config.primal.copyContents(to: adjoint)
             /// Add seed argument if necessary
             if config.isSeedable {
-                let seedArgName = makeFreshName("seed", in: adjoint)
+                let seedArgName = adjoint.makeFreshName("seed")
                 let seedArg = Argument(name: seedArgName,
                                        type: config.seedType,
                                        parent: adjoint[0])
@@ -145,9 +145,9 @@ fileprivate extension Differentiation {
                     .filter { !loop.contains($0) }
                 /// Create preheader and connect it with header
                 let preheader = BasicBlock(
-                    name: makeFreshName("preheader", in: function),
+                    name: function.makeFreshName("preheader"),
                     arguments: loop.header.arguments.map{
-                        (makeFreshName($0.name, in: function), $0.type)
+                        (function.makeFreshName($0.name), $0.type)
                     },
                     parent: function)
                 function.insert(preheader, before: loop.header)
@@ -429,7 +429,7 @@ fileprivate extension Differentiation {
                         fatalError("Function \(fn.name) is not differentiable")
                 }
                 let module = fn.parent
-                let adjointName = makeFreshFunctionName("\(fn.name)_grad", in: module)
+                let adjointName = module.makeFreshFunctionName("\(fn.name)_grad")
                 adjoint = Function(name: adjointName,
                                    argumentTypes: argumentTypes,
                                    returnType: returnType,

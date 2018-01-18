@@ -284,8 +284,7 @@ open class LoopAnalysis : AnalysisPass {
         dominance domTree: DominatorTree<BasicBlock>) {
         /// Perform a backward CFG traversal using a worklist.
         var workList = backEdges
-        while !workList.isEmpty {
-            let block = workList.removeLast()
+        while let block = workList.popLast() {
             guard var subloop = info.innerMostLoops[block] else {
                 if !domTree.contains(block) {
                     continue
