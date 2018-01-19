@@ -38,6 +38,8 @@ public class Loop : HashableByReference {
     }
 }
 
+// - MARK: Loop properties
+
 public extension Loop {
     var header: BasicBlock {
         guard let first = blocks.first else { DLImpossible() }
@@ -197,6 +199,42 @@ public extension LoopInfo {
 
     var uniqueLoops: Set<Loop> {
         return Set(loops)
+    }
+}
+
+// - MARK: Loop updaters
+
+extension Loop {
+    func insertBlock(_ bb: BasicBlock, before pred: BasicBlock) {
+        guard contains(pred) else { DLImpossible() }
+        blocks.insert(bb, before: pred)
+    }
+
+    func insertBlock(_ bb: BasicBlock, after pred: BasicBlock) {
+        guard contains(pred) else { DLImpossible() }
+        blocks.insert(bb, after: pred)
+    }
+}
+
+extension LoopInfo {
+    mutating func insertBlock(_ bb: BasicBlock, in loop: Loop, before pred: BasicBlock) {
+        guard loops.contains(loop) else { DLImpossible() }
+        guard loop.contains(pred) else { DLImpossible() }
+        innerMostLoops[bb] = loop
+        loop.insertBlock(bb, before: pred)
+        while let parent = loop.parent {
+            parent.insertBlock(bb, before: pred)
+        }
+    }
+
+    mutating func insertBlock(_ bb: BasicBlock, in loop: Loop, after pred: BasicBlock) {
+        guard loops.contains(loop) else { DLImpossible() }
+        guard loop.contains(pred) else { DLImpossible() }
+        innerMostLoops[bb] = loop
+        loop.insertBlock(bb, after: pred)
+        while let parent = loop.parent {
+            parent.insertBlock(bb, after: pred)
+        }
     }
 }
 

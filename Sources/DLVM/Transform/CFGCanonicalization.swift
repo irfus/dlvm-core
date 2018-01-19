@@ -52,24 +52,20 @@ open class CFGCanonicalization : TransformPass {
             visited.insert(bb)
         }
 
-        /// Canonicalize loops.
+        /// Canonicalize loops, starting with the innermost nested loops. A
+        /// loop is visited only after its subloops are visited.
         var loopInfo = body.analysis(from: LoopAnalysis.self)
-        for loop in loopInfo.uniqueLoops {
-            /// If loop doesn't have a preheader, insert one.
-            if loop.preheader == nil {
-                insertPreheader(for: loop, loopInfo: &loopInfo, controlFlow: &cfg)
-                changed = true
+        func visitLoop(loop: Loop) {
+            if loop.subloops.isEmpty {
+                changed = canonicalizeLoop(loop, loopInfo: &loopInfo, controlFlow: &cfg)
+                    || changed
+                return
             }
-            /// Next, check to make sure that all exit nodes of the loop only
-            /// have predecessors that are inside of the loop. This check
-            /// guarantees that the loop preheader/header will dominate the
-            /// exit blocks. If the exit block has predecessors from outside of
-            /// the loop, split the edge now.
-            if !loop.hasDedicatedExits {
-                changed = formDedicatedExits(
-                    for: loop, loopInfo: &loopInfo, controlFlow: &cfg) || changed
-            }
+            loop.subloops.forEach(visitLoop)
+            changed = canonicalizeLoop(loop, loopInfo: &loopInfo, controlFlow: &cfg)
+                || changed
         }
+        loopInfo.topLevelLoops.forEach(visitLoop)
         return changed
     }
 
@@ -130,21 +126,66 @@ open class CFGCanonicalization : TransformPass {
         return changed
     }
 
+    private static func canonicalizeLoop(
+        _ loop: Loop, loopInfo: inout LoopInfo,
+        controlFlow cfg: inout DirectedGraph<BasicBlock>
+    ) -> Bool {
+        var changed = false
+        /// If loop doesn't have a preheader, insert one.
+        changed = insertPreheader(for: loop, loopInfo: &loopInfo, controlFlow: &cfg)
+            || changed
+        /// If loop doesn't have a unique latch, form one.
+        changed = formLatch(for: loop, loopInfo: &loopInfo, controlFlow: &cfg)
+            || changed
+        /// Check that all exit nodes of the loop only have predecessors that
+        /// are inside of the loop. This check guarantees that the loop
+        /// preheader/header will dominate the exit blocks. If an exit block
+        /// has predecessors from outside of the loop, form a dedicated exit.
+        if !loop.hasDedicatedExits {
+            changed = formDedicatedExits(
+                for: loop, loopInfo: &loopInfo, controlFlow: &cfg) || changed
+        }
+        return changed
+    }
+
     private static func insertPreheader(
         for loop: Loop, loopInfo: inout LoopInfo,
         controlFlow cfg: inout DirectedGraph<BasicBlock>
-    ) {
+    ) -> Bool {
+        guard loop.preheader == nil else { return false }
         /// Gather original predecessors of header.
         let preds = cfg.predecessors(of: loop.header)
             .lazy.filter { !loop.contains($0) }
         /// Create preheader and hoist predecessors to it.
         let preheader = loop.header.hoistPredecessorsToNewBlock(
             named: "preheader", hoisting: preds, controlFlow: &cfg)
-        /// Make the preheader a part of the parent loop if it exists.
+        /// Add preheader to parent loops (if they exist).
         if let parent = loop.parent {
-            loopInfo.innerMostLoops[preheader] = parent
-            parent.blocks.insert(preheader, before: loop.header)
+            loopInfo.insertBlock(preheader, in: parent, before: loop.header)
         }
+        return true
+    }
+
+    private static func formLatch(
+        for loop: Loop, loopInfo: inout LoopInfo,
+        controlFlow cfg: inout DirectedGraph<BasicBlock>
+    ) -> Bool {
+        guard loop.latch == nil else { return false }
+        /// Gather blocks in loop containing back-edges to header.
+        let latches = cfg.predecessors(of: loop.header)
+            .lazy.filter { loop.contains($0) }
+        guard latches.count > 1 else { DLImpossible() }
+        /// Create unique latch and hoist back-edge blocks to it.
+        let latch = loop.header.hoistPredecessorsToNewBlock(
+            named: "latch", hoisting: latches, controlFlow: &cfg)
+        /// Add latch to current loop and its parents (if they exist).
+        /// - Note: The latch may instead be inserted at a random index for
+        /// efficiency.
+        guard let lastLatch = latches.max(by: { $0.indexInParent > $1.indexInParent }) else {
+            DLImpossible()
+        }
+        loopInfo.insertBlock(latch, in: loop, after: lastLatch)
+        return true
     }
 
     private static func formDedicatedExits(
@@ -160,10 +201,9 @@ open class CFGCanonicalization : TransformPass {
             /// Create new exit and hoist inside-predecessors to it.
             let newExit = exit.hoistPredecessorsToNewBlock(
                 named: "exit", hoisting: insidePreds, controlFlow: &cfg)
-            /// Make the new exit a part of the parent loop if it exists.
+            /// Add new exit to parent loops (if they exist).
             if let parent = loop.parent {
-                loopInfo.innerMostLoops[newExit] = parent
-                parent.blocks.insert(newExit, before: exit)
+                loopInfo.insertBlock(newExit, in: parent, before: exit)
             }
             changed = true
         }
