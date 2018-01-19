@@ -37,17 +37,14 @@ open class CFGSimplification : TransformPass {
         /// Remove basic blocks that are not reachable from the entry.
         changed = removeUnreachableBlocks(in: body, controlFlow: &cfg)
             || changed
-
         /// Merge basic blocks into their predecessor(s), if possible.
         changed = mergeBlocksIntoPredecessors(in: body, controlFlow: &cfg)
             || changed
-
         /// If a basic block is a simple trampoline (it does nothing but branch
         /// to another block), remove it and redirect incoming edges to the
         /// trampoline destination.
         changed = eliminateSimpleTrampolines(in: body, controlFlow: &cfg)
             || changed
-
         /// Remove arguments from basic blocks with a single predecessor.
         changed = removeBlockArgumentsIfUniquePredecessor(in: body, controlFlow: cfg)
             || changed
@@ -146,7 +143,6 @@ open class CFGSimplification : TransformPass {
             changed = true
         }
         return changed
-
     }
 
     private static func removeBlockArgumentsIfUniquePredecessor(
@@ -154,7 +150,7 @@ open class CFGSimplification : TransformPass {
         controlFlow cfg: DirectedGraph<BasicBlock>
     ) -> Bool {
         var changed = false
-        for bb in function {
+        for bb in function where bb.arguments.count > 0 {
             /// Consider only the basic blocks that have a unique predecessor.
             let preds = cfg.predecessors(of: bb)
             guard preds.count == 1 else { continue }

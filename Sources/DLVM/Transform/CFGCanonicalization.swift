@@ -66,6 +66,7 @@ open class CFGCanonicalization : TransformPass {
                 || changed
         }
         loopInfo.topLevelLoops.forEach(visitLoop)
+
         return changed
     }
 
