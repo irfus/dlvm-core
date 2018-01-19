@@ -205,35 +205,33 @@ public extension LoopInfo {
 // - MARK: Loop updaters
 
 extension Loop {
-    func insertBlock(_ bb: BasicBlock, before pred: BasicBlock) {
-        guard contains(pred) else { DLImpossible() }
-        blocks.insert(bb, before: pred)
+    func insertBlock(_ bb: BasicBlock, before other: BasicBlock) {
+        precondition(contains(other), "Loop does not contain basic block \(other.name)")
+        blocks.insert(bb, before: other)
     }
 
-    func insertBlock(_ bb: BasicBlock, after pred: BasicBlock) {
-        guard contains(pred) else { DLImpossible() }
-        blocks.insert(bb, after: pred)
+    func insertBlock(_ bb: BasicBlock, after other: BasicBlock) {
+        precondition(contains(other), "Loop does not contain basic block \(other.name)")
+        blocks.insert(bb, after: other)
     }
 }
 
 extension LoopInfo {
-    mutating func insertBlock(_ bb: BasicBlock, in loop: Loop, before pred: BasicBlock) {
-        guard loops.contains(loop) else { DLImpossible() }
-        guard loop.contains(pred) else { DLImpossible() }
+    mutating func insertBlock(_ bb: BasicBlock, in loop: Loop, before other: BasicBlock) {
+        precondition(loops.contains(loop), "Loop info does not contain loop")
         innerMostLoops[bb] = loop
-        loop.insertBlock(bb, before: pred)
+        loop.insertBlock(bb, before: other)
         while let parent = loop.parent {
-            parent.insertBlock(bb, before: pred)
+            parent.insertBlock(bb, before: other)
         }
     }
 
-    mutating func insertBlock(_ bb: BasicBlock, in loop: Loop, after pred: BasicBlock) {
-        guard loops.contains(loop) else { DLImpossible() }
-        guard loop.contains(pred) else { DLImpossible() }
+    mutating func insertBlock(_ bb: BasicBlock, in loop: Loop, after other: BasicBlock) {
+        precondition(loops.contains(loop), "Loop info does not contain loop")
         innerMostLoops[bb] = loop
-        loop.insertBlock(bb, after: pred)
+        loop.insertBlock(bb, after: other)
         while let parent = loop.parent {
-            parent.insertBlock(bb, after: pred)
+            parent.insertBlock(bb, after: other)
         }
     }
 }

@@ -328,7 +328,8 @@ extension Function : Verifiable {
                     break
                 }
             }
-            /// Check dominance
+            /// Check dominance for reachable basic blocks
+            guard domTree.contains(bb) else { continue }
             for user in bb {
                 for use in user.operands {
                     guard domTree.properlyDominates(use, user) else {

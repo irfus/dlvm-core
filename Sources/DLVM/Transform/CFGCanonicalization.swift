@@ -158,7 +158,7 @@ open class CFGCanonicalization : TransformPass {
             .lazy.filter { !loop.contains($0) }
         /// Create preheader and hoist predecessors to it.
         let preheader = loop.header.hoistPredecessorsToNewBlock(
-            named: "preheader", hoisting: preds, controlFlow: &cfg)
+            named: "preheader", hoisting: preds, before: loop.header, controlFlow: &cfg)
         /// Add preheader to parent loops (if they exist).
         if let parent = loop.parent {
             loopInfo.insertBlock(preheader, in: parent, before: loop.header)
@@ -176,14 +176,14 @@ open class CFGCanonicalization : TransformPass {
             .lazy.filter { loop.contains($0) }
         guard latches.count > 1 else { DLImpossible() }
         /// Create unique latch and hoist back-edge blocks to it.
-        let latch = loop.header.hoistPredecessorsToNewBlock(
-            named: "latch", hoisting: latches, controlFlow: &cfg)
-        /// Add latch to current loop and its parents (if they exist).
         /// - Note: The latch may instead be inserted at a random index for
         /// efficiency.
-        guard let lastLatch = latches.max(by: { $0.indexInParent > $1.indexInParent }) else {
-            DLImpossible()
-        }
+        guard let lastLatch = latches.max(by: {
+            $0.indexInParent < $1.indexInParent
+        }) else { DLImpossible() }
+        let latch = loop.header.hoistPredecessorsToNewBlock(
+            named: "latch", hoisting: latches, after: lastLatch, controlFlow: &cfg)
+        /// Add latch to current loop and its parents (if they exist).
         loopInfo.insertBlock(latch, in: loop, after: lastLatch)
         return true
     }
@@ -200,7 +200,7 @@ open class CFGCanonicalization : TransformPass {
             guard insidePreds.count < preds.count else { continue }
             /// Create new exit and hoist inside-predecessors to it.
             let newExit = exit.hoistPredecessorsToNewBlock(
-                named: "exit", hoisting: insidePreds, controlFlow: &cfg)
+                named: "exit", hoisting: insidePreds, before: exit, controlFlow: &cfg)
             /// Add new exit to parent loops (if they exist).
             if let parent = loop.parent {
                 loopInfo.insertBlock(newExit, in: parent, before: exit)

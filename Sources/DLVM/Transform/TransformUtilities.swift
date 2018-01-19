@@ -202,6 +202,7 @@ internal extension BasicBlock {
     func hoistPredecessorsToNewBlock<C : Collection>(
         named name: String,
         hoisting predecessors: C,
+        at index: Int? = nil,
         controlFlow cfg: inout DirectedGraph<BasicBlock>) -> BasicBlock
         where C.Element == BasicBlock
     {
@@ -211,7 +212,11 @@ internal extension BasicBlock {
                 (makeFreshName($0.name), $0.type)
             },
             parent: parent)
-        parent.insert(newBB, before: self)
+        if let index = index {
+            parent.insert(newBB, at: index)
+        } else {
+            parent.append(newBB)
+        }
         let builder = IRBuilder(basicBlock: newBB)
         builder.branch(self, newBB.arguments.map(%))
         cfg.insertEdge(from: newBB, to: self)
@@ -222,5 +227,39 @@ internal extension BasicBlock {
             cfg.insertEdge(from: pred, to: newBB)
         }
         return newBB
+    }
+
+    @discardableResult
+    func hoistPredecessorsToNewBlock<C : Collection>(
+        named name: String,
+        hoisting predecessors: C,
+        before other: BasicBlock,
+        controlFlow cfg: inout DirectedGraph<BasicBlock>) -> BasicBlock
+        where C.Element == BasicBlock
+    {
+        guard let index = parent.index(of: other) else {
+            preconditionFailure("""
+                Function \(parent.name) does not contain basic block \(other.name)
+                """)
+        }
+        return hoistPredecessorsToNewBlock(named: name, hoisting: predecessors,
+                                           at: index, controlFlow: &cfg)
+    }
+
+    @discardableResult
+    func hoistPredecessorsToNewBlock<C : Collection>(
+        named name: String,
+        hoisting predecessors: C,
+        after other: BasicBlock,
+        controlFlow cfg: inout DirectedGraph<BasicBlock>) -> BasicBlock
+        where C.Element == BasicBlock
+    {
+        guard let prevIndex = parent.index(of: other) else {
+            preconditionFailure("""
+                Function \(parent.name) does not contain basic block \(other.name)
+                """)
+        }
+        return hoistPredecessorsToNewBlock(named: name, hoisting: predecessors,
+                                           at: prevIndex + 1, controlFlow: &cfg)
     }
 }
