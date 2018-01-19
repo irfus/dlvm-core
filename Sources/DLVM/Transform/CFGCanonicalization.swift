@@ -39,9 +39,7 @@ open class CFGCanonicalization : TransformPass {
 
         /// Form join blocks, if necessary.
         var postDomTrees = body.analysis(from: PostdominanceAnalysis.self)
-        guard postDomTrees.count == 1 else {
-            fatalError("Function \(body.name) has multiple exits after canonicalization")
-        }
+        guard postDomTrees.count == 1 else { DLImpossible() }
         var visited: Set<BasicBlock> = []
         for bb in cfg.traversed(from: body[0], in: .breadthFirst) {
             bb.successors.lazy
