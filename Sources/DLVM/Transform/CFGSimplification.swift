@@ -150,7 +150,7 @@ open class CFGSimplification : TransformPass {
         controlFlow cfg: DirectedGraph<BasicBlock>
     ) -> Bool {
         var changed = false
-        for bb in function where bb.arguments.count > 0 {
+        for bb in function where !bb.arguments.isEmpty {
             /// Consider only the basic blocks that have a unique predecessor.
             let preds = cfg.predecessors(of: bb)
             guard preds.count == 1 else { continue }

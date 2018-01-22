@@ -82,11 +82,7 @@ internal extension Argument {
         guard let index = parent.arguments.index(of: self) else {
             fatalError("\(self) is not an argument of its parent \(bb.name)")
         }
-        guard let terminator = parent.terminator else {
-            preconditionFailure("""
-                Basic block \(bb.name) does not branch to argument parent
-                """)
-        }
+        let terminator = bb.premise.terminator
         switch terminator.kind {
         case .branch(parent, let args),
              .conditional(_, parent, let args, _, _),
@@ -98,8 +94,7 @@ internal extension Argument {
             return enumCase
         default:
             preconditionFailure("""
-                Basic block \(bb.name) does not branch to argument parent \
-                \(parent.name)
+                Basic block \(bb) does not branch to argument parent \(parent)
                 """)
         }
     }
@@ -124,8 +119,7 @@ internal extension Function {
         /// Other function must be empty (has no basic blocks)
         guard other.isEmpty else {
             fatalError("""
-                Could not copy contents to \(other.name) because it is not \
-                empty
+                Could not copy contents to \(other) because it is not empty
                 """)
         }
 
@@ -239,7 +233,7 @@ internal extension BasicBlock {
     {
         guard let index = parent.index(of: other) else {
             preconditionFailure("""
-                Function \(parent.name) does not contain basic block \(other.name)
+                Function \(parent) does not contain basic block \(other)
                 """)
         }
         return hoistPredecessorsToNewBlock(named: name, hoisting: predecessors,
@@ -256,7 +250,7 @@ internal extension BasicBlock {
     {
         guard let prevIndex = parent.index(of: other) else {
             preconditionFailure("""
-                Function \(parent.name) does not contain basic block \(other.name)
+                Function \(parent) does not contain basic block \(other)
                 """)
         }
         return hoistPredecessorsToNewBlock(named: name, hoisting: predecessors,

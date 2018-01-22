@@ -173,7 +173,7 @@ public extension Loop {
                 t1.isScalar, indVar.isZero else {
                 continue
             }
-            guard case .numericBinary(.add, entryVal, let incrVal)? = latchVal.instruction?.kind,
+            guard case .numericBinary(.add, %argument, let incrVal)? = latchVal.instruction?.kind,
                 case let .literal(t2, incr) = incrVal, t2.isScalar, incr.isOne else {
                 continue
             }

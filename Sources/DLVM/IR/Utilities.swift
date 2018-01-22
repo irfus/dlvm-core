@@ -31,3 +31,11 @@ func DLImpossible(_ function: String = #function,
     fatalError("Impossible case at \(function). Must be a compiler bug.",
                file: file, line: line)
 }
+
+@discardableResult
+func DLImpossibleResult<T>(function: String = #function,
+                           file: StaticString = #file,
+                           line: UInt = #line) -> T {
+    fatalError("Impossible case \(T.self) at \(function). Must be a compiler bug.",
+               file: file, line: line)
+}

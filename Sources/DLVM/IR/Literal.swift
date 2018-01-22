@@ -24,7 +24,7 @@ import CoreOp
 /// - Note: It has no type or shape, because a `Literal` is not a `Value`.
 /// But `LiteralValue`, that uses `Literal`, is a value.
 public indirect enum Literal {
-    public enum Scalar : Equatable {
+    public enum Scalar : Hashable {
         case int(IntegerLiteralType)
         case float(FloatLiteralType)
         case bool(BooleanLiteralType)

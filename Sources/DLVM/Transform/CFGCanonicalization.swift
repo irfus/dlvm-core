@@ -179,9 +179,8 @@ open class CFGCanonicalization : TransformPass {
         /// Create unique latch and hoist back-edge blocks to it.
         /// - Note: The latch may instead be inserted at a random index for
         /// efficiency.
-        guard let lastLatch = latches.max(by: {
-            $0.indexInParent < $1.indexInParent
-        }) else { DLImpossible() }
+        let lastLatch = latches.max { $0.indexInParent < $1.indexInParent }
+            ?? DLImpossibleResult()
         let latch = loop.header.hoistPredecessorsToNewBlock(
             named: "latch", hoisting: latches, after: lastLatch, controlFlow: &cfg)
         /// Add latch to current loop and its parents (if they exist).
