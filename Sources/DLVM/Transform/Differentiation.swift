@@ -426,7 +426,7 @@ fileprivate extension Differentiation {
                                                          keeping: [],
                                                          seedable: true),
                     case let .function(argumentTypes, returnType) = gradientType else {
-                        fatalError("Function \(fn.name) is not differentiable")
+                        fatalError("Function @\(fn.name) is not differentiable")
                 }
                 let module = fn.parent
                 let adjointName = module.makeFreshFunctionName("\(fn.name)_grad")

@@ -80,7 +80,7 @@ internal extension BasicBlock {
 internal extension Argument {
     func incomingValue(from bb: BasicBlock) -> Use {
         guard let index = parent.arguments.index(of: self) else {
-            fatalError("\(self) is not an argument of its parent \(bb.name)")
+            fatalError("\(self) is not an argument of its parent '\(bb.name)")
         }
         let terminator = bb.premise.terminator
         switch terminator.kind {
@@ -94,7 +94,8 @@ internal extension Argument {
             return enumCase
         default:
             preconditionFailure("""
-                Basic block \(bb) does not branch to argument parent \(parent)
+                Basic block '\(bb.name) does not branch to argument parent \
+                '\(parent.name)
                 """)
         }
     }
@@ -119,7 +120,7 @@ internal extension Function {
         /// Other function must be empty (has no basic blocks)
         guard other.isEmpty else {
             fatalError("""
-                Could not copy contents to \(other) because it is not empty
+                Could not copy contents to @\(other.name) because it is not empty
                 """)
         }
 
@@ -233,7 +234,7 @@ internal extension BasicBlock {
     {
         guard let index = parent.index(of: other) else {
             preconditionFailure("""
-                Function \(parent) does not contain basic block \(other)
+                Function @\(parent.name) does not contain basic block '\(other.name)
                 """)
         }
         return hoistPredecessorsToNewBlock(named: name, hoisting: predecessors,
@@ -250,7 +251,7 @@ internal extension BasicBlock {
     {
         guard let prevIndex = parent.index(of: other) else {
             preconditionFailure("""
-                Function \(parent) does not contain basic block \(other)
+                Function @\(parent) does not contain basic block '\(other)
                 """)
         }
         return hoistPredecessorsToNewBlock(named: name, hoisting: predecessors,
