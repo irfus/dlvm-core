@@ -40,28 +40,28 @@ public struct GraphNodeIterator<Node : ForwardGraphNode> : IteratorProtocol {
         switch order {
         case .breadthFirst:
             guard let node = pre.popFirst() else { return nil }
+            visited.add(node)
             for child in node.successors where !visited.contains(child) {
                 pre.append(child)
             }
-            visited.add(node)
             return node
 
         case .preorder:
             guard let node = pre.popLast() else { return nil }
+            visited.add(node)
             for child in node.successors.reversed()
                 where !visited.contains(child) {
                 pre.append(child)
             }
-            visited.add(node)
             return node
 
         case .postorder:
             guard let node = pre.popLast() else { return post.popLast() }
+            visited.add(node)
             for child in node.successors where !visited.contains(child) {
                 pre.append(child)
             }
             post.append(node)
-            visited.add(node)
             return next()
         }
     }
@@ -85,28 +85,28 @@ public struct TransposeGraphNodeIterator<Node : BackwardGraphNode>
         switch order {
         case .breadthFirst:
             guard let node = pre.popFirst() else { return nil }
+            visited.add(node)
             for child in node.predecessors where !visited.contains(child) {
                 pre.append(child)
             }
-            visited.add(node)
             return node
 
         case .preorder:
             guard let node = pre.popLast() else { return nil }
+            visited.add(node)
             for child in node.predecessors.reversed()
                 where !visited.contains(child) {
                 pre.append(child)
             }
-            visited.add(node)
             return node
 
         case .postorder:
             guard let node = pre.popLast() else { return post.popLast() }
+            visited.add(node)
             for child in node.predecessors where !visited.contains(child) {
                 pre.append(child)
             }
             post.append(node)
-            visited.add(node)
             return next()
         }
     }
@@ -162,30 +162,30 @@ public struct DirectedGraphIterator<Base : BidirectionalEdgeSet>
         switch order {
         case .breadthFirst:
             guard let node = pre.popFirst() else { return nil }
+            visited.insert(node)
             for child in base.successors(of: node)
                 where !visited.contains(child) {
                 pre.append(child)
             }
-            visited.insert(node)
             return node
 
         case .preorder:
             guard let node = pre.popLast() else { return nil }
+            visited.insert(node)
             for child in base.successors(of: node).reversed()
                 where !visited.contains(child) {
                 pre.append(child)
             }
-            visited.insert(node)
             return node
 
         case .postorder:
             guard let node = pre.popLast() else { return post.popLast() }
+            visited.insert(node)
             for child in base.successors(of: node)
                 where !visited.contains(child) {
                 pre.append(child)
             }
             post.append(node)
-            visited.insert(node)
             return next()
         }
 
