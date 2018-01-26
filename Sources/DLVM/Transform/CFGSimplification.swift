@@ -53,8 +53,7 @@ open class CFGSimplification : TransformPass {
     }
 
     private static func removeUnreachableBlocks(
-        in function: Function,
-        controlFlow cfg: inout DirectedGraph<BasicBlock>
+        in function: Function, controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) -> Bool {
         var changed = false
         /// Mark basic blocks that are reachable from entry.
@@ -77,8 +76,7 @@ open class CFGSimplification : TransformPass {
     }
 
     private static func mergeBlocksIntoPredecessors(
-        in function: Function,
-        controlFlow cfg: inout DirectedGraph<BasicBlock>
+        in function: Function, controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) -> Bool {
         var changed = false
         for bb in function {
@@ -116,8 +114,7 @@ open class CFGSimplification : TransformPass {
     }
 
     private static func eliminateSimpleTrampolines(
-        in function: Function,
-        controlFlow cfg: inout DirectedGraph<BasicBlock>
+        in function: Function, controlFlow cfg: inout DirectedGraph<BasicBlock>
     ) -> Bool {
         var changed = false
         for bb in function {
@@ -146,8 +143,7 @@ open class CFGSimplification : TransformPass {
     }
 
     private static func removeBlockArgumentsIfUniquePredecessor(
-        in function: Function,
-        controlFlow cfg: DirectedGraph<BasicBlock>
+        in function: Function, controlFlow cfg: DirectedGraph<BasicBlock>
     ) -> Bool {
         var changed = false
         for bb in function where !bb.arguments.isEmpty {

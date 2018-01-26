@@ -188,7 +188,7 @@ public extension DirectedGraph {
         return successors(of: secondNode).contains(secondNode)
     }
 
-    /// Does this node succeed the other?
+    /// Does this node precede the other?
     func precedes(_ firstNode: Node, _ secondNode: Node) -> Bool {
         guard contains(firstNode) else { return false }
         let secondPreds = predecessors(of: secondNode)
