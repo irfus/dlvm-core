@@ -462,7 +462,7 @@ extension Parser {
             let (dt, _) = try parseDataType()
             let rightBkt = try consume(.punctuation(.rightAngleBracket))
             return (.tensor(shape, dt), tok.startLocation..<rightBkt.endLocation)
-        /// Tuple
+        /// Tuple/function
         case .punctuation(.leftParenthesis):
             let elementTypes = try parseMany({
                 try parseType().0
@@ -580,7 +580,7 @@ extension Parser {
         return (use, range)
     }
 
-    func parseInstructionKind(in basicBlock: BasicBlock?) throws -> InstructionKind {
+    func parseInstructionKind(in basicBlock: BasicBlock) throws -> InstructionKind {
         let opcode: Opcode = try withPeekedToken("an opcode") { tok in
             guard case let .opcode(opcode) = tok.kind else {
                 return nil
