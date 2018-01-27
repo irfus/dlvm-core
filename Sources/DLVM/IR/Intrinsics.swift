@@ -17,11 +17,21 @@
 //  limitations under the License.
 //
 
-/// An intrinsic function
-public protocol IntrinsicProtocol {
+/// [WIP] An intrinsic function
+/// TODO:
+/// - Handle parsing/opcodes
+/// - Fix printing for builtin instruction kind
+/// - Add more intrinsics (mean, softmax, etc)
+public protocol IntrinsicProtocol : TextOutputStreamable {
     var opcode: String { get }
     func resultType(for operands: [Use]) -> Type
     func isEqualTo(_ other: IntrinsicProtocol) -> Bool
+}
+
+extension IntrinsicProtocol {
+    public func write<Target : TextOutputStream>(to target: inout Target) {
+        target.write(opcode)
+    }
 }
 
 /// Dummy

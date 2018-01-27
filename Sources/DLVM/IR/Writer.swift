@@ -152,8 +152,9 @@ extension ReductionCombinator : TextOutputStreamable {
     public func write<Target>(to target: inout Target) where Target : TextOutputStream {
         switch self {
         case let .function(f): f.write(to: &target)
-        case let .numeric(op): String(describing: op).write(to: &target)
         case let .boolean(op): String(describing: op).write(to: &target)
+        case let .numeric(op): String(describing: op).write(to: &target)
+        case let .numericBuiltin(op): String(describing: op).write(to: &target)
         }
     }
 }
@@ -161,6 +162,10 @@ extension ReductionCombinator : TextOutputStreamable {
 extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
+        case let .builtin(op, args):
+            // FIXME: fix format, perhaps mimic function application?
+            // "@\(op.opcode)" ...
+            target.write("\(op)(\(args.joinedDescription))")
         case let .branch(bb, args):
             target.write("branch '\(bb.name)(\(args.joinedDescription))")
         case let .conditional(op, thenBB, thenArgs, elseBB, elseArgs):

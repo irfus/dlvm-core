@@ -289,6 +289,7 @@ public enum SelectOp : TensorOp {
 /// Reduction combinator
 public enum ReductionCombinator : Equatable {
     case function(Use)
-    case numeric(NumericBinaryOp)
     case boolean(BooleanBinaryOp)
+    case numeric(NumericBinaryOp)
+    case numericBuiltin(NumericBinaryIntrinsic)
 }
