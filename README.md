@@ -1,14 +1,10 @@
-# Deep Learning Virtual Machine
+# DLVM Core
 ## Core Compiler Infrastructure
 
 Welcome to DLVM! For general information about the DLVM project,
 please visit [dlvm.org](http://dlvm.org).
 
-DLVM is:
-- a framework for building DSLs
-- an IR for linear algebra and neural networks
-- an automatic backpropagator
-- a production-quality infrastructure
+This repository does not include a code generator.
 
 ## Targets
 
