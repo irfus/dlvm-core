@@ -19,7 +19,7 @@
 
 import enum DLVM.InstructionKind
 import enum DLVM.Opcode
-import enum CoreOp.DataType
+import enum DLVM.DataType
 import class DLVM.Function
 
 // MARK: - Token definition

@@ -17,8 +17,6 @@
 //  limitations under the License.
 //
 
-import CoreOp
-
 public indirect enum Use : Equatable {
     case argument(Type, Argument)
     case instruction(Type, Instruction)

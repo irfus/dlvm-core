@@ -40,8 +40,7 @@ let package = Package(
         .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.7.1")
     ],
     targets: [
-        .target(name: "CoreOp", dependencies: ["CoreTensor"]),
-        .target(name: "DLVM", dependencies: ["CoreTensor", "CoreOp"]),
+        .target(name: "DLVM", dependencies: ["CoreTensor"]),
         .target(name: "DLParse", dependencies: ["DLVM"]),
         .target(name: "DLCommandLineTools", dependencies: [
             "Utility", "DLVM", "DLParse"

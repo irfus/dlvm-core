@@ -18,7 +18,6 @@
 //
 
 import CoreTensor
-import CoreOp
 
 // MARK: - Core Instruction Set
 public enum InstructionKind {

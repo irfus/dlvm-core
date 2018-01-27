@@ -18,7 +18,6 @@
 //
 
 import CoreTensor
-import CoreOp
 
 /// Padding type, used for operations involving windows (convolve, reduceWindow)
 public enum Padding : Equatable {

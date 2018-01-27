@@ -18,7 +18,6 @@
 //
 
 import CoreTensor
-import CoreOp
 
 extension LiteralValue : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {

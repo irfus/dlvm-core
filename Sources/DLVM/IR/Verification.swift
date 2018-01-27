@@ -18,7 +18,6 @@
 //
 
 import CoreTensor
-import CoreOp
 
 public enum VerificationError<Node : Verifiable> : Error {
     case axisOutOfBounds(Int, Use, Node)

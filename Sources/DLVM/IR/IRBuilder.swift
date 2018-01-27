@@ -18,7 +18,6 @@
 //
 
 import CoreTensor
-import CoreOp
 
 open class IRBuilder {
     open let module: Module

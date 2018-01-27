@@ -18,7 +18,6 @@
 //
 
 import CoreTensor
-import CoreOp
 
 /// Scalar or tensor literal, literally
 /// - Note: It has no type or shape, because a `Literal` is not a `Value`.

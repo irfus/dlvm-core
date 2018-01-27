@@ -22,8 +22,6 @@
 /// Algebra Simplification, Linear Algebra Fusion and Matrix Multiplication
 /// Reordering.
 
-import CoreOp
-
 public indirect enum AlgebraicExpression {
     case atom(Use)
     case map(NumericUnaryOp, AlgebraicExpression, Instruction)

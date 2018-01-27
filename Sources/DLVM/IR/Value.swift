@@ -18,7 +18,6 @@
 //
 
 import CoreTensor
-@_exported import CoreOp
 
 /// Value base
 public protocol Value : Verifiable {
