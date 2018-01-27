@@ -764,6 +764,30 @@ extension Parser {
             return .convolve(val, kernel: kernel, strides: strides, padding: padding,
                              leftDilation: ld, rightDilation: rd, groups: groups)
 
+        /// 'rank' 'of' <val> 'as' <type>
+        case .rank:
+            try consume(.keyword(.of))
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.as))
+            let (type, _) = try parseType()
+            return .rank(of: val, as: type)
+
+        /// 'shape' 'of' <val> 'as' <type>
+        case .shape:
+            try consume(.keyword(.of))
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.as))
+            let (type, _) = try parseType()
+            return .shape(of: val, as: type)
+
+        /// 'unitCount' 'of' <val> 'as' <type>
+        case .unitCount:
+            try consume(.keyword(.of))
+            let (val, _) = try parseUse(in: basicBlock)
+            try consume(.keyword(.as))
+            let (type, _) = try parseType()
+            return .unitCount(of: val, as: type)
+
         /// 'padShape' <val> 'at' <num>
         case .padShape:
             let (val, _) = try parseUse(in: basicBlock)

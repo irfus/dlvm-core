@@ -213,6 +213,12 @@ extension InstructionKind {
             DLUnimplemented()
         case .convolve:
             DLUnimplemented()
+        case .rank:
+            DLUnimplemented()
+        case .shape:
+            DLUnimplemented()
+        case .unitCount:
+            DLUnimplemented()
 
         /** Cost-free casts **/
         case let .padShape(x, at: i):

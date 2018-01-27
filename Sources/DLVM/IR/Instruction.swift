@@ -88,6 +88,14 @@ public enum InstructionKind {
         groups: Int? // Group count for grouped/depthwise convolutions, default value 1
     )
 
+    /** Tensor information getters **/
+    /// Tensor rank getter
+    case rank(of: Use, `as`: Type)
+    /// Tensor shape getter
+    case shape(of: Use, `as`: Type)
+    /// Tensor unit count getter
+    case unitCount(of: Use, `as`: Type)
+
     /** Cost-free casts **/
     /// Pad shape with dimension of 1
     case padShape(Use, at: Int)
@@ -503,6 +511,28 @@ public extension InstructionKind {
             default: return .invalid
             }
 
+        case let .rank(of: v1, as: t):
+            guard case .tensor = v1.type.unaliased,
+                case let .tensor([], dt) = t, dt.isNumeric else {
+                return .invalid
+            }
+            return t
+
+        case let .shape(of: v1, as: t):
+            guard case let .tensor(s1, _) = v1.type.unaliased,
+                case let .tensor(s2, dt) = t, dt.isNumeric,
+                let rank = s2.first, s2.isVector, s1.count == rank else {
+                return .invalid
+            }
+            return t
+
+        case let .unitCount(of: v1, as: t):
+            guard case .tensor = v1.type.unaliased,
+                case let .tensor([], dt) = t, dt.isNumeric else {
+                return .invalid
+            }
+            return t
+
         case let .padShape(v1, at: index):
             switch v1.type.unaliased {
             case let .tensor(s1, t1) where s1.indices.contains(index) || s1.endIndex == index:
@@ -607,7 +637,8 @@ extension InstructionKind {
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .reverse(op, dims: _), let .slice(op, at: _),
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _),
-             let .return(op?), let .padShape(op, at: _), let .squeezeShape(op, at: _),
+             let .return(op?), let .rank(op, _), let .shape(op, _), let .unitCount(op, _),
+             let .padShape(op, at: _), let .squeezeShape(op, at: _),
              let .extract(from: op, at: _), let .branchEnum(op, _), let .store(op, _),
              let .load(op), let .elementPointer(op, _), let .deallocate(op),
              let .allocateHeap(_, count: op), let .projectBox(op),
@@ -710,6 +741,10 @@ extension InstructionKind : Equatable {
             }
         case let (.dataTypeCast(x1, dt1), .dataTypeCast(x2, dt2)):
             return x1 == x2 && dt1 == dt2
+        case let (.rank(of: x1, as: t1), .rank(of: x2, as: t2)),
+             let (.shape(of: x1, as: t1), .shape(of: x2, as: t2)),
+             let (.unitCount(of: x1, as: t1), .rank(of: x2, as: t2)):
+            return x1 == x2 && t1 == t2
         case let (.padShape(x1, at: i1), .padShape(x2, at: i2)):
             return x1 == x2 && i1 == i2
         case let (.squeezeShape(x1, at: i1), .squeezeShape(x2, at: i2)):
@@ -890,6 +925,12 @@ public extension InstructionKind {
             return .dot(use1, new)
         case .dot(old, old):
             return .dot(new, new)
+        case .rank(of: old, as: let t):
+            return .rank(of: new, as: t)
+        case .shape(of: old, as: let t):
+            return .shape(of: new, as: t)
+        case .unitCount(of: old, as: let t):
+            return .unitCount(of: new, as: t)
         case .padShape(old, at: let i):
             return .padShape(new, at: i)
         case .squeezeShape(old, at: let i):
@@ -1010,6 +1051,9 @@ public enum Opcode : Equatable {
     case reverse
     case slice
     case convolve
+    case rank
+    case shape
+    case unitCount
     case padShape
     case squeezeShape
     case shapeCast
@@ -1068,6 +1112,9 @@ public extension InstructionKind {
         case .reverse: return .reverse
         case .slice: return .slice
         case .convolve: return .convolve
+        case .rank: return .rank
+        case .shape: return .shape
+        case .unitCount: return .unitCount
         case .padShape: return .padShape
         case .squeezeShape: return .squeezeShape
         case .shapeCast: return .shapeCast

@@ -220,6 +220,12 @@ extension InstructionKind : TextOutputStreamable {
             }
         case let .dataTypeCast(op, t):
             target.write("dataTypeCast \(op) to \(t)")
+        case let .rank(v, as: t):
+            target.write("rank of \(v) as \(t)")
+        case let .shape(v, as: t):
+            target.write("shape of \(v) as \(t)")
+        case let .unitCount(v, as: t):
+            target.write("unitCount of \(v) as \(t)")
         case let .padShape(op, at: index):
             target.write("padShape \(op) at \(index)")
         case let .squeezeShape(op, at: index):
