@@ -21,6 +21,9 @@ import CoreTensor
 
 // MARK: - Core Instruction Set
 public enum InstructionKind {
+    /** Builtin intrinsic **/
+    case builtin(IntrinsicProtocol, [Use])
+
     /** Control flow **/
     /// Unconditional branch to a basic block
     case branch(BasicBlock, [Use])
@@ -257,6 +260,9 @@ public extension InstructionKind {
     /// Infers and returns the type of the result of the instruction
     var type: Type {
         switch self {
+        case let .builtin(op, args):
+            return op.resultType(for: args)
+
         case let .literal(_, ty):
             return ty
 
@@ -614,7 +620,8 @@ extension InstructionKind {
              let .release(op), let .retain(op), let .destroyStack(op),
              let .pop(_, from: op):
             return [op]
-        case .concatenate(let ops, _),
+        case .builtin(_, let ops),
+             .concatenate(let ops, _),
              .branch(_, let ops):
             return ops
         case let .conditional(cond, _, thenArgs, _, elseArgs):
@@ -660,6 +667,8 @@ public extension Literal {
 extension InstructionKind : Equatable {
     public static func == (lhs: InstructionKind, rhs: InstructionKind) -> Bool {
         switch (lhs, rhs) {
+        case let (.builtin(op1, args1), .builtin(op2, args2)):
+            return op1.isEqualTo(op2) && args1 == args2
         case let (.literal(x1, t1), .literal(x2, t2)):
             return x1 == x2 && t1 == t2
         case let (.numericUnary(op1, x1), .numericUnary(op2, y1)):
@@ -789,6 +798,8 @@ public extension InstructionKind {
     func substituting(_ new: Use, for old: Use) -> InstructionKind {
         let condSubst = {$0 == old ? new : $0}
         switch self {
+        case .builtin(let op, let args):
+            return .builtin(op, args.map(condSubst))
         case .branch(let dest, let args):
             return .branch(dest, args.map(condSubst))
         case let .conditional(cond, thenBB, thenArgs, elseBB, elseArgs):
