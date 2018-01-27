@@ -219,7 +219,7 @@ fileprivate extension Differentiation {
                 where instsToDiff.contains(inst) {
                 differentiate(inst, using: builder, in: context,
                               returnValue: retVal, workList: &workList,
-                              gradients: &adjoints)
+                              adjoints: &adjoints)
             }
             /// Remove old return
             returnInst.removeFromParent()
@@ -245,7 +245,7 @@ fileprivate extension Differentiation {
                                       in context: ADContext,
                                       returnValue: Use,
                                       workList: inout [Function],
-                                      gradients: inout GradientMapping) {
+                                      adjoints: inout GradientMapping) {
         /// Move builder
         bd.move(to: inst.parent)
         /// Get adjoint for instruction
@@ -265,7 +265,7 @@ fileprivate extension Differentiation {
                 primal: fn, sourceIndex: nil, argumentIndices: nil,
                 keptIndices: [], isSeedable: true
             )
-            if let funcAdjoints = gradients[fn],
+            if let funcAdjoints = adjoints[fn],
                 let gradIndex = funcAdjoints.index(where: { $0.config == config }) {
                 adjoint = funcAdjoints[gradIndex].adjoint
             } else {

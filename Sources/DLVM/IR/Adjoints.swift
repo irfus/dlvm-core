@@ -17,10 +17,33 @@
 //  limitations under the License.
 //
 
+import struct CoreTensor.TensorShape
+
 extension InstructionKind {
     public func operandAdjoints(
         using bd: IRBuilder, primal: Use, seed: Use
     ) -> [(operand: Use, adjoint: Use)]? {
+        func unbroadcastIfNeeded(_ x: Use, to y: Use) -> Use {
+            guard case let .tensor(s1, _) = x.type else {
+                fatalError("\(x) is not a tensor")
+            }
+            guard case let .tensor(s2, _) = y.type else {
+                fatalError("\(y) is not a tensor")
+            }
+            let reductionAxes = s1.indices
+                .filter { $0 >= s2.count || s1[s1.count - $0 - 1] < s2[s2.count - $0 - 1] }
+                .map { s1.count - $0 - 1 }
+            /// If no need to sum, return original x
+            if reductionAxes.isEmpty { return x }
+            let sum = bd.reduce(.numeric(.add), x,
+                                initial: %x.makeScalar(0), dims: reductionAxes)
+            guard case let .tensor(s3, _) = sum.type else { DLImpossible() }
+            /// If no need to shape cast, return sum
+            if s2 == s3 { return %sum }
+            /// Return shape casted sum
+            return %bd.shapeCast(%sum, to: s2)
+        }
+
         var adjoints: [(operand: Use, adjoint: Use)]
         switch self {
         /** Literal constructor **/
@@ -105,23 +128,23 @@ extension InstructionKind {
         case let .numericBinary(.add, lhs, rhs):
             adjoints = [
                 /// ∂f/∂x = D
-                (lhs, seed),
+                (lhs, unbroadcastIfNeeded(seed, to: lhs)),
                 /// ∂f/∂y = D
-                (rhs, seed)
+                (rhs, unbroadcastIfNeeded(seed, to: rhs))
             ]
         case let .numericBinary(.subtract, lhs, rhs):
             adjoints = [
                 /// ∂f/∂x = D
-                (lhs, seed),
+                (lhs, unbroadcastIfNeeded(seed, to: lhs)),
                 /// ∂f/∂y = -D
-                (rhs, %bd.numeric(.negate, seed))
+                (rhs, unbroadcastIfNeeded(%bd.numeric(.negate, seed), to: rhs))
             ]
         case let .numericBinary(.multiply, lhs, rhs):
             adjoints = [
                 /// ∂f/∂x = D * y
-                (lhs, %bd.multiply(seed, rhs)),
+                (lhs, unbroadcastIfNeeded(%bd.multiply(seed, rhs), to: lhs)),
                 /// ∂f/∂y = D * x
-                (rhs, %bd.multiply(seed, lhs))
+                (rhs, unbroadcastIfNeeded(%bd.multiply(seed, lhs), to: rhs)),
             ]
         case let .numericBinary(.divide, lhs, rhs):
             adjoints = [
@@ -195,29 +218,42 @@ extension InstructionKind {
 
         /** Cost-free casts **/
         case let .padShape(x, at: i):
-            adjoints = [
-                /// ∂f/∂x = sum(f, along: i)
-                // NOTE: can be optimized to `squeezeShape` when dimension i is
-                // known to be 1, to be implemented in simplification pass
-                (x, %bd.reduce(.numeric(.add), seed,
-                               initial: %x.makeScalar(0), dims: [i]))
-            ]
+            /// When dimension is known to be 1, adjoint may be found simply
+            /// using squeezeShape
+            if i == 1 {
+                adjoints = [
+                    /// ∂f/∂x = squeezeShape(D, at: i)
+                    (x, %bd.squeezeShape(seed, at: i))
+                ]
+            }
+            /// Otherwise, sum over the dimension
+            else {
+                adjoints = [
+                    /// ∂f/∂x = sum(D, along: i)
+                    (x, %bd.reduce(.numeric(.add), seed,
+                                   initial: %x.makeScalar(0), dims: [i]))
+                ]
+            }
         case let .squeezeShape(x, at: i):
             adjoints = [
+                /// ∂f/∂x = padShape(D, at: i)
                 (x, %bd.padShape(seed, at: i))
             ]
         case let .shapeCast(x, s):
             adjoints = [
+                /// ∂f/∂x = shapecast(D, at: i)
                 (x, %bd.shapeCast(seed, to: s))
             ]
         case let .bitCast(x, t):
             adjoints = [
+                /// ∂f/∂x = bitcast(D, at: t)
                 (x, %bd.bitCast(seed, to: t))
             ]
 
         /** Aggregate operations **/
         case let .extract(from: x, at: i):
             adjoints = [
+                /// ∂f/∂x = extract(from: D, at: i)
                 (x, %bd.extract(from: seed, at: i))
             ]
 

@@ -141,6 +141,23 @@ func @tuple_func_grad_f1_seedable: (f32, f32, f32) -> (f32, f32)
 // CHECK-NEXT: %0.4 = literal (%0.0: f32, %0.3: f32): (f32, f32)
 // CHECK-NEXT: return %0.4: (f32, f32)
 
+// Scalar broadcasting test
+
+func @scalar_broadcasting: (f32, <100 x f32>, <100 x f32>) -> <100 x f32> {
+'entry(%x: f32, %y: <100 x f32>, %z: <100 x f32>):
+    %v0 = add %x: f32, %y: <100 x f32>
+    %v1 = multiply %v0: <100 x f32>, %z: <100 x f32>
+    return %v1: <100 x f32>
+}
+
+[gradient @scalar_broadcasting wrt 0]
+func @scalar_broadcasting_grad: (f32, <100 x f32>, <100 x f32>) -> (f32)
+
+// CHECK: func @scalar_broadcasting_grad: (f32, <100 x f32>, <100 x f32>) -> (f32)
+// CHECK: %0.0 = reduce %z: <100 x f32> by add init 0: f32 along 0
+// CHECK-NEXT: %0.1 = literal (%0.0: f32): (f32)
+// CHECK-NEXT: return %0.1: (f32)
+
 // Function call test
 
 func @f: (f32) -> f32 {
