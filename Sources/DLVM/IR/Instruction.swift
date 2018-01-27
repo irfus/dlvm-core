@@ -23,17 +23,19 @@ import CoreOp
 // MARK: - Core Instruction Set
 public enum InstructionKind {
     /** Control flow **/
-    /// Unconditionally branch to basic block
+    /// Unconditional branch to a basic block
     case branch(BasicBlock, [Use])
-    /// Conditional branch depending on the value
+    /// Conditional branch based on a boolean value
     case conditional(Use, BasicBlock, [Use], BasicBlock, [Use])
+    /// Conditional branch based on enum case
+    case branchEnum(Use, [(caseName: String, basicBlock: BasicBlock)])
     /// Return
     case `return`(Use?)
 
     /** Literal constructor **/
     case literal(Literal, Type)
 
-    /** Operators **/
+    /** Operations **/
     /// Elementwise numeric unary operation (map)
     case numericUnary(NumericUnaryOp, Use)
     /// Elementwise numeric binary operation (zipWith)
@@ -44,6 +46,8 @@ public enum InstructionKind {
     case not(Use)
     /// Comparison
     case compare(ComparisonOp, Use, Use)
+    /// Select
+    case select(Use, Use, by: Use)
     /// Data type cast operation
     case dataTypeCast(Use, DataType)
     /// Scan operation
@@ -62,8 +66,15 @@ public enum InstructionKind {
     case slice(Use, at: CountableClosedRange<Int>)
     /// Shuffle
     case random(TensorShape, from: Use, upTo: Use)
-    /// Select
-    case select(Use, Use, by: Use)
+    /// Reduce window
+    case reduceWindow(
+        ReductionCombinator, // Function or op
+        Use, // Operand
+        initial: Use, // Initial value
+        dims: [Int], // Window dimensions
+        strides: [Int], // Window strides
+        padding: Padding // Padding type
+    )
     /// Convolution
     /// A convolution can be thought of as a n-dimensional window moving across a n-dimensional
     /// base area and a computation is performed for each possible position of the window.
@@ -76,15 +87,6 @@ public enum InstructionKind {
         leftDilation: [Int]?, // Dilation factor of rank n, default value 1
         rightDilation: [Int]?, // Dilation factor of rank n, default value 1
         groups: Int? // Group count for grouped/depthwise convolutions, default value 1
-    )
-    /// Reduce window
-    case reduceWindow(
-        ReductionCombinator, // Function or op
-        Use, // Operand
-        initial: Use, // Initial value
-        dims: [Int], // Window dimensions
-        strides: [Int], // Window strides
-        padding: Padding // Padding type
     )
 
     /** Cost-free casts **/
@@ -102,8 +104,6 @@ public enum InstructionKind {
     case extract(from: Use, at: [ElementKey])
     /// Insert an element to tensor, tuple, or array
     case insert(Use, to: Use, at: [ElementKey])
-    /// Branch based on enum case
-    case branchEnum(Use, [(caseName: String, basicBlock: BasicBlock)])
 
     /** Function application **/
     case apply(Use, [Use])
