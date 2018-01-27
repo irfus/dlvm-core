@@ -40,7 +40,7 @@ public enum Keyword {
     case scalar
     case count
     case seedable
-    case extern, gradient
+    case extern, adjoint
     case `init`, along, dims
 }
 
@@ -484,7 +484,7 @@ private extension Lexer {
         case "count": kind = .keyword(.count)
         case "seedable": kind = .keyword(.seedable)
         case "extern": kind = .keyword(.extern)
-        case "gradient": kind = .keyword(.gradient)
+        case "adjoint": kind = .keyword(.adjoint)
         case "init": kind = .keyword(.init)
         case "along": kind = .keyword(.along)
         case "dims": kind = .keyword(.dims)

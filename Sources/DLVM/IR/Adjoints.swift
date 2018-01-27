@@ -40,7 +40,7 @@ extension InstructionKind {
             guard case let .tensor(s3, _) = sum.type else { DLImpossible() }
             /// If no need to shape cast, return sum
             if s2 == s3 { return %sum }
-            /// Return shape casted sum
+            /// Return shape-casted sum
             return %bd.shapeCast(%sum, to: s2)
         }
 
@@ -218,8 +218,8 @@ extension InstructionKind {
 
         /** Cost-free casts **/
         case let .padShape(x, at: i):
-            /// When dimension is known to be 1, adjoint may be found simply
-            /// using squeezeShape
+            /// When dimension is known to be 1, calculate adjoint using
+            /// squeezeShape
             if i == 1 {
                 adjoints = [
                     /// ∂f/∂x = squeezeShape(D, at: i)

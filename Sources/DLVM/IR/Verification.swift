@@ -42,14 +42,14 @@ public enum VerificationError<Node : Verifiable> : Error {
     case duplicateEnumCase(String, Node)
     case functionArgumentMismatch([Use], Type, Node)
     case functionEntryArgumentMismatch(BasicBlock, Node)
-    case gradientArgumentMismatch(Function, Int?, [Int]?, Node)
-    case gradientTypeMismatch(Function.DeclarationKind, Type, Node)
+    case adjointArgumentMismatch(Function, Int?, [Int]?, Node)
+    case adjointTypeMismatch(Function.DeclarationKind, Type, Node)
     case illegalName(String, Node)
     case invalidAllocationSize(Node)
     case invalidCopyOperands(Use, Use, Node)
     case invalidEnumCase(EnumType, String, Node)
     case invalidEnumCaseBranch(EnumType, EnumType.Case, BasicBlock, Node)
-    case invalidGradientArguments(Use, Node)
+    case invalidAdjointArguments(Use, Node)
     case invalidIndex(Use, Int, Node)
     case invalidIndices(Use, [ElementKey], Node)
     case invalidLiteral(Type, Literal, Node)
@@ -276,22 +276,22 @@ extension Function : Verifiable {
                 throw VerificationError.declarationCannotHaveBody(self)
             }
             switch declarationKind {
-            /// Verify gradient function's type signature
-            case let .gradient(config):
+            /// Verify adjoint function's type signature
+            case let .adjoint(config):
                 /// Check for type mismatch
-                guard let expectedType = config.primal.gradientType(
+                guard let expectedType = config.primal.adjointType(
                     from: config.sourceIndex,
                     wrt: config.argumentIndices,
                     keeping: config.keptIndices,
                     seedable: config.isSeedable
                 ) else {
-                    throw VerificationError.gradientArgumentMismatch(
+                    throw VerificationError.adjointArgumentMismatch(
                         config.primal, config.sourceIndex,
                         config.argumentIndices, self
                     )
                 }
                 guard type == expectedType else {
-                    throw VerificationError.gradientTypeMismatch(declarationKind, expectedType, self)
+                    throw VerificationError.adjointTypeMismatch(declarationKind, expectedType, self)
                 }
             case .external:
                 break

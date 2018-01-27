@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-public struct GradientConfiguration : Equatable {
+public struct AdjointConfiguration : Equatable {
     /// Function to differentiate.
     let primal: Function
     /// Index of tuple element to differentiate, when the return type is a
@@ -25,14 +25,14 @@ public struct GradientConfiguration : Equatable {
     let sourceIndex: Int?
     /// Indices of arguments to differentiate the function with respect to.
     let argumentIndices: [Int]?
-    /// Indices of return values to kept in the gradient function, when the
+    /// Indices of return values to kept in the adjoint function, when the
     /// return type is a tuple; otherwise can be [0] or [].
     let keptIndices: [Int]
-    /// Whether the gradient function can take a back-propagated gradient as the
+    /// Whether the adjoint function can take a back-propagated value as the
     /// seed for reverse-mode AD.
     let isSeedable: Bool
 
-    /// Create a gradient configuration.
+    /// Create an adjoint configuration.
     /// - Note: The type of the forward function must be consistent with the
     ///         configuration.
     public init(primal: Function, sourceIndex: Int?, argumentIndices: [Int]?,
@@ -54,10 +54,9 @@ public final class Function : Named, IRCollection, IRUnit {
     public enum DeclarationKind {
         /// Externally defined
         case external
-        /// Marks a function as the gradient of another with given
-        /// configuration. To be materialized as a normally defined function by
-        /// AD.
-        case gradient(GradientConfiguration)
+        /// Marks a function as the adjoint of another with given configuration.
+        /// To be materialized as a normally defined function by AD.
+        case adjoint(AdjointConfiguration)
     }
 
     public typealias Base = OrderedSet<BasicBlock>
@@ -186,7 +185,7 @@ public extension Function {
 }
 
 public extension Function {
-    func gradientType(from sourceIndex: Int?,
+    func adjointType(from sourceIndex: Int?,
                       wrt argIndices: [Int]?,
                       keeping keptIndices: [Int],
                       seedable isSeedable: Bool) -> Type? {

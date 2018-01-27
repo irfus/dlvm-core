@@ -1100,9 +1100,9 @@ extension Parser {
     }
 
     func parseFunctionDeclarationKind() throws -> Function.DeclarationKind {
-        return try withPeekedToken("a declaration kind ('extern' or 'gradient')", { tok in
+        return try withPeekedToken("a declaration kind ('extern' or 'adjoint')", { tok in
             switch tok.kind {
-            case .keyword(.gradient):
+            case .keyword(.adjoint):
                 consumeToken()
                 let (fnName, tok) = try parseIdentifier(ofKind: .global)
                 guard let fn = environment.globals[fnName] as? Function else {
@@ -1140,12 +1140,12 @@ extension Parser {
                     consumeToken()
                     isSeedable = true
                 }
-                let config = GradientConfiguration(
+                let config = AdjointConfiguration(
                     primal: fn, sourceIndex: sourceIndex,
                     argumentIndices: argumentIndices, keptIndices: keptIndices,
                     isSeedable: isSeedable
                 )
-                return .gradient(config)
+                return .adjoint(config)
 
             case .keyword(.extern):
                 consumeToken()

@@ -19,18 +19,18 @@
 
 open class Differentiation: TransformPass {
     public typealias Body = Module
-    private typealias GradientMapping =
-        [Function : [(config: GradientConfiguration, adjoint: Function)]]
+    private typealias AdjointMapping =
+        [Function : [(config: AdjointConfiguration, adjoint: Function)]]
 
     open class func run(on module: Module) -> Bool {
         var changed = false
         var workList: [Function] = Array(module)
-        var adjoints: GradientMapping = [:]
+        var adjoints: AdjointMapping = [:]
         while !workList.isEmpty {
             let adjoint = workList.removeFirst()
-            guard case let .gradient(config)? = adjoint.declarationKind
+            guard case let .adjoint(config)? = adjoint.declarationKind
                 else { continue }
-            /// Remove gradient declaration
+            /// Remove adjoint declaration
             adjoint.declarationKind = nil
             /// Copy contents of primal function to adjoint function
             config.primal.copyContents(to: adjoint)
@@ -58,7 +58,7 @@ open class Differentiation: TransformPass {
     }
 }
 
-fileprivate extension GradientConfiguration {
+fileprivate extension AdjointConfiguration {
     var seedType: Type {
         if case let .tuple(elements) = primal.returnType {
             guard let sourceIndex = sourceIndex,
@@ -131,7 +131,7 @@ fileprivate extension Differentiation {
                                keeping keptIndices: [Int],
                                seedable isSeedable: Bool,
                                workList: inout [Function],
-                               adjoints: inout GradientMapping) {
+                               adjoints: inout AdjointMapping) {
         let builder = IRBuilder(module: function.parent)
         /// Canonicalize loops
         let cfg = function.analysis(from: ControlFlowGraphAnalysis.self)
@@ -245,7 +245,7 @@ fileprivate extension Differentiation {
                                       in context: ADContext,
                                       returnValue: Use,
                                       workList: inout [Function],
-                                      adjoints: inout GradientMapping) {
+                                      adjoints: inout AdjointMapping) {
         /// Move builder
         bd.move(to: inst.parent)
         /// Get adjoint for instruction
@@ -261,7 +261,7 @@ fileprivate extension Differentiation {
         /* Function application */
         case let .apply(.function(_, fn), operands):
             let adjoint: Function
-            let config = GradientConfiguration(
+            let config = AdjointConfiguration(
                 primal: fn, sourceIndex: nil, argumentIndices: nil,
                 keptIndices: [], isSeedable: true
             )
@@ -269,11 +269,11 @@ fileprivate extension Differentiation {
                 let gradIndex = funcAdjoints.index(where: { $0.config == config }) {
                 adjoint = funcAdjoints[gradIndex].adjoint
             } else {
-                guard let gradientType = fn.gradientType(from: nil,
+                guard let adjointType = fn.adjointType(from: nil,
                                                          wrt: nil,
                                                          keeping: [],
                                                          seedable: true),
-                    case let .function(argumentTypes, returnType) = gradientType else {
+                    case let .function(argumentTypes, returnType) = adjointType else {
                         fatalError("Function @\(fn.name) is not differentiable")
                 }
                 let module = fn.parent
@@ -281,7 +281,7 @@ fileprivate extension Differentiation {
                 adjoint = Function(name: adjointName,
                                    argumentTypes: argumentTypes,
                                    returnType: returnType,
-                                   declarationKind: .gradient(config),
+                                   declarationKind: .adjoint(config),
                                    parent: module)
                 module.insert(adjoint, after: context.adjoint)
                 workList.append(adjoint)

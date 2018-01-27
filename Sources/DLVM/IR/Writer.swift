@@ -382,8 +382,8 @@ extension Function : TextOutputStreamable {
         switch declarationKind {
         case .external?:
             target.write("[extern]\n")
-        case let .gradient(config)?:
-            target.write("[gradient @\(config.primal.name)")
+        case let .adjoint(config)?:
+            target.write("[adjoint @\(config.primal.name)")
             config.sourceIndex.ifAny {
                 target.write(" from \($0)")
             }
