@@ -10,7 +10,7 @@ beautification by scripts.  The fields are: name (N), email (E), web-address
 N: Dan Zheng
 E: fangda.zheng@gmail.com
 W: http://danzheng.me
-D: Command line tools and automatic differentiation.
+D: Automatic differentiation, command line tools, and testing infrastructure.
 
 N: Richard Wei
 E: rxrwei@gmail.com
