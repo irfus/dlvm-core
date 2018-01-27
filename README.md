@@ -13,7 +13,6 @@ This repository does not include a code generator.
 | Module             | Description                                             |
 |--------------------|---------------------------------------------------------|
 | DLVM               | Compiler infrastructure (ADT, IR, Analyses, Transforms) |
-| CoreOp             | Semantics of simple tensor ops                          |
 | DLParse            | Textual IR parser                                       |
 | DLCommandLineTools | Tools for building DLVM CLIs                            |
 | dlopt              | CLI for DLVM optimizer                                  |
