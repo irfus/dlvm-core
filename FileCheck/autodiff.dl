@@ -14,21 +14,21 @@ func @scalar_simp: (f32, f32, f32) -> f32 {
     return %0.1: f32
 }
 
-[gradient @scalar_simp]
+[adjoint @scalar_simp]
 func @scalar_simp_dxwb: (f32, f32, f32) -> (f32, f32, f32)
 
 // CHECK-LABEL: func @scalar_simp_dxwb
 // CHECK: %0.0 = literal (%w: f32, %x: f32, 1: f32): (f32, f32, f32)
 // CHECK-NEXT: return %0.0: (f32, f32, f32)
 
-[gradient @scalar_simp wrt 1, 2]
+[adjoint @scalar_simp wrt 1, 2]
 func @scalar_simp_dwb: (f32, f32, f32) -> (f32, f32)
 
 // CHECK-LABEL: func @scalar_simp_dwb
 // CHECK: %0.0 = literal (%x: f32, 1: f32): (f32, f32)
 // CHECK-NEXT: return %0.0: (f32, f32)
 
-[gradient @scalar_simp wrt 1, 2 keeping 0]
+[adjoint @scalar_simp wrt 1, 2 keeping 0]
 func @scalar_simp_dwb_keeping: (f32, f32, f32) -> (f32, f32, f32)
 
 // CHECK-LABEL: func @scalar_simp_dwb_keeping
@@ -37,7 +37,7 @@ func @scalar_simp_dwb_keeping: (f32, f32, f32) -> (f32, f32, f32)
 // CHECK-NEXT: %0.2 = literal (%x: f32, 1: f32, %0.1: f32): (f32, f32, f32)
 // CHECK-NEXT: return %0.2: (f32, f32, f32)
 
-[gradient @scalar_simp wrt 1, 2 seedable]
+[adjoint @scalar_simp wrt 1, 2 seedable]
 func @scalar_simp_dwb_seedable: (f32, f32, f32, f32) -> (f32, f32)
 
 // CHECK-LABEL: func @scalar_simp_dwb_seedable
@@ -54,7 +54,7 @@ func @tensor_simp: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>) -> <1 x 1
     return %0.1: <1 x 10 x f32>
 }
 
-[gradient @tensor_simp]
+[adjoint @tensor_simp]
 func @tensor_simp_dxwb: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
                        -> (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
 
@@ -67,7 +67,7 @@ func @tensor_simp_dxwb: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
 // CHECK-NEXT: %0.5 = literal (%0.2: <1 x 784 x f32>, %0.4: <784 x 10 x f32>, %0.0: <1 x 10 x f32>): (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
 // CHECK-NEXT: return %0.5: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
 
-[gradient @tensor_simp wrt 1, 2]
+[adjoint @tensor_simp wrt 1, 2]
 func @tensor_simp_dwb: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
                       -> (<784 x 10 x f32>, <1 x 10 x f32>)
 
@@ -79,7 +79,7 @@ func @tensor_simp_dwb: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
 // CHECK-NEXT: return %0.3: (<784 x 10 x f32>, <1 x 10 x f32>)
 
 
-[gradient @tensor_simp wrt 1, 2 keeping 0]
+[adjoint @tensor_simp wrt 1, 2 keeping 0]
 func @tensor_simp_dwb_keeping: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>)
                               -> (<784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
 
@@ -92,7 +92,7 @@ func @tensor_simp_dwb_keeping: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32
 // CHECK-NEXT: %0.5 = literal (%0.4: <784 x 10 x f32>, %0.0: <1 x 10 x f32>, %0.2: <1 x 10 x f32>): (<784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
 // CHECK-NEXT: return %0.5: (<784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
 
-[gradient @tensor_simp wrt 1, 2 seedable]
+[adjoint @tensor_simp wrt 1, 2 seedable]
 func @tensor_simp_dwb_seedable: (<1 x 784 x f32>, <784 x 10 x f32>, <1 x 10 x f32>, <1 x 10 x f32>)
                                -> (<784 x 10 x f32>, <1 x 10 x f32>)
 
@@ -112,14 +112,14 @@ func @tuple_func: (f32, f32) -> (f32, f32) {
     return %0.2: (f32, f32)
 }
 
-[gradient @tuple_func from 0]
+[adjoint @tuple_func from 0]
 func @tuple_func_grad_f0: (f32, f32) -> (f32, f32)
 
 // CHECK: func @tuple_func_grad_f0: (f32, f32) -> (f32, f32)
 // CHECK: %0.0 = literal (%y: f32, %x: f32): (f32, f32)
 // CHECK-NEXT: return %0.0: (f32, f32)
 
-[gradient @tuple_func from 1]
+[adjoint @tuple_func from 1]
 func @tuple_func_grad_f1: (f32, f32) -> (f32, f32)
 
 // CHECK: func @tuple_func_grad_f1: (f32, f32) -> (f32, f32)
@@ -130,7 +130,7 @@ func @tuple_func_grad_f1: (f32, f32) -> (f32, f32)
 // CHECK-NEXT: %0.4 = literal (%0.0: f32, %0.3: f32): (f32, f32)
 // CHECK-NEXT: return %0.4: (f32, f32)
 
-[gradient @tuple_func from 1 seedable]
+[adjoint @tuple_func from 1 seedable]
 func @tuple_func_grad_f1_seedable: (f32, f32, f32) -> (f32, f32)
 
 // CHECK: func @tuple_func_grad_f1_seedable: (f32, f32, f32) -> (f32, f32)
@@ -150,7 +150,7 @@ func @scalar_broadcasting: (f32, <100 x f32>, <100 x f32>) -> <100 x f32> {
     return %v1: <100 x f32>
 }
 
-[gradient @scalar_broadcasting wrt 0]
+[adjoint @scalar_broadcasting wrt 0]
 func @scalar_broadcasting_grad: (f32, <100 x f32>, <100 x f32>) -> (f32)
 
 // CHECK: func @scalar_broadcasting_grad: (f32, <100 x f32>, <100 x f32>) -> (f32)
@@ -172,7 +172,7 @@ func @mul: (f32, f32) -> f32 {
     return %0.0: f32
 }
 
-[gradient @f]
+[adjoint @f]
 func @f_grad: (f32) -> (f32)
 
 // CHECK: func @f_grad: (f32) -> (f32)
