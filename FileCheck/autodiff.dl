@@ -41,8 +41,9 @@ func @scalar_simp_dwb_keeping: (f32, f32, f32) -> (f32, f32, f32)
 func @scalar_simp_dwb_seedable: (f32, f32, f32, f32) -> (f32, f32)
 
 // CHECK-LABEL: func @scalar_simp_dwb_seedable
-// CHECK: %0.0 = literal (%x: f32, %seed: f32): (f32, f32)
-// CHECK-NEXT: return %0.0: (f32, f32)
+// CHECK: %0.0 = multiply %seed: f32, %x: f32
+// CHECK-NEXT: %0.1 = literal (%0.0: f32, %seed: f32): (f32, f32)
+// CHECK-NEXT: return %0.1: (f32, f32)
 
 // Simple tensor test (x • w + b)
 
@@ -166,5 +167,7 @@ func @f_grad: (f32) -> (f32)
 // CHECK-NEXT: return %0.4: (f32)
 
 // CHECK: func @mul_grad: (f32, f32, f32) -> (f32, f32)
-// CHECK: %0.0 = literal (%y: f32, %x: f32): (f32, f32)
-// CHECK-NEXT: return %0.0: (f32, f32)
+// CHECK: %0.0 = multiply %seed: f32, %y: f32
+// CHECK-NEXT: %0.1 = multiply %seed: f32, %x: f32
+// CHECK-NEXT: %0.2 = literal (%0.0: f32, %0.1: f32): (f32, f32)
+// CHECK-NEXT: return %0.2: (f32, f32)

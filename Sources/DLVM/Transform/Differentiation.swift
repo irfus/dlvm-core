@@ -256,160 +256,8 @@ fileprivate extension Differentiation {
             instAdjoint = returnValue.makeLiteral(0, using: bd).makeUse()
         }
         /// Get adjoints for operands
-        var grad: [(operand: Use, derivative: Use)]
+        var operandAdjoints: [(operand: Use, adjoint: Use)]
         switch inst.kind {
-        /* Literal value */
-        case let .literal(lit, _):
-            grad = lit.operands.map {
-                ($0, $0.makeLiteral(0, using: bd).makeUse())
-            }
-
-        /* Basic arithmetic */
-        case let .numericBinary(.add, lhs, rhs):
-            grad = [
-                /// ∂f/∂x = D
-                (lhs, instAdjoint),
-                /// ∂f/∂y = D
-                (rhs, instAdjoint)
-            ]
-        case let .numericBinary(.subtract, lhs, rhs):
-            grad = [
-                /// ∂f/∂x = D
-                (lhs, instAdjoint),
-                /// ∂f/∂y = -D
-                (rhs, %bd.numeric(.negate, instAdjoint))
-            ]
-        case let .numericBinary(.multiply, lhs, rhs):
-            grad = [
-                /// ∂f/∂x = y
-                (lhs, rhs),
-                /// ∂f/∂y = x
-                (rhs, lhs)
-            ]
-        case let .numericBinary(.divide, lhs, rhs):
-            grad = [
-                /// ∂f/∂x = D / y
-                (lhs, %bd.divide(instAdjoint, rhs)),
-                /// ∂f/∂y = -x / y^2
-                (rhs, %bd.numeric(.negate, %bd.divide(lhs, %bd.multiply(rhs, rhs))))
-            ]
-        case let .numericBinary(.power, lhs, rhs):
-            grad = [
-                /// ∂f/∂x = y * x^(y - 1) * D
-                (lhs, %bd.multiply(
-                    %bd.multiply(rhs, %bd.power(lhs, %bd.subtract(rhs, %rhs.makeScalar(1)))),
-                    instAdjoint)
-                ),
-                /// ∂f/∂y = ln(x) * f * D
-                (rhs, %bd.multiply(%bd.multiply(%bd.log(lhs), instAdjoint), instAdjoint))
-            ]
-
-        /* Dot */
-        case let .dot(lhs, rhs):
-            grad = [
-                /// ∂f/∂x = D • y^T
-                (lhs, %bd.dot(instAdjoint, %bd.transpose(rhs))),
-                /// ∂f/∂y = x^T • D
-                (rhs, %bd.dot(%bd.transpose(lhs), instAdjoint))
-            ]
-
-        /* Transpose */
-        case let .transpose(x):
-            grad = [
-                /// ∂f/∂x = D^T
-                (x, %bd.transpose(instAdjoint))
-            ]
-
-        /* Unary elementwise transformations */
-        case let .numericUnary(.log, x):
-            grad = [
-                /// ∂f/∂x = D / x
-                (x, %bd.divide(instAdjoint, x))
-            ]
-        case let .numericUnary(.cos, x):
-            grad = [
-                /// ∂f/∂x = -D * sin(x)
-                (x, %bd.multiply(%bd.numeric(.negate, instAdjoint), %bd.numeric(.sin, x)))
-            ]
-        case let .numericUnary(.sin, x):
-            grad = [
-                /// ∂f/∂x = D * cos(x)
-                (x, %bd.multiply(instAdjoint, %bd.numeric(.cos, x)))
-            ]
-        case let .numericUnary(.tan, x):
-            let cosx = %bd.numeric(.cos, x)
-            grad = [
-                /// ∂f/∂x = D / (cos(x) * cos(x))
-                (x, %bd.divide(instAdjoint, %bd.multiply(cosx, cosx)))
-            ]
-        case let .numericUnary(.cosh, x):
-            grad = [
-                /// ∂f/∂x = D * sinh(x)
-                (x, %bd.multiply(instAdjoint, %bd.numeric(.sinh, x)))
-            ]
-        case let .numericUnary(.sinh, x):
-            grad = [
-                /// ∂f/∂x = D * cosh(x)
-                (x, %bd.multiply(instAdjoint, %bd.numeric(.cosh, x)))
-            ]
-        case let .numericUnary(.tanh, x):
-            grad = [
-                /// ∂f/∂x = D * (1 - (f * f))
-                (x, %bd.multiply(instAdjoint, %bd.subtract(%x.makeScalar(1), %bd.multiply(%inst, %inst))))
-            ]
-        case let .numericUnary(.acos, x):
-            grad = [
-                /// ∂f/∂x = -D / sqrt(1 - (x * x))
-                (x, %bd.divide(
-                    %bd.numeric(.negate, instAdjoint),
-                    %bd.numeric(.sqrt, %bd.subtract(%x.makeScalar(1), %bd.multiply(x, x))))
-                )
-            ]
-        case let .numericUnary(.asin, x):
-            grad = [
-                /// ∂f/∂x = D / sqrt(1 - (x * x))
-                (x, %bd.divide(
-                    instAdjoint,
-                    %bd.numeric(.sqrt, %bd.subtract(%x.makeScalar(1), %bd.multiply(x, x))))
-                )
-            ]
-        case let .numericUnary(.atan, x):
-            grad = [
-                /// ∂f/∂x = D / (1 + (x * x))
-                (x, %bd.divide(instAdjoint, %bd.add(%x.makeScalar(1), %bd.multiply(x, x))))
-            ]
-        case let .numericUnary(.exp, x):
-            grad = [
-                /// ∂f/∂x = f * D
-                (x, %bd.multiply(%inst, instAdjoint))
-            ]
-        case let .numericUnary(.sqrt, x):
-            grad = [
-                /// ∂f/∂x = D / (2 * f)
-                (x, %bd.divide(instAdjoint, %bd.multiply(%x.makeScalar(2), %inst)))
-            ]
-
-        /** Cost-free casts **/
-        case let .padShape(x, at: i):
-            grad = [
-                /// ∂f/∂x = sum(f, along: i)
-                // NOTE: can be optimized to `squeezeShape` when dimension i is
-                // known to be 1, to be implemented in simplification pass
-                (x, %bd.reduce(.numeric(.add), instAdjoint,
-                               initial: %x.makeScalar(0),
-                               dims: [i]))
-            ]
-        case let .squeezeShape(x, at: i):
-            grad = [
-                (x, %bd.padShape(instAdjoint, at: i))
-            ]
-
-        /** Aggregate operations **/
-        case let .extract(from: x, at: i):
-            grad = [
-                (x, %bd.extract(from: instAdjoint, at: i))
-            ]
-
         /* Function application */
         case let .apply(.function(_, fn), operands):
             let adjoint: Function
@@ -439,17 +287,21 @@ fileprivate extension Differentiation {
                 workList.append(adjoint)
             }
             let operandAdjoint = bd.apply(%adjoint, operands + [instAdjoint])
-            grad = operands.enumerated().map { (i, operand) in
+            operandAdjoints = operands.enumerated().map { (i, operand) in
                 return (operand, %bd.extract(from: %operandAdjoint, at: [.index(i)]))
             }
 
+        /* Default case, use defined adjoints */
         default:
-            /// - TODO: Implement all cases!
-            fatalError("Unimplemented \(inst)")
+            guard let tmp = inst.kind.operandAdjoints(
+                using: bd, primal: %inst, seed: instAdjoint) else {
+                fatalError("Unimplemented \(inst)")
+            }
+            operandAdjoints = tmp
         }
 
         /// Update operand adjoints
-        for (operand, newAdjoint) in grad {
+        for (operand, newAdjoint) in operandAdjoints {
             /// Adjoints for immediate literals are never needed, do not store
             if case .literal = operand { continue }
             if let operandAdjoint = context.adjoint(for: operand) {
