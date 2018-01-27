@@ -209,8 +209,6 @@ extension InstructionKind {
             DLUnimplemented()
         case .concatenate:
             DLUnimplemented()
-        case .random:
-            DLUnimplemented()
         case .reduceWindow:
             DLUnimplemented()
         case .convolve:
@@ -267,6 +265,7 @@ extension InstructionKind {
         /// - are related to control-flow
         /// - are boolean operations
         /// - are integer math operations
+        /// - are random operations
         /// - are related to the stack data structure
         /// - access memory
         case .branch, .branchEnum, .conditional, .return,
@@ -274,6 +273,7 @@ extension InstructionKind {
              .numericBinary(.modulo, _, _),
              .numericBinary(.floorDivide, _, _),
              .numericBinary(.truncateDivide, _, _),
+             .random,
              .createStack, .destroyStack, .push, .pop,
              .insert, .allocateStack, .allocateHeap, .allocateBox, .projectBox,
              .retain, .release, .deallocate, .load, .store, .elementPointer, .copy,
