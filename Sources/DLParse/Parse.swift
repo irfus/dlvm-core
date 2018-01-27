@@ -639,7 +639,12 @@ extension Parser {
             if case .newLine? = currentToken?.kind {
                 return .return(nil)
             }
-            return .return(try parseUse(in: basicBlock).0)
+            let (val, range) = try parseUse(in: basicBlock)
+            let returnType = basicBlock.parent.returnType
+            guard val.type == returnType else {
+                throw ParseError.typeMismatch(expected: returnType, range)
+            }
+            return .return(val)
 
         /// 'dataTypeCast' <val> 'to' <data_type>
         case .dataTypeCast:
@@ -1345,9 +1350,15 @@ public extension Parser {
                 let start = restTokens.startIndex
                 let (tok0, tok1, tok2) = (restTokens[start], restTokens[start+1], restTokens[start+2])
                 if case (.newLine, .keyword(.func), .identifier(.global, let name)) = (tok0.kind, tok1.kind, tok2.kind) {
-                    let proto = Function(name: name, argumentTypes: [], returnType: .invalid, parent: module)
-                    environment.globals[name] = proto
                     restTokens.removeFirst(3)
+                    let (type, typeSigRange) = try parseTypeSignature()
+                    /// Ensure it's a function type
+                    guard case let .function(argTypes, retType) = type.canonical else {
+                        throw ParseError.notFunctionType(typeSigRange)
+                    }
+                    let proto = Function(name: name, argumentTypes: argTypes,
+                                         returnType: retType, parent: module)
+                    environment.globals[name] = proto
                     continue
                 }
                 consumeToken()
