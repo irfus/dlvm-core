@@ -45,7 +45,7 @@ public struct SideEffectInfo {
             return .mayTrap
         case _ where instruction.kind.mustWriteToMemory:
             return .mayWriteToMemory
-        case .apply(.function(_, let callee), _):
+        case .apply(.function(let callee), _):
             return self[callee]
         default:
             return []
@@ -76,7 +76,7 @@ open class SideEffectAnalysis : AnalysisPass {
                 }
                 /// Check function calls
                 switch inst.kind {
-                case .apply(.function(_, let callee), _):
+                case .apply(.function(let callee), _):
                     /// Call within the same module
                     sameModuleCalls.append((function, callee))
                 case .apply:

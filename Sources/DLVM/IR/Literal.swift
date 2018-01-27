@@ -244,7 +244,7 @@ public extension Use {
         switch use {
         case let .literal(_, lit):
             return lit
-        case let .instruction(_, inst):
+        case let .instruction(inst):
             guard case let .literal(lit, _) = inst.kind else { return nil }
             return lit
         default:

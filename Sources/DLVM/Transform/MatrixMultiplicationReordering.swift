@@ -120,7 +120,7 @@ open class MatrixMultiplicationReordering : TransformPass {
                 }
             }
             let newTop = insert(expr)
-            guard case let .instruction(_, newTopInst) = newTop else {
+            guard case let .instruction(newTopInst) = newTop else {
                 preconditionFailure(
                     "\(newTop) must be an instruction. Something's wrong.")
             }

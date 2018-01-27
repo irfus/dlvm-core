@@ -30,6 +30,6 @@ public class Variable: Named, HashableByReference {
 
 extension Variable: Value {
     public func makeUse() -> Use {
-        return .variable(type.pointer, self)
+        return .variable(self)
     }
 }

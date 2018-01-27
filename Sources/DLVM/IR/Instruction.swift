@@ -165,7 +165,7 @@ extension Instruction : Value {
     }
 
     public func makeUse() -> Use {
-        return .instruction(type, self)
+        return .instruction(self)
     }
 }
 

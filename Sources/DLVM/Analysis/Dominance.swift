@@ -123,10 +123,10 @@ public extension DominatorTree where Node == BasicBlock {
         switch use {
         case .variable, .literal, .function: return true
 
-        case let .argument(_, arg):
+        case let .argument(arg):
             return self.dominates(arg.parent, instruction.parent)
 
-        case let .instruction(_, usee):
+        case let .instruction(usee):
             return properlyDominates(usee, instruction)
         }
     }

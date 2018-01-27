@@ -171,8 +171,8 @@ fileprivate extension Differentiation {
             /// Get return value
             let retVal: Use
             if let sourceIndex = sourceIndex {
-                guard case let .instruction(ty, inst) = returnInst.operands[0],
-                    case .literal(let lit, ty) = inst.kind,
+                guard case let .instruction(inst) = returnInst.operands[0],
+                    case .literal(let lit, inst.type) = inst.kind,
                     case let .tuple(elements) = lit,
                     elements.indices.contains(sourceIndex) else {
                     fatalError("""
@@ -201,7 +201,7 @@ fileprivate extension Differentiation {
             var instsToDiff: Set<Instruction>
             if sourceIndex != nil {
                 switch retVal {
-                case let .instruction(_, inst):
+                case let .instruction(inst):
                     instsToDiff = Set(inst.predecessors).union([inst])
                 default:
                     instsToDiff = []
@@ -259,7 +259,7 @@ fileprivate extension Differentiation {
         var operandAdjoints: [(operand: Use, adjoint: Use)]
         switch inst.kind {
         /* Function application */
-        case let .apply(.function(_, fn), operands):
+        case let .apply(.function(fn), operands):
             let adjoint: Function
             let config = AdjointConfiguration(
                 primal: fn, sourceIndex: nil, argumentIndices: nil,

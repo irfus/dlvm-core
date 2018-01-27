@@ -327,15 +327,15 @@ extension Use : TextOutputStreamable {
 
     public var identifier: String {
         switch self {
-        case let .variable(_, ref):
+        case let .variable(ref):
             return "@\(ref.name)"
-        case let .instruction(_, ref):
+        case let .instruction(ref):
             return ref.printedName.flatMap{"%\($0)"} ?? "%_"
-        case let .argument(_, ref):
+        case let .argument(ref):
             return "%\(ref.name)"
         case let .literal(_, lit):
             return lit.description
-        case let .function(_, ref):
+        case let .function(ref):
             return "@\(ref.name)"
         }
     }

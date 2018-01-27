@@ -942,18 +942,6 @@ extension Use : Verifiable {
                 throw VerificationError.useTypeMismatch(self)
             }
         }
-        switch self {
-        case let .argument(ty, def):
-            try verify(ty, def.type)
-        case let .instruction(ty, def):
-            try verify(ty, def.type)
-        case let .variable(ty, gv):
-            try verify(ty, gv.type.pointer)
-        case let .function(ty, fun):
-            try verify(ty, fun.type)
-        case .literal:
-            break
-        }
     }
 }
 

@@ -121,7 +121,7 @@ extension Function : Value {
     }
 
     public func makeUse() -> Use {
-        return .function(type, self)
+        return .function(self)
     }
 }
 
@@ -174,7 +174,7 @@ public extension Function {
     /// Replace all occurrences of a use with another use
     func replaceAllUses(of oldUse: Use, with newUse: Use) {
         switch oldUse {
-        case let .instruction(_, inst):
+        case let .instruction(inst):
             replaceAllUses(of: inst, with: newUse)
         default:
             for inst in instructions {

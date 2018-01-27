@@ -62,7 +62,7 @@ open class DeadCodeElimination : TransformPass {
         /// Get new user analysis
         dfg = function.analysis(from: DataFlowGraphAnalysis.self)
         /// For original uses, check if they need to be revisited
-        for case let .instruction(_, usee) in inst.operands
+        for case let .instruction(usee) in inst.operands
             where dfg.successors(of: usee).isEmpty
                 && sideEffectInfo[usee] == .none
                 && !inst.kind.isTerminator {
