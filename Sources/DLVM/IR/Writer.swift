@@ -163,9 +163,9 @@ extension InstructionKind : TextOutputStreamable {
     public func write<Target : TextOutputStream>(to target: inout Target) {
         switch self {
         case let .builtin(op, args):
-            // FIXME: fix format, perhaps mimic function application?
-            // "@\(op.opcode)" ...
-            target.write("\(op)(\(args.joinedDescription))")
+            target.write("""
+                builtin "\(op)"(\(args.joinedDescription)) -> \(op.resultType(for: args))
+                """)
         case let .branch(bb, args):
             target.write("branch '\(bb.name)(\(args.joinedDescription))")
         case let .conditional(op, thenBB, thenArgs, elseBB, elseArgs):
