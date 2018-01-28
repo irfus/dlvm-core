@@ -801,14 +801,14 @@ extension Parser {
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.to))
             let shape = try parseShape()
-            return .shapeCast(val, shape)
+            return .shapeCast(val, to: shape)
 
         /// 'bitCast' <val> 'to' <type>
         case .bitCast:
             let (val, _) = try parseUse(in: basicBlock)
             try consume(.keyword(.to))
             let (type, _) = try parseType()
-            return .bitCast(val, type)
+            return .bitCast(val, to: type)
 
         /// 'extract' <num|key|val> (',' <num|key|val>)* 'from' <val>
         case .extract:

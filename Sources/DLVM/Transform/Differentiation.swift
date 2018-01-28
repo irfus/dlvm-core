@@ -270,9 +270,9 @@ fileprivate extension Differentiation {
                 adjoint = funcAdjoints[gradIndex].adjoint
             } else {
                 guard let adjointType = fn.adjointType(from: nil,
-                                                         wrt: nil,
-                                                         keeping: [],
-                                                         seedable: true),
+                                                       wrt: nil,
+                                                       keeping: [],
+                                                       seedable: true),
                     case let .function(argumentTypes, returnType) = adjointType else {
                         fatalError("Function @\(fn.name) is not differentiable")
                 }
@@ -293,8 +293,9 @@ fileprivate extension Differentiation {
 
         /* Default case, use defined adjoints */
         default:
-            guard let tmp = inst.kind.operandAdjoints(
-                using: bd, primal: %inst, seed: instAdjoint) else {
+            guard let tmp = inst.kind.operandAdjoints(using: bd, primal: %inst,
+                                                      seed: instAdjoint,
+                                                      operands: inst.operands) else {
                 fatalError("Unimplemented \(inst)")
             }
             operandAdjoints = tmp

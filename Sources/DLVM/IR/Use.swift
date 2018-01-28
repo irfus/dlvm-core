@@ -87,6 +87,13 @@ public extension Use {
         }
         return inst
     }
+
+    var literal: Literal? {
+        guard case let .literal(_, lit) = self else {
+            return nil
+        }
+        return lit
+    }
 }
 
 infix operator ~

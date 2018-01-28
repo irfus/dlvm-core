@@ -102,9 +102,9 @@ public enum InstructionKind {
     /// Drop dimension of 1 from shape
     case squeezeShape(Use, at: Int)
     /// Shape cast operation
-    case shapeCast(Use, TensorShape)
+    case shapeCast(Use, to: TensorShape)
     /// Bitcast
-    case bitCast(Use, Type)
+    case bitCast(Use, to: Type)
 
     /** Aggregate operations **/
     /// Extract an element from tensor, tuple, or array
@@ -932,7 +932,7 @@ public extension InstructionKind {
         case .squeezeShape(old, at: let i):
             return .squeezeShape(new, at: i)
         case .shapeCast(old, let shape):
-            return .shapeCast(new, shape)
+            return .shapeCast(new, to: shape)
         case .dataTypeCast(old, let type):
             return .dataTypeCast(new, type)
         case let .apply(fn, operands):
@@ -950,7 +950,7 @@ public extension InstructionKind {
             let newUse = use == old ? new : use
             return .branchEnum(newUse, branches)
         case .bitCast(old, let targetT):
-            return .bitCast(new, targetT)
+            return .bitCast(new, to: targetT)
         case .elementPointer(old, let indices):
             return .elementPointer(new, indices)
         case .store(old, to: let dest):

@@ -329,11 +329,11 @@ public extension IRBuilder {
     }
 
     func shapeCast(_ source: Use, to targetShape: TensorShape) -> Instruction {
-        return buildInstruction(.shapeCast(source, targetShape))
+        return buildInstruction(.shapeCast(source, to: targetShape))
     }
 
     func bitCast(_ source: Use, to targetType: Type) -> Instruction {
-        return buildInstruction(.bitCast(source, targetType))
+        return buildInstruction(.bitCast(source, to: targetType))
     }
 
     func extract(from source: Use, at indices: [ElementKey]) -> Instruction {
