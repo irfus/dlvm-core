@@ -90,11 +90,11 @@ public enum InstructionKind {
 
     /** Tensor information getters **/
     /// Tensor rank getter
-    case rank(of: Use, `as`: Type)
+    case rank(of: Use)
     /// Tensor shape getter
-    case shape(of: Use, `as`: Type)
+    case shape(of: Use)
     /// Tensor unit count getter
-    case unitCount(of: Use, `as`: Type)
+    case unitCount(of: Use)
 
     /** Cost-free casts **/
     /// Pad shape with dimension of 1
@@ -511,27 +511,23 @@ public extension InstructionKind {
             default: return .invalid
             }
 
-        case let .rank(of: v1, as: t):
-            guard case .tensor = v1.type.unaliased,
-                case let .tensor([], dt) = t, dt.isNumeric else {
+        case let .rank(of: v1):
+            guard case .tensor = v1.type.unaliased else {
                 return .invalid
             }
-            return t
+            return .int(64)
 
-        case let .shape(of: v1, as: t):
-            guard case let .tensor(s1, _) = v1.type.unaliased,
-                case let .tensor(s2, dt) = t, dt.isNumeric,
-                let rank = s2.first, s2.isVector, s1.count == rank else {
+        case let .shape(of: v1):
+            guard case let .tensor(s1, _) = v1.type.unaliased else {
                 return .invalid
             }
-            return t
+            return .tensor([s1.count], .int(64))
 
-        case let .unitCount(of: v1, as: t):
-            guard case .tensor = v1.type.unaliased,
-                case let .tensor([], dt) = t, dt.isNumeric else {
+        case let .unitCount(of: v1):
+            guard case .tensor = v1.type.unaliased else {
                 return .invalid
             }
-            return t
+            return .int(64)
 
         case let .padShape(v1, at: index):
             switch v1.type.unaliased {
@@ -637,7 +633,7 @@ extension InstructionKind {
         case let .not(op), let .numericUnary(_, op), let .scan(_, op, _),
              let .transpose(op), let .reverse(op, dims: _), let .slice(op, at: _),
              let .shapeCast(op, _), let .dataTypeCast(op, _), let .bitCast(op, _),
-             let .return(op?), let .rank(op, _), let .shape(op, _), let .unitCount(op, _),
+             let .return(op?), let .rank(op), let .shape(op), let .unitCount(op),
              let .padShape(op, at: _), let .squeezeShape(op, at: _),
              let .extract(from: op, at: _), let .branchEnum(op, _), let .store(op, _),
              let .load(op), let .elementPointer(op, _), let .deallocate(op),
@@ -741,10 +737,10 @@ extension InstructionKind : Equatable {
             }
         case let (.dataTypeCast(x1, dt1), .dataTypeCast(x2, dt2)):
             return x1 == x2 && dt1 == dt2
-        case let (.rank(of: x1, as: t1), .rank(of: x2, as: t2)),
-             let (.shape(of: x1, as: t1), .shape(of: x2, as: t2)),
-             let (.unitCount(of: x1, as: t1), .rank(of: x2, as: t2)):
-            return x1 == x2 && t1 == t2
+        case let (.rank(of: x1), .rank(of: x2)),
+             let (.shape(of: x1), .shape(of: x2)),
+             let (.unitCount(of: x1), .rank(of: x2)):
+            return x1 == x2
         case let (.padShape(x1, at: i1), .padShape(x2, at: i2)):
             return x1 == x2 && i1 == i2
         case let (.squeezeShape(x1, at: i1), .squeezeShape(x2, at: i2)):
@@ -925,12 +921,12 @@ public extension InstructionKind {
             return .dot(use1, new)
         case .dot(old, old):
             return .dot(new, new)
-        case .rank(of: old, as: let t):
-            return .rank(of: new, as: t)
-        case .shape(of: old, as: let t):
-            return .shape(of: new, as: t)
-        case .unitCount(of: old, as: let t):
-            return .unitCount(of: new, as: t)
+        case .rank(of: old):
+            return .rank(of: new)
+        case .shape(of: old):
+            return .shape(of: new)
+        case .unitCount(of: old):
+            return .unitCount(of: new)
         case .padShape(old, at: let i):
             return .padShape(new, at: i)
         case .squeezeShape(old, at: let i):

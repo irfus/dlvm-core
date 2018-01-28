@@ -83,13 +83,9 @@ public enum VerificationError<Node : Verifiable> : Error {
     case randomBoundNotScalar(Use, Node)
     case redeclared(Node)
     case returnTypeMismatch(Instruction, Node)
-    case shapeGetterRankMismatch(Use, Type, Node)
     case structFieldNameMismatch(StructType, Use, Node)
     case terminatorNotLast(Node)
     case typeMismatch(Use, Use, Node)
-    case typeNotNumeric(Type, Node)
-    case typeNotScalar(Type, Node)
-    case typeNotVector(Type, Node)
     case unbroadcastableMismatch([Use], Node)
     case unexpectedBasicBlockType(BasicBlock, Node)
     case unexpectedDataType(Use, DataType, Node)
@@ -732,41 +728,19 @@ extension InstructionKind {
                 throw VerificationError.convolveInvalidDilation(rd, instruction)
             }
 
-        case let .rank(of: v1, as: t):
+        case let .rank(of: v1):
             guard case .tensor = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
-            guard case let .tensor([], dt) = t else {
-                throw VerificationError.typeNotScalar(t, instruction)
-            }
-            guard dt.isNumeric else {
-                throw VerificationError.typeNotNumeric(t, instruction)
-            }
 
-        case let .shape(of: v1, as: t):
-            guard case let .tensor(s1, _) = v1.type.unaliased else {
-                throw VerificationError.notTensor(v1, instruction)
-            }
-            guard case let .tensor(s2, dt) = t,
-                let rank = s2.first, s2.isVector else {
-                throw VerificationError.typeNotVector(t, instruction)
-            }
-            guard dt.isNumeric else {
-                throw VerificationError.typeNotNumeric(t, instruction)
-            }
-            guard s1.count == rank else {
-                throw VerificationError.shapeGetterRankMismatch(v1, t, instruction)
-            }
-
-        case let .unitCount(of: v1, as: t):
+        case let .shape(of: v1):
             guard case .tensor = v1.type.unaliased else {
                 throw VerificationError.notTensor(v1, instruction)
             }
-            guard case let .tensor([], dt) = t else {
-                throw VerificationError.typeNotScalar(t, instruction)
-            }
-            guard dt.isNumeric else {
-                throw VerificationError.typeNotNumeric(t, instruction)
+
+        case let .unitCount(of: v1):
+            guard case .tensor = v1.type.unaliased else {
+                throw VerificationError.notTensor(v1, instruction)
             }
 
         case let .padShape(v1, at: index):
