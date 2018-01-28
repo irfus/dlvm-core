@@ -67,7 +67,7 @@ open class CFGSimplification : TransformPass {
         /// Remove unreachable basic blocks, updating CFG.
         for bb in function {
             if !visited.contains(bb) {
-                function.remove(bb)
+                bb.removeFromParent()
                 cfg.removeNode(bb)
                 changed = true
             }
@@ -87,17 +87,24 @@ open class CFGSimplification : TransformPass {
                 continue
             }
             let pred = preds[0]
-            /// Remove terminator from predecessor.
+            /// Get incoming values and remove terminator from predecessor.
+            let incomingValues = bb.arguments.map { $0.incomingValue(from: pred) }
             pred.premise.terminator.removeFromParent()
             /// Copy instructions into predecessor, replacing argument uses
-            /// with their incoming values.
-            let incomingValues = bb.arguments.map { $0.incomingValue(from: pred) }
+            /// with their incoming values and old instructions with new ones.
+            var newInsts: [Instruction : Instruction] = [:]
             for inst in bb {
                 let newInst = Instruction(name: inst.name,
                                           kind: inst.kind, parent: pred)
                 for (old, new) in zip(bb.arguments, incomingValues) {
                     newInst.substitute(new, for: %old)
                 }
+                for operand in newInst.operands {
+                    guard let old = operand.instruction else { continue }
+                    guard let new = newInsts[old] else { continue }
+                    newInst.substitute(%new, for: %old)
+                }
+                newInsts[inst] = newInst
                 pred.append(newInst)
             }
             /// Update CFG.
@@ -108,6 +115,7 @@ open class CFGSimplification : TransformPass {
             }
             /// Remove basic block from function.
             bb.removeFromParent()
+            cfg.removeNode(bb)
             changed = true
         }
         return changed

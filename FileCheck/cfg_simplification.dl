@@ -1,0 +1,37 @@
+// RUN: dlopt %s -p CFGSimp --print-ir | FileCheck %s
+
+// CHECK: CFGSimp: changed
+
+module "cfg_simplify"
+stage raw
+
+// Test the following:
+// - unreachable basic block removal
+// - merging basic blocks into predecessors if possible
+// - eliminating simple trampolines
+// - remove arguments from basic block with single predecessor
+
+func @foo: (i32) -> i32 {
+'entry(%x: i32):
+    %0.0 = equal %x: i32, 0: i32
+    conditional %0.0: bool then 'then() else 'trampoline(%x: i32)
+'unreachable_bb(%a: i32):
+    return %a: i32
+'then():
+    branch 'next()
+'next():
+    branch 'trampoline(%x: i32)
+'trampoline(%x1: i32):
+    branch 'cont(%x1: i32)
+'cont(%x2: i32):
+    return %x2: i32
+}
+
+// CHECK-LABEL: func @foo: (i32) -> i32
+// CHECK-NEXT: 'entry(%x: i32):
+// CHECK-NEXT:     %0.0 = equal %x: i32, 0: i32
+// CHECK-NEXT:     conditional %0.0: bool then 'then() else 'trampoline(%x: i32)
+// CHECK-NEXT: 'then():
+// CHECK-NEXT:     branch 'trampoline(%x: i32)
+// CHECK-NEXT: 'trampoline(%x1: i32):
+// CHECK-NEXT:     return %x1: i32
