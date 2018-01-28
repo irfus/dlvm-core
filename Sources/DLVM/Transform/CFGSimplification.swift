@@ -100,8 +100,8 @@ open class CFGSimplification : TransformPass {
                     newInst.substitute(new, for: %old)
                 }
                 for operand in newInst.operands {
-                    guard let old = operand.instruction else { continue }
-                    guard let new = newInsts[old] else { continue }
+                    guard let old = operand.instruction, let new = newInsts[old]
+                        else { continue }
                     newInst.substitute(%new, for: %old)
                 }
                 newInsts[inst] = newInst
