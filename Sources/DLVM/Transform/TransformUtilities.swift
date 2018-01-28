@@ -22,7 +22,7 @@ fileprivate extension BasicBlock {
     var definedNames: Set<String> {
         return Set([name])
             .union(arguments.map { $0.name })
-            .union(elements.flatMap { $0.name })
+            .union(elements.compactMap { $0.name })
     }
 }
 

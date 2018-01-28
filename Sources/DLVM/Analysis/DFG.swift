@@ -49,7 +49,7 @@ public extension DataFlowGraph {
 
     /// Predecessors
     func predecessors(of inst: Instruction) -> [Definition] {
-        return inst.operands.flatMap {$0.definition}
+        return inst.operands.compactMap { $0.definition }
     }
 }
 
@@ -132,7 +132,7 @@ extension Instruction : ForwardGraphNode {
 
 extension Instruction : BackwardGraphNode {
     public var predecessors: AnyCollection<Instruction> {
-        return AnyCollection(operands.lazy.flatMap {
+        return AnyCollection(operands.lazy.compactMap {
             $0.instruction
         })
     }

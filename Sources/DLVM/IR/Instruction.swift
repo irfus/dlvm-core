@@ -271,7 +271,7 @@ public extension InstructionKind {
         case let .numericUnary(_, v1):
             return v1.tensorType.flatMap { v1Ty in
                 NumericUnaryOp.resultType(for: (v1Ty))
-                }.map(Type.tensor) ?? .invalid
+            }.map(Type.tensor) ?? .invalid
 
         case let .numericBinary(_, v1, v2):
             return v1.tensorType.flatMap { v1Ty in

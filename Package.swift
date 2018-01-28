@@ -37,7 +37,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-package-manager",
                  .branch("swift-4.1-branch")),
-        .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.7.1")
+        .package(url: "https://github.com/dlvm-team/CoreTensor", from: "0.7.2")
     ],
     targets: [
         .target(name: "DLVM", dependencies: ["CoreTensor"]),
@@ -53,5 +53,5 @@ let package = Package(
             "DLVM", "DLParse"
         ]),
     ],
-    swiftLanguageVersions: [ 4 ]
+    swiftLanguageVersions: [4]
 )
