@@ -65,8 +65,8 @@ func @double_loop: (i32, i32) -> i32 {
 // CHECK-NEXT:     branch 'outer(0: i32, 0: i32)
 // CHECK-NEXT: 'outer(%i1: i32, %j1: i32):
 // CHECK-NEXT:     %1.0 = lessThan %i1: i32, %a: i32
-// CHECK-NEXT:     conditional %1.0: bool then 'preheader(%i1: i32, %j1: i32) else 'cont()
-// CHECK-NEXT: 'preheader(%i2_0: i32, %j2_0: i32):
+// CHECK-NEXT:     conditional %1.0: bool then 'inner_preheader(%i1: i32, %j1: i32) else 'cont()
+// CHECK-NEXT: 'inner_preheader(%i2_0: i32, %j2_0: i32):
 // CHECK-NEXT:     branch 'inner(%i2_0: i32, %j2_0: i32)
 // CHECK-NEXT: 'inner(%i2: i32, %j2: i32):
 // CHECK-NEXT:     %3.0 = lessThan %j2: i32, %b: i32

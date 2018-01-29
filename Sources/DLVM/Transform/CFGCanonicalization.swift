@@ -159,7 +159,8 @@ open class CFGCanonicalization : TransformPass {
             .lazy.filter { !loop.contains($0) }
         /// Create preheader and hoist predecessors to it.
         let preheader = loop.header.hoistPredecessorsToNewBlock(
-            named: "preheader", hoisting: preds, before: loop.header, controlFlow: &cfg)
+            named: "\(loop.header.name)_preheader", hoisting: preds,
+            before: loop.header, controlFlow: &cfg)
         /// Add preheader to parent loops (if they exist).
         if let parent = loop.parent {
             loopInfo.insertBlock(preheader, in: parent, before: loop.header)
