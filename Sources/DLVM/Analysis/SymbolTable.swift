@@ -17,23 +17,28 @@
 //  limitations under the License.
 //
 
-open class SymbolTableAnalysis<Unit : IRCollection> : AnalysisPass
-    where Unit.Element : Named {
-    public typealias Body = Unit
-    public typealias Result = [String : Body.Element]
+open class SymbolTableAnalysis : AnalysisPass {
+    public typealias Body = Function
+    public typealias Result = [String : Definition]
     open class func run(on body: Body) -> Result {
         var table: Result = [:]
-        for element in body {
-            table[element.name] = element
+        for bb in body {
+            for argument in bb.arguments {
+                table[argument.name] = argument
+            }
+            for inst in bb {
+                guard let name = inst.name else { continue }
+                table[name] = inst
+            }
         }
         return table
     }
 }
 
-public extension IRCollection where Element : Named {
-    func element(named name: String) -> Element? {
+public extension Function {
+    func element(named name: String) -> Definition? {
         /// Guaranteed not to throw
-        let table = analysis(from: SymbolTableAnalysis<Self>.self)
+        let table = analysis(from: SymbolTableAnalysis.self)
         return table[name]
     }
 }
